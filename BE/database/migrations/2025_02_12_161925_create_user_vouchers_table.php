@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('user_vouchers', function (Blueprint $table) {
             $table->id(); // Khóa chính
-            $table->interger('user_id'); // Khóa ngoại đến bảng users
-            $table->interger('voucher_id'); // Khóa ngoại đến bảng vouchers
+            $table->integer('user_id'); // Khóa ngoại đến bảng users
+            $table->integer('voucher_id'); // Khóa ngoại đến bảng vouchers
             $table->boolean('is_used')->default(false); // Trạng thái sử dụng voucher
             $table->timestamp('used_at')->nullable(); // Thời gian sử dụng voucher
             $table->timestamps(); // Tạo 2 cột created_at & updated_at tự động
