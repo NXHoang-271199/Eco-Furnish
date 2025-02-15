@@ -1,621 +1,122 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { IoCartOutline } from "react-icons/io5";
+import { AiOutlineUser, AiOutlineSearch, AiOutlineHeart } from "react-icons/ai";
 
 const Header = () => {
   return (
     <>
-      <div class="header-area header-area--default header-area--default--white header-sticky">
-        {/* <!--=======  header navigation wrapper  =======--> */}
+      {/* <header>
+        <div className="max-w-6xl mx-auto relative">
+          <div className="grid grid-cols-3 gap-8 items-center py-7 ">
+            <div>
+              <img src="/logo.svg" alt="Eco-Furnish" />
+            </div>
+            <nav>
+              <ul className="flex justify-center space-x-6 ">
+                <li>
+                  <Link to="/" className="hover:text-yellow-400">
+                    Home
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/products" className="hover:text-yellow-400">
+                    Shop
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="hover:text-yellow-400">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="hover:text-yellow-400">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/blogs" className="hover:text-yellow-400">
+                    Blog
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+            <div className="flex justify-end space-x-4">
+              <Link to="/search">
+                <AiOutlineSearch />
+              </Link>
 
-        <div class="header-navigation-area header-navigation-area--white header-navigation-area--extra-space d-none d-lg-block">
-          <div class="container wide">
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="header-info-wrapper header-info-wrapper--alt-style">
-                  <div class="header-logo">
-                    <a href="index.html">
-                      <img
-                        src="../src/assets/img/logo.png"
-                        class="img-fluid"
-                        alt=""
-                      />
-                    </a>
-                  </div>
-
-                  <div class="header-navigation-wrapper">
-                    <nav>
-                      <ul>
-                        <li class="has-children">
-                          <a href="index.html">HOME</a>
-                          <ul class="submenu submenu--home-variation">
-                            <li class="submenu--home-variation__item">
-                              <p class="submenu--home-variation__item__title">
-                                <a href="index.html">HOMEPAGE 01</a>
-                              </p>
-                              <div class="submenu--home-variation__item__image">
-                                <a href="index.html">
-                                  <img
-                                    src="../src/assets/img/menu-image/home1.jpg"
-                                    class="img-fluid"
-                                    alt=""
-                                  />
-                                </a>
-                              </div>
-                            </li>
-                            {/* <li class="submenu--home-variation__item">
-                                            <p class="submenu--home-variation__item__title"><a href="index-2.html">HOMEPAGE 02</a></p>
-                                            <div class="submenu--home-variation__item__image">
-                                                <a href="index-2.html"><img src="../src/assets/img/menu-image/home2.jpg" class="img-fluid" alt=""></a>
-                                            </div>
-                                        </li>
-                                        <li class="submenu--home-variation__item">
-                                            <p class="submenu--home-variation__item__title"><a href="index-3.html">HOMEPAGE 03</a></p>
-                                            <div class="submenu--home-variation__item__image">
-                                                <a href="index-3.html"><img src="../src/assets/img/menu-image/home3.jpg" class="img-fluid" alt=""></a>
-                                            </div>
-                                        </li>
-                                        <li class="submenu--home-variation__item">
-                                            <p class="submenu--home-variation__item__title"><a href="index-4.html">HOMEPAGE 04</a></p>
-                                            <div class="submenu--home-variation__item__image">
-                                                <a href="index-4.html"><img src="../src/assets/img/menu-image/home4.jpg" class="img-fluid" alt=""></a>
-                                            </div>
-                                        </li>
-                                        <li class="submenu--home-variation__item">
-                                            <p class="submenu--home-variation__item__title"><a href="index-5.html">HOMEPAGE 05</a></p>
-                                            <div class="submenu--home-variation__item__image">
-                                                <a href="index-5.html"><img src="../src/assets/img/menu-image/home5.jpg" class="img-fluid" alt=""></a>
-                                            </div>
-                                        </li>
-                                        <li class="submenu--home-variation__item">
-                                            <p class="submenu--home-variation__item__title"><a href="index.html">HOMEPAGE 06</a></p>
-                                            <div class="submenu--home-variation__item__image">
-                                                <a href="index-6.html"><img src="../src/assets/img/menu-image/home6.jpg" class="img-fluid" alt=""></a>
-                                            </div>
-                                        </li>
-                                        <li class="submenu--home-variation__item">
-                                            <p class="submenu--home-variation__item__title"><a href="index-7.html">HOMEPAGE 07</a></p>
-                                            <div class="submenu--home-variation__item__image">
-                                                <a href="index-7.html"><img src="../src/assets/img/menu-image/home7.jpg" class="img-fluid" alt=""></a>
-                                            </div>
-                                        </li>
-                                        <li class="submenu--home-variation__item">
-                                            <p class="submenu--home-variation__item__title"><a href="index-8.html">HOMEPAGE 08</a></p>
-                                            <div class="submenu--home-variation__item__image">
-                                                <a href="index-8.html"><img src="../src/assets/img/menu-image/home8.jpg" class="img-fluid" alt=""></a>
-                                            </div>
-                                        </li>
-                                        <li class="submenu--home-variation__item">
-                                            <p class="submenu--home-variation__item__title"><a href="index-9.html">HOMEPAGE 09</a></p>
-                                            <div class="submenu--home-variation__item__image">
-                                                <a href="index-9.html"><img src="../src/assets/img/menu-image/home10.jpg" class="img-fluid" alt=""></a>
-                                            </div>
-                                        </li>
-                                        <li class="submenu--home-variation__item">
-                                            <p class="submenu--home-variation__item__title"><a href="instagram-shop.html">Instagram Shop</a></p>
-                                            <div class="submenu--home-variation__item__image">
-                                                <a href="instagram-shop.html"><img src="../src/assets/img/menu-image/home9.jpg" class="img-fluid" alt=""></a>
-                                            </div>
-                                        </li> */}
-                          </ul>
-                        </li>
-                        <li class="has-children">
-                          <a href="javascript:void(0)">PAGE</a>
-                          <ul class="submenu submenu--column-1">
-                            <li>
-                              <a href="about-us.html">About Us</a>
-                            </li>
-                            <li>
-                              <a href="contact-us.html">Contact Us</a>
-                            </li>
-                            <li>
-                              <a href="faq.html">F.A.Q</a>
-                            </li>
-                            <li>
-                              <a href="service.html">Our Service</a>
-                            </li>
-                          </ul>
-                        </li>
-                        <li class="has-children">
-                          <a href="javascript:void(0)">ELEMENTS</a>
-                          <ul class="submenu submenu--column-3">
-                            <li>
-                              <ul>
-                                <li class="megamenu-title">SHOP/PRODUCTS</li>
-                                <li>
-                                  <a href="element-product-category.html">
-                                    Product Categories
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-product-carousel.html">
-                                    Products Carousel
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-product-widget.html">
-                                    Product Widget
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-recent-product.html">
-                                    Recent Products
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-sale-product.html">
-                                    Sale Products
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-featured-product.html">
-                                    Featured Product
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-top-rated-product.html">
-                                    Top Rated Products
-                                  </a>
-                                </li>
-                              </ul>
-                            </li>
-                            <li>
-                              <ul>
-                                <li class="megamenu-title">THEMING</li>
-                                <li>
-                                  <a href="element-blog-post.html">
-                                    Blog Posts
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-mailchimp-form.html">
-                                    MailChimp Form
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-accordion-toggles.html">
-                                    Accordion/Toggles
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-progress-bar.html">
-                                    Progress Bars
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-countdown-timer.html">
-                                    Countdown Timer
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-button.html">Buttons</a>
-                                </li>
-                                <li>
-                                  <a href="element-testimonial.html">
-                                    Testimonials
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="element-google-map.html">
-                                    Google Maps
-                                  </a>
-                                </li>
-                              </ul>
-                            </li>
-                            <li class="megamenu-image">
-                              <img
-                                src="../src/assets/img/menu-image/sofa.png"
-                                class="img-fluid"
-                                alt=""
-                              />
-                            </li>
-                          </ul>
-                        </li>
-                        <li class="has-children">
-                          <a href="blog.html">BLOG</a>
-                          <ul class="submenu submenu--column-1">
-                            <li class="has-children">
-                              <a href="javascript:void(0)">Blog post list</a>
-                              <ul class="submenu submenu--column-1">
-                                <li>
-                                  <a href="blog-one-column.html">
-                                    Blog one column
-                                  </a>{" "}
-                                </li>
-                                <li>
-                                  <a href="blog-two-column.html">
-                                    Blog two column
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="blog-left-sidebar.html">
-                                    Blog left sidebar
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="blog-right-sidebar.html">
-                                    Blog right sidebar
-                                  </a>
-                                </li>
-                              </ul>
-                            </li>
-                            <li class="has-children">
-                              <a href="javascript:void(0)">Blog post details</a>
-                              <ul class="submenu submenu--column-1">
-                                <li>
-                                  <a href="blog-post-format-image.html">
-                                    Blog post format image
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="blog-post-format-gallery.html">
-                                    Blog post format gallery
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="blog-post-format-audio.html">
-                                    Blog post format audio
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="blog-post-format-video.html">
-                                    Blog post format video
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="blog-post-left-sidebar.html">
-                                    Blog post left sidebar
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="blog-post-right-sidebar.html">
-                                    Blog post right sidebar
-                                  </a>
-                                </li>
-                              </ul>
-                            </li>
-                          </ul>
-                        </li>
-                        <li class="has-children">
-                          <a href="shop-left-sidebar.html">SHOP</a>
-                          <ul class="submenu submenu--column-3">
-                            <li>
-                              <ul>
-                                <li class="megamenu-title">SHOP PAGES</li>
-                                <li>
-                                  <a href="shop-fullwidth.html">
-                                    Shop Fullwidth
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="shop-list.html">Shop List Layout</a>
-                                </li>
-                                <li>
-                                  <a href="shop-no-sidebar.html">
-                                    Shop No Sidebar
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="shop-left-sidebar.html">
-                                    Shop With Left Sidebar
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="shop-right-sidebar.html">
-                                    Shop With Right Sidebar
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="shop-brand.html">Shop By Brand</a>
-                                </li>
-                              </ul>
-                            </li>
-                            <li>
-                              <ul>
-                                <li class="megamenu-title">
-                                  SHOP PAGES(DETAILS)
-                                </li>
-                                <li>
-                                  <a href="product-details-basic.html">Basic</a>
-                                </li>
-                                <li>
-                                  <a href="product-details-fullwidth.html">
-                                    Fullwidth
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="product-details-sticky.html">
-                                    Sticky Details
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="product-details-bottom-thumbnail.html">
-                                    Bottom thumbnails
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="product-details-extra-content.html">
-                                    Extra content
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="product-details-variation-image.html">
-                                    Variations Images
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="product-details-affiliate.html">
-                                    Product details affiliate
-                                  </a>
-                                </li>
-                                <li>
-                                  <a href="product-details-group.html">
-                                    Product details group
-                                  </a>
-                                </li>
-                              </ul>
-                            </li>
-                            <li class="megamenu-image">
-                              <img
-                                src="../src/assets/img/menu-image/sofa-253x186.jpg"
-                                class="img-fluid"
-                                alt=""
-                              />
-                            </li>
-                          </ul>
-                        </li>
-                      </ul>
-                    </nav>
-                  </div>
-
-                  <div class="header-icon-area">
-                    <div class="account-dropdown">
-                      <a href="my-account.html">
-                        Login / Register <i class="pe-7s-angle-down"></i>
-                      </a>
-
-                      <ul class="account-dropdown__list">
-                        <li>
-                          <a href="my-account.html">My account</a>
-                        </li>
-                        <li>
-                          <a href="cart.html">Shopping cart</a>
-                        </li>
-                        <li>
-                          <a href="checkout.html">Checkout</a>
-                        </li>
-                        <li>
-                          <a href="order-tracking.html">Order Tracking</a>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <div class="header-icon d-flex align-items-center">
-                      <ul class="header-icon__list">
-                        <li>
-                          <a href="javascript:void(0)" id="search-icon">
-                            <i class="fa fa-search"></i>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="wishlist.html">
-                            <i class="fa fa-heart-o"></i>
-                            <span class="item-count">1</span>
-                          </a>
-                          <div class="minicart-wrapper">
-                            <p class="minicart-wrapper__title">WISHLIST</p>
-
-                            <div class="minicart-wrapper__items ps-scroll">
-                              <div class="minicart-wrapper__items__single">
-                                <a href="javascript:void(0)" class="close-icon">
-                                  <i class="pe-7s-close"></i>
-                                </a>
-                                <div class="image">
-                                  <a href="product-details-basic.html">
-                                    <img
-                                      src="../src/assets/img/products/product-1-90x100.jpg"
-                                      class="img-fluid"
-                                      alt=""
-                                    />
-                                  </a>
-                                </div>
-                                <div class="content">
-                                  <p class="product-title">
-                                    <a href="product-details-basic.html">
-                                      Atelier Fuji NC Chair
-                                    </a>
-                                  </p>
-                                  <p class="product-calculation">
-                                    <span class="price">$900</span>
-                                  </p>
-                                  <a
-                                    href="javascript:void(0)"
-                                    class="wishlist-cart-icon"
-                                  >
-                                    <i class="fa fa-shopping-basket"></i> ADD TO
-                                    CART
-                                  </a>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="minicart-wrapper__buttons mb-0">
-                              <a
-                                href="wishlist.html"
-                                class="theme-button theme-button--minicart-button mb-0"
-                              >
-                                VIEW WISHLIST
-                              </a>
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <a href="cart.html">
-                            <i class="fa fa-shopping-basket"></i>
-                            <span class="item-count">3</span>
-                          </a>
-                          <div class="minicart-wrapper">
-                            <p class="minicart-wrapper__title">CART</p>
-
-                            <div class="minicart-wrapper__items ps-scroll">
-                              <div class="minicart-wrapper__items__single">
-                                <a href="javascript:void(0)" class="close-icon">
-                                  <i class="pe-7s-close"></i>
-                                </a>
-                                <div class="image">
-                                  <a href="product-details-basic.html">
-                                    <img
-                                      src="../src/assets/img/products/product-1-90x100.jpg"
-                                      class="img-fluid"
-                                      alt=""
-                                    />
-                                  </a>
-                                </div>
-                                <div class="content">
-                                  <p class="product-title">
-                                    <a href="product-details-basic.html">
-                                      Atelier Fuji NC Chair
-                                    </a>
-                                  </p>
-                                  <p class="product-calculation">
-                                    <span class="count">1</span> x{" "}
-                                    <span class="price">$900</span>
-                                  </p>
-                                </div>
-                              </div>
-                              <div class="minicart-wrapper__items__single">
-                                <a href="javascript:void(0)" class="close-icon">
-                                  <i class="pe-7s-close"></i>
-                                </a>
-                                <div class="image">
-                                  <a href="product-details-basic.html">
-                                    <img
-                                      src="../src/assets/img/products/product-2-90x100.jpg"
-                                      class="img-fluid"
-                                      alt=""
-                                    />
-                                  </a>
-                                </div>
-                                <div class="content">
-                                  <p class="product-title">
-                                    <a href="product-details-basic.html">
-                                      Jane Lauren Rebel Sofa
-                                    </a>
-                                  </p>
-                                  <p class="product-calculation">
-                                    <span class="count">1</span> x{" "}
-                                    <span class="price">$900</span>
-                                  </p>
-                                </div>
-                              </div>
-                              <div class="minicart-wrapper__items__single">
-                                <a href="javascript:void(0)" class="close-icon">
-                                  <i class="pe-7s-close"></i>
-                                </a>
-                                <div class="image">
-                                  <a href="product-details-basic.html">
-                                    <img
-                                      src="../src/assets/img/products/product-1-90x100.jpg"
-                                      class="img-fluid"
-                                      alt=""
-                                    />
-                                  </a>
-                                </div>
-                                <div class="content">
-                                  <p class="product-title">
-                                    <a href="product-details-basic.html">
-                                      Atelier Fuji NC Chair
-                                    </a>
-                                  </p>
-                                  <p class="product-calculation">
-                                    <span class="count">1</span> x{" "}
-                                    <span class="price">$900</span>
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            <p class="minicart-wrapper__subtotal">
-                              SUBTOTAL: <span>$1800</span>
-                            </p>
-
-                            <div class="minicart-wrapper__buttons">
-                              <a
-                                href="cart.html"
-                                class="theme-button theme-button--minicart-button"
-                              >
-                                VIEW CART
-                              </a>
-                              <a
-                                href="checkout.html"
-                                class="theme-button theme-button--alt theme-button--minicart-button theme-button--minicart-button--alt mb-0"
-                              >
-                                CHECKOUT
-                              </a>
-                            </div>
-
-                            <p class="minicart-wrapper__featuretext">
-                              Free Shipping on All Orders Over $100!
-                            </p>
-                          </div>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <Link to="/cart">
+                <IoCartOutline />
+              </Link>
+              <Link to="/auth/login">
+                <AiOutlineUser />
+              </Link>
             </div>
           </div>
         </div>
+      </header> */}
+      <header class="bg-white shadow-md fixed top-0 left-0 w-full z-50">
+        <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
+          {/* <!-- Logo --> */}
+          <div class="text-2xl font-bold text-black">
+            <span class="text-yellow-500">Robin</span>
+          </div>
 
-        {/* <!--=======  End of header navigation wrapper  =======-->
+          {/* <!-- Navigation --> */}
+          <nav class="hidden md:flex space-x-6">
+            <ul className="flex justify-center space-x-6 ">
+              <li>
+                <Link to="/" className="hover:text-yellow-400">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link to="/products" className="hover:text-yellow-400">
+                  Shop
+                </Link>
+              </li>
+              <li>
+                <Link to="/about" className="hover:text-yellow-400">
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-yellow-400">
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link to="/blogs" className="hover:text-yellow-400">
+                  Blog
+                </Link>
+              </li>
+            </ul>
+          </nav>
 
-<!--=======  mobile navigation area  =======--> */}
+          {/* <!-- Icons --> */}
+          <div class="flex items-center space-x-4">
+            {/* <!-- Login --> */}
+            {/* <a href="#" class="text-gray-700 hidden md:block hover:text-black">
+              Login / Register
+            </a> */}
 
-        <div class="header-mobile-navigation d-block d-lg-none">
-          <div class="container">
-            <div class="row align-items-center">
-              <div class="col-6 col-md-6">
-                <div class="header-logo">
-                  <a href="index.html">
-                    <img
-                      src="../src/assets/img/logo.png"
-                      class="img-fluid"
-                      alt=""
-                    />
-                  </a>
-                </div>
-              </div>
-              <div class="col-6 col-md-6">
-                <div class="mobile-navigation text-end">
-                  <ul class="header-icon__list header-icon__list">
-                    <li>
-                      <a href="wishlist.html">
-                        <i class="fa fa-heart-o"></i>
-                        <span class="item-count">1</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="cart.html">
-                        <i class="fa fa-shopping-basket"></i>
-                        <span class="item-count">3</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="javascript:void(0)"
-                        class="mobile-menu-icon"
-                        id="mobile-menu-trigger"
-                      >
-                        <i class="fa fa-bars"></i>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+            <Link to="/search">
+              <AiOutlineSearch />
+            </Link>
+
+            <Link to="/cart">
+              <IoCartOutline />
+            </Link>
+            <Link to="/auth/login">
+              <AiOutlineUser />
+            </Link>
           </div>
         </div>
+      </header>
 
-        {/* <!--=======  End of mobile navigation area  =======--> */}
-      </div>
+      {/* <!-- Để tránh nội dung bị che khuất do header cố định --> */}
+      {/* <div class="pt-20"></div> */}
     </>
   );
 };
