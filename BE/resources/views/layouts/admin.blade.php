@@ -16,7 +16,9 @@
     {{-- Điền các link CSS dùng chung --}}
     <!-- App favicon -->
     <link rel="shortcut icon" href="{{ asset('assets/admins/images/favicon.ico') }}">
-
+    <link href="{{ asset('assets/libs/quill/quill.core.css" rel="stylesheet" type="text/css')}}" />
+    <link href="{{ asset('assets/libs/quill/quill.bubble.css" rel="stylesheet" type="text/css')}}" />
+    <link href="{{ asset('assets/libs/quill/quill.snow.css" rel="stylesheet" type="text/css')}}" />
     <!-- jsvectormap css -->
     <link href="{{ asset('assets/admins/libs/jsvectormap/jsvectormap.min.css') }}" rel="stylesheet" type="text/css" />
 
@@ -75,12 +77,18 @@
     <!--Swiper slider js-->
     <script src="{{ asset('assets/admins/libs/swiper/swiper-bundle.min.js') }}"></script>
 
+  <!-- ckeditor -->
+  <script src="{{ asset('assets/libs/%40ckeditor/ckeditor5-build-classic/build/ckeditor.js')}}"></script>
+
+    <!-- quill js -->
+    <script src="{{ asset('assets/libs/quill/quill.min.js')}}"></script>
+
     <!-- Dashboard init -->
     <script src="{{ asset('assets/admins/js/pages/dashboard-ecommerce.init.js') }}"></script>
 
     <!-- App js -->
     <script src="{{ asset('assets/admins/js/app.js') }}"></script>
-    </script>
+
     @yield('JS')
 </body>
 
