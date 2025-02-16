@@ -13,12 +13,11 @@ return new class extends Migration
     {
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
-            $table->integer('product_id');
-            $table->integer('user_id');
+            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('user_id');
             $table->text('content');
-            $table->enum('status', [ 0, 1])->default(1);
+            $table->enum('status', ['Hiển thị', 'Ẩn'])->default('Hiển thị');
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

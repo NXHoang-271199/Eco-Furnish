@@ -11,10 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('gallery_images', function (Blueprint $table) {
+        Schema::create('product_variants', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('product_id');
-            $table->text('image_url');
+            $table->string('sku', 255)->unique();
+            $table->decimal('price', 10, 2);
+            $table->integer('stock');
+            $table->tinyInteger('status')->default(1);
+            $table->integer('variant_id');
+            $table->integer('variant_value_id');
             $table->timestamps();
             $table->softDeletes();
         });
@@ -25,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('gallery_images');
+        Schema::dropIfExists('product_variants');
     }
 };
