@@ -16,9 +16,9 @@ return new class extends Migration
  	        $table->integer('order_id');
             $table->integer('product_id');
             $table->integer('quantity');
-            $table->decimal('price', 10, 2);
-            $table->decimal('total_price', 10, 2);
-            $table->integer('product_variant_combination_id')->nullable();
+            $table->decimal('price', 15, 2);
+            $table->decimal('total_price', 15, 2);
+            $table->integer('product_variant_id')->nullable();
             $table->timestamps();
         });
     }

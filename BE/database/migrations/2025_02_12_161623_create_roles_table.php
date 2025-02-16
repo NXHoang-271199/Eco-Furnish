@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id(); // ID phân quyền, khóa chính
             $table->string('name', 255); // Tên người phân quyền
             $table->timestamps(); // Tạo 2 cột created_at & updated_at tự động
+            $table->softDeletes();
         });
     }
 

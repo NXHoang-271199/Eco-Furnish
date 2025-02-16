@@ -13,14 +13,17 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name', 255);
             $table->integer('age');
-            $table->string('email', 255)->unique(); // Email người dùng, đảm bảo không trùng
-            $table->string('password', 255); // Mật khẩu người dùng
-            $table->string('address', 255)->nullable(); // Địa chỉ người dùng, có thể null
-            $table->unsignedBigInteger('role_id'); // ID phân quyền người dùng
-            $table->text('avatar')->nullable(); // Ảnh người dùng, có thể null
-            $table->timestamps(); // Tạo 2 cột created_at & updated_at tự động
+            $table->string('email', 255)->unique();
+            $table->string('password', 255);
+            $table->string('address', 255)->nullable();
+            $table->unsignedBigInteger('role_id');
+            $table->string('avatar', 255)->nullable();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('access_token', 255)->nullable();
+            $table->string('refresh_token', 255)->nullable();
+            $table->timestamps();
         });
     }
 
