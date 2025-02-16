@@ -18,10 +18,13 @@ return new class extends Migration
             $table->text('img_thumbnail')->nullable();
             $table->text('image')->nullable();
             $table->text('content');
-            $table->enum('status', [0, 1])->default(1);
-            $table->timestamp('publish_date');
-            $table->integer('user_id');
+            $table->enum('status', ['0', '1'])->default('1');
+            $table->timestamp('publish_date')->nullable();
+            $table->unsignedBigInteger('user_id');
             $table->timestamps();
+
+            // Tạo khóa ngoại
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
@@ -30,6 +33,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('posts', function (Blueprint $table) {
+           $table->dropForeign(['user_id']); 
+        });
+
         Schema::dropIfExists('posts');
     }
 };

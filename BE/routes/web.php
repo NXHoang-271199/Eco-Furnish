@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Post\PostsController;
+use App\Http\Controllers\User\UsersController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +16,18 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('admins.dashboard');
+Route::prefix('admin')->group(function () {
+    Route::get('/', function(){
+        return view('admins.dashboard');
+    });
+
+    // User ===============================================
+    Route::resource('users', UsersController::class);
+
+
+    // Post ===============================================
+    Route::resource('posts', PostsController::class);
+
+
+
 });
