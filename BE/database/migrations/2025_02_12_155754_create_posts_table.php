@@ -14,14 +14,14 @@ return new class extends Migration
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
             $table->string('title', 255);
-            $table->string('slug');
-            $table->text('img_thumbnail')->nullable();
-            $table->text('image')->nullable();
             $table->text('content');
-            $table->enum('status', [0, 1])->default(1);
-            $table->timestamp('publish_date');
             $table->integer('user_id');
+            $table->integer('category_post_id');
+            $table->string('image_thumbnail', 255)->nullable();
+            $table->string('slug', 255)->unique();
+            $table->enum('status', ['Hiển thị', 'Ẩn'])->default('Hiển thị');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
