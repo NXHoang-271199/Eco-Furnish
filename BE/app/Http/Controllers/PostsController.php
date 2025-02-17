@@ -1,18 +1,29 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-class UserApiController extends Controller
+class PostsController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $filters = [
+            'title'
+        ];
+        return view('admins.posts.index');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('admins.posts.create');
     }
 
     /**
@@ -29,6 +40,14 @@ class UserApiController extends Controller
     public function show(string $id)
     {
         //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        return view('admins.posts.edit');
     }
 
     /**

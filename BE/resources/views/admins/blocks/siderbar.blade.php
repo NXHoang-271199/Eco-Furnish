@@ -63,14 +63,44 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('users.index') }}">
-                        <i class="ri-account-circle-line"></i> <span data-key="t-dashboards">Quản lý người dùng</span>
+                    <a class="nav-link menu-link" href="#sidebarUser" data-bs-toggle="collapse" role="button"
+                        aria-expanded="false" aria-controls="sidebarSanPham">
+                        <i class="ri-account-circle-line"></i> <span data-key="t-advance-ui">Người dùng</span>
                     </a>
+                    <div class="collapse menu-dropdown" id="sidebarUser">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('users.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                    Danh sách người dùng
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="" class="nav-link" data-key="t-nestable-list">
+                                    Phân quyền
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('posts.index') }}">
-                        <i class="ri-article-line"></i> <span data-key="t-dashboards">Quản lý bài viết</span>
+                    <a class="nav-link menu-link" href="#sidebarArticle" data-bs-toggle="collapse" role="button"
+                        aria-expanded="false" aria-controls="sidebarSanPham">
+                        <i class="ri-article-line"></i> <span data-key="t-advance-ui">Blogs</span>
                     </a>
+                    <div class="collapse menu-dropdown" id="sidebarArticle">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('posts.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                    List Blogs
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="" class="nav-link" data-key="t-nestable-list">
+                                    Categories
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"

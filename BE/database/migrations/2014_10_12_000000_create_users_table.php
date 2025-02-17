@@ -18,20 +18,25 @@ return new class extends Migration
             $table->string('email', 255)->unique();
             $table->string('password', 255);
             $table->string('address', 255)->nullable();
-            $table->unsignedBigInteger('role_id');
             $table->string('avatar', 255)->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('access_token', 255)->nullable();
             $table->string('refresh_token', 255)->nullable();
             $table->timestamps();
+
+            $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
         });
     }
+
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
-    {
+    {   
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['role_id']);
+        });
         Schema::dropIfExists('users');
     }
 };

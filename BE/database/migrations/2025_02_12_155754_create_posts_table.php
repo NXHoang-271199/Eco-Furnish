@@ -15,10 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('title', 255);
             $table->text('content');
-            $table->enum('status', ['0', '1'])->default('1');
-            $table->timestamp('publish_date')->nullable();
             $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('category_post_id');
+            $table->string('image_thumbnail', 255)->nullable();
+            $table->string('slug', 255)->unique();
+            $table->enum('status', ['Hiển thị', 'Ẩn'])->default('Hiển thị');
             $table->timestamps();
+            $table->softDeletes();
 
             // Tạo khóa ngoại
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
