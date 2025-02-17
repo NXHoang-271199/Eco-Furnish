@@ -56,11 +56,14 @@ const Header = () => {
           </div>
         </div>
       </header> */}
-      <header class="bg-white shadow-md fixed top-0 left-0 w-full z-50">
+      <header class="bg-white fixed top-0 left-0 w-full z-50">
         <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
           {/* <!-- Logo --> */}
           <div class="text-2xl font-bold text-black">
-            <span class="text-yellow-500">Robin</span>
+            <div>
+              {/* <img src="/logo.svg" alt="Eco-Furnish" /> */}
+              <span>Eco-Furnish</span>
+            </div>
           </div>
 
           {/* <!-- Navigation --> */}
@@ -116,7 +119,7 @@ const Header = () => {
       </header>
 
       {/* <!-- Để tránh nội dung bị che khuất do header cố định --> */}
-      {/* <div class="pt-20"></div> */}
+      {/* <div class="mt-10"></div> */}
     </>
   );
 };
