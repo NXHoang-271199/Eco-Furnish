@@ -15,6 +15,10 @@ use App\Http\Controllers\User\UsersController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+Route::get('/', function () {
+    return view('admins.dashboard');
+    // return view('admins.test');
+});
 
 Route::prefix('admin')->group(function () {
     Route::get('/', function(){
@@ -28,6 +32,6 @@ Route::prefix('admin')->group(function () {
     // Post ===============================================
     Route::resource('posts', PostsController::class);
 
-
-
 });
+
+

@@ -11,13 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('variant_values', function (Blueprint $table) {
+        Schema::create('category_posts', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('variant_id');
-            $table->string('value');
+            $table->string('title', 255);
             $table->timestamps();
-
-            $table->foreign('variant_id')->references('id')->on('variants')->onDelete('cascade');
+            $table->softDeletes();
         });
     }
 
@@ -26,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('variant_values');
+        Schema::dropIfExists('category_posts');
     }
 };

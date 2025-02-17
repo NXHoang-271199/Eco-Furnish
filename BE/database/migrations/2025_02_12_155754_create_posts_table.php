@@ -14,9 +14,6 @@ return new class extends Migration
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
             $table->string('title', 255);
-            $table->string('slug');
-            $table->text('img_thumbnail')->nullable();
-            $table->text('image')->nullable();
             $table->text('content');
             $table->enum('status', ['0', '1'])->default('1');
             $table->timestamp('publish_date')->nullable();
@@ -34,7 +31,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('posts', function (Blueprint $table) {
-           $table->dropForeign(['user_id']); 
+            $table->dropForeign(['user_id']);
         });
 
         Schema::dropIfExists('posts');

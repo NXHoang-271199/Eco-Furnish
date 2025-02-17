@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payment_methods', function (Blueprint $table) {
-            $table->id(); // Khóa chính
-            $table->string('name', 255); // Tên phương thức chuyển khoản
+        Schema::create('variant_values', function (Blueprint $table) {
+            $table->id();
+            $table->integer('variant_id');
+            $table->string('value', 100);
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -22,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payment_methods');
+        Schema::dropIfExists('variant_values');
     }
 };
