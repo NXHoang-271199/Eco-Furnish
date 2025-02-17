@@ -41,7 +41,7 @@
 
         @include('admins.blocks.header')
 
-        @include('admins.blocks.siderbar')
+        @include('admins.blocks.sidebar')
 
         <div class="vertical-overlay"></div>
 
