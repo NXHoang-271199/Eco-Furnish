@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
     {   
         $faker = Faker::create();
         $roleIds = Role::pluck('id')->toArray();
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             User::insert([
                 'name' => $faker->name,
                 'age' => $faker->numberBetween(18, 60),

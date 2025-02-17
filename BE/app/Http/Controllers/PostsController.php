@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\Post;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class PostsController extends Controller
 {
@@ -13,9 +14,10 @@ class PostsController extends Controller
     public function index(Request $request)
     {
         $filters = [
-            'title'
+            'title' => $request->input('title'),
         ];
-        return view('admins.posts.index');
+        $listPost = Post::where($filters)->paginate(10);
+        return view('admins.posts.index', compact('listPost'));
     }
 
     /**

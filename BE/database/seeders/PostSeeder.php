@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Post;
+use App\Models\User;
 use Faker\Factory as Faker;
 use Illuminate\Support\Str;
 use Illuminate\Database\Seeder;
@@ -18,7 +19,7 @@ class PostSeeder extends Seeder
     {
         $faker = Faker::create();
         $userIds = DB::table('users')->pluck('id')->toArray();
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $title = $faker->sentence(6);
             Post::insert([
                 'title' => $title,
