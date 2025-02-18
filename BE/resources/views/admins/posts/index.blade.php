@@ -13,14 +13,10 @@
         .button-list {
             display: flex;
             gap: 10px;
-            /* Khoảng cách giữa 2 icon */
             position: absolute;
             top: 10px;
-            /* Điều chỉnh vị trí dọc */
             right: 10px;
-            /* Điều chỉnh vị trí ngang */
             z-index: 10;
-            /* Đảm bảo chúng ở trên các phần tử khác */
         }
 
         .button-list .btn {
@@ -31,12 +27,10 @@
 
         .button-list .btn i {
             font-size: 1.25rem;
-            /* Điều chỉnh kích thước icon */
         }
 
         .button-list .btn:hover {
             opacity: 0.8;
-            /* Thêm hiệu ứng hover */
         }
     </style>
 @endsection
@@ -44,20 +38,18 @@
 @section('JS')
     <script>
         $(document).on('click', '.delete-user', function() {
-            let userId = $(this).data('id'); // Lấy ID user từ button xóa
-            let url = `/users/${userId}`; // Đường dẫn API xóa
+            let userId = $(this).data('id');
+            let url = `/users/${userId}`;
 
             if (confirm("Bạn có chắc chắn muốn xóa người dùng này không?")) {
                 $.ajax({
                     url: url,
                     type: 'DELETE',
                     data: {
-                        _token: $('meta[name="csrf-token"]').attr('content') // CSRF token Laravel
+                        _token: $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(response) {
-                        // Hiển thị thông báo thành công
                         showNotification(response.message, 'success');
-                        // Xóa phần tử khỏi danh sách
                         $(`#user-row-${userId}`).remove();
                     },
                     error: function(xhr) {
@@ -80,8 +72,6 @@
 @endsection
 @section('content')
     <div class="container-fluid">
-
-        <!-- start page title -->
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
@@ -97,6 +87,20 @@
                 </div>
             </div>
         </div>
+        @if (session('success'))
+            <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow" role="alert">
+                <i class="ri-check-double-line me-3 align-middle"></i>
+                <strong>{{ session('success') }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow" role="alert">
+                <i class="ri-alert-line me-3 align-middle"></i> <strong>{{ session('error') }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
         <!-- end page title -->
 
         <div class="row">

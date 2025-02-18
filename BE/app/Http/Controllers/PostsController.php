@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use App\Models\CategoryPost;
 use Illuminate\Http\Request;
+use App\Http\Requests\PostRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\File;
 
@@ -39,7 +40,7 @@ class PostsController extends Controller
 
         $listCategoryPost = CategoryPost::all();
         foreach ($listPosts as $post) {
-            $post->short_content = $this->limitHtml($post->content, 150); // Giới hạn nội dung ở controller
+            $post->short_content = $this->limitHtml($post->content, 150);
         }
         return view('admins.posts.index', compact('listPosts', 'listCategoryPost', 'years', 'postsByYear', 'featuredPosts'));
     }
@@ -66,9 +67,11 @@ class PostsController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(PostRequest $request)
     {
+        $validated = $request->validated();
         $content = $request->input('content');
+
         $dom = new \DOMDocument();
         libxml_use_internal_errors(true);
         $dom->loadHTML(mb_convert_encoding($content, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
@@ -108,11 +111,11 @@ class PostsController extends Controller
         $slug = Str::slug($request->title);
 
         Post::create([
-            'title' => $request->title,
+            'title' => $validated['title'],
             'content' => $updatedContent,
             'image_thumbnail' => $filePath,
-            'category_post_id' => $request->input('category_id'),
-            'user_id' => $request->user_id,
+            'category_post_id' => $validated['category_id'],
+            'user_id' => $validated['user_id'],
             'status' => '1',
             'slug' => $slug,
         ]);
@@ -143,9 +146,11 @@ class PostsController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(PostRequest $request, string $id)
     {
         $singerPost = Post::findOrFail($id);
+
+        $validated = $request->validated();
 
         $content = $request->input('content');
         $dom = new \DOMDocument();
@@ -179,32 +184,26 @@ class PostsController extends Controller
             }
         }
 
-        // Cập nhật nội dung bài viết
         $updatedContent = $dom->saveHTML();
 
-        // Cập nhật ảnh thumbnail nếu có
         if ($request->hasFile('image_thumbnail')) {
             if ($singerPost->image_thumbnail && File::exists(public_path($singerPost->image_thumbnail))) {
                 File::delete(public_path($singerPost->image_thumbnail));
             }
 
-            // Lưu ảnh mới
             $filePath = $request->file('image_thumbnail')->store('upload/blogs', 'public');
             $singerPost->image_thumbnail = $filePath;
         }
         $slug = Str::slug($request->title);
 
-        // Cập nhật các thông tin bài viết
         $singerPost->update([
-            'title' => $request->title,
+            'title' => $validated['title'],
             'content' => $updatedContent,
-            'category_post_id' => $request->input('category_id'), // Sửa đúng tên trường
-            'user_id' => $request->input('user_id'),
-            'status' => '1', // Nếu cần thiết
-            'slug' => $slug, // Cần cập nhật slug nếu có
+            'category_post_id' => $validated['category_id'],
+            'user_id' => $validated['user_id'],
+            'status' => '1',
+            'slug' => $slug,
         ]);
-
-        // Điều hướng về trang bài viết
         return redirect()->route('posts.index')->with('success', 'Cập nhật bài viết thành công!');
     }
 
@@ -214,6 +213,18 @@ class PostsController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        // Tìm bài viết cần xóa
+        $post = Post::findOrFail($id);
+
+        // Kiểm tra và xóa thumbnail nếu có
+        if ($post->image_thumbnail && File::exists(public_path($post->image_thumbnail))) {
+            File::delete(public_path($post->image_thumbnail));
+        }
+
+        // Xóa bài viết
+        $post->delete();
+
+        // Quay lại trang danh sách với thông báo thành công
+        return redirect()->route('posts.index')->with('success', 'Bài viết đã được xóa thành công!');
     }
 }

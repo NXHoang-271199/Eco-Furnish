@@ -14,7 +14,13 @@ class CategoryPost extends Model
     protected $fillable = [
         'title',
     ];
-
+    public function scopeSearch($query, $fillers)
+    {
+        if (!empty($fillers['title'])) {
+            $query->where('title', 'like', '%' . $fillers['title'] . '%');
+        }
+        return $query;
+    }
     protected $dates = ['deleted_at'];
     
     public function posts()

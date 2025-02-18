@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UserRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
@@ -36,38 +37,26 @@ class UsersController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(UserRequest $request)
     {
-        try {
 
-            $filePath = null;
-            if ($request->hasFile('avatar')) {
-                $filePath = $request->file('avatar')->store('upload/avatar', 'public');
-            }
+        $validated = $request->validated();
 
-            // Tạo người dùng mới
-            User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-                'age' => $validated['age'],
-                'role_id' => $validated['role_id'],
-                'address' => $validated['address'] ?? null,
-                'avatar' => $filePath
-            ]);
-
-            return redirect()->route('users.index')->with('status', 'success')->with('message', 'Tạo mới người dùng thành công');
-        } catch (\Exception $e) {
-            // Nếu có lỗi và đã upload ảnh thì xóa ảnh
-            if (isset($filePath)) {
-                Storage::disk('public')->delete($filePath);
-            }
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Lỗi: ' . $e->getMessage());
+        $filePath = null;
+        if ($request->hasFile('avatar')) {
+            $filePath = $request->file('avatar')->store('upload/avatar', 'public');
         }
+        User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'age' => $validated['age'],
+            'role_id' => $validated['role_id'],
+            'address' => $validated['address'] ?? null,
+            'avatar' => $filePath
+        ]);
+
+        return redirect()->route('users.index')->with('success', 'Tạo mới người dùng thành công.');
     }
 
 
@@ -93,19 +82,10 @@ class UsersController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UserRequest $request, string $id)
     {
-        $singerUser = User::findOrFail($id);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $singerUser->id,
-            'age' => 'required|integer',
-            'role_id' => 'required|exists:roles,id',
-            'address' => 'nullable|string|max:255',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
-
+        $singerUser = User::findOrFail($id);    
+        $validated = $request->validated();
         try {
             $filePath = $singerUser->avatar;
             if ($request->hasFile('avatar')) {

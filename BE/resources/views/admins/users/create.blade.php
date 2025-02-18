@@ -54,6 +54,7 @@
                         </div>
                     @endif
                     <div class="card-body p-4">
+                        <form action="{{ route('users.store') }}" method="POST" enctype="multipart/form-data">
                         <div class="row">
                             <div class="col-lg-6">
                                 <div class="mb-3">
@@ -83,7 +84,7 @@
                                 <div class="mb-3">
                                     <label for="passwordInput" class="form-label">Mật khẩu</label>
                                     <input type="password" class="form-control" id="passwordInput" name="password"
-                                        placeholder="Nhập mật khẩu">
+                                        placeholder="Nhập mật khẩu" value="{{ old('password') }}">
                                 </div>
                             </div>
                             <!--end col-->

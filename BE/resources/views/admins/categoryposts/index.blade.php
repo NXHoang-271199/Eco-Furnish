@@ -4,6 +4,84 @@
     Quản lý danh mục bài viết
 @endsection
 
+@section('CSS')
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        button[type="submit"] {
+            border: none;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+        }
+    </style>
+@endsection
+@section('JS')
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.getElementById("category-form");
+            const titleInput = document.getElementById("title");
+            const categoryIdInput = document.getElementById("category-id");
+            const methodField = document.getElementById("method-field"); // Thêm 1 div trống vào form
+            const submitBtn = document.getElementById("submit-btn");
+            const cancelBtn = document.getElementById("cancel-btn");
+            const formTitle = document.querySelector(".card-header h5"); // Lấy tiêu đề của form
+
+            // Khi bấm "Sửa"
+            document.querySelectorAll(".edit-category").forEach(btn => {
+                btn.addEventListener("click", function() {
+                    const categoryId = this.getAttribute("data-id");
+                    const categoryTitle = this.getAttribute("data-title");
+
+                    // Điền dữ liệu vào form
+                    titleInput.value = categoryTitle;
+                    categoryIdInput.value = categoryId;
+
+                    // Cập nhật action của form
+                    form.action = `/admin/category-posts/${categoryId}`;
+
+                    // Thêm input hidden để Laravel hiểu đây là PUT request
+                    methodField.innerHTML = '<input type="hidden" name="_method" value="PUT">';
+
+                    // Đổi tiêu đề thành "Cập nhật danh mục"
+                    formTitle.textContent = "Cập nhật danh mục";
+
+                    // Đổi nút thành "Cập nhật"
+                    submitBtn.innerHTML = '<i class="fas fa-save me-1"></i> Cập nhật';
+                    submitBtn.classList.remove("btn-success");
+                    submitBtn.classList.add("btn-warning");
+
+                    // Hiện nút "Hủy"
+                    cancelBtn.classList.remove("d-none");
+                });
+            });
+
+            // Khi bấm "Hủy"
+            cancelBtn.addEventListener("click", function() {
+                // Reset form về trạng thái thêm mới
+                titleInput.value = "";
+                categoryIdInput.value = "";
+                form.action = "{{ route('category-posts.store') }}";
+
+                // Xóa input `_method` để Laravel hiểu đây là POST request
+                methodField.innerHTML = "";
+
+                // Đổi tiêu đề về "Thêm danh mục mới"
+                formTitle.textContent = "Thêm danh mục mới";
+
+                // Đổi nút thành "Thêm danh mục"
+                submitBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Thêm danh mục';
+                submitBtn.classList.remove("btn-warning");
+                submitBtn.classList.add("btn-success");
+
+                // Ẩn nút "Hủy"
+                cancelBtn.classList.add("d-none");
+            });
+        });
+    </script>
+@endsection
+
+
+
 @section('content')
     <div class="container-fluid">
 
@@ -23,233 +101,95 @@
                 </div>
             </div>
         </div>
+        @if (session('success'))
+            <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow" role="alert">
+                <i class="ri-check-double-line me-3 align-middle"></i>
+                <strong>{{ session('success') }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow" role="alert">
+                <i class="ri-alert-line me-3 align-middle"></i> <strong>{{ session('error') }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
         <!-- end page title -->
 
         <div class="row">
-            <div class="col-lg-12">
+            <!-- Column for the form -->
+            <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
-                        <div class="row justify-content-between gy-3">
-                            <div class="col-lg-3">
-                                <div class="search-box">
-                                    <input type="text" class="form-control search"
-                                        placeholder="Search for job categories...">
-                                    <i class="ri-search-line search-icon"></i>
-                                </div>
+                        <h5>Thêm danh mục mới</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="category-form" action="{{ route('category-posts.store') }}" method="POST">
+                            @csrf
+                            <input type="hidden" id="category-id" name="id">
+
+                            <div id="method-field"></div>
+
+                            <div class="form-group">
+                                <label for="title">Tên danh mục</label>
+                                <input type="text" id="title" name="title" class="form-control"
+                                    placeholder="Nhập tên danh mục" required>
                             </div>
-                            <div class="col-lg-auto">
-                                <div class="d-md-flex text-nowrap gap-2">
-                                    <button class="btn btn-info add-btn"><i class="ri-add-fill me-1 align-bottom"></i> Add
-                                        Categories</button>
-                                    <button class="btn btn-danger"><i class="ri-filter-2-line me-1 align-bottom"></i>
-                                        Filters</button>
-                                    <button type="button" id="dropdownMenuLink1" data-bs-toggle="dropdown"
-                                        aria-expanded="false" class="btn btn-soft-info"><i
-                                            class="ri-more-2-fill"></i></button>
-                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink1">
-                                        <li><a class="dropdown-item" href="#">All</a></li>
-                                        <li><a class="dropdown-item" href="#">Last Week</a></li>
-                                        <li><a class="dropdown-item" href="#">Last Month</a></li>
-                                        <li><a class="dropdown-item" href="#">Last Year</a></li>
-                                    </ul>
-                                </div>
-                            </div>
+                            <button type="submit" id="submit-btn" class="btn btn-success mt-3">
+                                <i class="ri-add-fill me-1 align-bottom"></i> Thêm danh mục
+                            </button>
+                            <button type="button" id="cancel-btn" class="btn btn-secondary mt-3 d-none">Hủy</button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column for the categories list -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Danh sách chuyên mục</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row row-cols-xxl-5 row-cols-lg-3 row-cols-md-2 row-cols-1">
+                            <!-- Tables Without Borders -->
+                            <table class="table table-borderless table-nowrap">
+                                <thead>
+                                    <tr class="text-center">
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($listCategoryPost as $cate)
+                                        <tr class="text-center">
+                                            <th scope="row">{{ $cate->title }}</th>
+                                            <td>
+                                                <div class="hstack gap-3 fs-15 justify-content-center">
+                                                    <a href="javascript:void(0)" class="text-primary mx-2 edit-category"
+                                                        data-id="{{ $cate->id }}" data-title="{{ $cate->title }}"
+                                                        title="Sửa">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <form action="{{ route('category-posts.destroy', $cate->id) }}"
+                                                        method="POST">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="text-danger mx-2" title="Xóa"
+                                                            onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục này?');">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
-            </div>
-            <!--end col-->
-        </div>
-        <!--end row-->
-
-        <div class="row row-cols-xxl-5 row-cols-lg-3 row-cols-md-2 row-cols-1">
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/xulniijg.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Business Development</h5>
-                        </a>
-                        <p class="text-muted mb-0">102 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/oclwxpmm.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Automotive Jobs</h5>
-                        </a>
-                        <p class="text-muted mb-0">64 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/dklbhvrt.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Construction / Facilities</h5>
-                        </a>
-                        <p class="text-muted mb-0">35 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/adwosptt.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Design, Art &amp; Multimedia</h5>
-                        </a>
-                        <p class="text-muted mb-0">49 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/kkcllwsu.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Healthcare</h5>
-                        </a>
-                        <p class="text-muted mb-0">97 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/rahcoaeu.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Sales &amp; Marketing</h5>
-                        </a>
-                        <p class="text-muted mb-0">312 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/smauprql.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Accounting / Finance</h5>
-                        </a>
-                        <p class="text-muted mb-0">62 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/itykargr.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Project Management</h5>
-                        </a>
-                        <p class="text-muted mb-0">35 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/cnyeuzxc.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Costomer Services</h5>
-                        </a>
-                        <p class="text-muted mb-0">35 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/sygggnra.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Content Writer</h5>
-                        </a>
-                        <p class="text-muted mb-0">746 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/hfmdczge.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Government Jobs</h5>
-                        </a>
-                        <p class="text-muted mb-0">642 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/xhebrhsj.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Digital Marketing</h5>
-                        </a>
-                        <p class="text-muted mb-0">364 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/ucvsemjq.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Education &amp; training</h5>
-                        </a>
-                        <p class="text-muted mb-0">35 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/pvbjsfif.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">IT &amp; Software</h5>
-                        </a>
-                        <p class="text-muted mb-0">35 Position</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card">
-                    <div class="card-body text-center py-4">
-                        <lord-icon src="https://cdn.lordicon.com/auvicynv.json" trigger="hover" colors="primary:#405189"
-                            target="div" style="width:50px;height:50px"></lord-icon>
-                        <a href="#!" class="stretched-link">
-                            <h5 class="mt-4">Catering &amp; Tourism</h5>
-                        </a>
-                        <p class="text-muted mb-0">35 Position</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="text-center mb-3">
-                    <button class="btn btn-link text-success mt-2 material-shadow-none" id="loadmore"><i
-                            class="mdi mdi-loading mdi-spin fs-20 align-middle me-2"></i> Load More </button>
                 </div>
             </div>
         </div>

@@ -180,7 +180,7 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label for="user_id" class="form-label">Chọn người dùng</label>
-                                <select class="form-select" name="user_id" id="user_id" required>
+                                <select class="form-select" name="user_id" id="user_id">
                                     <option value="">Chọn người dùng</option>
                                     @foreach ($users as $user)
                                         <option value="{{ $user->id }}">{{ $user->name }}</option>
