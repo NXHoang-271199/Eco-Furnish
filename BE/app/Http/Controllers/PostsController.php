@@ -3,21 +3,54 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+
+use App\Models\User;
+use Illuminate\Support\Str;
+use App\Models\CategoryPost;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\File;
 
 class PostsController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
     public function index(Request $request)
     {
         $filters = [
             'title' => $request->input('title'),
         ];
-        $listPost = Post::where($filters)->paginate(10);
-        return view('admins.posts.index', compact('listPost'));
+
+        $years = Post::selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->get();
+
+        $postsByYear = [];
+        foreach ($years as $year) {
+            $postsByYear[$year->year] = Post::whereYear('created_at', $year->year)->count();
+        }
+
+        $featuredPosts = Post::orderBy('created_at', 'desc')->limit(3)->get();
+
+        $listPosts = Post::search($filters)->orderByDesc('id')->paginate(5);
+
+        $listCategoryPost = CategoryPost::all();
+        foreach ($listPosts as $post) {
+            $post->short_content = $this->limitHtml($post->content, 150); // Giới hạn nội dung ở controller
+        }
+        return view('admins.posts.index', compact('listPosts', 'listCategoryPost', 'years', 'postsByYear', 'featuredPosts'));
+    }
+
+    public function limitHtml($html, $limit = 150, $end = '...')
+    {
+        $text = strip_tags(html_entity_decode($html));
+
+        $limitedText = Str::limit($text, $limit, $end);
+
+        return $limitedText;
     }
 
     /**
@@ -25,7 +58,9 @@ class PostsController extends Controller
      */
     public function create()
     {
-        return view('admins.posts.create');
+        $listCategoryPost = CategoryPost::all();
+        $users = User::all();
+        return view('admins.posts.create', compact('listCategoryPost', 'users'));
     }
 
     /**
@@ -33,7 +68,56 @@ class PostsController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $content = $request->input('content');
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML(mb_convert_encoding($content, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        $images = $dom->getElementsByTagName('img');
+        $uploadPath = 'uploads/posts/' . date('Y/m/d');
+        if (!File::exists(public_path($uploadPath))) {
+            File::makeDirectory(public_path($uploadPath), 0777, true);
+        }
+        foreach ($images as $image) {
+            $src = $image->getAttribute('src');
+            if (str_starts_with($src, '/uploads/')) {
+                continue;
+            }
+
+            try {
+                $imageContent = file_get_contents($src);
+                if ($imageContent === false) {
+                    continue;
+                }
+                $filename = uniqid() . '_' . time() . '.jpg';
+                $newPath = $uploadPath . '/' . $filename;
+                File::put(public_path($newPath), $imageContent);
+                $image->setAttribute('src', '/' . $newPath);
+            } catch (\Exception $e) {
+                \Log::error('Lỗi khi tải ảnh: ' . $src . ' Chi tiết lỗi: ' . $e->getMessage());
+                continue;
+            }
+        }
+
+        $updatedContent = $dom->saveHTML();
+
+        $filePath = null;
+        if ($request->hasFile('image_thumbnail')) {
+            $filePath = $request->file('image_thumbnail')->store('upload/blogs', 'public');
+        }
+        $slug = Str::slug($request->title);
+
+        Post::create([
+            'title' => $request->title,
+            'content' => $updatedContent,
+            'image_thumbnail' => $filePath,
+            'category_post_id' => $request->input('category_id'),
+            'user_id' => $request->user_id,
+            'status' => '1',
+            'slug' => $slug,
+        ]);
+        return redirect()->route('posts.index')
+            ->with('success', 'Bài viết đã được tạo thành công!');
     }
 
     /**
@@ -41,7 +125,8 @@ class PostsController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $singerPost = Post::findOrFail($id);
+        return view('admins.posts.show', compact('singerPost'));
     }
 
     /**
@@ -49,7 +134,10 @@ class PostsController extends Controller
      */
     public function edit(string $id)
     {
-        return view('admins.posts.edit');
+        $singerPost = Post::findOrFail($id);
+        $listCategoryPost = CategoryPost::all();
+        $users = User::all();
+        return view('admins.posts.edit', compact('singerPost', 'listCategoryPost', 'users'));
     }
 
     /**
@@ -57,8 +145,69 @@ class PostsController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $singerPost = Post::findOrFail($id);
+
+        $content = $request->input('content');
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML(mb_convert_encoding($content, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        $images = $dom->getElementsByTagName('img');
+        $uploadPath = 'uploads/posts/' . date('Y/m/d');
+        if (!File::exists(public_path($uploadPath))) {
+            File::makeDirectory(public_path($uploadPath), 0777, true);
+        }
+
+        foreach ($images as $image) {
+            $src = $image->getAttribute('src');
+            if (str_starts_with($src, '/uploads/')) {
+                continue;
+            }
+
+            try {
+                $imageContent = file_get_contents($src);
+                if ($imageContent === false) {
+                    continue;
+                }
+                $filename = uniqid() . '_' . time() . '.jpg';
+                $newPath = $uploadPath . '/' . $filename;
+                File::put(public_path($newPath), $imageContent);
+                $image->setAttribute('src', '/' . $newPath);
+            } catch (\Exception $e) {
+                \Log::error('Lỗi khi tải ảnh: ' . $src . ' Chi tiết lỗi: ' . $e->getMessage());
+                continue;
+            }
+        }
+
+        // Cập nhật nội dung bài viết
+        $updatedContent = $dom->saveHTML();
+
+        // Cập nhật ảnh thumbnail nếu có
+        if ($request->hasFile('image_thumbnail')) {
+            if ($singerPost->image_thumbnail && File::exists(public_path($singerPost->image_thumbnail))) {
+                File::delete(public_path($singerPost->image_thumbnail));
+            }
+
+            // Lưu ảnh mới
+            $filePath = $request->file('image_thumbnail')->store('upload/blogs', 'public');
+            $singerPost->image_thumbnail = $filePath;
+        }
+        $slug = Str::slug($request->title);
+
+        // Cập nhật các thông tin bài viết
+        $singerPost->update([
+            'title' => $request->title,
+            'content' => $updatedContent,
+            'category_post_id' => $request->input('category_id'), // Sửa đúng tên trường
+            'user_id' => $request->input('user_id'),
+            'status' => '1', // Nếu cần thiết
+            'slug' => $slug, // Cần cập nhật slug nếu có
+        ]);
+
+        // Điều hướng về trang bài viết
+        return redirect()->route('posts.index')->with('success', 'Cập nhật bài viết thành công!');
     }
+
 
     /**
      * Remove the specified resource from storage.

@@ -2,8 +2,10 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UsersController;
 use App\Http\Controllers\PostsController;
+use App\Http\Controllers\UsersController;
+use App\Http\Controllers\CategoryPostController;
+
 
 
 /*
@@ -29,9 +31,11 @@ Route::prefix('admin')->group(function () {
     // User ===============================================
     Route::resource('users', UsersController::class);
 
-
     // Post ===============================================
     Route::resource('posts', PostsController::class);
+
+    // Category Post ======================================
+    Route::resource('category-posts', CategoryPostController::class);
 
 });
 

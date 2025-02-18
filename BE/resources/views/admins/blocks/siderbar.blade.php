@@ -24,12 +24,12 @@
             <i class="ri-record-circle-line"></i>
         </button>
     </div>
-
     <div class="dropdown sidebar-user m-1 rounded">
         <button type="button" class="btn material-shadow-none" id="page-header-user-dropdown" data-bs-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false">
             <span class="d-flex align-items-center gap-2">
-                <img class="rounded header-profile-user" src="{{ asset('assets/admins/images/users/avatar-1.jpg') }}" alt="Header Avatar">
+                <img class="rounded header-profile-user" src="{{ asset('assets/admins/images/users/avatar-1.jpg') }}"
+                    alt="Header Avatar">
                 <span class="text-start">
                     <span class="d-block fw-medium sidebar-user-name-text">Anna Adame</span>
                     <span class="d-block fs-14 sidebar-user-name-sub-text"><i
@@ -85,18 +85,18 @@
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarArticle" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarSanPham">
-                        <i class="ri-article-line"></i> <span data-key="t-advance-ui">Blogs</span>
+                        <i class="ri-article-line"></i> <span data-key="t-advance-ui">Bài viết</span>
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarArticle">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
                                 <a href="{{ route('posts.index') }}" class="nav-link" data-key="t-sweet-alerts">
-                                    List Blogs
+                                    Danh sách bài viết
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="" class="nav-link" data-key="t-nestable-list">
-                                    Categories
+                                <a href="{{ route('category-posts.index') }}" class="nav-link" data-key="t-nestable-list">
+                                    Chuyên mục
                                 </a>
                             </li>
                         </ul>

@@ -38,16 +38,6 @@ class UsersController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-            'age' => 'required|integer|min:1',
-            'role_id' => 'required|exists:roles,id',
-            'address' => 'nullable|string|max:255',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
-
         try {
 
             $filePath = null;
@@ -66,10 +56,7 @@ class UsersController extends Controller
                 'avatar' => $filePath
             ]);
 
-            return redirect()
-                ->route('users.index')
-                ->with('success', 'Tạo mới người dùng thành công');
-            // return redirect()->route('users.index')->with('status', 'success')->with('message', 'Tạo mới người dùng thành công');
+            return redirect()->route('users.index')->with('status', 'success')->with('message', 'Tạo mới người dùng thành công');
         } catch (\Exception $e) {
             // Nếu có lỗi và đã upload ảnh thì xóa ảnh
             if (isset($filePath)) {
@@ -147,25 +134,35 @@ class UsersController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id, Request $request)
     {
-        $singerUser = User::findOrFail($id);
-
+        $user = User::findOrFail($id);
         $deleteUser = User::where('id', $id)->delete();
 
-        $filePath = $singerUser->avatar;
-        if ($deleteUser && isset($filePath) && Storage::disk()->exists($filePath)) {
-            Storage::disk('public')->delete($filePath);
-            return redirect()->route('users.index')->with('success', 'Xóa thành công !');
-        }
         if ($deleteUser) {
-            if (isset($filePath) && Storage::disk('public')->exists($filePath)) {
-                Storage::disk('public')->delete($filePath);
+            if (!empty($user->avatar) && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
             }
-            return redirect()->route('users.index')
-                ->with('success', 'Xóa người dùng thành công !');
+
+            // Kiểm tra nếu request là AJAX
+            if ($request->ajax()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Xóa người dùng thành công!',
+                    'user_id' => $id
+                ]);
+            }
+
+            return redirect()->route('users.index')->with('success', 'Xóa người dùng thành công!');
         }
-        return redirect()->route('users.index')
-            ->with('error', 'Xóa người dùng lỗi !');
+
+        if ($request->ajax()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Xóa người dùng thất bại!'
+            ], 500);
+        }
+
+        return redirect()->route('users.index')->with('error', 'Xóa người dùng thất bại!');
     }
 }
