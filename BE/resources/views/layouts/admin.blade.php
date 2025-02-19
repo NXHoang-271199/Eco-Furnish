@@ -74,7 +74,7 @@
     <script src="{{ asset('assets/admins/libs/jsvectormap/jsvectormap.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/jsvectormap/maps/world-merc.js') }}"></script>
 
-    
+
     <!--Swiper slider js-->
     <script src="{{ asset('assets/admins/libs/swiper/swiper-bundle.min.js') }}"></script>
 
