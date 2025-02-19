@@ -62,7 +62,10 @@ const Header = () => {
           <div class="text-2xl font-bold text-black">
             <div>
               {/* <img src="/logo.svg" alt="Eco-Furnish" /> */}
-              <span>Eco-Furnish</span>
+              <p>
+                <span className="text-yellow-300">E</span>co-
+                <span className="text-yellow-300">F</span>urnish
+              </p>
             </div>
           </div>
 

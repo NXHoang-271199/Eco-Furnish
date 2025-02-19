@@ -3,14 +3,14 @@ import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
 import { Route, Routes } from "react-router-dom";
-import LayoutWebsite from "./pages/layout";
-import Homes from "./pages/Home/Homes";
-import Products from "./pages/Products/Products";
-import ProductDetail from "./pages/Detail/ProductDetail";
-import Contact from "./pages/Contact/Contact";
-import Cart from "./pages/Cart/Cart";
-import Blogs from "./pages/Blogs/Blogs";
-import About from "./pages/About/About";
+import LayoutWebsite from "./pages/(website)/layout";
+import Homes from "./pages/(website)/Home/Homes";
+import Products from "./pages/(website)/Products/Products";
+import ProductDetail from "./pages/(website)/Detail/ProductDetail";
+import Contact from "./pages/(website)/Contact/Contact";
+import Cart from "./pages/(website)/Cart/Cart";
+import Blogs from "./pages/(website)/Blogs/Blogs";
+import About from "./pages/(website)/About/About";
 function App() {
   return (
     <>
