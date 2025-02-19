@@ -54,10 +54,17 @@
                             </div>
 
                             <div class="form-group mb-3">
-                                <label for="sku">Mã SKU <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control @error('sku') is-invalid @enderror" id="sku"
-                                    name="sku" value="{{ old('sku') }}" required>
-                                @error('sku')
+                                <label for="category_id">Danh mục <span class="text-danger">*</span></label>
+                                <select class="form-select @error('category_id') is-invalid @enderror" 
+                                    id="category_id" name="category_id" required>
+                                    <option value="">Chọn danh mục</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                            {{ $category->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('category_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -72,19 +79,10 @@
                             </div>
 
                             <div class="form-group mb-3">
-                                <label for="sale_price">Giá khuyến mãi</label>
-                                <input type="number" class="form-control @error('sale_price') is-invalid @enderror"
-                                    id="sale_price" name="sale_price" value="{{ old('sale_price') }}" min="0">
-                                @error('sale_price')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="form-group mb-3">
-                                <label for="import_date">Ngày nhập <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control @error('import_date') is-invalid @enderror"
-                                    id="import_date" name="import_date" value="{{ old('import_date') }}" required>
-                                @error('import_date')
+                                <label for="discount_price">Giá khuyến mãi</label>
+                                <input type="number" class="form-control @error('discount_price') is-invalid @enderror"
+                                    id="discount_price" name="discount_price" value="{{ old('discount_price') }}" min="0">
+                                @error('discount_price')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>

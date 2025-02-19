@@ -48,16 +48,12 @@ class ProductController extends Controller
 
             $data = $request->validated();
 
-            // Tự sinh mã sản phẩm cho tất cả sản phẩm
+            // Tự sinh mã sản phẩm
             $latestProduct = Product::latest()->first();
             $nextId = $latestProduct ? $latestProduct->id + 1 : 1;
             $data['product_code'] = 'SP' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
 
-            // Đặt giá mặc định là 0 cho sản phẩm có biến thể
-            if ($request->has('variants')) {
-                $data['price'] = 0;
-            }
-
+            // Xử lý ảnh đại diện
             if ($request->hasFile('image_thumnail')) {
                 $data['image_thumnail'] = $request->file('image_thumnail')->store('products', 'public');
             }
@@ -65,7 +61,7 @@ class ProductController extends Controller
             // Tạo sản phẩm
             $product = Product::create($data);
 
-            // Lưu gallery images
+            // Xử lý gallery images nếu có
             if ($request->hasFile('gallery')) {
                 foreach ($request->file('gallery') as $image) {
                     $imagePath = $image->store('products/gallery', 'public');
@@ -97,6 +93,9 @@ class ProductController extends Controller
                         }
                     }
                 }
+
+                // Đặt giá mặc định là 0 cho sản phẩm có biến thể
+                $product->update(['price' => 0]);
             }
 
             DB::commit();
