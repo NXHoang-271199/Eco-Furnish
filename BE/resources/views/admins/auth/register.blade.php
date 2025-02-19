@@ -147,7 +147,7 @@
                                 </div>
 
                                 <div class="mt-5 text-center">
-                                    <p class="mb-0">Already have an account ? <a href="auth-signin-cover.html"
+                                    <p class="mb-0">Already have an account ? <a href="{{ route('login') }}"
                                             class="fw-semibold text-primary text-decoration-underline"> Signin</a> </p>
                                 </div>
                             </div>

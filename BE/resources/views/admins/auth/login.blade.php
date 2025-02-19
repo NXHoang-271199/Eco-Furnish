@@ -59,47 +59,46 @@
                         <div class="col-lg-6">
                             <div class="p-lg-5 p-4">
                                 <div>
-                                    <h5 class="text-primary">Welcome Back !</h5>
-                                    <p class="text-muted">Sign in to continue to Velzon.</p>
+                                    <h5 class="text-primary">Xin chào !</h5>
+                                    <p class="text-muted">Đăng nhập với Eco Furnish</p>
                                 </div>
 
                                 <div class="mt-4">
                                     <form action="index.html">
 
                                         <div class="mb-3">
-                                            <label for="username" class="form-label">Username</label>
-                                            <input type="text" class="form-control" id="username"
-                                                placeholder="Enter username">
+                                            <label for="email" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="email"
+                                                placeholder="Nhập email..." name="email">
                                         </div>
 
                                         <div class="mb-3">
-                                            <div class="float-end">
-                                                <a href="auth-pass-reset-cover.html" class="text-muted">Forgot password?</a>
-                                            </div>
-                                            <label class="form-label" for="password-input">Password</label>
+                                            <label class="form-label" for="password-input">Mật khẩu</label>
                                             <div class="position-relative auth-pass-inputgroup mb-3">
                                                 <input type="password" class="form-control pe-5 password-input"
-                                                    placeholder="Enter password" id="password-input">
+                                                    placeholder="Nhập mật khẩu..." id="password-input">
                                                 <button
                                                     class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon material-shadow-none"
                                                     type="button" id="password-addon"><i
                                                         class="ri-eye-fill align-middle"></i></button>
                                             </div>
                                         </div>
-
+                                        <div class="float-end">
+                                            <a href="auth-pass-reset-cover.html" class="text-muted">Quên mật khẩu?</a>
+                                        </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" value=""
                                                 id="auth-remember-check">
-                                            <label class="form-check-label" for="auth-remember-check">Remember me</label>
+                                            <label class="form-check-label" for="auth-remember-check">Nhớ tài khoản</label>
                                         </div>
 
                                         <div class="mt-4">
-                                            <button class="btn btn-success w-100" type="submit">Sign In</button>
+                                            <button class="btn btn-success w-100" type="submit">Đăng nhập</button>
                                         </div>
 
                                         <div class="mt-4 text-center">
                                             <div class="signin-other-title">
-                                                <h5 class="fs-13 mb-4 title">Sign In with</h5>
+                                                <h5 class="fs-13 mb-4 title">Đăng nhập với</h5>
                                             </div>
 
                                             <div>
@@ -110,9 +109,6 @@
                                                     class="btn btn-danger btn-icon waves-effect waves-light"><i
                                                         class="ri-google-fill fs-16"></i></button>
                                                 <button type="button"
-                                                    class="btn btn-dark btn-icon waves-effect waves-light"><i
-                                                        class="ri-github-fill fs-16"></i></button>
-                                                <button type="button"
                                                     class="btn btn-info btn-icon waves-effect waves-light"><i
                                                         class="ri-twitter-fill fs-16"></i></button>
                                             </div>
@@ -122,8 +118,8 @@
                                 </div>
 
                                 <div class="mt-5 text-center">
-                                    <p class="mb-0">Don't have an account ? <a href="auth-signup-cover.html"
-                                            class="fw-semibold text-primary text-decoration-underline"> Signup</a> </p>
+                                    <p class="mb-0">Bạn không có tài khoản ? <a href="{{ route('register') }}"
+                                            class="fw-semibold text-primary text-decoration-underline"> Đăng kí</a> </p>
                                 </div>
                             </div>
                         </div>

@@ -7,6 +7,7 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryPostController;
+use App\Http\Controllers\Auth\RegisterController;
 
 
 
@@ -25,7 +26,8 @@ Route::get('/', function () {
     return view('admins.test');
 });
 // Login
-Route::get('login', [LoginController::class, 'showFormLogin']);
+Route::get('login', [LoginController::class, 'showFormLogin'])->name('login');
+Route::get('register', [RegisterController::class, 'showFormRegister'])->name('register');
 
 Route::prefix('admin')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('admins.dashboard');

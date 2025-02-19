@@ -218,6 +218,9 @@
                                                                         <span
                                                                             class="badge {{ $badgeColor }}">{{ $user->role->name }}</span>
                                                                     </td>
+                                                                    <td>
+                                                                        <span class="badge bg-secondary">{{$user->is_active == 1 ? 'Kích hoạt' : 'Hủy kích hoạt' }}</span>
+                                                                    </td>
                                                                     <td class="text-center">
                                                                         <div class="dropdown d-inline-block">
                                                                             <button

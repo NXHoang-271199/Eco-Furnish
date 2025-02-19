@@ -65,13 +65,13 @@
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarUser" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarSanPham">
-                        <i class="ri-account-circle-line"></i> <span data-key="t-advance-ui">Người dùng</span>
+                        <i class="ri-account-circle-line"></i> <span data-key="t-advance-ui">Quản lý tài khoản</span>
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarUser">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
                                 <a href="{{ route('users.index') }}" class="nav-link" data-key="t-sweet-alerts">
-                                    Danh sách người dùng
+                                    Danh sách khách hàng
                                 </a>
                             </li>
                             <li class="nav-item">
