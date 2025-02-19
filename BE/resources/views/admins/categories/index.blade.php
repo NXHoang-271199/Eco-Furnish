@@ -15,7 +15,6 @@
 
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admins.dashboard') }}">Dashboard</a></li>
                         <li class="breadcrumb-item active">Danh mục</li>
                     </ol>
                 </div>

@@ -17,18 +17,10 @@ use App\Http\Controllers\Admin\CategoryController;
 |
 */
 
-Route::get('/', function () {
-    return view('admins.dashboard');
-    // return view('admins.test');
-});
+
 
 // Admin Routes
 Route::prefix('admin')->name('admin.')->group(function () {
-    // Dashboard
-    Route::get('/', function () {
-        return view('admins.dashboard');
-    })->name('dashboard');
-
     // Categories routes
     Route::resource('categories', CategoryController::class);
 

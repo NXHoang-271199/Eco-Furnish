@@ -2,7 +2,7 @@
     <!-- LOGO -->
     <div class="navbar-brand-box">
         <!-- Dark Logo-->
-        <a href="{{ route('admin.dashboard') }}" class="logo logo-dark">
+        <a href="#" class="logo logo-dark">
             <span class="logo-sm">
                 <img src="{{ asset('assets/admins/images/logo-sm.png') }}" alt="" height="22">
             </span>
@@ -11,7 +11,7 @@
             </span>
         </a>
         <!-- Light Logo-->
-        <a href="{{ route('admin.dashboard') }}" class="logo logo-light">
+        <a href="#" class="logo logo-light">
             <span class="logo-sm">
                 <img src="{{ asset('assets/admins/images/logo-sm.png') }}" alt="" height="22">
             </span>
@@ -60,7 +60,7 @@
             <ul class="navbar-nav" id="navbar-nav">
                 <li class="menu-title"><span data-key="t-menu">Quản lý</span></li>
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('admin.dashboard') }}">
+                    <a class="nav-link menu-link" href="#">
                         <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboard</span>
                     </a>
                 </li>
