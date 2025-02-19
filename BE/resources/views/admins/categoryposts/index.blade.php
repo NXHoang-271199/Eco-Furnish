@@ -13,6 +13,25 @@
             padding: 0;
             cursor: pointer;
         }
+
+        #submit-btn {
+            background-color: #28a745;
+            /* Màu xanh lá */
+            color: white;
+            /* Màu chữ trắng */
+            border: none;
+            /* Loại bỏ viền */
+            padding: 10px 20px;
+            /* Kích thước */
+            border-radius: 5px;
+            /* Bo góc */
+            transition: background 0.3s ease;
+        }
+
+        #submit-btn:hover {
+            background-color: #218838;
+            /* Màu đậm hơn khi hover */
+        }
     </style>
 @endsection
 @section('JS')
@@ -139,6 +158,7 @@
                             <button type="submit" id="submit-btn" class="btn btn-success mt-3">
                                 <i class="ri-add-fill me-1 align-bottom"></i> Thêm danh mục
                             </button>
+
                             <button type="button" id="cancel-btn" class="btn btn-secondary mt-3 d-none">Hủy</button>
                         </form>
 
