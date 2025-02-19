@@ -75,18 +75,24 @@
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-                    <h4 class="mb-sm-0">Danh sách bài Viết</h4>
-
+                    <h4 class="mb-sm-0">Danh sách bài viết</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ route('posts.index') }}">Bài Viết</a></li>
-                            <li class="breadcrumb-item active">Bài Viết</li>
+                            @foreach ($breadcrumbs as $breadcrumb)
+                                <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
+                                    @if ($breadcrumb['url'])
+                                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
+                                    @else
+                                        {{ $breadcrumb['name'] }}
+                                    @endif
+                                </li>
+                            @endforeach
                         </ol>
                     </div>
-
                 </div>
             </div>
         </div>
+        
         @if (session('success'))
             <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow" role="alert">
                 <i class="ri-check-double-line me-3 align-middle"></i>
@@ -201,7 +207,7 @@
                                                 <span class="text-muted"><i
                                                         class="ri-calendar-event-line me-1"></i>{{ $post->created_at->format('d/m/Y') }}</span>
                                                 | <span class="text-muted"> |
-                                                    <a href=""><i
+                                                    <a href="{{ route('users.show', $post->user->id) }}"><i
                                                             class="ri-user-3-line me-1"></i>{{ $post->user->name }}</a>
                                             </div>
                                             <p>{{ $post->short_content }}</p>

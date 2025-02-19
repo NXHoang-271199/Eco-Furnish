@@ -12,15 +12,20 @@
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-                    <h4 class="mb-sm-0">Quản lý người dùng</h4>
-
+                    <h4 class="mb-sm-0">Danh sách người dùng</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ route('users.index') }}">Admin</a></li>
-                            <li class="breadcrumb-item active">Người dùng</li>
+                            @foreach ($breadcrumbs as $breadcrumb)
+                                <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
+                                    @if ($breadcrumb['url'])
+                                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
+                                    @else
+                                        {{ $breadcrumb['name'] }}
+                                    @endif
+                                </li>
+                            @endforeach
                         </ol>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -52,16 +57,19 @@
                         @if (session('success'))
                             <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow"
                                 role="alert">
-                                <i class="ri-check-double-line me-3 align-middle"></i> <strong>{{ session('success') }}</strong>
+                                <i class="ri-check-double-line me-3 align-middle"></i>
+                                <strong>{{ session('success') }}</strong>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"
                                     aria-label="Close"></button>
                             </div>
                         @endif
 
                         @if (session('error'))
-                            <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow" role="alert">
+                            <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow"
+                                role="alert">
                                 <i class="ri-alert-line me-3 align-middle"></i> <strong>{{ session('error') }}</strong>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                    aria-label="Close"></button>
                             </div>
                         @endif
 
@@ -192,8 +200,23 @@
                                                                     <td>{{ $user->email }}</td>
                                                                     <td class="text-center">{{ $user->age }}</td>
                                                                     <td class="text-center">
+                                                                        @php
+                                                                            switch ($user->role->name) {
+                                                                                case 'Admin':
+                                                                                    $badgeColor = 'bg-danger';
+                                                                                    break;
+                                                                                case 'Editor':
+                                                                                    $badgeColor = 'bg-primary';
+                                                                                    break;
+                                                                                case 'User':
+                                                                                    $badgeColor = 'bg-success'; 
+                                                                                    break;
+                                                                                default:
+                                                                                    $badgeColor = 'bg-secondary';
+                                                                            }
+                                                                        @endphp
                                                                         <span
-                                                                            class="badge bg-danger">{{ $user->role->name }}</span>
+                                                                            class="badge {{ $badgeColor }}">{{ $user->role->name }}</span>
                                                                     </td>
                                                                     <td class="text-center">
                                                                         <div class="dropdown d-inline-block">

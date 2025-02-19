@@ -4,6 +4,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PostsController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryPostController;
 
 
@@ -19,14 +21,14 @@ use App\Http\Controllers\CategoryPostController;
 |
 */
 Route::get('/', function () {
-    return view('admins.dashboard');
-    // return view('admins.test');
+    // return view('admins.dashboard');
+    return view('admins.test');
 });
+// Login
+Route::get('login', [LoginController::class, 'showFormLogin']);
 
 Route::prefix('admin')->group(function () {
-    Route::get('/', function(){
-        return view('admins.dashboard');
-    });
+    Route::get('/', [DashboardController::class, 'index'])->name('admins.dashboard');
 
     // User ===============================================
     Route::resource('users', UsersController::class);
@@ -36,6 +38,7 @@ Route::prefix('admin')->group(function () {
 
     // Category Post ======================================
     Route::resource('category-posts', CategoryPostController::class);
+    Route::post('upload-image', [App\Http\Controllers\ImageUploadController::class, 'upload'])->name('upload.image');
 
 });
 

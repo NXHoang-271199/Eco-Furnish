@@ -111,7 +111,28 @@
 @section('content')
     <div class="container-fluid">
         <div class="row">
-            <form action="{{ route('posts.update', $singerPost->id) }}" method="POST" enctype="multipart/form-data" class="d-flex">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
+                    <h4 class="mb-sm-0">Chỉnh sửa bài viết</h4>
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            @foreach ($breadcrumbs as $breadcrumb)
+                                <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
+                                    @if ($breadcrumb['url'])
+                                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
+                                    @else
+                                        {{ $breadcrumb['name'] }}
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <form action="{{ route('posts.update', $singerPost->id) }}" method="POST" enctype="multipart/form-data"
+                class="d-flex">
                 @csrf
                 @method('PUT')
                 <div class="col-lg-8 mx-1">
@@ -139,6 +160,7 @@
                             </div>
                             <div class="text-end mb-4">
                                 <button type="submit" class="btn btn-success w-sm">Cập nhật</button>
+                                <a href="{{ route('posts.index') }}" class="btn btn-secondary w-sm">Hủy bỏ</a>
                             </div>
 
                         </div>
@@ -160,7 +182,8 @@
                                     <select class="form-select" id="choices-categories-input" name="category_id">
                                         <option value="" selected></option>
                                         @foreach ($listCategoryPost as $category)
-                                            <option value="{{ $category->id }}" {{ $category->id == $singerPost->category_post_id ? 'selected' : '' }}>
+                                            <option value="{{ $category->id }}"
+                                                {{ $category->id == $singerPost->category_post_id ? 'selected' : '' }}>
                                                 {{ $category->title }}
                                             </option>
                                         @endforeach
