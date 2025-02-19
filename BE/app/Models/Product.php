@@ -18,7 +18,8 @@ class Product extends Model
         'short_description',
         'description',
         'price',
-        'discount_price'
+        'discount_price',
+        'status'
     ];
 
     /**

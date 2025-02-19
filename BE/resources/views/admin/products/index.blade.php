@@ -24,11 +24,17 @@
                         <li class="breadcrumb-item active">Sản phẩm</li>
                     </ol>
                 </div>
-
             </div>
         </div>
     </div>
     <!-- end page title -->
+
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
 
     <div class="row">
         <div class="col-xl-3 col-lg-4">
@@ -175,7 +181,7 @@
                                                                 </li>
                                                                 <li class="dropdown-divider"></li>
                                                                 <li>
-                                                                    <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form">
+                                                                    <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
                                                                         @csrf
                                                                         @method('DELETE')
                                                                         <button type="submit" class="dropdown-item text-danger">
@@ -205,6 +211,8 @@
 @endsection
 
 @section('js')
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- nouislider js -->
     <script src="{{ asset('assets/admins/libs/nouislider/nouislider.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/wnumb/wNumb.min.js') }}"></script>
@@ -217,46 +225,7 @@
 
     <script>
         $(document).ready(function() {
-            // Xử lý xóa sản phẩm
-            $('.delete-form').on('submit', function(e) {
-                e.preventDefault();
-                var form = $(this);
-                
-                Swal.fire({
-                    title: 'Bạn có chắc chắn?',
-                    text: "Bạn sẽ không thể khôi phục lại dữ liệu này!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Xóa',
-                    cancelButtonText: 'Hủy',
-                    confirmButtonClass: 'btn btn-danger me-2',
-                    cancelButtonClass: 'btn btn-light',
-                    buttonsStyling: false
-                }).then(function(result) {
-                    if (result.value) {
-                        form.off('submit').submit();
-                    }
-                });
-            });
-
-            // Hiển thị thông báo
-            @if(session('success'))
-                Swal.fire({
-                    title: 'Thành công!',
-                    text: "{{ session('success') }}",
-                    icon: 'success',
-                    confirmButtonClass: 'btn btn-success'
-                });
-            @endif
-
-            @if(session('error'))
-                Swal.fire({
-                    title: 'Lỗi!',
-                    text: "{{ session('error') }}",
-                    icon: 'error',
-                    confirmButtonClass: 'btn btn-danger'
-                });
-            @endif
+         
 
             // Khởi tạo price range slider
             var priceRangeSlider = document.getElementById('product-price-range');

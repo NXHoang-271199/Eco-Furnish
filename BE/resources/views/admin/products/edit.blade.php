@@ -2,188 +2,330 @@
 
 @section('title', 'Chỉnh sửa sản phẩm')
 
-@section('css')
-    <link href="{{ asset('assets/admin/libs/dropzone/dropzone.css') }}" rel="stylesheet">
-@endsection
-
 @section('content')
+<div class="container">
     <div class="row">
         <div class="col-12">
-            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Chỉnh sửa sản phẩm</h4>
-
-                <div class="page-title-right">
-                    <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.products.index') }}">Sản phẩm</a></li>
-                        <li class="breadcrumb-item active">Chỉnh sửa sản phẩm</li>
-                    </ol>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Chỉnh sửa sản phẩm</h3>
+                    <div class="card-tools">
+                        <a href="{{ route('admin.products.index') }}" class="btn btn-default">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <form action="{{ route('admin.products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        @method('PUT')
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label" for="name">Tên sản phẩm <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $product->name) }}" required>
-                            @error('name')
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label" for="product_code">Mã sản phẩm <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('product_code') is-invalid @enderror" id="product_code" name="product_code" value="{{ old('product_code', $product->product_code) }}" required>
-                            @error('product_code')
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label" for="category_id">Danh mục <span class="text-danger">*</span></label>
-                            <select class="form-select @error('category_id') is-invalid @enderror" id="category_id" name="category_id" required>
-                                <option value="">Chọn danh mục</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
+                <div class="card-body">
+                    @if($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
                                 @endforeach
-                            </select>
-                            @error('category_id')
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-                            @enderror
+                            </ul>
                         </div>
+                    @endif
 
-                        <div class="mb-3">
-                            <label class="form-label" for="description">Mô tả chi tiết <span class="text-danger">*</span></label>
-                            <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="5">{{ old('description', $product->description) }}</textarea>
-                            @error('description')
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Hình ảnh sản phẩm</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Ảnh đại diện hiện tại</label>
-                            <div>
-                                <img src="{{ asset('storage/' . $product->image_thumnail) }}" alt="{{ $product->name }}" class="img-thumbnail" width="200">
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label" for="image_thumnail">Thay đổi ảnh đại diện</label>
-                            <input type="file" class="form-control @error('image_thumnail') is-invalid @enderror" id="image_thumnail" name="image_thumnail" accept="image/*">
-                            @error('image_thumnail')
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label class="form-label">Thư viện ảnh</label>
-                            @if($product->images)
-                                <div class="row mb-3">
-                                    @foreach(json_decode($product->images) as $image)
-                                        <div class="col-md-3 mb-2">
-                                            <img src="{{ asset('storage/' . $image) }}" alt="{{ $product->name }}" class="img-thumbnail">
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-
-                            <div class="dropzone" id="gallery-dropzone">
-                                <div class="fallback">
-                                    <input name="images[]" type="file" multiple>
-                                </div>
-                                <div class="dz-message needsclick">
-                                    <div class="mb-3">
-                                        <i class="display-4 text-muted ri-upload-cloud-2-fill"></i>
-                                    </div>
-                                    <h5>Kéo thả ảnh vào đây hoặc click để chọn ảnh.</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Thông tin bổ sung</h5>
-                    </div>
-                    <div class="card-body">
+                    <form action="{{ route('admin.products.update', $product->id) }}" method="POST" enctype="multipart/form-data" id="productForm">
+                        @csrf
+                        @method('PUT')
                         <div class="row">
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <label class="form-label" for="price">Giá <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price', $product->price) }}" required>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="name">Tên sản phẩm <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control @error('name') is-invalid @enderror" 
+                                        id="name" name="name" value="{{ old('name', $product->name) }}" required>
+                                    @error('name')
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="category_id">Danh mục <span class="text-danger">*</span></label>
+                                    <select class="form-control @error('category_id') is-invalid @enderror" 
+                                        id="category_id" name="category_id" required>
+                                        <option value="">Chọn danh mục</option>
+                                        @foreach($categories as $category)
+                                            <option value="{{ $category->id }}" 
+                                                {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
+                                                {{ $category->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('category_id')
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="description">Mô tả</label>
+                                    <textarea class="form-control @error('description') is-invalid @enderror" 
+                                        id="description" name="description" rows="3">{{ old('description', $product->description) }}</textarea>
+                                    @error('description')
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="price">Giá cơ bản <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control @error('price') is-invalid @enderror" 
+                                        id="price" name="price" value="{{ old('price', $product->price) }}" required min="0">
                                     @error('price')
-                                        <div class="invalid-feedback">
-                                            {{ $message }}
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="feature_image">Ảnh đại diện</label>
+                                    <input type="file" class="form-control @error('feature_image') is-invalid @enderror" 
+                                        id="feature_image" name="feature_image" accept="image/*">
+                                    @if($product->feature_image)
+                                        <img src="{{ asset('storage/' . $product->feature_image) }}" 
+                                             alt="Current feature image" 
+                                             class="mt-2" 
+                                             style="max-width: 200px">
+                                    @endif
+                                    @error('feature_image')
+                                        <span class="invalid-feedback">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="gallery_images">Thư viện ảnh</label>
+                                    <input type="file" class="form-control @error('gallery_images') is-invalid @enderror" 
+                                        id="gallery_images" name="gallery_images[]" multiple accept="image/*">
+                                    @if($product->gallery && $product->gallery->count() > 0)
+                                        <div class="row mt-2">
+                                            @foreach($product->gallery as $image)
+                                                <div class="col-md-3">
+                                                    <img src="{{ asset('storage/' . $image->image_url) }}" 
+                                                         alt="Gallery image" 
+                                                         class="img-thumbnail">
+                                                </div>
+                                            @endforeach
                                         </div>
+                                    @endif
+                                    @error('gallery_images')
+                                        <span class="invalid-feedback">{{ $message }}</span>
                                     @enderror
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="text-end mb-3">
-                    <button type="submit" class="btn btn-success w-sm">Cập nhật</button>
+                        <hr>
+                        <h4>Biến thể sản phẩm</h4>
+                        <div id="variants-container">
+                            @if($product->variants && $product->variants->count() > 0)
+                                @foreach($product->variants->groupBy('sku') as $sku => $variants)
+                                    <div class="variant-combination mb-3">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Màu sắc</label>
+                                                    <select class="form-control variant-select" 
+                                                        name="variants[{{ $loop->index }}][variant_values][1]" 
+                                                        required>
+                                                        <option value="">Chọn màu sắc</option>
+                                                        @foreach($colorVariants as $value)
+                                                            <option value="{{ $value->id }}" 
+                                                                {{ $variants->where('variant_id', 1)->first()?->variant_value_id == $value->id ? 'selected' : '' }}>
+                                                                {{ $value->value }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Kích thước</label>
+                                                    <select class="form-control variant-select" 
+                                                        name="variants[{{ $loop->index }}][variant_values][2]" 
+                                                        required>
+                                                        <option value="">Chọn kích thước</option>
+                                                        @foreach($capacityVariants as $value)
+                                                            <option value="{{ $value->id }}" 
+                                                                {{ $variants->where('variant_id', 2)->first()?->variant_value_id == $value->id ? 'selected' : '' }}>
+                                                                {{ $value->value }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>SKU <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" 
+                                                        name="variants[{{ $loop->index }}][sku]" 
+                                                        value="{{ $sku }}"
+                                                        required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>Giá <span class="text-danger">*</span></label>
+                                                    <input type="number" class="form-control" 
+                                                        name="variants[{{ $loop->index }}][price]" 
+                                                        value="{{ $variants->first()->price }}"
+                                                        required min="0">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-danger btn-sm mt-2 remove-variant">
+                                            <i class="fas fa-trash"></i> Xóa biến thể
+                                        </button>
+                                    </div>
+                                @endforeach
+                            @endif
+                        </div>
+
+                        <button type="button" class="btn btn-info mb-3" id="add-variant">
+                            <i class="fas fa-plus"></i> Thêm biến thể
+                        </button>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-    </form>
+    </div>
+</div>
+
 @endsection
 
-@section('js')
-    <script src="{{ asset('assets/admin/libs/dropzone/dropzone.min.js') }}"></script>
-    <!-- ckeditor -->
-    <script src="{{ asset('assets/admin/libs/@ckeditor/ckeditor5-build-classic/build/ckeditor.js') }}"></script>
+@section('JS')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    console.log('DOM Content Loaded');
+    
+    const variantsContainer = $('#variants-container');
+    const addVariantBtn = $('#add-variant');
+    const form = $('#productForm');
+    
+    console.log('Elements found:', {
+        variantsContainer: variantsContainer.length,
+        addVariantBtn: addVariantBtn.length,
+        form: form.length
+    });
 
-    <script>
-        $(document).ready(function() {
-            // Initialize CKEditor
-            ClassicEditor
-                .create(document.querySelector('#description'))
-                .catch(error => {
-                    console.error(error);
-                });
+    let variantCount = {{ $product->variants ? $product->variants->groupBy('sku')->count() : 0 }};
+    console.log('Initial variant count:', variantCount);
 
-            // Initialize Dropzone
-            let myDropzone = new Dropzone("#gallery-dropzone", {
-                url: "{{ route('admin.products.update', $product->id) }}",
-                autoProcessQueue: false,
-                uploadMultiple: true,
-                parallelUploads: 5,
-                maxFiles: 5,
-                acceptedFiles: "image/*",
-                addRemoveLinks: true,
-                previewsContainer: "#gallery-dropzone",
-            });
+    // Template HTML cho biến thể mới
+    const variantTemplate = `
+        <div class="variant-combination mb-3">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Màu sắc</label>
+                        <select class="form-control variant-select" name="variants[INDEX][variant_values][1]" required>
+                            <option value="">Chọn màu sắc</option>
+                            @foreach($colorVariants as $value)
+                            <option value="{{ $value->id }}">{{ $value->value }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Kích thước</label>
+                        <select class="form-control variant-select" name="variants[INDEX][variant_values][2]" required>
+                            <option value="">Chọn kích thước</option>
+                            @foreach($capacityVariants as $value)
+                            <option value="{{ $value->id }}">{{ $value->value }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>SKU <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="variants[INDEX][sku]" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>Giá <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="variants[INDEX][price]" required min="0">
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm mt-2 remove-variant">
+                <i class="fas fa-trash"></i> Xóa biến thể
+            </button>
+        </div>
+    `;
+
+    // Thêm biến thể
+    addVariantBtn.on('click', function() {
+        console.log('Add variant button clicked');
+        const newVariant = variantTemplate.replace(/INDEX/g, variantCount);
+        variantsContainer.append(newVariant);
+        variantCount++;
+        console.log('New variant added, count:', variantCount);
+    });
+
+    // Xóa biến thể
+    $(document).on('click', '.remove-variant', function() {
+        console.log('Remove variant button clicked');
+        $(this).closest('.variant-combination').remove();
+    });
+
+    // Xử lý submit form
+    form.on('submit', function(e) {
+        e.preventDefault();
+        console.log('Form submitted');
+
+        // Kiểm tra các trường bắt buộc
+        const requiredFields = $(this).find('[required]');
+        let hasEmptyField = false;
+
+        requiredFields.each(function() {
+            if (!$(this).val()) {
+                $(this).addClass('is-invalid');
+                hasEmptyField = true;
+                console.log('Empty required field:', $(this).attr('name'));
+            } else {
+                $(this).removeClass('is-invalid');
+            }
         });
-    </script>
+
+        if (hasEmptyField) {
+            alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+            return;
+        }
+
+        // Kiểm tra biến thể trùng lặp
+        const variants = $('.variant-combination');
+        const variantCombinations = new Set();
+        let hasDuplicate = false;
+
+        variants.each(function() {
+            const values = $(this).find('.variant-select')
+                .map(function() { return $(this).val(); })
+                .get()
+                .join('-');
+            
+            if (variantCombinations.has(values)) {
+                hasDuplicate = true;
+            }
+            variantCombinations.add(values);
+        });
+
+        if (hasDuplicate) {
+            alert('Không được có biến thể trùng lặp!');
+            return;
+        }
+
+        console.log('Form validation passed, submitting...');
+        this.submit();
+    });
+});
+</script>
 @endsection 

@@ -10,6 +10,7 @@ use App\Models\GalleryImage;
 use App\Models\ProductVariant;
 use App\Models\Variant;
 use App\Models\Category;
+use App\Models\VariantValue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -61,16 +62,18 @@ class ProductController extends Controller
                 $data['image_thumnail'] = $request->file('image_thumnail')->store('products', 'public');
             }
 
-            if ($request->hasFile('images')) {
-                $images = [];
-                foreach ($request->file('images') as $image) {
-                    $images[] = $image->store('products', 'public');
-                }
-                $data['images'] = json_encode($images);
-            }
-
             // Tạo sản phẩm
             $product = Product::create($data);
+
+            // Lưu gallery images
+            if ($request->hasFile('gallery')) {
+                foreach ($request->file('gallery') as $image) {
+                    $imagePath = $image->store('products/gallery', 'public');
+                    $product->gallery()->create([
+                        'image_url' => $imagePath
+                    ]);
+                }
+            }
 
             // Xử lý biến thể nếu có
             if ($request->has('variants')) {
@@ -98,9 +101,11 @@ class ProductController extends Controller
 
             DB::commit();
 
+            // Thêm thông báo vào session flash
+            session()->flash('success', 'Thêm sản phẩm thành công');
+
             return response()->json([
                 'success' => true,
-                'message' => 'Thêm sản phẩm thành công',
                 'redirect' => route('admin.products.index')
             ]);
         } catch (\Exception $e) {
@@ -118,6 +123,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
+        $product->load(['gallery', 'category', 'variants.variant', 'variants.variantValue']);
         return view('admin.products.show', compact('product'));
     }
 
@@ -127,7 +133,11 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $categories = Category::all();
-        return view('admin.products.edit', compact('product', 'categories'));
+        $variants = Variant::with('values')->get();
+        $colorVariants = VariantValue::where('variant_id', 1)->get();
+        $capacityVariants = VariantValue::where('variant_id', 2)->get();
+        $product->load(['gallery', 'variants.variant', 'variants.variantValue']);
+        return view('admin.products.edit', compact('product', 'categories', 'variants', 'colorVariants', 'capacityVariants'));
     }
 
     /**
@@ -136,33 +146,67 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, Product $product)
     {
         try {
+            DB::beginTransaction();
+            
             $data = $request->validated();
 
+            // Xử lý ảnh đại diện
             if ($request->hasFile('image_thumnail')) {
+                // Xóa ảnh cũ nếu có
                 if ($product->image_thumnail) {
                     Storage::disk('public')->delete($product->image_thumnail);
                 }
                 $data['image_thumnail'] = $request->file('image_thumnail')->store('products', 'public');
             }
 
-            if ($request->hasFile('images')) {
-                if ($product->images) {
-                    foreach (json_decode($product->images) as $image) {
-                        Storage::disk('public')->delete($image);
-                    }
+            // Xử lý gallery images
+            if ($request->hasFile('gallery')) {
+                // Xóa gallery images cũ
+                foreach ($product->gallery as $image) {
+                    Storage::disk('public')->delete($image->image_url);
                 }
-                $images = [];
-                foreach ($request->file('images') as $image) {
-                    $images[] = $image->store('products', 'public');
+                $product->gallery()->delete();
+
+                // Thêm gallery images mới
+                foreach ($request->file('gallery') as $image) {
+                    $imagePath = $image->store('products/gallery', 'public');
+                    $product->gallery()->create([
+                        'image_url' => $imagePath
+                    ]);
                 }
-                $data['images'] = json_encode($images);
             }
 
+            // Xử lý biến thể nếu có
+            if ($request->has('variants')) {
+                // Xóa các biến thể cũ
+                $product->variants()->delete();
+
+                // Thêm biến thể mới
+                foreach ($request->variants as $variant) {
+                    foreach ($variant['variant_values'] as $variantId => $valueId) {
+                        $product->variants()->create([
+                            'variant_id' => $variantId,
+                            'variant_value_id' => $valueId,
+                            'sku' => $variant['sku'],
+                            'price' => $variant['price'],
+                            'status' => 1
+                        ]);
+                    }
+                }
+
+                // Đặt giá mặc định là 0 cho sản phẩm có biến thể
+                $data['price'] = 0;
+            }
+
+            // Cập nhật thông tin sản phẩm
             $product->update($data);
 
+            DB::commit();
             return redirect()->route('admin.products.index')->with('success', 'Cập nhật sản phẩm thành công');
         } catch (\Exception $e) {
-            return back()->with('error', 'Có lỗi xảy ra khi cập nhật sản phẩm');
+            DB::rollBack();
+            \Log::error('Error updating product: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Có lỗi xảy ra khi cập nhật sản phẩm: ' . $e->getMessage());
         }
     }
 
@@ -172,20 +216,29 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         try {
+            DB::beginTransaction();
+
+            // Xóa ảnh thumbnail
             if ($product->image_thumnail) {
                 Storage::disk('public')->delete($product->image_thumnail);
             }
 
-            if ($product->images) {
-                foreach (json_decode($product->images) as $image) {
-                    Storage::disk('public')->delete($image);
-                }
+            // Xóa gallery images
+            foreach ($product->gallery as $image) {
+                Storage::disk('public')->delete($image->image_url);
             }
+            $product->gallery()->delete();
 
+            // Xóa product variants
+            $product->variants()->delete();
+
+            // Xóa sản phẩm
             $product->delete();
 
+            DB::commit();
             return redirect()->route('admin.products.index')->with('success', 'Xóa sản phẩm thành công');
         } catch (\Exception $e) {
+            DB::rollBack();
             return back()->with('error', 'Có lỗi xảy ra khi xóa sản phẩm');
         }
     }
