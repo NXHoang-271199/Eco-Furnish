@@ -78,24 +78,24 @@
 
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
-                                    <label for="feature_image">Ảnh đại diện</label>
-                                    <input type="file" class="form-control @error('feature_image') is-invalid @enderror" 
-                                        id="feature_image" name="feature_image" accept="image/*">
-                                    @if($product->feature_image)
-                                        <img src="{{ asset('storage/' . $product->feature_image) }}" 
+                                    <label for="image_thumnail">Ảnh đại diện</label>
+                                    <input type="file" class="form-control @error('image_thumnail') is-invalid @enderror" 
+                                        id="image_thumnail" name="image_thumnail" accept="image/*">
+                                    @if($product->image_thumnail)
+                                        <img src="{{ asset('storage/' . $product->image_thumnail) }}" 
                                              alt="Current feature image" 
                                              class="mt-2" 
                                              style="max-width: 200px">
                                     @endif
-                                    @error('feature_image')
+                                    @error('image_thumnail')
                                         <span class="invalid-feedback">{{ $message }}</span>
                                     @enderror
                                 </div>
 
                                 <div class="form-group mb-3">
-                                    <label for="gallery_images">Thư viện ảnh</label>
-                                    <input type="file" class="form-control @error('gallery_images') is-invalid @enderror" 
-                                        id="gallery_images" name="gallery_images[]" multiple accept="image/*">
+                                    <label for="gallery">Thư viện ảnh</label>
+                                    <input type="file" class="form-control @error('gallery.*') is-invalid @enderror" 
+                                        id="gallery" name="gallery[]" multiple accept="image/*">
                                     @if($product->gallery && $product->gallery->count() > 0)
                                         <div class="row mt-2">
                                             @foreach($product->gallery as $image)
@@ -107,7 +107,7 @@
                                             @endforeach
                                         </div>
                                     @endif
-                                    @error('gallery_images')
+                                    @error('gallery.*')
                                         <span class="invalid-feedback">{{ $message }}</span>
                                     @enderror
                                 </div>

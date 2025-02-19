@@ -19,32 +19,74 @@
 
         .main-image {
             width: 100%;
-            height: 250px;
+            height: 400px;
             object-fit: contain;
-            background-color: #f8f9fa;
+            background-color: #fff;
             border-radius: 4px;
-            margin-bottom: 10px;
-            border: 1px solid #e9ecef;
+            margin-bottom: 20px;
+        }
+
+        .gallery-section {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .gallery-section h5 {
+            font-size: 14px;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        /* Reset any inherited styles */
+        .gallery-container * {
+            box-sizing: border-box;
         }
 
         .gallery-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-            gap: 5px;
-            padding: 5px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            border: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            list-style: none;
+        }
+
+        /* Force horizontal layout */
+        .gallery-container::after {
+            content: '';
+            display: block;
+            clear: both;
         }
 
         .thumbnail-wrapper {
-            aspect-ratio: 1;
+            position: relative;
+            display: inline-block;
+            vertical-align: top;
+            width: 80px;
+            height: 80px;
+            min-width: 80px;
+            border: 1px solid #e9ecef;
             border-radius: 4px;
             overflow: hidden;
             cursor: pointer;
-            border: 2px solid transparent;
             transition: all 0.2s ease;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .thumbnail-wrapper.add-photo {
+            border: 2px dashed #405189;
             background-color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .thumbnail-wrapper:hover {
@@ -54,24 +96,54 @@
 
         .thumbnail-wrapper.active {
             border-color: #405189;
-            box-shadow: 0 2px 4px rgba(64,81,137,0.2);
+            border-width: 2px;
         }
 
         .thumbnail {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            padding: 2px;
+            object-fit: cover;
+            padding: 4px;
+        }
+
+        .add-photo-icon {
+            color: #405189;
+            font-size: 24px;
+        }
+
+        /* Custom scrollbar styling */
+        .gallery-container::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .gallery-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .gallery-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
         }
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .main-image {
-                height: 200px;
+                height: 300px;
             }
             
-            .gallery-container {
-                grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            .thumbnail-wrapper {
+                width: 60px;
+                height: 60px;
+                min-width: 60px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .thumbnail-wrapper {
+                width: 50px;
+                height: 50px;
+                min-width: 50px;
             }
         }
     </style>
@@ -106,22 +178,28 @@
                                      class="main-image"
                                      id="main-product-image">
                                 
-                                @if($product->gallery && $product->gallery->count() > 0)
-                                    <div class="gallery-container d-flex gap-2 overflow-auto">
+                                <div class="gallery-section">
+                                    <h5>Ảnh phụ sản phẩm</h5>
+                                    <div class="gallery-container">
                                         <div class="thumbnail-wrapper active" onclick="changeMainImage('{{ asset('storage/' . $product->image_thumnail) }}')">
                                             <img src="{{ asset('storage/' . $product->image_thumnail) }}" 
                                                  alt="Main image" 
                                                  class="thumbnail">
                                         </div>
-                                        @foreach($product->gallery as $image)
-                                            <div class="thumbnail-wrapper" onclick="changeMainImage('{{ asset('storage/' . $image->image_url) }}')">
-                                                <img src="{{ asset('storage/' . $image->image_url) }}" 
-                                                     alt="Gallery image {{ $loop->iteration }}" 
-                                                     class="thumbnail">
-                                            </div>
-                                        @endforeach
+                                        @if($product->gallery)
+                                            @foreach($product->gallery as $image)
+                                                <div class="thumbnail-wrapper" onclick="changeMainImage('{{ asset('storage/' . $image->image_url) }}')">
+                                                    <img src="{{ asset('storage/' . $image->image_url) }}" 
+                                                         alt="Gallery image {{ $loop->iteration }}" 
+                                                         class="thumbnail">
+                                                </div>
+                                            @endforeach
+                                        @endif
+                                        <div class="thumbnail-wrapper add-photo">
+                                            <i class="fas fa-plus add-photo-icon"></i>
+                                        </div>
                                     </div>
-                                @endif
+                                </div>
                             </div>
                         </div>
 
@@ -136,12 +214,12 @@
                                             <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-primary">
                                                 <i class="ri-pencil-fill align-bottom"></i> Sửa
                                             </a>
-                                            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="d-inline delete-form">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-danger">
-                                                    <i class="ri-delete-bin-fill align-bottom"></i> Xóa
-                                                </button>
+                                            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger">
+                                            <i class="ri-delete-bin-fill align-bottom me-2 text-danger"></i> Xóa
+                                            </button>
                                             </form>
                                         </div>
                                     </div>
@@ -261,7 +339,7 @@
     </div>
 @endsection
 
-@section('js')
+@section('JS')
     <!-- Swiper js -->
     <script src="{{ asset('assets/admins/libs/swiper/swiper-bundle.min.js') }}"></script>
     <!-- Sweet Alerts js -->
@@ -270,112 +348,55 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
-        function changeMainImage(src) {
-            const mainImage = document.getElementById('main-product-image');
-            const thumbnails = document.querySelectorAll('.thumbnail-wrapper');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded');
             
-            mainImage.src = src;
-            
-            // Update active state of thumbnails
-            thumbnails.forEach(thumb => {
-                const thumbImg = thumb.querySelector('img');
-                if (thumbImg.src === src) {
-                    thumb.classList.add('active');
-                } else {
-                    thumb.classList.remove('active');
-                }
-            });
-        }
+            // Force horizontal layout
+            const galleryContainer = document.querySelector('.gallery-container');
+            if (galleryContainer) {
+                console.log('Gallery container found');
+                // Force layout recalculation
+                galleryContainer.style.display = 'flex';
+                galleryContainer.style.flexDirection = 'row';
+                galleryContainer.style.alignItems = 'center';
+                
+                // Log computed styles
+                const computedStyle = window.getComputedStyle(galleryContainer);
+                console.log('Display:', computedStyle.display);
+                console.log('Flex-direction:', computedStyle.flexDirection);
+                console.log('Width:', computedStyle.width);
+                
+                // Log children
+                const children = galleryContainer.children;
+                console.log('Number of thumbnails:', children.length);
+                Array.from(children).forEach((child, index) => {
+                    console.log(`Thumbnail ${index} display:`, window.getComputedStyle(child).display);
+                });
+            }
 
-        // Initialize the first thumbnail as active
-        $(document).ready(function() {
+            // Initialize first thumbnail
             const firstThumbnail = document.querySelector('.thumbnail-wrapper');
             if (firstThumbnail) {
                 firstThumbnail.classList.add('active');
             }
+        });
 
-            // Xử lý xóa sản phẩm
-            $('.delete-form').on('submit', function(e) {
-                e.preventDefault();
-                const form = $(this);
+        function changeMainImage(src) {
+            const mainImage = document.getElementById('main-product-image');
+            const thumbnails = document.querySelectorAll('.thumbnail-wrapper');
+            
+            if (mainImage) {
+                mainImage.src = src;
                 
-                Swal.fire({
-                    title: 'Bạn có chắc chắn?',
-                    text: "Bạn sẽ không thể khôi phục lại sản phẩm này!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Có, xóa nó!',
-                    cancelButtonText: 'Hủy',
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    reverseButtons: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const formData = new FormData(form[0]);
-                        formData.append('_method', 'DELETE');
-                        
-                        $.ajax({
-                            url: form.attr('action'),
-                            type: 'POST',
-                            data: formData,
-                            processData: false,
-                            contentType: false,
-                            success: function(response) {
-                                Swal.fire({
-                                    title: 'Đã xóa!',
-                                    text: 'Sản phẩm đã được xóa thành công.',
-                                    icon: 'success',
-                                    showConfirmButton: false,
-                                    timer: 1500,
-                                    willClose: () => {
-                                        window.location.href = "{{ route('admin.products.index') }}";
-                                    }
-                                });
-                            },
-                            error: function() {
-                                Swal.fire({
-                                    title: 'Lỗi!',
-                                    text: 'Có lỗi xảy ra khi xóa sản phẩm.',
-                                    icon: 'error',
-                                    confirmButtonText: 'Đóng'
-                                });
-                            }
-                        });
+                thumbnails.forEach(thumb => {
+                    const thumbImg = thumb.querySelector('img');
+                    if (thumbImg && thumbImg.src === src) {
+                        thumb.classList.add('active');
+                    } else {
+                        thumb.classList.remove('active');
                     }
                 });
-            });
-        });
+            }
+        }
     </script>
 @endsection 
-
-@push('scripts')
-    <!-- Sweet Alerts js -->
-    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Xử lý xóa sản phẩm
-            const deleteForm = document.querySelector('.delete-form');
-            if (deleteForm) {
-                deleteForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    Swal.fire({
-                        title: 'Bạn có chắc chắn?',
-                        text: "Bạn sẽ không thể khôi phục lại sản phẩm này!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Có, xóa nó!',
-                        cancelButtonText: 'Hủy',
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            deleteForm.submit();
-                        }
-                    });
-                });
-            }
-        });
-    </script>
-@endpush 

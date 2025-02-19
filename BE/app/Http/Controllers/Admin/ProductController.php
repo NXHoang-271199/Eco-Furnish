@@ -59,7 +59,10 @@ class ProductController extends Controller
             }
 
             // Tạo sản phẩm
-            $product = Product::create($data);
+            $product = Product::create([
+                ...$data,
+                'price' => $request->has('variants') ? 0 : $data['price']
+            ]);
 
             // Xử lý gallery images nếu có
             if ($request->hasFile('gallery')) {
