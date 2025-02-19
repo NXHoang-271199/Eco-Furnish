@@ -362,6 +362,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            
             // Force horizontal layout
             const galleryContainer = document.querySelector('.gallery-container');
             if (galleryContainer) {

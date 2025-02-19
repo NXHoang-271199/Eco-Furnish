@@ -10,8 +10,8 @@
 
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.categories.index') }}">Danh mục</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admins.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admins.categories.index') }}">Danh mục</a></li>
                         <li class="breadcrumb-item active">Chỉnh sửa danh mục</li>
                     </ol>
                 </div>
@@ -29,7 +29,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('admin.categories.update', $category->id) }}" method="POST">
+                    <form action="{{ route('admins.categories.update', $category->id) }}" method="POST">
                         @csrf
                         @method('PUT')
                         <div class="mb-3">
