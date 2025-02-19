@@ -362,29 +362,16 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM Content Loaded');
-            
             // Force horizontal layout
             const galleryContainer = document.querySelector('.gallery-container');
             if (galleryContainer) {
-                console.log('Gallery container found');
+                
                 // Force layout recalculation
                 galleryContainer.style.display = 'flex';
                 galleryContainer.style.flexDirection = 'row';
                 galleryContainer.style.alignItems = 'center';
                 
-                // Log computed styles
-                const computedStyle = window.getComputedStyle(galleryContainer);
-                console.log('Display:', computedStyle.display);
-                console.log('Flex-direction:', computedStyle.flexDirection);
-                console.log('Width:', computedStyle.width);
-                
-                // Log children
-                const children = galleryContainer.children;
-                console.log('Number of thumbnails:', children.length);
-                Array.from(children).forEach((child, index) => {
-                    console.log(`Thumbnail ${index} display:`, window.getComputedStyle(child).display);
-                });
+               
             }
 
             // Initialize first thumbnail
