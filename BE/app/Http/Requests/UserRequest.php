@@ -29,7 +29,6 @@ class UserRequest extends FormRequest
             'age' => 'required|integer',
             'role_id' => 'required|exists:roles,id',
             'address' => 'nullable|string|max:255',
-            'password' => 'required|string|min:3', // Cần thay đổi cho trường hợp update (nếu không cập nhật password thì có thể bỏ)
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
     }

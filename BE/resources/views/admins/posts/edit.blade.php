@@ -6,18 +6,151 @@
 @section('JS')
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script>
-        var quill = new Quill('#editor-container', {
-            theme: 'snow'
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize toolbar with all options including image upload
+            var toolbarOptions = [
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{
+                    'header': 1
+                }, {
+                    'header': 2
+                }],
+                [{
+                    'list': 'ordered'
+                }, {
+                    'list': 'bullet'
+                }],
+                [{
+                    'script': 'sub'
+                }, {
+                    'script': 'super'
+                }],
+                [{
+                    'indent': '-1'
+                }, {
+                    'indent': '+1'
+                }],
+                [{
+                    'direction': 'rtl'
+                }],
+                [{
+                    'size': ['small', false, 'large', 'huge']
+                }],
+                [{
+                    'header': [1, 2, 3, 4, 5, 6, false]
+                }],
+                [{
+                    'color': []
+                }, {
+                    'background': []
+                }],
+                [{
+                    'font': []
+                }],
+                [{
+                    'align': []
+                }],
+                ['link', 'image'],
+                ['clean']
+            ];
+
+            // Initialize Quill with full toolbar options
+            var quill = new Quill('#editor-container', {
+                modules: {
+                    toolbar: toolbarOptions
+                },
+                theme: 'snow'
+            });
+
+            // Load existing content from singer post
+            quill.root.innerHTML = @json($singerPost->content);
+
+            // Add image handler
+            var toolbar = quill.getModule('toolbar');
+            toolbar.addHandler('image', imageHandler);
+
+            // Handle image upload when user selects an image
+            function imageHandler() {
+                var input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+                input.click();
+
+                input.onchange = function() {
+                    var file = input.files[0];
+                    if (file) {
+                        uploadImage(file);
+                    }
+                };
+            }
+
+            // Function to upload image to server
+            function uploadImage(file) {
+                var formData = new FormData();
+                formData.append('image', file);
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute(
+                'content'));
+
+                // Hiển thị văn bản "đang tải" thay vì placeholder image
+                var range = quill.getSelection();
+                quill.insertText(range.index, "Đang tải ảnh...", {
+                    'color': '#999999',
+                    'italic': true
+                });
+
+                // Gửi request lên server
+                fetch('{{ route('upload.image') }}', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin' // Quan trọng cho CSRF
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Phản hồi server không thành công');
+                        }
+                        return response.json();
+                    })
+                    .then(result => {
+                        // Xóa văn bản "đang tải"
+                        quill.deleteText(range.index, "Đang tải ảnh...".length);
+
+                        // Chèn ảnh đã upload
+                        quill.insertEmbed(range.index, 'image', result.url);
+
+                        // Di chuyển con trỏ sau ảnh
+                        quill.setSelection(range.index + 1);
+                    })
+                    .catch(error => {
+                        console.error('Lỗi khi upload ảnh:', error);
+                        // Xóa văn bản "đang tải"
+                        quill.deleteText(range.index, "Đang tải ảnh...".length);
+                        alert('Không thể tải ảnh lên. Vui lòng thử lại. Chi tiết lỗi: ' + error.message);
+                    });
+            }
+
+            // Update content to hidden field when form is submitted
+            var form = document.querySelector('form');
+            form.addEventListener('submit', function() {
+                var content = quill.root.innerHTML;
+                document.getElementById('content').value = content;
+            });
         });
 
-        quill.root.innerHTML = @json($singerPost->content);
+        // Preview image function (if needed for thumbnail)
+        function previewImage(event) {
+            var input = event.target;
+            var preview = document.getElementById('thumbnail-preview');
 
-        var form = document.querySelector('form');
-
-        form.addEventListener('submit', function() {
-            var content = quill.root.innerHTML;
-            document.getElementById('content').value = content;
-        });
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
     </script>
 @endsection
 @section('CSS')
@@ -135,6 +268,7 @@
                 class="d-flex">
                 @csrf
                 @method('PUT')
+                <meta name="csrf-token" content="{{ csrf_token() }}">
                 <div class="col-lg-8 mx-1">
                     <div class="card">
                         <div class="card-body">

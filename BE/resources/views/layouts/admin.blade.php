@@ -79,10 +79,10 @@
     <script src="{{ asset('assets/admins/libs/swiper/swiper-bundle.min.js') }}"></script>
 
   <!-- ckeditor -->
-  <script src="{{ asset('assets/libs/%40ckeditor/ckeditor5-build-classic/build/ckeditor.js')}}"></script>
+  {{-- <script src="{{ asset('assets/libs/%40ckeditor/ckeditor5-build-classic/build/ckeditor.js')}}"></script> --}}
 
     <!-- quill js -->
-    <script src="{{ asset('assets/libs/quill/quill.min.js')}}"></script>
+    {{-- <script src="{{ asset('assets/libs/quill/quill.min.js')}}"></script> --}}
 
     <!-- Dashboard init -->
     <script src="{{ asset('assets/admins/js/pages/dashboard-ecommerce.init.js') }}"></script>

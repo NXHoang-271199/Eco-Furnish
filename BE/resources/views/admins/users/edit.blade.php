@@ -142,15 +142,6 @@
                                         </div>
                                     </div>
                                     <!--end col-->
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label for="countryInput" class="form-label">Mật khẩu</label>
-                                            <input type="text" class="form-control" id="countryInput"
-                                                placeholder="Country" value="{{ $singerUser->password }}"
-                                                name="password">
-                                        </div>
-                                    </div>
-                                    <!--end col-->
                                     <div class="col-lg-12">
                                         <div class="mb-3">
                                             <label for="countryInput" class="form-label">Địa chỉ</label>

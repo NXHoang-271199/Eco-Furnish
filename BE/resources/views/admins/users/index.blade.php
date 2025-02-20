@@ -169,12 +169,17 @@
                                                                     aria-controls="example" rowspan="1" colspan="1"
                                                                     style="width: 74.2889px;"
                                                                     aria-label="Status: activate to sort column ascending">
-                                                                    Status</th>
+                                                                    Quyền</th>
+                                                                <th class="sorting" tabindex="0"
+                                                                    aria-controls="example" rowspan="1" colspan="1"
+                                                                    style="width: 74.2889px;"
+                                                                    aria-label="Status: activate to sort column ascending">
+                                                                    Trạng thái</th>
                                                                 <th class="sorting" tabindex="0"
                                                                     aria-controls="example" rowspan="1" colspan="1"
                                                                     style="width: 70.2889px;"
                                                                     aria-label="Action: activate to sort column ascending">
-                                                                    Action</th>
+                                                                    Hành động</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -209,7 +214,7 @@
                                                                                     $badgeColor = 'bg-primary';
                                                                                     break;
                                                                                 case 'User':
-                                                                                    $badgeColor = 'bg-success'; 
+                                                                                    $badgeColor = 'bg-success';
                                                                                     break;
                                                                                 default:
                                                                                     $badgeColor = 'bg-secondary';
@@ -219,7 +224,12 @@
                                                                             class="badge {{ $badgeColor }}">{{ $user->role->name }}</span>
                                                                     </td>
                                                                     <td>
-                                                                        <span class="badge bg-secondary">{{$user->is_active == 1 ? 'Kích hoạt' : 'Hủy kích hoạt' }}</span>
+                                                                        @if ($user->is_active == 1)
+                                                                            <span class="badge bg-success">Kích hoạt</span>
+                                                                        @else
+                                                                            <span class="badge bg-danger">Hủy kích
+                                                                                hoạt</span>
+                                                                        @endif
                                                                     </td>
                                                                     <td class="text-center">
                                                                         <div class="dropdown d-inline-block">
