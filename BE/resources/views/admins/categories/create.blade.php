@@ -10,7 +10,7 @@
 
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admins.categories.index') }}">Danh mục</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('categories.index') }}">Danh mục</a></li>
                         <li class="breadcrumb-item active">Thêm danh mục</li>
                     </ol>
                 </div>
@@ -28,7 +28,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('admins.categories.store') }}" method="POST">
+                    <form action="{{ route('categories.store') }}" method="POST">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label" for="name">Tên danh mục <span class="text-danger">*</span></label>
