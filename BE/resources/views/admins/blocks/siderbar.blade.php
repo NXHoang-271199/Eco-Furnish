@@ -72,22 +72,22 @@
                     <div class="collapse menu-dropdown" id="sidebarProducts">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="{{ route('admin.products.index') }}" class="nav-link">
+                                <a href="{{ route('products.index') }}" class="nav-link">
                                     <i class="ri-list-check-2"></i> Danh sách sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('admin.products.create') }}" class="nav-link">
+                                <a href="{{ route('products.create') }}" class="nav-link">
                                     <i class="ri-add-circle-line"></i> Thêm sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('admin.categories.index') }}" class="nav-link">
+                                <a href="{{ route('categories.index') }}" class="nav-link">
                                     <i class="ri-folder-2-line"></i> Danh mục sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('admin.variants.index') }}" class="nav-link">
+                                <a href="{{ route('variants.index') }}" class="nav-link">
                                     <i class="ri-layout-grid-line"></i> Quản lý biến thể
                                 </a>
                             </li>

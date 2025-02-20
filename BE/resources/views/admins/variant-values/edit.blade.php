@@ -8,7 +8,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Chỉnh sửa giá trị biến thể: {{ $variant->name }}</h3>
                     <div class="card-tools">
-                        <a href="{{ route('admin.variants.values.index', $variant) }}" class="btn btn-default">
+                        <a href="{{ route('variants.values.index', $variant) }}" class="btn btn-default">
                             <i class="fas fa-arrow-left"></i> Quay lại
                         </a>
                     </div>
@@ -24,7 +24,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('admin.variants.values.update', [$variant, $value]) }}" method="POST">
+                    <form action="{{ route('variants.values.update', [$variant, $value]) }}" method="POST">
                         @csrf
                         @method('PUT')
                         <div class="form-group">

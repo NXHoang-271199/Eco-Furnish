@@ -20,7 +20,7 @@ use App\Http\Controllers\Admin\CategoryController;
 
 
 // Admin Routes
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::prefix('admin')->group(function () {
     // Categories routes
     Route::resource('categories', CategoryController::class);
 

@@ -8,7 +8,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Thêm biến thể mới</h3>
                     <div class="card-tools">
-                        <a href="{{ route('admin.variants.index') }}" class="btn btn-default">
+                        <a href="{{ route('variants.index') }}" class="btn btn-default">
                             <i class="fas fa-arrow-left"></i> Quay lại
                         </a>
                     </div>
@@ -24,7 +24,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('admin.variants.store') }}" method="POST">
+                    <form action="{{ route('variants.store') }}" method="POST">
                         @csrf
                         <div class="form-group">
                             <label for="name">Tên biến thể</label>

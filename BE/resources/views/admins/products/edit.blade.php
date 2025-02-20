@@ -128,7 +128,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Chỉnh sửa sản phẩm</h3>
                     <div class="card-tools">
-                        <a href="{{ route('admin.products.index') }}" class="btn btn-default">
+                        <a href="{{ route('products.index') }}" class="btn btn-default">
                             <i class="fas fa-arrow-left"></i> Quay lại
                         </a>
                     </div>
@@ -144,7 +144,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('admin.products.update', $product->id) }}" method="POST" enctype="multipart/form-data" id="productForm">
+                    <form action="{{ route('products.update', $product->id) }}" method="POST" enctype="multipart/form-data" id="productForm">
                         @csrf
                         @method('PUT')
                         <div class="row">

@@ -50,7 +50,7 @@ class VariantValueController extends Controller
             $variant->values()->create($request->validated());
 
             DB::commit();
-            return redirect()->route('admin.variants.values.index', $variant)
+            return redirect()->route('variants.values.index', $variant)
                 ->with('success', 'Giá trị biến thể đã được tạo thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -93,7 +93,7 @@ class VariantValueController extends Controller
             $value->update($request->validated());
 
             DB::commit();
-            return redirect()->route('admin.variants.values.index', $variant)
+            return redirect()->route('variants.values.index', $variant)
                 ->with('success', 'Giá trị biến thể đã được cập nhật thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -120,7 +120,7 @@ class VariantValueController extends Controller
             $value->delete();
 
             DB::commit();
-            return redirect()->route('admin.variants.values.index', $variant)
+            return redirect()->route('variants.values.index', $variant)
                 ->with('success', 'Giá trị biến thể đã được xóa thành công.');
         } catch (\Exception $e) {
             DB::rollBack();

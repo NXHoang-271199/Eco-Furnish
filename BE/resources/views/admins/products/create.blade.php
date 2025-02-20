@@ -261,7 +261,7 @@
                 <h4 class="mb-sm-0 text-primary">Tạo sản phẩm mới</h4>
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.products.index') }}" class="text-primary">Sản phẩm</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('products.index') }}" class="text-primary">Sản phẩm</a></li>
                         <li class="breadcrumb-item active">Tạo sản phẩm mới</li>
                     </ol>
                 </div>
@@ -269,7 +269,7 @@
         </div>
     </div>
 
-    <form id="productForm" action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
+    <form id="productForm" action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="has_variants" value="0" id="hasVariants">
         
@@ -451,7 +451,7 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="text-end">
-                            <a href="{{ route('admin.products.index') }}" class="btn btn-secondary me-2">
+                            <a href="{{ route('products.index') }}" class="btn btn-secondary me-2">
                                 <i class="fas fa-times me-2"></i>Hủy
                             </a>
                             <button type="submit" class="btn btn-primary">

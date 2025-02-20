@@ -170,7 +170,7 @@
 
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.products.index') }}">Sản phẩm</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('products.index') }}">Sản phẩm</a></li>
                         <li class="breadcrumb-item active">Chi tiết sản phẩm</li>
                     </ol>
                 </div>
@@ -220,10 +220,10 @@
                                     </div>
                                     <div class="flex-shrink-0">
                                         <div class="d-flex align-items-center gap-2">
-                                            <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-primary">
+                                            <a href="{{ route('products.edit', $product->id) }}" class="btn btn-primary">
                                                 <i class="ri-pencil-fill align-bottom"></i> Sửa
                                             </a>
-                                            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                            <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-danger">

@@ -103,7 +103,7 @@ class ProductController extends Controller
 
             return response()->json([
                 'success' => true,
-                'redirect' => route('admin.products.index')
+                'redirect' => route('products.index')
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -196,7 +196,7 @@ class ProductController extends Controller
             $product->update($data);
 
             DB::commit();
-            return redirect()->route('admin.products.index')->with('success', 'Cập nhật sản phẩm thành công');
+            return redirect()->route('products.index')->with('success', 'Cập nhật sản phẩm thành công');
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error updating product: ' . $e->getMessage());
@@ -230,7 +230,7 @@ class ProductController extends Controller
             $product->delete();
 
             DB::commit();
-            return redirect()->route('admin.products.index')->with('success', 'Xóa sản phẩm thành công');
+            return redirect()->route('products.index')->with('success', 'Xóa sản phẩm thành công');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Có lỗi xảy ra khi xóa sản phẩm');

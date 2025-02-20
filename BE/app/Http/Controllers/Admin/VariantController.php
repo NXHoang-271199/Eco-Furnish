@@ -49,7 +49,7 @@ class VariantController extends Controller
             Variant::create($request->validated());
 
             DB::commit();
-            return redirect()->route('admin.variants.index')
+            return redirect()->route('variants.index')
                 ->with('success', 'Biến thể đã được tạo thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -92,7 +92,7 @@ class VariantController extends Controller
             $variant->update($request->validated());
 
             DB::commit();
-            return redirect()->route('admin.variants.index')
+            return redirect()->route('variants.index')
                 ->with('success', 'Biến thể đã được cập nhật thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -119,7 +119,7 @@ class VariantController extends Controller
             $variant->delete();
 
             DB::commit();
-            return redirect()->route('admin.variants.index')
+            return redirect()->route('variants.index')
                 ->with('success', 'Biến thể đã được xóa thành công.');
         } catch (\Exception $e) {
             DB::rollBack();

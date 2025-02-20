@@ -8,7 +8,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Danh sách biến thể</h3>
                     <div class="card-tools">
-                        <a href="{{ route('admin.variants.create') }}" class="btn btn-primary">
+                        <a href="{{ route('variants.create') }}" class="btn btn-primary">
                             <i class="fas fa-plus"></i> Thêm biến thể
                         </a>
                     </div>
@@ -45,13 +45,13 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <a href="{{ route('admin.variants.values.index', $variant) }}" class="btn btn-info btn-sm">
+                                            <a href="{{ route('variants.values.index', $variant) }}" class="btn btn-info btn-sm">
                                                 <i class="fas fa-list"></i> Giá trị
                                             </a>
-                                            <a href="{{ route('admin.variants.edit', $variant) }}" class="btn btn-primary btn-sm">
+                                            <a href="{{ route('variants.edit', $variant) }}" class="btn btn-primary btn-sm">
                                                 <i class="fas fa-edit"></i> Sửa
                                             </a>
-                                            <form action="{{ route('admin.variants.destroy', $variant) }}" method="POST" class="d-inline">
+                                            <form action="{{ route('variants.destroy', $variant) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa?')">

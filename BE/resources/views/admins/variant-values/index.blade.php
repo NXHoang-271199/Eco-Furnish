@@ -8,10 +8,10 @@
                 <div class="card-header">
                     <h3 class="card-title">Danh sách giá trị biến thể: {{ $variant->name }}</h3>
                     <div class="card-tools">
-                        <a href="{{ route('admin.variants.values.create', $variant) }}" class="btn btn-primary">
+                        <a href="{{ route('variants.values.create', $variant) }}" class="btn btn-primary">
                             <i class="fas fa-plus"></i> Thêm giá trị
                         </a>
-                        <a href="{{ route('admin.variants.index') }}" class="btn btn-default">
+                        <a href="{{ route('variants.index') }}" class="btn btn-default">
                             <i class="fas fa-arrow-left"></i> Quay lại
                         </a>
                     </div>
@@ -37,10 +37,10 @@
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $value->value }}</td>
                                     <td>
-                                        <a href="{{ route('admin.variants.values.edit', [$variant, $value]) }}" class="btn btn-primary btn-sm">
+                                        <a href="{{ route('variants.values.edit', [$variant, $value]) }}" class="btn btn-primary btn-sm">
                                             <i class="fas fa-edit"></i> Sửa
                                         </a>
-                                        <form action="{{ route('admin.variants.values.destroy', [$variant, $value]) }}" method="POST" class="d-inline">
+                                        <form action="{{ route('variants.values.destroy', [$variant, $value]) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa?')">

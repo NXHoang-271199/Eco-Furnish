@@ -29,7 +29,7 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Danh sách danh mục</h5>
                         <div class="flex-shrink-0">
-                            <a href="{{ route('admin.categories.create') }}" class="btn btn-success">
+                            <a href="{{ route('categories.create') }}" class="btn btn-success">
                                 <i class="ri-add-line align-bottom me-1"></i> Thêm danh mục
                             </a>
                         </div>
@@ -71,7 +71,7 @@
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 <li>
-                                                    <a href="{{ route('admin.categories.edit', $category->id) }}" class="dropdown-item">
+                                                    <a href="{{ route('categories.edit', $category->id) }}" class="dropdown-item">
                                                         <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Sửa
                                                     </a>
                                                 </li>
@@ -120,7 +120,7 @@
                 }).then(function(result) {
                     if (result.value) {
                         $.ajax({
-                            url: "{{ route('admin.categories.destroy', ':id') }}".replace(':id', id),
+                            url: "{{ route('categories.destroy', ':id') }}".replace(':id', id),
                             type: 'DELETE',
                             data: {
                                 _token: '{{ csrf_token() }}'
