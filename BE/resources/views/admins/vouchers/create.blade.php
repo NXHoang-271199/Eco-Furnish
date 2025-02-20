@@ -32,7 +32,7 @@
                     <!-- Mã Voucher -->
                     <div class="mb-4">
                         <label for="code" class="form-label fw-bold">Mã Voucher</label>
-                        <input type="text" class="form-control shadow-sm" name="code" value="{{ old('code') }}" required>
+                        <input type="text" class="form-control shadow-sm" name="code" value="{{ old('code') }}">
                         @error('code')
                         <div class="text-danger small">{{ $message }}</div>
                         @enderror
@@ -50,7 +50,7 @@
                     <!-- Số tiền chiết khấu tối đa -->
                     <div class="mb-4">
                         <label for="max_discount_amount" class="form-label fw-bold">Số tiền chiết khấu tối đa</label>
-                        <input type="number" class="form-control shadow-sm" name="max_discount_amount" value="{{ old('max_discount_amount') }}" required>
+                        <input type="number" class="form-control shadow-sm" name="max_discount_amount" value="{{ old('max_discount_amount') }}" >
                         @error('max_discount_amount')
                         <div class="text-danger small">{{ $message }}</div>
                         @enderror
@@ -59,7 +59,7 @@
                     <!-- Giá trị đơn hàng tối thiểu -->
                     <div class="mb-4">
                         <label for="min_order_value" class="form-label fw-bold">Giá trị đơn hàng tối thiểu</label>
-                        <input type="number" class="form-control shadow-sm" name="min_order_value" value="{{ old('min_order_value') }}" required>
+                        <input type="number" class="form-control shadow-sm" name="min_order_value" value="{{ old('min_order_value') }}" >
                         @error('min_order_value')
                         <div class="text-danger small">{{ $message }}</div>
                         @enderror
@@ -68,7 +68,7 @@
                     <!-- Ngày bắt đầu -->
                     <div class="mb-4">
                         <label for="start_date" class="form-label fw-bold">Ngày bắt đầu</label>
-                        <input type="date" class="form-control shadow-sm" name="start_date" value="{{ old('start_date') }}" required>
+                        <input type="date" class="form-control shadow-sm" name="start_date" value="{{ old('start_date') }}" >
                         @error('start_date')
                         <div class="text-danger small">{{ $message }}</div>
                         @enderror
@@ -77,7 +77,7 @@
                     <!-- Ngày kết thúc -->
                     <div class="mb-4">
                         <label for="end_date" class="form-label fw-bold">Ngày kết thúc</label>
-                        <input type="date" class="form-control shadow-sm" name="end_date" value="{{ old('end_date') }}" required>
+                        <input type="date" class="form-control shadow-sm" name="end_date" value="{{ old('end_date') }}" >
                         @error('end_date')
                         <div class="text-danger small">{{ $message }}</div>
                         @enderror
@@ -86,22 +86,18 @@
                     <!-- Giới hạn sử dụng -->
                     <div class="mb-4">
                         <label for="usage_limit" class="form-label fw-bold">Giới hạn sử dụng</label>
-                        <input type="number" class="form-control shadow-sm" name="usage_limit" value="{{ old('usage_limit') }}" required>
+                        <input type="number" class="form-control shadow-sm" name="usage_limit" value="{{ old('usage_limit') }}" >
                         @error('usage_limit')
                         <div class="text-danger small">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <!-- Nút Quay lại và Lưu -->
-                    <div class="d-flex justify-content-between">
-                        <!-- Nút Quay lại -->
-                        <a href="{{ route('vouchers.index') }}" class="btn btn-secondary shadow-sm">
-                            Quay lại
-                        </a>
-                        <!-- Nút Lưu -->
-                        <button type="submit" class="btn btn-primary shadow-sm">
-                            Thêm mới
-                        </button>
+                    <div class="col-lg-12">
+                        <div class="hstack gap-2 justify-content-end">
+                            <button type="submit" class="btn btn-primary">Thêm mới</button>
+                            <a href="{{ route('vouchers.index') }}" class="btn btn-soft-secondary">Hủy bỏ</a>
+                        </div>
                     </div>
 
                 </form>

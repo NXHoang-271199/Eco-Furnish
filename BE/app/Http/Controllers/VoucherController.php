@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Voucher;
 use Illuminate\Http\Request;
+use App\Http\Requests\VoucherRequest;
 use Illuminate\Support\Facades\Storage;
 
 class VoucherController extends Controller
@@ -28,31 +29,22 @@ class VoucherController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        // Xác thực dữ liệu đầu vào (nếu cần)
-        $request->validate([
-            'code' => 'required|unique:vouchers,code|max:255',
-            'discount_percentage' => 'required|numeric',
-            'max_discount_amount' => 'required|numeric',
-            'min_order_value' => 'required|numeric',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'usage_limit' => 'required|numeric',
-        ]);
+    public function store(VoucherRequest  $request)
+    {   
+        $validate = $request->validated();
 
         // Tạo mới voucher
         $voucher = Voucher::create([
-            'code' => $request->code,
-            'discount_percentage' => $request->discount_percentage,
-            'max_discount_amount' => $request->max_discount_amount,
-            'min_order_value' => $request->min_order_value,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'usage_limit' => $request->usage_limit
+            'code' => $validate['code'],
+            'discount_percentage' => $validate['discount_percentage'],
+            'max_discount_amount' => $validate['max_discount_amount'],
+            'min_order_value' => $validate['min_order_value'],
+            'start_date' => $validate['start_date'],
+            'end_date' => $validate['end_date'],
+            'usage_limit' => $validate['usage_limit']
         ]);
 
-        return redirect()->route('vouchers.index')->with('success', 'Voucher created successfully!');
+        return redirect()->route('vouchers.index')->with('success', 'Tạo mới voucher thành công!');
     }
 
     /**
@@ -75,33 +67,24 @@ class VoucherController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
-    {
-        // Xác thực dữ liệu đầu vào
-        $request->validate([
-            'code' => 'required|max:255|unique:vouchers,code,' . $id,
-            'discount_percentage' => 'required|numeric',
-            'max_discount_amount' => 'required|numeric',
-            'min_order_value' => 'required|numeric',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'usage_limit' => 'required|numeric',
-        ]);
+    public function update(VoucherRequest $request, string $id)
+    {   
 
+        $validate = $request->validated();
         // Tìm voucher cần sửa
         $voucher = Voucher::findOrFail($id);
         // Cập nhật voucher
         $voucher->update([
-            'code' => $request->code,
-            'discount_percentage' => $request->discount_percentage,
-            'max_discount_amount' => $request->max_discount_amount,
-            'min_order_value' => $request->min_order_value,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'usage_limit' => $request->usage_limit
+            'code' => $validate['code'],
+            'discount_percentage' => $validate['discount_percentage'],
+            'max_discount_amount' => $validate['max_discount_amount'],
+            'min_order_value' => $validate['min_order_value'],
+            'start_date' => $validate['start_date'],
+            'end_date' => $validate['end_date'],
+            'usage_limit' => $validate['usage_limit']
         ]);
 
-        return redirect()->route('vouchers.index')->with('success', 'Voucher updated successfully!');
+        return redirect()->route('vouchers.index')->with('success', 'Sửa voucher thành công!');
     }
 
     /**
@@ -120,6 +103,6 @@ class VoucherController extends Controller
         // Xóa voucher
         $voucher->delete();
 
-        return redirect()->route('vouchers.index')->with('success', 'Voucher deleted successfully!');
+        return redirect()->route('vouchers.index')->with('success', 'Xóa voucher thành công!');
     }
 }

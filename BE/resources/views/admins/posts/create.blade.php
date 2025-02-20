@@ -255,20 +255,13 @@
                 <div class="col-lg-8 mx-1">
                     <div class="card">
                         <div class="card-body">
-                            @if ($errors->any())
-                                <div class="alert alert-danger">
-                                    <ul class="mb-0">
-                                        @foreach ($errors->all() as $error)
-                                            <li>{{ $error }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
                             <div class="mb-3">
                                 <input type="text" class="form-control" id="project-title-input"
                                     placeholder="Nhập tiêu đề...." name="title" value="{{ old('title') }}"
                                     style="font-size: 23px;">
+                                @error('title')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <div class="mb-3">
@@ -291,17 +284,18 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label for="choices-categories-input" class="form-label">Chuyên mục</label>
-                                <div class="choices">
-                                    <select class="form-select" id="choices-categories-input" name="category_id">
-                                        <option value="" selected></option>
-                                        @foreach ($listCategoryPost as $category)
-                                            <option value="{{ $category->id }}"
-                                                {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                                {{ $category->title }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                                <select class="form-select" id="choices-categories-input" name="category_id">
+                                    <option value="" selected></option>
+                                    @foreach ($listCategoryPost as $category)
+                                        <option value="{{ $category->id }}"
+                                            {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                            {{ $category->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('category_id')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
                         <div class="card-body">

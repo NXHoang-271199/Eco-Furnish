@@ -8,6 +8,7 @@
 @endsection
 @section('JS')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pnotify/5.2.0/PNotify.min.js"></script>
+    <script src="{{ asset('assets/admins/js/pages/form-validation.init.js') }}"></script>
 @endsection
 @section('content')
     <div class="container-fluid">
@@ -66,23 +67,19 @@
                     <div class="card-header">
                         <h4 class="card-title">Thêm mới người dùng</h4>
                     </div>
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <ul class="mb-0">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
                     <div class="card-body p-4">
-                        <form action="{{ route('users.store') }}" method="POST" enctype="multipart/form-data">
+                        <form action="{{ route('users.store') }}" method="POST" enctype="multipart/form-data"
+                            class="needs-validation">
                             <div class="row">
                                 <div class="col-lg-6">
                                     <div class="mb-3">
                                         <label for="nameInput" class="form-label">Tên người dùng</label>
                                         <input type="text" class="form-control" id="nameInput" name="name"
-                                            placeholder="Nhập tên người dùng" value="{{ old('name') }}">
+                                            placeholder="Nhập tên người dùng" value="{{ old('name') }}" id="nameInput"
+                                            aria-describedby="nameInput">
+                                        @error('name')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                                 <!--end col-->
@@ -91,6 +88,9 @@
                                         <label for="ageInput" class="form-label">Tuổi</label>
                                         <input type="number" class="form-control" id="ageInput" name="age"
                                             placeholder="Nhập tuổi" value="{{ old('age') }}">
+                                        @error('age')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                                 <!--end col-->
@@ -99,6 +99,9 @@
                                         <label for="emailInput" class="form-label">Email</label>
                                         <input type="email" class="form-control" id="emailInput" name="email"
                                             placeholder="Nhập email" value="{{ old('email') }}">
+                                        @error('email')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                                 <!--end col-->
@@ -107,6 +110,9 @@
                                         <label for="passwordInput" class="form-label">Mật khẩu</label>
                                         <input type="password" class="form-control" id="passwordInput" name="password"
                                             placeholder="Nhập mật khẩu" value="{{ old('password') }}">
+                                        @error('password')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                                 <!--end col-->
@@ -122,6 +128,9 @@
                                                 </option>
                                             @endforeach
                                         </select>
+                                        @error('role_id')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                                 <!--end col-->
@@ -130,6 +139,9 @@
                                         <label for="addressInput" class="form-label">Địa chỉ</label>
                                         <input type="text" class="form-control" id="addressInput" name="address"
                                             placeholder="Nhập địa chỉ" value="{{ old('address') }}">
+                                        @error('address')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                                 <!--end col-->

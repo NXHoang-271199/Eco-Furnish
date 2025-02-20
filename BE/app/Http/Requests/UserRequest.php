@@ -21,15 +21,47 @@ class UserRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
-    {   
+    {
         $userId = $this->route('id');
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255', Rule::unique('users', 'email')->ignore($userId),
+            'email' => 'required|string|email|max:255',
+            Rule::unique('users', 'email')->ignore($userId),
             'age' => 'required|integer',
+            'password' => 'required',
             'role_id' => 'required|exists:roles,id',
-            'address' => 'nullable|string|max:255',
+            'address' => 'required|max:255',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ];
+    }
+    public function messages()
+    {
+        return [
+            'name.required' => 'Tên không được để trống!',
+            'name.string' => 'Tên phải là chuỗi ký tự!',
+            'name.max' => 'Tên không được dài hơn 255 ký tự!',
+
+            'email.required' => 'Email không được để trống!',
+            'email.string' => 'Email phải là chuỗi ký tự!',
+            'email.email' => 'Email không hợp lệ!',
+            'email.max' => 'Email không được dài hơn 255 ký tự!',
+            'email.unique' => 'Email này đã tồn tại, vui lòng chọn email khác!',
+
+            'age.required' => 'Tuổi không được để trống!',
+            'age.integer' => 'Tuổi phải là số nguyên!',
+
+            'password.required' => 'Mật khâu không được để trống!',
+
+            'role_id.required' => 'Vai trò không được để trống!',
+            'role_id.exists' => 'Vai trò không hợp lệ!',
+
+            'address.required' => 'Địa chỉ không được để trống!',
+            'address.max' => 'Địa chỉ không được dài hơn 255 ký tự!',
+
+
+            'avatar.image' => 'Ảnh đại diện phải là tệp hình ảnh!',
+            'avatar.mimes' => 'Ảnh đại diện phải có định dạng jpeg, png, jpg hoặc gif!',
+            'avatar.max' => 'Ảnh đại diện không được lớn hơn 2MB!',
         ];
     }
 }

@@ -156,7 +156,10 @@
                             <div class="form-group">
                                 <label for="title">Tên danh mục</label>
                                 <input type="text" id="title" name="title" class="form-control"
-                                    placeholder="Nhập tên danh mục" required>
+                                    placeholder="Nhập tên danh mục">
+                                @error('title')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
                             </div>
                             <button type="submit" id="submit-btn" class="btn btn-success mt-3">
                                 <i class="ri-add-fill me-1 align-bottom"></i> Thêm danh mục
@@ -189,7 +192,7 @@
                                 <tbody>
                                     @foreach ($listCategoryPost as $key => $cate)
                                         <tr class="text-center">
-                                            <td scope="row">{{ $key + 1}}</td>
+                                            <td scope="row">{{ $key + 1 }}</td>
                                             <td scope="row">{{ $cate->title }}</td>
                                             <td>
                                                 <div class="hstack gap-3 fs-15 justify-content-center">

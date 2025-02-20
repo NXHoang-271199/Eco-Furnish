@@ -25,4 +25,11 @@ class CategoryPostRequest extends FormRequest
             'title' => 'required|string|max:255',
         ];
     }
+
+    public function messages()
+    {
+        return [
+            'title.required' => 'Vui lòng nhập tên chuyên mục',
+        ];
+    }
 }

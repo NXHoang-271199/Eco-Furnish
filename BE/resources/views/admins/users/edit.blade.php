@@ -99,6 +99,9 @@
                                             <input type="text" class="form-control" id="firstnameInput"
                                                 placeholder="Enter your firstname" value="{{ $singerUser->name }}"
                                                 name="name">
+                                            @error('name')
+                                                <div class="text-danger small">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <!--end col-->
@@ -108,6 +111,9 @@
                                             <input type="text" class="form-control" id="lastnameInput"
                                                 placeholder="Enter your lastname" value="{{ $singerUser->age }}"
                                                 name="age">
+                                            @error('age')
+                                                <div class="text-danger small">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <!--end col-->
@@ -117,6 +123,9 @@
                                             <input type="email" class="form-control" id="emailInput"
                                                 placeholder="Enter your email" value="{{ $singerUser->email }}"
                                                 name="email">
+                                            @error('email')
+                                                <div class="text-danger small">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <!--end col-->
@@ -139,6 +148,9 @@
                                                         {{ $role->name }}</option>
                                                 @endforeach
                                             </select>
+                                            @error('role_id')
+                                                <div class="text-danger small">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <!--end col-->
@@ -147,13 +159,17 @@
                                             <label for="countryInput" class="form-label">Địa chỉ</label>
                                             <input type="text" class="form-control" id="countryInput"
                                                 placeholder="Country" value="{{ $singerUser->address }}" name="address">
+                                            @error('address')
+                                                <div class="text-danger small">{{ $message }}</div>
+                                            @enderror
                                         </div>
                                     </div>
                                     <!--end col-->
                                     <div class="col-lg-12">
                                         <div class="hstack gap-2 justify-content-end">
                                             <button type="submit" class="btn btn-primary">Cập nhật</button>
-                                            <a href="{{ route('users.index') }}" type="button" class="btn btn-soft-success">Hủy bỏ</a>
+                                            <a href="{{ route('users.index') }}" type="button"
+                                                class="btn btn-soft-success">Hủy bỏ</a>
                                         </div>
                                     </div>
                                     <!--end col-->

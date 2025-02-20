@@ -23,10 +23,21 @@ class PostRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
             'category_id' => 'required|exists:category_posts,id', 
             'image_thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'user_id' => 'required|exists:users,id',
         ];
     }
+
+    public function messages()
+{
+    return [
+        'title.required' => 'Tiêu đề không được để trống!',
+        'title.string' => 'Tiêu đề phải là chuỗi ký tự!',
+        'title.max' => 'Tiêu đề không được dài hơn 255 ký tự!',
+
+        'category_id.required' => 'Danh mục không được để trống!',
+        'category_id.exists' => 'Danh mục không hợp lệ!',
+    ];
+}
 }

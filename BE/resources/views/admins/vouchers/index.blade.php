@@ -27,6 +27,24 @@
                     </div>
                 </div>
             </div>
+
+            @if (session('success'))
+                <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow"
+                    role="alert">
+                    <i class="ri-check-double-line me-3 align-middle"></i>
+                    <strong>{{ session('success') }}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow"
+                    role="alert">
+                    <i class="ri-alert-line me-3 align-middle"></i> <strong>{{ session('error') }}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <div class="card">
                 <div class="card-body">
                     <div class="listjs-table" id="customerList">
@@ -54,38 +72,38 @@
                                     </tr>
                                 </thead>
                                 <tbody class="list form-check-all">
-                                    <tbody>
-                                        @foreach ($vouchers as $voucher)
-                                            <tr class="hover:bg-light transition-all duration-200">
-                                                <td>{{ $voucher->code }}</td>
-                                                <td>{{ number_format($voucher->discount_percentage, 2) }}%</td>
-                                                <td>{{ number_format($voucher->max_discount_amount) }}</td>
-                                                <td>{{ number_format($voucher->min_order_value) }}</td>
-                                                <td>{{ \Carbon\Carbon::parse($voucher->start_date)->format('d-m-Y') }}</td>
-                                                <td>{{ \Carbon\Carbon::parse($voucher->end_date)->format('d-m-Y') }}</td>
-                                                <td>{{ $voucher->usage_limit }}</td>
-                                                <td class="d-flex">
-                                                    <!-- Nút sửa -->
-                                                    <a href="{{ route('vouchers.edit', $voucher->id) }}"
-                                                        class="btn btn-sm btn-outline-primary rounded-3 shadow-sm me-2 transition-all duration-300 hover:bg-primary-light">
-                                                        <i class="ri-settings-4-line"></i>
-                                                    </a>
-        
-                                                    <!-- Form xóa -->
-                                                    <form action="{{ route('vouchers.destroy', $voucher->id) }}" method="POST"
-                                                        style="display:inline-block;"
-                                                        onsubmit="return confirm('Bạn có chắc chắn muốn xóa voucher này?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit"
-                                                            class="btn btn-sm btn-outline-danger rounded-3 shadow-sm transition-all duration-300 hover:bg-danger-light">
-                                                            <i class="ri-delete-bin-5-line"></i>
-                                                        </button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
+                                <tbody>
+                                    @foreach ($vouchers as $voucher)
+                                        <tr class="hover:bg-light transition-all duration-200">
+                                            <td>{{ $voucher->code }}</td>
+                                            <td>{{ number_format($voucher->discount_percentage, 2) }}%</td>
+                                            <td>{{ number_format($voucher->max_discount_amount) }}</td>
+                                            <td>{{ number_format($voucher->min_order_value) }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($voucher->start_date)->format('d-m-Y') }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($voucher->end_date)->format('d-m-Y') }}</td>
+                                            <td>{{ $voucher->usage_limit }}</td>
+                                            <td class="d-flex">
+                                                <!-- Nút sửa -->
+                                                <a href="{{ route('vouchers.edit', $voucher->id) }}"
+                                                    class="btn btn-sm btn-outline-primary rounded-3 shadow-sm me-2 transition-all duration-300 hover:bg-primary-light">
+                                                    <i class="ri-settings-4-line"></i>
+                                                </a>
+
+                                                <!-- Form xóa -->
+                                                <form action="{{ route('vouchers.destroy', $voucher->id) }}" method="POST"
+                                                    style="display:inline-block;"
+                                                    onsubmit="return confirm('Bạn có chắc chắn muốn xóa voucher này?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger rounded-3 shadow-sm transition-all duration-300 hover:bg-danger-light">
+                                                        <i class="ri-delete-bin-5-line"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
                                 </tbody>
                             </table>
                         </div>
@@ -95,4 +113,3 @@
         </div>
     </div>
 @endsection
-
