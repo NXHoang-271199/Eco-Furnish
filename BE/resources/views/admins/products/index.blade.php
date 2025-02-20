@@ -119,6 +119,31 @@
         .d-flex.gap-2 {
             gap: 0.5rem !important;
         }
+
+        /* Thêm style cho mũi tên phân trang */
+        .pagination-nav {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .pagination-nav a {
+            color: #6c757d;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-nav a:hover {
+            background-color: #f8f9fa;
+        }
+
+        .pagination-info {
+            color: #6c757d;
+            font-size: 14px;
+        }
     </style>
 @endsection
 
@@ -286,15 +311,26 @@
                                                         </div>
                                                     </td>
                                                     <td>{{ $product->category->name ?? 'N/A' }}</td>
-                                                    <td>
+                                                    <td data-original-price="{{ $product->price }}" 
+                                                        @if($product->variants->count() > 0)
+                                                        data-min-variant-price="{{ $product->variants->min('price') }}"
+                                                        data-max-variant-price="{{ $product->variants->max('price') }}"
+                                                        @endif>
                                                         <div>
                                                             <strong>Giá gốc:</strong> {{ number_format($product->price) }} VNĐ
                                                         </div>
                                                         @if($product->variants->count() > 0)
                                                             <div class="mt-2">
                                                                 <strong>Giá biến thể:</strong> 
-                                                                {{ number_format($product->variants->min('price')) }} - 
-                                                                {{ number_format($product->variants->max('price')) }} VNĐ
+                                                                @php
+                                                                    $minPrice = $product->variants->min('price');
+                                                                    $maxPrice = $product->variants->max('price');
+                                                                @endphp
+                                                                @if($minPrice === $maxPrice)
+                                                                    {{ number_format($minPrice) }} VNĐ
+                                                                @else
+                                                                    {{ number_format($minPrice) }} - {{ number_format($maxPrice) }} VNĐ
+                                                                @endif
                                                             </div>
                                                         @endif
                                                     </td>
@@ -333,7 +369,23 @@
                                         </table>
                                     </div>
                                     <div class="d-flex justify-content-end mt-3">
-                                        {{ $products->links() }}
+                                        <div class="pagination-nav">
+                                            @if($products->onFirstPage())
+                                                <span class="text-muted">« Previous</span>
+                                            @else
+                                                <a href="{{ $products->previousPageUrl() }}">« Previous</a>
+                                            @endif
+
+                                            <span class="pagination-info">
+                                                Showing {{ $products->firstItem() }} to {{ $products->lastItem() }} of {{ $products->total() }} results
+                                            </span>
+
+                                            @if($products->hasMorePages())
+                                                <a href="{{ $products->nextPageUrl() }}">Next »</a>
+                                            @else
+                                                <span class="text-muted">Next »</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -408,50 +460,46 @@
             }
         });
 
-        function getProductPrice(priceCell) {
+        function getProductPrices(priceCell) {
             // Lấy giá gốc
             const originalPriceText = priceCell.querySelector('div:first-child').textContent;
             const originalPrice = parseInt(originalPriceText.match(/\d+([.,]\d+)?/)[0].replace(/[,.]/g, ''));
             
+            const prices = [originalPrice];
+            
             // Lấy giá biến thể nếu có
             const variantPriceDiv = priceCell.querySelector('div.mt-2');
             if (variantPriceDiv) {
-                const variantPrices = variantPriceDiv.textContent.match(/\d+([.,]\d+)?/g)
-                    .map(price => parseInt(price.replace(/[,.]/g, '')));
-                return {
-                    original: originalPrice,
-                    variants: variantPrices,
-                    min: Math.min(originalPrice, ...variantPrices),
-                    max: Math.max(originalPrice, ...variantPrices)
-                };
+                const variantText = variantPriceDiv.textContent;
+                const priceMatches = variantText.match(/\d{1,3}(,\d{3})*(\.\d+)?/g);
+                if (priceMatches) {
+                    priceMatches.forEach(price => {
+                        prices.push(parseInt(price.replace(/[,.]/g, '')));
+                    });
+                }
             }
             
-            return {
-                original: originalPrice,
-                variants: [],
-                min: originalPrice,
-                max: originalPrice
-            };
+            return prices;
         }
 
-        function applyFilters() {
-            const minPriceInput = document.getElementById('minCost').value.replace(/[,.]/g, '');
-            const maxPriceInput = document.getElementById('maxCost').value.replace(/[,.]/g, '');
+        function applyPriceFilter() {
+            // Lấy giá trị từ input và xử lý
+            let minPriceInput = document.getElementById('minCost').value;
+            let maxPriceInput = document.getElementById('maxCost').value;
             
-            // Chuyển đổi giá trị input thành số
-            const minPrice = parseInt(minPriceInput);
-            const maxPrice = parseInt(maxPriceInput);
+            // Xóa dấu phẩy và chấm trong chuỗi số
+            minPriceInput = minPriceInput.replace(/[,.]/g, '');
+            maxPriceInput = maxPriceInput.replace(/[,.]/g, '');
             
-            // Kiểm tra nếu giá trị không hợp lệ
-            if (isNaN(minPrice) || isNaN(maxPrice) || minPrice < 0 || maxPrice < minPrice) {
-                Swal.fire({
-                    title: 'Lỗi!',
-                    text: 'Vui lòng nhập khoảng giá hợp lệ',
-                    icon: 'error',
-                    confirmButtonText: 'Đóng'
-                });
-                return;
-            }
+            // Chuyển đổi thành số và đảm bảo giá trị hợp lệ
+            let minPrice = parseInt(minPriceInput);
+            let maxPrice = parseInt(maxPriceInput);
+
+            // Đảm bảo giá trị hợp lệ
+            minPrice = isNaN(minPrice) ? 0 : minPrice;
+            maxPrice = isNaN(maxPrice) ? 100000000 : maxPrice;
+            
+            console.log('Filtering with price range:', { minPrice, maxPrice });
 
             const productRows = document.querySelectorAll('#orderTable tbody tr');
             let visibleProducts = 0;
@@ -459,7 +507,6 @@
             productRows.forEach(row => {
                 const priceCell = row.querySelector('td:nth-child(4)');
                 const categoryCell = row.querySelector('td:nth-child(3)');
-                const priceInfo = getProductPrice(priceCell);
                 const categoryName = categoryCell.textContent.trim();
 
                 // Kiểm tra điều kiện danh mục
@@ -469,19 +516,29 @@
                 // Kiểm tra điều kiện giá
                 let matchesPrice = false;
 
-                // Kiểm tra giá gốc
-                const originalPriceInRange = priceInfo.original >= minPrice && priceInfo.original <= maxPrice;
+                // Lấy giá gốc và giá biến thể từ data attributes
+                const originalPrice = parseInt(priceCell.getAttribute('data-original-price'));
+                const minVariantPrice = priceCell.hasAttribute('data-min-variant-price') ? 
+                    parseInt(priceCell.getAttribute('data-min-variant-price')) : null;
+                const maxVariantPrice = priceCell.hasAttribute('data-max-variant-price') ? 
+                    parseInt(priceCell.getAttribute('data-max-variant-price')) : null;
 
-                if (priceInfo.variants.length > 0) {
-                    // Nếu có biến thể, kiểm tra xem có ít nhất một biến thể nằm trong khoảng không
-                    const hasVariantInRange = priceInfo.variants.some(price => price >= minPrice && price <= maxPrice);
-                    // Chỉ hiển thị nếu giá gốc hoặc ít nhất một biến thể nằm trong khoảng
-                    matchesPrice = originalPriceInRange || hasVariantInRange;
-                } else {
-                    // Nếu không có biến thể, chỉ kiểm tra giá gốc
-                    matchesPrice = originalPriceInRange;
+                // Kiểm tra giá gốc
+                if (originalPrice <= maxPrice) {
+                    if (minPrice === 0 || originalPrice >= minPrice) {
+                        matchesPrice = true;
+                    }
                 }
 
+                // Kiểm tra giá biến thể nếu có và chưa match giá gốc
+                if (!matchesPrice && minVariantPrice !== null && maxVariantPrice !== null) {
+                    // Kiểm tra nếu có bất kỳ giá biến thể nào trong khoảng
+                    if (minVariantPrice <= maxPrice && (minPrice === 0 || maxVariantPrice >= minPrice)) {
+                        matchesPrice = true;
+                    }
+                }
+
+                // Hiển thị hoặc ẩn sản phẩm
                 if (matchesCategory && matchesPrice) {
                     row.style.display = '';
                     visibleProducts++;
@@ -490,19 +547,44 @@
                 }
             });
 
-            // Hiển thị thông báo nếu không có sản phẩm nào
+            // Hiển thị thông báo kết quả lọc giá
             if (visibleProducts === 0) {
                 Swal.fire({
                     title: 'Không tìm thấy sản phẩm!',
-                    text: 'Không có sản phẩm nào phù hợp với điều kiện lọc',
+                    html: `Không có sản phẩm nào có giá trong khoảng ${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')} VNĐ<br>
+                          Vui lòng thử lại với khoảng giá khác.`,
                     icon: 'info',
                     confirmButtonText: 'Đóng'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Đã lọc sản phẩm!',
+                    html: `Tìm thấy ${visibleProducts} sản phẩm có giá trong khoảng ${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')} VNĐ`,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
                 });
             }
         }
 
+        function applyCategoryFilter() {
+            const productRows = document.querySelectorAll('#orderTable tbody tr');
+            
+            productRows.forEach(row => {
+                const categoryCell = row.querySelector('td:nth-child(3)');
+                const categoryName = categoryCell.textContent.trim();
+                
+                // Kiểm tra điều kiện danh mục
+                const matchesCategory = selectedCategoryId === 'all' || 
+                    categoryName === document.querySelector(`.category-filter[data-category-id="${selectedCategoryId}"] .listname`).textContent.trim();
+
+                // Hiển thị hoặc ẩn sản phẩm
+                row.style.display = matchesCategory ? '' : 'none';
+            });
+        }
+
         function filterProducts() {
-            applyFilters();
+            applyPriceFilter();
         }
 
         function resetFilters() {
@@ -549,10 +631,16 @@
                     this.classList.add('active');
                     selectedCategoryId = this.getAttribute('data-category-id');
 
-                    // Áp dụng cả hai bộ lọc
-                    applyFilters();
+                    // Chỉ áp dụng lọc danh mục
+                    applyCategoryFilter();
                 });
             });
+
+            // Thêm sự kiện click cho nút áp dụng bộ lọc
+            const filterButton = document.querySelector('.filter-button');
+            if (filterButton) {
+                filterButton.onclick = filterProducts;
+            }
         });
     </script>
 @endsection 
