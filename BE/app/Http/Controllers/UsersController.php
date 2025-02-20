@@ -21,7 +21,13 @@ class UsersController extends Controller
             'name' => $request->input('name'),
             'email' => $request->input('email'),
         ];
-        $listUsers = User::search($filters)->orderByDesc('id')->paginate(15);
+        $userRoleId = Role::where('name', 'user')->value('id');
+
+        $listUsers = User::where('role_id', $userRoleId)
+            ->search($filters)
+            ->orderByDesc('id')
+            ->paginate(15);
+
         return view('admins.users.index', compact('listUsers'));
     }
 
@@ -84,7 +90,7 @@ class UsersController extends Controller
      */
     public function update(UserRequest $request, string $id)
     {
-        $singerUser = User::findOrFail($id);    
+        $singerUser = User::findOrFail($id);
         $validated = $request->validated();
         try {
             $filePath = $singerUser->avatar;
