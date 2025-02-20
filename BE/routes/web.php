@@ -2,8 +2,8 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PostsController;
-use App\Http\Controllers\UsersController;
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryPostController;
@@ -33,14 +33,17 @@ Route::prefix('admin')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('admins.dashboard');
 
     // User ===============================================
-    Route::resource('users', UsersController::class);
+    Route::resource('users', UserController::class);
 
     // Post ===============================================
-    Route::resource('posts', PostsController::class);
+    Route::resource('posts', PostController::class);
 
     // Category Post ======================================
     Route::resource('category-posts', CategoryPostController::class);
     Route::post('upload-image', [App\Http\Controllers\ImageUploadController::class, 'upload'])->name('upload.image');
+
+    // Voucher ============================================
+    Route::resource('vouchers', UserController::class);
 
 });
 
