@@ -95,13 +95,18 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('category-posts.index') }}" class="nav-link" data-key="t-nestable-list">
+                                <a href="{{ route('category-posts.index') }}" class="nav-link"
+                                    data-key="t-nestable-list">
                                     Chuyên mục
                                 </a>
                             </li>
                         </ul>
                     </div>
                 </li>
+                <a class="nav-link menu-link" href="{{ route('vouchers.index') }}">
+                    <i class="bx bx-gift"></i> <span data-key="t-advance-ui">Quản lý mã giảm giá</span>
+                </a>
+
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarSanPham">

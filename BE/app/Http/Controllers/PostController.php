@@ -106,7 +106,7 @@ class PostController extends Controller
 
         $filePath = null;
         if ($request->hasFile('image_thumbnail')) {
-            $filePath = $request->file('image_thumbnail')->store('upload/blogs', 'public');
+            $filePath = $request->file('image_thumbnail')->store('uploads/blogs', 'public');
         }
         $slug = Str::slug($request->title);
 
@@ -191,7 +191,7 @@ class PostController extends Controller
                 File::delete(public_path($singerPost->image_thumbnail));
             }
 
-            $filePath = $request->file('image_thumbnail')->store('upload/blogs', 'public');
+            $filePath = $request->file('image_thumbnail')->store('uploads/blogs', 'public');
             $singerPost->image_thumbnail = $filePath;
         }
         $slug = Str::slug($request->title);

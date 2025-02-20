@@ -136,7 +136,7 @@
                                 <div class="col-lg-12">
                                     <div class="hstack gap-2 justify-content-end">
                                         <button type="submit" class="btn btn-primary">Thêm mới</button>
-                                        <button type="reset" class="btn btn-soft-secondary">Reset</button>
+                                        <a href="{{ route('users.index') }}" class="btn btn-soft-secondary">Hủy bỏ</a>
                                     </div>
                                 </div>
                                 <!--end col-->

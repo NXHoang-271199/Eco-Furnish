@@ -50,7 +50,7 @@ class UserController extends Controller
 
         $filePath = null;
         if ($request->hasFile('avatar')) {
-            $filePath = $request->file('avatar')->store('upload/avatar', 'public');
+            $filePath = $request->file('avatar')->store('uploads/avatar', 'public');
         }
         User::create([
             'name' => $validated['name'],
@@ -95,7 +95,7 @@ class UserController extends Controller
         try {
             $filePath = $singerUser->avatar;
             if ($request->hasFile('avatar')) {
-                $filePath = $request->file('avatar')->store('upload/avatar', 'public');
+                $filePath = $request->file('avatar')->store('uploads/avatar', 'public');
 
                 if ($singerUser->avatar && Storage::disk()->exists($singerUser->avatar)) {
                     Storage::disk()->delete($singerUser->avatar);

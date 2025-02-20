@@ -8,8 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\Auth\RegisterController;
-
-
+use App\Http\Controllers\VoucherController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,7 +42,7 @@ Route::prefix('admin')->group(function () {
     Route::post('upload-image', [App\Http\Controllers\ImageUploadController::class, 'upload'])->name('upload.image');
 
     // Voucher ============================================
-    Route::resource('vouchers', UserController::class);
+    Route::resource('vouchers', VoucherController::class);
 
 });
 

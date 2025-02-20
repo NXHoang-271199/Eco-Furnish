@@ -79,6 +79,22 @@ class BreadcrumbServiceProvider extends ServiceProvider
                 ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')],
                 ['name' => 'Chỉnh Sửa', 'url' => '']
             ],
+            
+            // Voucher Routes
+            'admins.vouchers.index' => [
+                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+                ['name' => 'Vouchers', 'url' => route('vouchers.index')]
+            ],
+            'admins.vouchers.create' => [
+                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+                ['name' => 'Vouchers', 'url' => route('vouchers.index')],
+                ['name' => 'Thêm Mới', 'url' => '']
+            ],
+            'admins.vouchers.edit' => [
+                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+                ['name' => 'Vouchers', 'url' => route('vouchers.index')],
+                ['name' => 'Chỉnh Sửa', 'url' => '']
+            ],
 
             // Upload Image
             'upload.image' => [
@@ -126,6 +142,12 @@ class BreadcrumbServiceProvider extends ServiceProvider
                 $user = \App\Models\User::find($segment);
                 if ($user) {
                     $name = $user->name; // Lấy tên người dùng
+                }
+            }
+            if (is_numeric($segment) && request()->is('admin/vouchers/*')) {
+                $voucher = \App\Models\Voucher::find($segment);
+                if ($voucher) {
+                    $name = $voucher->code; // Lấy mã voucher
                 }
             }
     
