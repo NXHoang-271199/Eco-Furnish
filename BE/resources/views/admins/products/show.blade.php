@@ -2,7 +2,7 @@
 
 @section('title', 'Chi tiết sản phẩm')
 
-@section('css')
+@section('CSS')
     <!-- Swiper css -->
     <link href="{{ asset('assets/admins/libs/swiper/swiper-bundle.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- Sweet Alert css-->
@@ -170,8 +170,7 @@
 
                 <div class="page-title-right">
                     <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.products.index') }}">Sản phẩm</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('products.index') }}">Sản phẩm</a></li>
                         <li class="breadcrumb-item active">Chi tiết sản phẩm</li>
                     </ol>
                 </div>
@@ -208,9 +207,6 @@
                                                 </div>
                                             @endforeach
                                         @endif
-                                        <div class="thumbnail-wrapper add-photo">
-                                            <i class="fas fa-plus add-photo-icon"></i>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -224,10 +220,10 @@
                                     </div>
                                     <div class="flex-shrink-0">
                                         <div class="d-flex align-items-center gap-2">
-                                            <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-primary">
+                                            <a href="{{ route('products.edit', $product->id) }}" class="btn btn-primary">
                                                 <i class="ri-pencil-fill align-bottom"></i> Sửa
                                             </a>
-                                            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                            <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-danger">
@@ -269,17 +265,21 @@
                                                         <tr>
                                                             <th scope="row">Giá bán</th>
                                                             <td>
+                                                                <div>
+                                                                    <strong>Giá gốc:</strong> {{ number_format($product->price) }} VNĐ
+                                                                </div>
                                                                 @if($product->variants->count() > 0)
-                                                                    {{ number_format($product->variants->min('price')) }} - 
-                                                                    {{ number_format($product->variants->max('price')) }} VNĐ
-                                                                @else
-                                                                    {{ number_format($product->price) }} VNĐ
+                                                                    <div class="mt-2">
+                                                                        <strong>Giá biến thể:</strong> 
+                                                                        {{ number_format($product->variants->min('price')) }} - 
+                                                                        {{ number_format($product->variants->max('price')) }} VNĐ
+                                                                    </div>
                                                                 @endif
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <th scope="row">Số lượng biến thể</th>
-                                                            <td>{{ $product->variants->count() }}</td>
+                                                            <td>{{ $product->variants->groupBy('sku')->count() }}</td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -362,29 +362,17 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM Content Loaded');
             
             // Force horizontal layout
             const galleryContainer = document.querySelector('.gallery-container');
             if (galleryContainer) {
-                console.log('Gallery container found');
+                
                 // Force layout recalculation
                 galleryContainer.style.display = 'flex';
                 galleryContainer.style.flexDirection = 'row';
                 galleryContainer.style.alignItems = 'center';
                 
-                // Log computed styles
-                const computedStyle = window.getComputedStyle(galleryContainer);
-                console.log('Display:', computedStyle.display);
-                console.log('Flex-direction:', computedStyle.flexDirection);
-                console.log('Width:', computedStyle.width);
-                
-                // Log children
-                const children = galleryContainer.children;
-                console.log('Number of thumbnails:', children.length);
-                Array.from(children).forEach((child, index) => {
-                    console.log(`Thumbnail ${index} display:`, window.getComputedStyle(child).display);
-                });
+               
             }
 
             // Initialize first thumbnail
@@ -402,13 +390,17 @@
                 mainImage.src = src;
                 
                 thumbnails.forEach(thumb => {
-                    const thumbImg = thumb.querySelector('img');
-                    if (thumbImg && thumbImg.src === src) {
-                        thumb.classList.add('active');
-                    } else {
-                        thumb.classList.remove('active');
-                    }
+                    thumb.classList.remove('active');
                 });
+                
+                const activeThumbnail = Array.from(thumbnails).find(thumb => {
+                    const img = thumb.querySelector('img');
+                    return img && img.src === src;
+                });
+                
+                if (activeThumbnail) {
+                    activeThumbnail.classList.add('active');
+                }
             }
         }
     </script>

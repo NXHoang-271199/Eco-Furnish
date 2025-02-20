@@ -25,7 +25,7 @@ class ProductController extends Controller
     {
         $products = Product::with('category')->latest()->paginate(10);
         $categories = Category::all();
-        return view('admin.products.index', compact('products', 'categories'));
+        return view('admins.products.index', compact('products', 'categories'));
     }
 
     /**
@@ -35,7 +35,7 @@ class ProductController extends Controller
     {
         $categories = Category::all();
         $variants = Variant::with('values')->get();
-        return view('admin.products.create', compact('categories', 'variants'));
+        return view('admins.products.create', compact('categories', 'variants'));
     }
 
     /**
@@ -59,16 +59,14 @@ class ProductController extends Controller
             }
 
             // Tạo sản phẩm
-            $product = Product::create([
-                ...$data,
-                'price' => $request->has('variants') ? 0 : $data['price']
-            ]);
+            $product = Product::create($data);
 
             // Xử lý gallery images nếu có
             if ($request->hasFile('gallery')) {
                 foreach ($request->file('gallery') as $image) {
                     $imagePath = $image->store('products/gallery', 'public');
-                    $product->gallery()->create([
+                    GalleryImage::create([
+                        'product_id' => $product->id,
                         'image_url' => $imagePath
                     ]);
                 }
@@ -96,9 +94,6 @@ class ProductController extends Controller
                         }
                     }
                 }
-
-                // Đặt giá mặc định là 0 cho sản phẩm có biến thể
-                $product->update(['price' => 0]);
             }
 
             DB::commit();
@@ -108,7 +103,7 @@ class ProductController extends Controller
 
             return response()->json([
                 'success' => true,
-                'redirect' => route('admin.products.index')
+                'redirect' => route('products.index')
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -126,7 +121,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load(['gallery', 'category', 'variants.variant', 'variants.variantValue']);
-        return view('admin.products.show', compact('product'));
+        return view('admins.products.show', compact('product'));
     }
 
     /**
@@ -139,7 +134,7 @@ class ProductController extends Controller
         $colorVariants = VariantValue::where('variant_id', 1)->get();
         $capacityVariants = VariantValue::where('variant_id', 2)->get();
         $product->load(['gallery', 'variants.variant', 'variants.variantValue']);
-        return view('admin.products.edit', compact('product', 'categories', 'variants', 'colorVariants', 'capacityVariants'));
+        return view('admins.products.edit', compact('product', 'categories', 'variants', 'colorVariants', 'capacityVariants'));
     }
 
     /**
@@ -195,16 +190,13 @@ class ProductController extends Controller
                         ]);
                     }
                 }
-
-                // Đặt giá mặc định là 0 cho sản phẩm có biến thể
-                $data['price'] = 0;
             }
 
             // Cập nhật thông tin sản phẩm
             $product->update($data);
 
             DB::commit();
-            return redirect()->route('admin.products.index')->with('success', 'Cập nhật sản phẩm thành công');
+            return redirect()->route('products.index')->with('success', 'Cập nhật sản phẩm thành công');
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error updating product: ' . $e->getMessage());
@@ -238,7 +230,7 @@ class ProductController extends Controller
             $product->delete();
 
             DB::commit();
-            return redirect()->route('admin.products.index')->with('success', 'Xóa sản phẩm thành công');
+            return redirect()->route('products.index')->with('success', 'Xóa sản phẩm thành công');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Có lỗi xảy ra khi xóa sản phẩm');

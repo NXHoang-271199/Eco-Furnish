@@ -15,12 +15,12 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = Category::latest()->paginate(10);
-        return view('admin.categories.index', compact('categories'));
+        return view('admins.categories.index', compact('categories'));
     }
 
     public function create()
     {
-        return view('admin.categories.create');
+        return view('admins.categories.create');
     }
 
     public function store(StoreCategoryRequest $request)
@@ -35,7 +35,7 @@ class CategoryController extends Controller
             Category::create($data);
             
             DB::commit();
-            return redirect()->route('admin.categories.index')
+            return redirect()->route('categories.index')
                 ->with('success', 'Thêm danh mục thành công');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -47,14 +47,14 @@ class CategoryController extends Controller
 
     public function edit(Category $category)
     {
-        return view('admin.categories.edit', compact('category'));
+        return view('admins.categories.edit', compact('category'));
     }
 
     public function update(UpdateCategoryRequest $request, Category $category)
     {
         try {
             $category->update($request->validated());
-            return redirect()->route('admin.categories.index')->with('success', 'Cập nhật danh mục thành công');
+            return redirect()->route('categories.index')->with('success', 'Cập nhật danh mục thành công');
         } catch (\Exception $e) {
             return back()->with('error', 'Có lỗi xảy ra khi cập nhật danh mục');
         }

@@ -19,7 +19,7 @@ class VariantValueController extends Controller
     {
         try {
             $values = $variant->values;
-            return view('admin.variant-values.index', compact('variant', 'values'));
+            return view('admins.variant-values.index', compact('variant', 'values'));
         } catch (\Exception $e) {
             Log::error('Error in variant value index: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi tải danh sách giá trị biến thể');
@@ -32,7 +32,7 @@ class VariantValueController extends Controller
     public function create(Variant $variant)
     {
         try {
-            return view('admin.variant-values.create', compact('variant'));
+            return view('admins.variant-values.create', compact('variant'));
         } catch (\Exception $e) {
             Log::error('Error in variant value create: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi tải trang tạo giá trị biến thể');
@@ -50,7 +50,7 @@ class VariantValueController extends Controller
             $variant->values()->create($request->validated());
 
             DB::commit();
-            return redirect()->route('admin.variants.values.index', $variant)
+            return redirect()->route('variants.values.index', $variant)
                 ->with('success', 'Giá trị biến thể đã được tạo thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -75,7 +75,7 @@ class VariantValueController extends Controller
     public function edit(Variant $variant, VariantValue $value)
     {
         try {
-            return view('admin.variant-values.edit', compact('variant', 'value'));
+            return view('admins.variant-values.edit', compact('variant', 'value'));
         } catch (\Exception $e) {
             Log::error('Error in variant value edit: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi tải trang chỉnh sửa giá trị biến thể');
@@ -93,7 +93,7 @@ class VariantValueController extends Controller
             $value->update($request->validated());
 
             DB::commit();
-            return redirect()->route('admin.variants.values.index', $variant)
+            return redirect()->route('variants.values.index', $variant)
                 ->with('success', 'Giá trị biến thể đã được cập nhật thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -120,7 +120,7 @@ class VariantValueController extends Controller
             $value->delete();
 
             DB::commit();
-            return redirect()->route('admin.variants.values.index', $variant)
+            return redirect()->route('variants.values.index', $variant)
                 ->with('success', 'Giá trị biến thể đã được xóa thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
