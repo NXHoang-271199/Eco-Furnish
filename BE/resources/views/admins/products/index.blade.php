@@ -155,11 +155,15 @@
                                                     </td>
                                                     <td>{{ $product->category->name ?? 'N/A' }}</td>
                                                     <td>
+                                                        <div>
+                                                            <strong>Giá gốc:</strong> {{ number_format($product->price) }} VNĐ
+                                                        </div>
                                                         @if($product->variants->count() > 0)
-                                                            {{ number_format($product->variants->min('price')) }} - 
-                                                            {{ number_format($product->variants->max('price')) }} VNĐ
-                                                        @else
-                                                            {{ number_format($product->price) }} VNĐ
+                                                            <div class="mt-2">
+                                                                <strong>Giá biến thể:</strong> 
+                                                                {{ number_format($product->variants->min('price')) }} - 
+                                                                {{ number_format($product->variants->max('price')) }} VNĐ
+                                                            </div>
                                                         @endif
                                                     </td>
                                                     <td>

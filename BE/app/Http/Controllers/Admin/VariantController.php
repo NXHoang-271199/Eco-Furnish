@@ -18,7 +18,7 @@ class VariantController extends Controller
     {
         try {
             $variants = Variant::with('values')->get();
-            return view('admin.variants.index', compact('variants'));
+            return view('admins.variants.index', compact('variants'));
         } catch (\Exception $e) {
             Log::error('Error in variant index: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi tải danh sách biến thể');
@@ -31,7 +31,7 @@ class VariantController extends Controller
     public function create()
     {
         try {
-            return view('admin.variants.create');
+            return view('admins.variants.create');
         } catch (\Exception $e) {
             Log::error('Error in variant create: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi tải trang tạo biến thể');
@@ -74,7 +74,7 @@ class VariantController extends Controller
     public function edit(Variant $variant)
     {
         try {
-            return view('admin.variants.edit', compact('variant'));
+            return view('admins.variants.edit', compact('variant'));
         } catch (\Exception $e) {
             Log::error('Error in variant edit: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi tải trang chỉnh sửa biến thể');
@@ -132,7 +132,7 @@ class VariantController extends Controller
     {
         try {
             $values = $variant->values;
-            return view('admin.variant-values.index', compact('variant', 'values'));
+            return view('admins.variant-values.index', compact('variant', 'values'));
         } catch (\Exception $e) {
             Log::error('Error getting variant values: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi tải danh sách giá trị biến thể');

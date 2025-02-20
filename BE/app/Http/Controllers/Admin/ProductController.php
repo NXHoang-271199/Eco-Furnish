@@ -59,10 +59,7 @@ class ProductController extends Controller
             }
 
             // Tạo sản phẩm
-            $product = Product::create([
-                ...$data,
-                'price' => $request->has('variants') ? 0 : $data['price']
-            ]);
+            $product = Product::create($data);
 
             // Xử lý gallery images nếu có
             if ($request->hasFile('gallery')) {
@@ -96,9 +93,6 @@ class ProductController extends Controller
                         }
                     }
                 }
-
-                // Đặt giá mặc định là 0 cho sản phẩm có biến thể
-                $product->update(['price' => 0]);
             }
 
             DB::commit();
@@ -195,9 +189,6 @@ class ProductController extends Controller
                         ]);
                     }
                 }
-
-                // Đặt giá mặc định là 0 cho sản phẩm có biến thể
-                $data['price'] = 0;
             }
 
             // Cập nhật thông tin sản phẩm

@@ -2,6 +2,124 @@
 
 @section('title', 'Chỉnh sửa sản phẩm')
 
+@section('CSS')
+    <!-- Sweet Alert css-->
+    <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .gallery-preview {
+            margin-top: 10px;
+        }
+        .gallery-preview-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .gallery-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .gallery-item {
+            width: 80px;
+            height: 80px;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #dee2e6;
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .gallery-item.add-photo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            border: 1px dashed #0d6efd;
+            cursor: pointer;
+            position: relative;
+        }
+        .gallery-item.add-photo::before,
+        .gallery-item.add-photo::after {
+            content: '';
+            position: absolute;
+            background: #0d6efd;
+        }
+        .gallery-item.add-photo::before {
+            width: 2px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .gallery-item.add-photo::after {
+            width: 20px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .gallery-item .remove-photo {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 2;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .gallery-item .remove-photo i {
+            color: #dc3545;
+            font-size: 12px;
+            line-height: 1;
+        }
+        .gallery-item:hover .remove-photo {
+            opacity: 1;
+        }
+        #thumbnailPreview {
+            position: relative;
+            display: inline-block;
+        }
+        #thumbnailPreview .remove-photo {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 2;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #thumbnailPreview .remove-photo i {
+            color: #dc3545;
+            font-size: 12px;
+            line-height: 1;
+        }
+        #thumbnailPreview:hover .remove-photo {
+            opacity: 1;
+        }
+    </style>
+@endsection
+
 @section('content')
 <div class="container">
     <div class="row">
@@ -59,10 +177,10 @@
 
                                 <div class="form-group mb-3">
                                     <label for="description">Mô tả</label>
-                                    <textarea class="form-control @error('description') is-invalid @enderror" 
+                                    <textarea class="form-control @error('description') is-invalid @enderror"
                                         id="description" name="description" rows="3">{{ old('description', $product->description) }}</textarea>
                                     @error('description')
-                                        <span class="invalid-feedback">{{ $message }}</span>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
 
@@ -79,37 +197,42 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="image_thumnail">Ảnh đại diện</label>
-                                    <input type="file" class="form-control @error('image_thumnail') is-invalid @enderror" 
+                                    <input type="file" class="form-control @error('image_thumnail') is-invalid @enderror"
                                         id="image_thumnail" name="image_thumnail" accept="image/*">
-                                    @if($product->image_thumnail)
-                                        <img src="{{ asset('storage/' . $product->image_thumnail) }}" 
-                                             alt="Current feature image" 
-                                             class="mt-2" 
-                                             style="max-width: 200px">
-                                    @endif
                                     @error('image_thumnail')
-                                        <span class="invalid-feedback">{{ $message }}</span>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                    <div id="thumbnailPreview" class="mt-2">
+                                        <img src="{{ asset('storage/' . $product->image_thumnail) }}" alt="Thumbnail preview" style="max-width: 200px; border-radius: 8px;">
+                                        <div class="remove-photo" onclick="removeThumbnail()">
+                                            <i class="fas fa-times"></i>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="form-group mb-3">
                                     <label for="gallery">Thư viện ảnh</label>
-                                    <input type="file" class="form-control @error('gallery.*') is-invalid @enderror" 
-                                        id="gallery" name="gallery[]" multiple accept="image/*">
-                                    @if($product->gallery && $product->gallery->count() > 0)
-                                        <div class="row mt-2">
+                                    <input type="file" class="form-control @error('gallery.*') is-invalid @enderror"
+                                        id="gallery" name="gallery[]" multiple accept="image/*" style="display: none;">
+                                    @error('gallery.*')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    
+                                    <div class="gallery-preview">
+                                        <h6 class="gallery-preview-title">Ảnh phụ sản phẩm</h6>
+                                        <div class="gallery-preview-container" id="galleryPreview">
                                             @foreach($product->gallery as $image)
-                                                <div class="col-md-3">
-                                                    <img src="{{ asset('storage/' . $image->image_url) }}" 
-                                                         alt="Gallery image" 
-                                                         class="img-thumbnail">
+                                                <div class="gallery-item">
+                                                    <img src="{{ asset('storage/' . $image->image_url) }}" alt="Gallery image">
+                                                    <div class="remove-photo" onclick="removeGalleryItem(this)">
+                                                        <i class="fas fa-times"></i>
+                                                    </div>
                                                 </div>
                                             @endforeach
+                                            <div class="gallery-item add-photo" onclick="document.getElementById('gallery').click()">
+                                            </div>
                                         </div>
-                                    @endif
-                                    @error('gallery.*')
-                                        <span class="invalid-feedback">{{ $message }}</span>
-                                    @enderror
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -199,133 +322,233 @@
 @endsection
 
 @section('JS')
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-$(document).ready(function() {
-    console.log('DOM Content Loaded');
+    <!-- Sweet Alerts js -->
+    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+    <!-- CKEditor -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
-    const variantsContainer = $('#variants-container');
-    const addVariantBtn = $('#add-variant');
-    const form = $('#productForm');
-    
-    console.log('Elements found:', {
-        variantsContainer: variantsContainer.length,
-        addVariantBtn: addVariantBtn.length,
-        form: form.length
-    });
+    <script>
+        // Initialize CKEditor
+        ClassicEditor
+            .create(document.querySelector('#description'))
+            .catch(error => {
+                console.error(error);
+            });
 
-    let variantCount = {{ $product->variants ? $product->variants->groupBy('sku')->count() : 0 }};
-    console.log('Initial variant count:', variantCount);
-
-    // Template HTML cho biến thể mới
-    const variantTemplate = `
-        <div class="variant-combination mb-3">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label>Màu sắc</label>
-                        <select class="form-control variant-select" name="variants[INDEX][variant_values][1]" required>
-                            <option value="">Chọn màu sắc</option>
-                            @foreach($colorVariants as $value)
-                            <option value="{{ $value->id }}">{{ $value->value }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label>Kích thước</label>
-                        <select class="form-control variant-select" name="variants[INDEX][variant_values][2]" required>
-                            <option value="">Chọn kích thước</option>
-                            @foreach($capacityVariants as $value)
-                            <option value="{{ $value->id }}">{{ $value->value }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label>SKU <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="variants[INDEX][sku]" required>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label>Giá <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" name="variants[INDEX][price]" required min="0">
-                    </div>
-                </div>
-            </div>
-            <button type="button" class="btn btn-danger btn-sm mt-2 remove-variant">
-                <i class="fas fa-trash"></i> Xóa biến thể
-            </button>
-        </div>
-    `;
-
-    // Thêm biến thể
-    addVariantBtn.on('click', function() {
-        console.log('Add variant button clicked');
-        const newVariant = variantTemplate.replace(/INDEX/g, variantCount);
-        variantsContainer.append(newVariant);
-        variantCount++;
-        console.log('New variant added, count:', variantCount);
-    });
-
-    // Xóa biến thể
-    $(document).on('click', '.remove-variant', function() {
-        console.log('Remove variant button clicked');
-        $(this).closest('.variant-combination').remove();
-    });
-
-    // Xử lý submit form
-    form.on('submit', function(e) {
-        e.preventDefault();
-        console.log('Form submitted');
-
-        // Kiểm tra các trường bắt buộc
-        const requiredFields = $(this).find('[required]');
-        let hasEmptyField = false;
-
-        requiredFields.each(function() {
-            if (!$(this).val()) {
-                $(this).addClass('is-invalid');
-                hasEmptyField = true;
-                console.log('Empty required field:', $(this).attr('name'));
-            } else {
-                $(this).removeClass('is-invalid');
-            }
-        });
-
-        if (hasEmptyField) {
-            alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
-            return;
-        }
-
-        // Kiểm tra biến thể trùng lặp
-        const variants = $('.variant-combination');
-        const variantCombinations = new Set();
-        let hasDuplicate = false;
-
-        variants.each(function() {
-            const values = $(this).find('.variant-select')
-                .map(function() { return $(this).val(); })
-                .get()
-                .join('-');
+        // Preview thumbnail image
+        document.getElementById('image_thumnail').addEventListener('change', function(e) {
+            const preview = document.getElementById('thumbnailPreview');
+            const file = e.target.files[0];
             
-            if (variantCombinations.has(values)) {
-                hasDuplicate = true;
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.querySelector('img').src = e.target.result;
+                }
+                reader.readAsDataURL(file);
             }
-            variantCombinations.add(values);
         });
 
-        if (hasDuplicate) {
-            alert('Không được có biến thể trùng lặp!');
-            return;
+        function removeThumbnail() {
+            const preview = document.getElementById('thumbnailPreview');
+            const input = document.getElementById('image_thumnail');
+            preview.querySelector('img').src = '';
+            input.value = '';
         }
 
-        console.log('Form validation passed, submitting...');
-        this.submit();
-    });
-});
-</script>
+        // Preview gallery images
+        document.getElementById('gallery').addEventListener('change', function(e) {
+            const preview = document.getElementById('galleryPreview');
+            const files = Array.from(e.target.files);
+            const existingFiles = new DataTransfer();
+            
+            // Lưu lại các file đã có trước đó
+            if (this.files.length > 0) {
+                Array.from(this.files).forEach(file => {
+                    existingFiles.items.add(file);
+                });
+            }
+            
+            // Thêm các file mới
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'gallery-item';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="Gallery preview">
+                        <div class="remove-photo" onclick="removeGalleryItem(this)">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    `;
+                    preview.insertBefore(div, preview.querySelector('.add-photo'));
+                    
+                    // Thêm file mới vào DataTransfer
+                    existingFiles.items.add(file);
+                }
+                reader.readAsDataURL(file);
+            });
+            
+            // Cập nhật lại files cho input
+            this.files = existingFiles.files;
+        });
+
+        // Remove gallery item
+        function removeGalleryItem(element) {
+            const galleryInput = document.getElementById('gallery');
+            const item = element.parentElement;
+            const container = item.parentElement;
+            const index = Array.from(container.children).indexOf(item);
+            
+            // Remove preview
+            item.remove();
+            
+            // Remove from input files
+            const dt = new DataTransfer();
+            const files = Array.from(galleryInput.files);
+            files.splice(index, 1);
+            files.forEach(file => dt.items.add(file));
+            galleryInput.files = dt.files;
+        }
+
+        $(document).ready(function() {
+            const variantsContainer = $('#variants-container');
+            const addVariantBtn = $('#add-variant');
+            const form = $('#productForm');
+            
+            let variantCount = {{ $product->variants ? $product->variants->groupBy('sku')->count() : 0 }};
+
+            // Template HTML cho biến thể mới
+            function getVariantTemplate(index) {
+                return `
+                    <div class="variant-combination mb-3">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Màu sắc</label>
+                                    <select class="form-control variant-select" name="variants[${index}][variant_values][1]" required>
+                                        <option value="">Chọn màu sắc</option>
+                                        @foreach($colorVariants as $value)
+                                        <option value="{{ $value->id }}">{{ $value->value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Kích thước</label>
+                                    <select class="form-control variant-select" name="variants[${index}][variant_values][2]" required>
+                                        <option value="">Chọn kích thước</option>
+                                        @foreach($capacityVariants as $value)
+                                        <option value="{{ $value->id }}">{{ $value->value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>SKU <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="variants[${index}][sku]" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Giá <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="variants[${index}][price]" required min="0">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm mt-2 remove-variant">
+                            <i class="fas fa-trash"></i> Xóa biến thể
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Thêm biến thể
+            addVariantBtn.on('click', function() {
+                const newVariant = getVariantTemplate(variantCount);
+                variantsContainer.append(newVariant);
+                variantCount++;
+            });
+
+            // Xóa biến thể
+            $(document).on('click', '.remove-variant', function() {
+                $(this).closest('.variant-combination').remove();
+                updateVariantIndexes();
+            });
+
+            // Cập nhật lại index cho các biến thể
+            function updateVariantIndexes() {
+                $('.variant-combination').each(function(index) {
+                    $(this).find('select, input').each(function() {
+                        const name = $(this).attr('name');
+                        if (name) {
+                            const newName = name.replace(/variants\[\d+\]/, `variants[${index}]`);
+                            $(this).attr('name', newName);
+                        }
+                    });
+                });
+            }
+
+            // Xử lý submit form
+            form.on('submit', function(e) {
+                e.preventDefault();
+
+                // Kiểm tra các trường bắt buộc
+                const requiredFields = $(this).find('[required]');
+                let hasEmptyField = false;
+
+                requiredFields.each(function() {
+                    if (!$(this).val()) {
+                        $(this).addClass('is-invalid');
+                        hasEmptyField = true;
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+
+                if (hasEmptyField) {
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: 'Vui lòng điền đầy đủ thông tin bắt buộc!',
+                        icon: 'error',
+                        confirmButtonText: 'Đóng'
+                    });
+                    return;
+                }
+
+                // Kiểm tra biến thể trùng lặp
+                const variants = $('.variant-combination');
+                const variantCombinations = new Set();
+                let hasDuplicate = false;
+
+                variants.each(function() {
+                    const values = $(this).find('.variant-select')
+                        .map(function() { return $(this).val(); })
+                        .get()
+                        .join('-');
+                    
+                    if (variantCombinations.has(values)) {
+                        hasDuplicate = true;
+                    }
+                    variantCombinations.add(values);
+                });
+
+                if (hasDuplicate) {
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: 'Không được có biến thể trùng lặp!',
+                        icon: 'error',
+                        confirmButtonText: 'Đóng'
+                    });
+                    return;
+                }
+
+                this.submit();
+            });
+        });
+    </script>
 @endsection 

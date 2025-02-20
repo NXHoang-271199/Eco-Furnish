@@ -2,7 +2,7 @@
 
 @section('title', 'Chi tiết sản phẩm')
 
-@section('css')
+@section('CSS')
     <!-- Swiper css -->
     <link href="{{ asset('assets/admins/libs/swiper/swiper-bundle.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- Sweet Alert css-->
@@ -207,9 +207,6 @@
                                                 </div>
                                             @endforeach
                                         @endif
-                                        <div class="thumbnail-wrapper add-photo">
-                                            <i class="fas fa-plus add-photo-icon"></i>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -268,11 +265,15 @@
                                                         <tr>
                                                             <th scope="row">Giá bán</th>
                                                             <td>
+                                                                <div>
+                                                                    <strong>Giá gốc:</strong> {{ number_format($product->price) }} VNĐ
+                                                                </div>
                                                                 @if($product->variants->count() > 0)
-                                                                    {{ number_format($product->variants->min('price')) }} - 
-                                                                    {{ number_format($product->variants->max('price')) }} VNĐ
-                                                                @else
-                                                                    {{ number_format($product->price) }} VNĐ
+                                                                    <div class="mt-2">
+                                                                        <strong>Giá biến thể:</strong> 
+                                                                        {{ number_format($product->variants->min('price')) }} - 
+                                                                        {{ number_format($product->variants->max('price')) }} VNĐ
+                                                                    </div>
                                                                 @endif
                                                             </td>
                                                         </tr>
@@ -389,13 +390,17 @@
                 mainImage.src = src;
                 
                 thumbnails.forEach(thumb => {
-                    const thumbImg = thumb.querySelector('img');
-                    if (thumbImg && thumbImg.src === src) {
-                        thumb.classList.add('active');
-                    } else {
-                        thumb.classList.remove('active');
-                    }
+                    thumb.classList.remove('active');
                 });
+                
+                const activeThumbnail = Array.from(thumbnails).find(thumb => {
+                    const img = thumb.querySelector('img');
+                    return img && img.src === src;
+                });
+                
+                if (activeThumbnail) {
+                    activeThumbnail.classList.add('active');
+                }
             }
         }
     </script>
