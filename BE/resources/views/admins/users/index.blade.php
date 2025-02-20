@@ -205,25 +205,10 @@
                                                                     <td>{{ $user->email }}</td>
                                                                     <td class="text-center">{{ $user->age }}</td>
                                                                     <td class="text-center">
-                                                                        @php
-                                                                            switch ($user->role->name) {
-                                                                                case 'Admin':
-                                                                                    $badgeColor = 'bg-danger';
-                                                                                    break;
-                                                                                case 'Editor':
-                                                                                    $badgeColor = 'bg-primary';
-                                                                                    break;
-                                                                                case 'User':
-                                                                                    $badgeColor = 'bg-success';
-                                                                                    break;
-                                                                                default:
-                                                                                    $badgeColor = 'bg-secondary';
-                                                                            }
-                                                                        @endphp
                                                                         <span
-                                                                            class="badge {{ $badgeColor }}">{{ $user->role->name }}</span>
+                                                                            class="badge bg-primary-subtle text-primary badge-border">{{ $user->role->name }}</span>
                                                                     </td>
-                                                                    <td>
+                                                                    <td class="text-center">
                                                                         @if ($user->is_active == 1)
                                                                             <span class="badge bg-success">Kích hoạt</span>
                                                                         @else
