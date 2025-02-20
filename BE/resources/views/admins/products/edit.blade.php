@@ -359,20 +359,17 @@
         }
 
         // Preview gallery images
+        let galleryFiles = new DataTransfer(); // Biến lưu trữ tất cả files
+
         document.getElementById('gallery').addEventListener('change', function(e) {
             const preview = document.getElementById('galleryPreview');
             const files = Array.from(e.target.files);
-            const existingFiles = new DataTransfer();
             
-            // Lưu lại các file đã có trước đó
-            if (this.files.length > 0) {
-                Array.from(this.files).forEach(file => {
-                    existingFiles.items.add(file);
-                });
-            }
-            
-            // Thêm các file mới
+            // Thêm các file mới vào galleryFiles
             files.forEach(file => {
+                galleryFiles.items.add(file);
+                
+                // Tạo preview
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const div = document.createElement('div');
@@ -384,15 +381,12 @@
                         </div>
                     `;
                     preview.insertBefore(div, preview.querySelector('.add-photo'));
-                    
-                    // Thêm file mới vào DataTransfer
-                    existingFiles.items.add(file);
                 }
                 reader.readAsDataURL(file);
             });
             
             // Cập nhật lại files cho input
-            this.files = existingFiles.files;
+            this.files = galleryFiles.files;
         });
 
         // Remove gallery item
@@ -400,17 +394,18 @@
             const galleryInput = document.getElementById('gallery');
             const item = element.parentElement;
             const container = item.parentElement;
-            const index = Array.from(container.children).indexOf(item);
+            const index = Array.from(container.children).indexOf(item) - 1; // Trừ 1 vì có nút add-photo
             
             // Remove preview
             item.remove();
             
-            // Remove from input files
+            // Remove from galleryFiles
             const dt = new DataTransfer();
-            const files = Array.from(galleryInput.files);
+            const files = Array.from(galleryFiles.files);
             files.splice(index, 1);
             files.forEach(file => dt.items.add(file));
-            galleryInput.files = dt.files;
+            galleryFiles = dt;
+            galleryInput.files = galleryFiles.files;
         }
 
         $(document).ready(function() {

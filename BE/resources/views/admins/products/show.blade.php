@@ -279,7 +279,7 @@
                                                         </tr>
                                                         <tr>
                                                             <th scope="row">Số lượng biến thể</th>
-                                                            <td>{{ $product->variants->count() }}</td>
+                                                            <td>{{ $product->variants->groupBy('sku')->count() }}</td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
