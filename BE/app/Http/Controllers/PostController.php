@@ -116,7 +116,7 @@ class PostController extends Controller
             'image_thumbnail' => $filePath,
             'category_post_id' => $validated['category_id'],
             'user_id' => $validated['user_id'],
-            'status' => '1',
+            'status' => '0',
             'slug' => $slug,
         ]);
         return redirect()->route('posts.index')
@@ -146,6 +146,16 @@ class PostController extends Controller
     /**
      * Update the specified resource in storage.
      */
+
+    public function approve(Request $request, string $id)
+    {
+        $singerPost = Post::findOrFail($id);
+        $singerPost->status = '1';
+        $singerPost->save();
+
+        return redirect()->back()->with('success', 'Duyệt bài viết thanh công!');
+    }
+     
     public function update(PostRequest $request, string $id)
     {
         $singerPost = Post::findOrFail($id);

@@ -32,6 +32,46 @@
         .button-list .btn:hover {
             opacity: 0.8;
         }
+
+        <style>
+
+        /* Tùy chỉnh nav-tabs */
+        .nav-tabs {
+            border-bottom: 2px solid #ddd;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background: #f1f1f1;
+            color: #333;
+        }
+
+        .tab-bg {
+            background: #fff;
+            padding: 20px;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: #28a745;
+            color: #fff;
+            border-color: #28a745;
+        }
+
+        /* Cải thiện hiệu ứng chuyển đổi tab */
+        .tab-pane {
+            animation: fadeEffect 0.3s ease-in-out;
+        }
+
+        @keyframes fadeEffect {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+
     </style>
 @endsection
 
@@ -92,7 +132,7 @@
                 </div>
             </div>
         </div>
-        
+
         @if (session('success'))
             <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow" role="alert">
                 <i class="ri-check-double-line me-3 align-middle"></i>
@@ -186,60 +226,109 @@
                         </div>
                     </div>
                 </div><!--end row-->
-                <div class="row gx-4">
-                    <div class="col-xxl-12">
-                        @foreach ($listPosts as $key => $post)
-                            <div class="card position-relative">
-                                <div class="card-body">
-                                    <div class="row g-4">
-                                        <div class="col-xxl-3 col-lg-5">
-                                            <img src="{{ Storage::url($post->image_thumbnail) }}"
-                                                alt="ảnh {{ $post->title }}"
-                                                class="img-fluid rounded w-100 object-fit-cover thumnail-sm">
-                                        </div><!--end col-->
-                                        <div class="col-xxl-9 col-lg-7">
-                                            <p class="mb-2 text-primary text-uppercase">{{ $post->categoryPost->title }}
-                                            </p>
-                                            <a href="{{ route('posts.show', $post->id) }}">
-                                                <h5 class="fs-15 fw-semibold">{{ $post->title }}</h5>
-                                            </a>
-                                            <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-                                                <span class="text-muted"><i
-                                                        class="ri-calendar-event-line me-1"></i>{{ $post->created_at->format('d/m/Y') }}</span>
-                                                | <span class="text-muted"> |
-                                                    <a href="{{ route('users.show', $post->user->id) }}"><i
-                                                            class="ri-user-3-line me-1"></i>{{ $post->user->name }}</a>
+                <ul class="nav nav-tabs" id="contentTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="list-tab" data-bs-toggle="tab" data-bs-target="#danhsach"
+                            type="button" role="tab">Bài viết cần duyệt</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="posts-tab" data-bs-toggle="tab" data-bs-target="#baiviet"
+                            type="button" role="tab">Bài viết</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content mt-3" id="contentTabsContent">
+                    <div class="tab-pane fade show active tab-bg" id="danhsach" role="tabpanel">
+                        <div class="table-responsive table-card">
+                            <table class="table table-nowrap mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">Tên bài</th>
+                                        <th scope="col">Ngày đăng</th>
+                                        <th scope="col">Trạng thái</th>
+                                        <th scope="col">Duyệt</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="align-middle">
+                                    @foreach ($listPosts->where('status', 0) as $key => $post)
+                                        <tr>
+                                            <td>{{ $post->title }}</td>
+                                            <td>{{ $post->created_at }}</td>
+                                            <td>
+                                                @if ($post->status == 0)
+                                                    <span class="badge bg-danger">Chưa duyệt</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <form action="{{ route('posts.approve', $post->id) }}" method="POST"
+                                                    style="display:inline;">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-outline-success">
+                                                        <i class="ri-checkbox-circle-line"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="baiviet" role="tabpanel">
+                        <div class="col-xxl-12">
+                            @foreach ($listPosts->where('status', 1) as $key => $post)
+                                <div class="card position-relative">
+                                    <div class="card-body">
+                                        <div class="row g-4">
+                                            <div class="col-xxl-3 col-lg-5">
+                                                <img src="{{ Storage::url($post->image_thumbnail) }}"
+                                                    alt="ảnh {{ $post->title }}"
+                                                    class="img-fluid rounded w-100 object-fit-cover thumnail-sm">
                                             </div>
-                                            <p>{{ $post->short_content }}</p>
-                                            <a href="{{ route('posts.show', $post->id) }}"
-                                                class="text-decoration-underline">Read more
-                                                <i class="ri-arrow-right-line"></i></a>
-                                        </div><!--end col-->
-                                    </div><!--end row-->
+                                            <div class="col-xxl-9 col-lg-7">
+                                                <p class="mb-2 text-primary text-uppercase">
+                                                    {{ $post->categoryPost->title }}</p>
+                                                <a href="{{ route('posts.show', $post->id) }}">
+                                                    <h5 class="fs-15 fw-semibold">{{ $post->title }}</h5>
+                                                </a>
+                                                <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                                                    <span class="text-muted"><i
+                                                            class="ri-calendar-event-line me-1"></i>{{ $post->created_at->format('d/m/Y') }}</span>
+                                                    | <span class="text-muted"> |
+                                                        <a href="{{ route('users.show', $post->user->id) }}"><i
+                                                                class="ri-user-3-line me-1"></i>{{ $post->user->name }}</a>
+                                                </div>
+                                                <p>{{ $post->short_content }}</p>
+                                                <a href="{{ route('posts.show', $post->id) }}"
+                                                    class="text-decoration-underline">Read more <i
+                                                        class="ri-arrow-right-line"></i></a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="button-list position-absolute top-0 end-0 d-flex gap-2 mx-2 my-2">
+                                        <a href="{{ route('posts.edit', $post->id) }}" class="btn btn-ghost-success">
+                                            <i class="ri-edit-line"></i>
+                                        </a>
+                                        <form action="{{ route('posts.destroy', $post->id) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                class="btn btn-ghost-danger waves-effect waves-light material-shadow-none">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
+                            @endforeach
+                        </div>
+                        {{ $listPosts->links('pagination::bootstrap-5') }}
+                    </div>
 
-                                <div class="button-list position-absolute top-0 end-0 d-flex gap-2 mx-2 my-2">
-                                    <!-- Icon Update -->
-                                    <a href="{{ route('posts.edit', $post->id) }}" class="btn btn-ghost-success">
-                                        <i class="ri-edit-line"></i>
-                                    </a>
-                                    <!-- Thùng rác icon (xóa trực tiếp) -->
-                                    <form action="{{ route('posts.destroy', $post->id) }}" method="POST">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                            class="btn btn-ghost-danger waves-effect waves-light material-shadow-none">
-                                            <i class="ri-delete-bin-line"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div><!--end card-->
-                        @endforeach
-                    </div><!--end col-->
-                </div><!--end row-->
+                </div>
 
 
-                {{ $listPosts->links('pagination::bootstrap-5') }}
+
+
             </div><!--end col-->
         </div><!--end row-->
 

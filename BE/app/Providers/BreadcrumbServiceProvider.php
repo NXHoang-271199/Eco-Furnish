@@ -28,77 +28,77 @@ class BreadcrumbServiceProvider extends ServiceProvider
     private function generateBreadcrumbs($routeName, $parameters = [])
     {
         $breadcrumbMap = [
-            'admins.dashboard' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')]
+            'dashboard' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')]
             ],
 
             // User Routes
-            'admins.users.index' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'users.index' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Người Dùng', 'url' => route('users.index')]
             ],
-            'admins.users.create' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'users.create' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Người Dùng', 'url' => route('users.index')],
                 ['name' => 'Thêm Mới', 'url' => '']
             ],
-            'admins.users.edit' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'users.edit' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Người Dùng', 'url' => route('users.index')],
                 ['name' => 'Chỉnh Sửa', 'url' => '']
             ],
 
             // Post Routes
-            'admins.posts.index' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'posts.index' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Bài Viết', 'url' => route('posts.index')]
             ],
-            'admins.posts.create' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'posts.create' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Bài Viết', 'url' => route('posts.index')],
                 ['name' => 'Thêm Mới', 'url' => '']
             ],
-            'admins.posts.edit' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'posts.edit' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Bài Viết', 'url' => route('posts.index')],
                 ['name' => 'Chỉnh Sửa', 'url' => '']
             ],
 
             // Category Post Routes
-            'admins.category-posts.index' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'category-posts.index' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')]
             ],
-            'admins.category-posts.create' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'category-posts.create' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')],
                 ['name' => 'Thêm Mới', 'url' => '']
             ],
-            'admins.category-posts.edit' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'category-posts.edit' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')],
                 ['name' => 'Chỉnh Sửa', 'url' => '']
             ],
             
             // Voucher Routes
-            'admins.vouchers.index' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'vouchers.index' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Vouchers', 'url' => route('vouchers.index')]
             ],
-            'admins.vouchers.create' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'vouchers.create' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Vouchers', 'url' => route('vouchers.index')],
                 ['name' => 'Thêm Mới', 'url' => '']
             ],
-            'admins.vouchers.edit' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+            'vouchers.edit' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Vouchers', 'url' => route('vouchers.index')],
                 ['name' => 'Chỉnh Sửa', 'url' => '']
             ],
 
             // Upload Image
             'upload.image' => [
-                ['name' => 'Dashboard', 'url' => route('admins.dashboard')],
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Tải Ảnh Lên', 'url' => '']
             ],
         ];

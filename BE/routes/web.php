@@ -29,13 +29,14 @@ Route::get('login', [LoginController::class, 'showFormLogin'])->name('login');
 Route::get('register', [RegisterController::class, 'showFormRegister'])->name('register');
 
 Route::prefix('admin')->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('admins.dashboard');
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // User ===============================================
     Route::resource('users', UserController::class);
 
     // Post ===============================================
     Route::resource('posts', PostController::class);
+    Route::post('/posts/{id}/approve', [PostController::class, 'approve'])->name('posts.approve');
 
     // Category Post ======================================
     Route::resource('category-posts', CategoryPostController::class);
