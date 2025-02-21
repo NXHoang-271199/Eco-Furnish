@@ -29,8 +29,8 @@
                         @method('PUT')
                         <div class="form-group">
                             <label for="name">Tên biến thể</label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" 
-                                id="name" name="name" value="{{ old('name', $variant->name) }}" 
+                            <input type="text" class="form-control @error('name') is-invalid @enderror"
+                                id="name" name="name" value="{{ old('name', $variant->name) }}"
                                 placeholder="VD: Màu sắc, Kích thước, Dung lượng">
                             @error('name')
                                 <span class="invalid-feedback">{{ $message }}</span>
@@ -45,4 +45,4 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection

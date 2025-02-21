@@ -15,13 +15,18 @@ return new class extends Migration
             $table->id();
             $table->string('title', 255);
             $table->text('content');
-            $table->integer('user_id');
-            $table->integer('category_post_id');
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('category_post_id');
             $table->string('image_thumbnail', 255)->nullable();
             $table->string('slug', 255)->unique();
-            $table->enum('status', ['Hiển thị', 'Ẩn'])->default('Hiển thị');
+            $table->enum('status', ['0', '1'])->default(0);
             $table->timestamps();
             $table->softDeletes();
+
+            // Tạo khóa ngoại
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('category_post_id')->references('id')->on('category_posts')->onDelete('cascade');
+
         });
     }
 
@@ -30,6 +35,14 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('posts', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
+        });
+
+        Schema::table('posts', function (Blueprint $table) {
+            $table->dropForeign(['category_post_id']);
+        });
+
         Schema::dropIfExists('posts');
     }
 };

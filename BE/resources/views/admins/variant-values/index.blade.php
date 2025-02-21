@@ -8,10 +8,17 @@
                 <div class="card-header">
                     <h3 class="card-title">Danh sách giá trị biến thể: {{ $variant->name }}</h3>
                     <div class="card-tools">
+<<<<<<< HEAD
                         <a href="{{ route('variants.values.create', $variant) }}" class="btn btn-primary">
                             <i class="fas fa-plus"></i> Thêm giá trị
                         </a>
                         <a href="{{ route('variants.index') }}" class="btn btn-default">
+=======
+                        <a href="{{ route('admin.variants.values.create', $variant) }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Thêm giá trị
+                        </a>
+                        <a href="{{ route('admin.variants.index') }}" class="btn btn-default">
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                             <i class="fas fa-arrow-left"></i> Quay lại
                         </a>
                     </div>
@@ -23,12 +30,15 @@
                         </div>
                     @endif
 
+<<<<<<< HEAD
                     @if(session('error'))
                         <div class="alert alert-danger">
                             {{ session('error') }}
                         </div>
                     @endif
 
+=======
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                     <table class="table table-bordered">
                         <thead>
                             <tr>
@@ -40,6 +50,7 @@
                         <tbody>
                             @foreach($values as $value)
                                 <tr>
+<<<<<<< HEAD
                                     <td>{{ ($values->currentPage() - 1) * $values->perPage() + $loop->iteration }}</td>
                                     <td>{{ $value->value }}</td>
                                     <td>
@@ -49,21 +60,40 @@
                                         <button type="button" class="btn btn-danger btn-sm delete-item" data-id="{{ $value->id }}">
                                             <i class="fas fa-trash"></i> Xóa
                                         </button>
+=======
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $value->value }}</td>
+                                    <td>
+                                        <a href="{{ route('admin.variants.values.edit', [$variant, $value]) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </a>
+                                        <form action="{{ route('admin.variants.values.destroy', [$variant, $value]) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa?')">
+                                                <i class="fas fa-trash"></i> Xóa
+                                            </button>
+                                        </form>
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
+<<<<<<< HEAD
 
                     <div class="mt-3">
                         {{ $values->links() }}
                     </div>
+=======
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                 </div>
             </div>
         </div>
     </div>
 </div>
 @endsection
+<<<<<<< HEAD
 
 @section('CSS')
 <!-- Sweet Alert css-->
@@ -143,3 +173,5 @@
     });
 </script>
 @endsection 
+=======
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1

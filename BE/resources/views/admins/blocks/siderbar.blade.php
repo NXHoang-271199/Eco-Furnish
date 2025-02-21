@@ -2,7 +2,11 @@
     <!-- LOGO -->
     <div class="navbar-brand-box">
         <!-- Dark Logo-->
+<<<<<<< HEAD
         <a href="#" class="logo logo-dark">
+=======
+        <a href="index.html" class="logo logo-dark">
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             <span class="logo-sm">
                 <img src="{{ asset('assets/admins/images/logo-sm.png') }}" alt="" height="22">
             </span>
@@ -11,7 +15,11 @@
             </span>
         </a>
         <!-- Light Logo-->
+<<<<<<< HEAD
         <a href="#" class="logo logo-light">
+=======
+        <a href="index.html" class="logo logo-light">
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             <span class="logo-sm">
                 <img src="{{ asset('assets/admins/images/logo-sm.png') }}" alt="" height="22">
             </span>
@@ -24,14 +32,14 @@
             <i class="ri-record-circle-line"></i>
         </button>
     </div>
-
     <div class="dropdown sidebar-user m-1 rounded">
         <button type="button" class="btn material-shadow-none" id="page-header-user-dropdown" data-bs-toggle="dropdown"
             aria-haspopup="true" aria-expanded="false">
             <span class="d-flex align-items-center gap-2">
-                <img class="rounded header-profile-user" src="{{ asset('assets/admins/images/users/avatar-1.jpg') }}" alt="Header Avatar">
+                <img class="rounded header-profile-user" src="{{ asset('assets/admins/images/users/avatar-1.jpg') }}"
+                    alt="Header Avatar">
                 <span class="text-start">
-                    <span class="d-block fw-medium sidebar-user-name-text">Admin</span>
+                    <span class="d-block fw-medium sidebar-user-name-text">Anna Adame</span>
                     <span class="d-block fs-14 sidebar-user-name-sub-text"><i
                             class="ri ri-circle-fill fs-10 text-success align-baseline"></i> <span
                             class="align-middle">Online</span></span>
@@ -40,15 +48,13 @@
         </button>
         <div class="dropdown-menu dropdown-menu-end">
             <!-- item-->
-            <h6 class="dropdown-header">Xin chào Admin!</h6>
-            <a class="dropdown-item" href="#">
-                <i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> 
-                <span class="align-middle">Thông tin cá nhân</span>
-            </a>
-            <a class="dropdown-item" href="#">
-                <i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> 
-                <span class="align-middle">Đăng xuất</span>
-            </a>
+            <h6 class="dropdown-header">Welcome Anna!</h6>
+            <a class="dropdown-item" href="pages-profile.html"><i
+                    class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span
+                    class="align-middle">Profile</span></a>
+            <a class="dropdown-item" href="auth-logout-basic.html"><i
+                    class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle"
+                    data-key="t-logout">Logout</span></a>
         </div>
     </div>
     <div id="scrollbar">
@@ -61,6 +67,7 @@
                 <li class="menu-title"><span data-key="t-menu">Quản lý</span></li>
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#">
+<<<<<<< HEAD
                         <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboard</span>
                     </a>
                 </li>
@@ -89,26 +96,59 @@
                             <li class="nav-item">
                                 <a href="{{ route('variants.index') }}" class="nav-link">
                                     <i class="ri-layout-grid-line"></i> Quản lý biến thể
+=======
+                        <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboards</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="#sidebarUser" data-bs-toggle="collapse" role="button"
+                        aria-expanded="false" aria-controls="sidebarSanPham">
+                        <i class="ri-account-circle-line"></i> <span data-key="t-advance-ui">Người dùng</span>
+                    </a>
+                    <div class="collapse menu-dropdown" id="sidebarUser">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('users.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                    Danh sách người dùng
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="" class="nav-link" data-key="t-nestable-list">
+                                    Phân quyền
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                                 </a>
                             </li>
                         </ul>
                     </div>
                 </li>
+<<<<<<< HEAD
                 <!-- <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarOrders" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarOrders">
                         <i class="ri-shopping-cart-2-line"></i>
                         <span data-key="t-orders">Quản lý đơn hàng</span>
+=======
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="#sidebarArticle" data-bs-toggle="collapse" role="button"
+                        aria-expanded="false" aria-controls="sidebarSanPham">
+                        <i class="ri-article-line"></i> <span data-key="t-advance-ui">Bài viết</span>
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                     </a>
-                    <div class="collapse menu-dropdown" id="sidebarOrders">
+                    <div class="collapse menu-dropdown" id="sidebarArticle">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="ri-file-list-line"></i> Danh sách đơn hàng
+                                <a href="{{ route('posts.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                    Danh sách bài viết
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('category-posts.index') }}" class="nav-link" data-key="t-nestable-list">
+                                    Chuyên mục
                                 </a>
                             </li>
                         </ul>
                     </div>
+<<<<<<< HEAD
                 </li> -->
 
                 
@@ -117,17 +157,36 @@
                         aria-expanded="false" aria-controls="sidebarCustomers">
                         <i class="ri-user-2-line"></i>
                         <span data-key="t-customers">Quản lý khách hàng</span>
+=======
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"
+                        aria-expanded="false" aria-controls="sidebarSanPham">
+                        <i class="ri-stack-line"></i> <span data-key="t-advance-ui">Quản lý</span>
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                     </a>
-                    <div class="collapse menu-dropdown" id="sidebarCustomers">
+                    <div class="collapse menu-dropdown" id="sidebarSanPham">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="ri-team-line"></i> Danh sách khách hàng
+                                <a href="" class="nav-link" data-key="t-sweet-alerts">
+                                    Danh sách
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="" class="nav-link" data-key="t-nestable-list">
+                                    Thêm mới
                                 </a>
                             </li>
                         </ul>
                     </div>
+<<<<<<< HEAD
                 </li> -->
+=======
+                </li>
+
+                <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
+
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             </ul>
         </div>
         <!-- Sidebar -->

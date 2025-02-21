@@ -223,12 +223,21 @@
                                             <a href="{{ route('products.edit', $product->id) }}" class="btn btn-primary">
                                                 <i class="ri-pencil-fill align-bottom"></i> Sửa
                                             </a>
+<<<<<<< HEAD
                                             <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="button" class="btn btn-danger" onclick="confirmDelete(this)">
                                                     <i class="ri-delete-bin-fill align-bottom"></i> Xóa
                                                 </button>
+=======
+                                            <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger">
+                                            <i class="ri-delete-bin-fill align-bottom me-2 text-danger"></i> Xóa
+                                            </button>
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                                             </form>
                                         </div>
                                     </div>

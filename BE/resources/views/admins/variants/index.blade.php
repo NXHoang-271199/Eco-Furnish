@@ -96,4 +96,4 @@
     margin-right: 0.25rem;
 }
 </style>
-@endsection 
+@endsection

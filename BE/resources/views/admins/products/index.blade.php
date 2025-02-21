@@ -119,6 +119,7 @@
         .d-flex.gap-2 {
             gap: 0.5rem !important;
         }
+<<<<<<< HEAD
 
         /* Thêm style cho mũi tên phân trang */
         .pagination-nav {
@@ -304,22 +305,37 @@
             color: #fff;
             border-color: #405189;
         }
+=======
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
     </style>
 @endsection
 
 @section('content')
+<<<<<<< HEAD
+=======
+    <!-- start page title -->
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                 <h4 class="mb-sm-0">Sản phẩm</h4>
+<<<<<<< HEAD
                 <div class="page-title-right">
                     <button type="button" class="btn btn-primary" onclick="toggleFilter()">
                         <i class="ri-filter-2-line align-bottom me-1"></i> Bộ lọc
                     </button>
+=======
+
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item active">Sản phẩm</li>
+                    </ol>
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                 </div>
             </div>
         </div>
     </div>
+<<<<<<< HEAD
 
     <!-- Offcanvas Filter -->
     <div class="offcanvas-filter" id="filterOffcanvas">
@@ -537,6 +553,205 @@
                                                 </a>
                                             </li>
                                         </ul>
+=======
+    <!-- end page title -->
+
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    <div class="row">
+        <div class="col-xl-3 col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex mb-3">
+                        <div class="flex-grow-1">
+                            <h5 class="fs-16">Bộ lọc</h5>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <button type="button" class="btn btn-soft-primary btn-sm">
+                                <i class="ri-refresh-line align-middle"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filter-choices-input">
+                        <input class="form-control" data-choices data-choices-removeItem type="text" id="filter-choices-input" value="" />
+                    </div>
+                </div>
+
+                <div class="accordion accordion-flush filter-accordion">
+                    <div class="card-body border-bottom">
+                        <div>
+                            <p class="text-muted text-uppercase fs-12 fw-medium mb-2">Danh mục</p>
+                            <ul class="list-unstyled mb-0 filter-list">
+                                <li>
+                                    <a href="#" class="d-flex py-1 align-items-center category-filter active" data-category-id="all">
+                                        <div class="flex-grow-1">
+                                            <h5 class="fs-13 mb-0 listname">Tất cả danh mục</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                                @foreach($categories as $category)
+                                <li>
+                                    <a href="#" class="d-flex py-1 align-items-center category-filter" data-category-id="{{ $category->id }}">
+                                        <div class="flex-grow-1">
+                                            <h5 class="fs-13 mb-0 listname">{{ $category->name }}</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card-body border-bottom">
+                        <p class="text-muted text-uppercase fs-12 fw-medium mb-4">Giá (VNĐ)</p>
+
+                        <div class="price-range-wrapper">
+                            <div id="product-price-range"></div>
+                            
+                            <div class="price-group">
+                                <div class="price-field">
+                                    <div class="price-label">Từ</div>
+                                    <input type="text" class="price-input" id="minCost" value="0" />
+                                </div>
+                                <div class="price-separator">-</div>
+                                <div class="price-field">
+                                    <div class="price-label">Đến</div>
+                                    <input type="text" class="price-input" id="maxCost" value="100000000" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="filter-button" onclick="filterProducts()">
+                                <i class="ri-filter-line align-bottom"></i> Áp dụng bộ lọc
+                            </button>
+                            <button type="button" class="filter-button filter-button-reset" onclick="resetFilters()">
+                                <i class="ri-refresh-line align-bottom"></i> Hủy lọc
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-9 col-lg-8">
+            <div>
+                <div class="card">
+                    <div class="card-header border-0">
+                        <div class="row g-4">
+                            <div class="col-sm-auto">
+                                <div class="d-flex gap-1">
+                                    <a href="{{ route('products.create') }}" class="btn btn-success">
+                                        <i class="ri-add-line align-bottom me-1"></i> Thêm sản phẩm
+                                    </a>
+                                    <a href="{{ route('variants.index') }}" class="btn btn-info">
+                                        <i class="ri-list-check align-bottom me-1"></i> Quản lý biến thể
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-sm">
+                                <div class="d-flex justify-content-sm-end">
+                                    <div class="search-box ms-2">
+                                        <input type="text" class="form-control" id="searchProductList" placeholder="Tìm kiếm sản phẩm...">
+                                        <i class="ri-search-line search-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="tab-content text-muted">
+                            <div class="tab-pane active" id="productnav-all" role="tabpanel">
+                                <div id="table-product-list-all" class="table-card gridjs-border-none">
+                                    <div class="table-responsive">
+                                        <table class="table table-nowrap align-middle" id="orderTable">
+                                            <thead class="text-muted table-light">
+                                                <tr class="text-uppercase">
+                                                    <th scope="col" style="width: 50px;">ID</th>
+                                                    <th scope="col">Sản phẩm</th>
+                                                    <th scope="col">Danh mục</th>
+                                                    <th scope="col">Giá</th>
+                                                    <th scope="col">Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($products as $product)
+                                                <tr>
+                                                    <td>{{ $product->id }}</td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="flex-shrink-0 me-3">
+                                                                <div class="avatar-sm bg-light rounded p-1">
+                                                                    <img src="{{ asset('storage/' . $product->image_thumnail) }}" alt="{{ $product->name }}" class="img-fluid d-block">
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h5 class="fs-14 mb-1">
+                                                                    <a href="{{ route('products.show', $product->id) }}" class="text-dark">{{ $product->name }}</a>
+                                                                </h5>
+                                                                <p class="text-muted mb-0">Mã: <span class="fw-medium">{{ $product->product_code }}</span></p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ $product->category->name ?? 'N/A' }}</td>
+                                                    <td>
+                                                        <div>
+                                                            <strong>Giá gốc:</strong> {{ number_format($product->price) }} VNĐ
+                                                        </div>
+                                                        @if($product->variants->count() > 0)
+                                                            <div class="mt-2">
+                                                                <strong>Giá biến thể:</strong> 
+                                                                {{ number_format($product->variants->min('price')) }} - 
+                                                                {{ number_format($product->variants->max('price')) }} VNĐ
+                                                            </div>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        <div class="dropdown d-inline-block">
+                                                            <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <i class="ri-more-fill align-middle"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                                <li>
+                                                                    <a href="{{ route('products.show', $product->id) }}" class="dropdown-item">
+                                                                        <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Chi tiết
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a href="{{ route('products.edit', $product->id) }}" class="dropdown-item">
+                                                                        <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Sửa
+                                                                    </a>
+                                                                </li>
+                                                                <li class="dropdown-divider"></li>
+                                                                <li>
+                                                                    <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="dropdown-item text-danger">
+                                                                            <i class="ri-delete-bin-fill align-bottom me-2 text-danger"></i> Xóa
+                                                                        </button>
+                                                                    </form>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-3">
+                                        {{ $products->links() }}
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                                     </div>
                                 </div>
                             </div>
@@ -564,6 +779,7 @@
     <script>
         let priceRangeSlider;
         let selectedCategoryId = 'all';
+<<<<<<< HEAD
         let searchTimeout;
         let currentFilters = {
             search: '',
@@ -571,6 +787,8 @@
             minPrice: 0,
             maxPrice: 100000000
         };
+=======
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
         
         $(document).ready(function() {
             // Khởi tạo price range slider
@@ -616,6 +834,7 @@
                     });
                 });
             }
+<<<<<<< HEAD
 
             // Xử lý tìm kiếm sản phẩm
             $('#searchProduct').on('input', function() {
@@ -628,10 +847,60 @@
         });
 
         function applyAllFilters() {
+=======
+        });
+
+        function getProductPrice(priceCell) {
+            // Lấy giá gốc
+            const originalPriceText = priceCell.querySelector('div:first-child').textContent;
+            const originalPrice = parseInt(originalPriceText.match(/\d+([.,]\d+)?/)[0].replace(/[,.]/g, ''));
+            
+            // Lấy giá biến thể nếu có
+            const variantPriceDiv = priceCell.querySelector('div.mt-2');
+            if (variantPriceDiv) {
+                const variantPrices = variantPriceDiv.textContent.match(/\d+([.,]\d+)?/g)
+                    .map(price => parseInt(price.replace(/[,.]/g, '')));
+                return {
+                    original: originalPrice,
+                    variants: variantPrices,
+                    min: Math.min(originalPrice, ...variantPrices),
+                    max: Math.max(originalPrice, ...variantPrices)
+                };
+            }
+            
+            return {
+                original: originalPrice,
+                variants: [],
+                min: originalPrice,
+                max: originalPrice
+            };
+        }
+
+        function applyFilters() {
+            const minPriceInput = document.getElementById('minCost').value.replace(/[,.]/g, '');
+            const maxPriceInput = document.getElementById('maxCost').value.replace(/[,.]/g, '');
+            
+            // Chuyển đổi giá trị input thành số
+            const minPrice = parseInt(minPriceInput);
+            const maxPrice = parseInt(maxPriceInput);
+            
+            // Kiểm tra nếu giá trị không hợp lệ
+            if (isNaN(minPrice) || isNaN(maxPrice) || minPrice < 0 || maxPrice < minPrice) {
+                Swal.fire({
+                    title: 'Lỗi!',
+                    text: 'Vui lòng nhập khoảng giá hợp lệ',
+                    icon: 'error',
+                    confirmButtonText: 'Đóng'
+                });
+                return;
+            }
+
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             const productRows = document.querySelectorAll('#orderTable tbody tr');
             let visibleProducts = 0;
 
             productRows.forEach(row => {
+<<<<<<< HEAD
                 const nameCell = row.querySelector('td:nth-child(2)');
                 const productName = nameCell.textContent.toLowerCase();
                 const productCode = nameCell.querySelector('p.text-muted').textContent.toLowerCase();
@@ -671,6 +940,34 @@
 
                 // Hiển thị hoặc ẩn sản phẩm dựa trên tất cả điều kiện
                 if (matchesSearch && matchesCategory && matchesPrice) {
+=======
+                const priceCell = row.querySelector('td:nth-child(4)');
+                const categoryCell = row.querySelector('td:nth-child(3)');
+                const priceInfo = getProductPrice(priceCell);
+                const categoryName = categoryCell.textContent.trim();
+
+                // Kiểm tra điều kiện danh mục
+                const matchesCategory = selectedCategoryId === 'all' || 
+                    categoryName === document.querySelector(`.category-filter[data-category-id="${selectedCategoryId}"] .listname`).textContent.trim();
+
+                // Kiểm tra điều kiện giá
+                let matchesPrice = false;
+
+                // Kiểm tra giá gốc
+                const originalPriceInRange = priceInfo.original >= minPrice && priceInfo.original <= maxPrice;
+
+                if (priceInfo.variants.length > 0) {
+                    // Nếu có biến thể, kiểm tra xem có ít nhất một biến thể nằm trong khoảng không
+                    const hasVariantInRange = priceInfo.variants.some(price => price >= minPrice && price <= maxPrice);
+                    // Chỉ hiển thị nếu giá gốc hoặc ít nhất một biến thể nằm trong khoảng
+                    matchesPrice = originalPriceInRange || hasVariantInRange;
+                } else {
+                    // Nếu không có biến thể, chỉ kiểm tra giá gốc
+                    matchesPrice = originalPriceInRange;
+                }
+
+                if (matchesCategory && matchesPrice) {
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                     row.style.display = '';
                     visibleProducts++;
                 } else {
@@ -678,6 +975,7 @@
                 }
             });
 
+<<<<<<< HEAD
             return visibleProducts;
         }
 
@@ -729,6 +1027,25 @@
             document.getElementById('searchProduct').value = '';
 
             // Reset giá trị slider và input
+=======
+            // Hiển thị thông báo nếu không có sản phẩm nào
+            if (visibleProducts === 0) {
+                Swal.fire({
+                    title: 'Không tìm thấy sản phẩm!',
+                    text: 'Không có sản phẩm nào phù hợp với điều kiện lọc',
+                    icon: 'info',
+                    confirmButtonText: 'Đóng'
+                });
+            }
+        }
+
+        function filterProducts() {
+            applyFilters();
+        }
+
+        function resetFilters() {
+            // Reset giá trị slider và input về mặc định
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             if (priceRangeSlider) {
                 priceRangeSlider.noUiSlider.set([0, 100000000]);
             }
@@ -742,8 +1059,16 @@
             });
             document.querySelector('.category-filter[data-category-id="all"]').classList.add('active');
 
+<<<<<<< HEAD
             // Áp dụng lại tất cả bộ lọc
             const visibleProducts = applyAllFilters();
+=======
+            // Hiển thị lại tất cả sản phẩm
+            const productRows = document.querySelectorAll('#orderTable tbody tr');
+            productRows.forEach(row => {
+                row.style.display = '';
+            });
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
 
             // Thông báo đã reset
             Swal.fire({
@@ -768,6 +1093,7 @@
                     this.classList.add('active');
                     selectedCategoryId = this.getAttribute('data-category-id');
 
+<<<<<<< HEAD
                     // Chỉ áp dụng lọc danh mục
                     applyCategoryFilter();
                 });
@@ -820,6 +1146,12 @@
                     toggleFilter();
                 }
             }
+=======
+                    // Áp dụng cả hai bộ lọc
+                    applyFilters();
+                });
+            });
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
         });
     </script>
 @endsection 

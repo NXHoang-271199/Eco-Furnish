@@ -18,7 +18,11 @@ class VariantValueController extends Controller
     public function index(Variant $variant)
     {
         try {
+<<<<<<< HEAD
             $values = $variant->values()->latest()->paginate(10);
+=======
+            $values = $variant->values;
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             return view('admins.variant-values.index', compact('variant', 'values'));
         } catch (\Exception $e) {
             Log::error('Error in variant value index: ' . $e->getMessage());
@@ -123,10 +127,15 @@ class VariantValueController extends Controller
             $value->delete();
 
             DB::commit();
+<<<<<<< HEAD
             return response()->json([
                 'success' => true,
                 'message' => 'Giá trị biến thể đã được xóa thành công.'
             ]);
+=======
+            return redirect()->route('variants.values.index', $variant)
+                ->with('success', 'Giá trị biến thể đã được xóa thành công.');
+>>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error deleting variant value: ' . $e->getMessage());
