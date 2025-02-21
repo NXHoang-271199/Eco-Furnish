@@ -223,12 +223,12 @@
                                             <a href="{{ route('products.edit', $product->id) }}" class="btn btn-primary">
                                                 <i class="ri-pencil-fill align-bottom"></i> Sửa
                                             </a>
-                                            <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger">
-                                            <i class="ri-delete-bin-fill align-bottom me-2 text-danger"></i> Xóa
-                                            </button>
+                                            <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button" class="btn btn-danger" onclick="confirmDelete(this)">
+                                                    <i class="ri-delete-bin-fill align-bottom"></i> Xóa
+                                                </button>
                                             </form>
                                         </div>
                                     </div>
@@ -402,6 +402,23 @@
                     activeThumbnail.classList.add('active');
                 }
             }
+        }
+
+        function confirmDelete(button) {
+            Swal.fire({
+                title: 'Xác nhận xóa?',
+                text: "Bạn có chắc chắn muốn xóa sản phẩm này không? Hành động này không thể hoàn tác!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Có, xóa!',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    button.closest('form').submit();
+                }
+            });
         }
     </script>
 @endsection 
