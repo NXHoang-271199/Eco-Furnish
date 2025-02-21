@@ -65,11 +65,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="#sidebarProducts" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarProducts">
+                    <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"
+                        aria-expanded="false" aria-controls="sidebarSanPham">
                         <i class="ri-store-2-line"></i> <span data-key="t-products">Quản lý sản phẩm</span>
                     </a>
-                    <div class="collapse menu-dropdown" id="sidebarProducts">
+                    <div class="collapse menu-dropdown" id="sidebarSanPham">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
                                 <a href="{{ route('products.index') }}" class="nav-link">
@@ -94,7 +94,7 @@
                         </ul>
                     </div>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarOrders" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarOrders">
                         <i class="ri-shopping-cart-2-line"></i>
@@ -109,8 +109,10 @@
                             </li>
                         </ul>
                     </div>
-                </li>
-                <li class="nav-item">
+                </li> -->
+
+                
+                <!-- <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarCustomers" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarCustomers">
                         <i class="ri-user-2-line"></i>
@@ -125,7 +127,7 @@
                             </li>
                         </ul>
                     </div>
-                </li>
+                </li> -->
             </ul>
         </div>
         <!-- Sidebar -->

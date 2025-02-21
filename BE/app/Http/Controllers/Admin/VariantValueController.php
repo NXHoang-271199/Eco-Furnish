@@ -18,7 +18,7 @@ class VariantValueController extends Controller
     public function index(Variant $variant)
     {
         try {
-            $values = $variant->values;
+            $values = $variant->values()->latest()->paginate(10);
             return view('admins.variant-values.index', compact('variant', 'values'));
         } catch (\Exception $e) {
             Log::error('Error in variant value index: ' . $e->getMessage());
@@ -113,19 +113,27 @@ class VariantValueController extends Controller
             DB::beginTransaction();
 
             // Kiểm tra xem giá trị biến thể có đang được sử dụng không
-            if ($value->productVariants()->exists()) {
-                return back()->with('error', 'Không thể xóa giá trị biến thể này vì đang được sử dụng trong sản phẩm.');
+            if ($value->products()->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể xóa giá trị biến thể này vì đang được sử dụng trong sản phẩm.'
+                ]);
             }
 
             $value->delete();
 
             DB::commit();
-            return redirect()->route('variants.values.index', $variant)
-                ->with('success', 'Giá trị biến thể đã được xóa thành công.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Giá trị biến thể đã được xóa thành công.'
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error deleting variant value: ' . $e->getMessage());
-            return back()->with('error', 'Có lỗi xảy ra khi xóa giá trị biến thể: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi xóa giá trị biến thể: ' . $e->getMessage()
+            ]);
         }
     }
 }

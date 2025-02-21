@@ -2,9 +2,9 @@
 
 @section('title', 'Danh sách danh mục')
 
-@section('css')
+@section('CSS')
     <!-- Sweet Alert css-->
-    <link href="{{ asset('assets/admin/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
 @endsection
 
 @section('content')
@@ -89,8 +89,40 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="d-flex justify-content-end mt-3">
-                        {{ $categories->links() }}
+                    
+                    <div class="row align-items-center mt-4 py-3 px-2">
+                        <div class="col-md-5">
+                            <div class="text-muted">
+                                Showing 
+                                <span class="fw-semibold">{{ $categories->firstItem() }}</span> 
+                                to 
+                                <span class="fw-semibold">{{ $categories->lastItem() }}</span> 
+                                of 
+                                <span class="fw-semibold">{{ $categories->total() }}</span> 
+                                Results
+                            </div>
+                        </div>
+                        <div class="col-sm-auto ms-auto">
+                            <nav class="pagination-outer">
+                                <ul class="pagination">
+                                    <li class="page-item {{ !$categories->onFirstPage() ? '' : 'disabled' }}">
+                                        <a class="page-link" href="{{ $categories->previousPageUrl() }}" aria-label="Previous">
+                                            <i class="ri-arrow-left-s-line"></i>
+                                        </a>
+                                    </li>
+                                    @foreach ($categories->getUrlRange(1, $categories->lastPage()) as $page => $url)
+                                        <li class="page-item {{ $categories->currentPage() == $page ? 'active' : '' }}">
+                                            <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                                        </li>
+                                    @endforeach
+                                    <li class="page-item {{ $categories->hasMorePages() ? '' : 'disabled' }}">
+                                        <a class="page-link" href="{{ $categories->nextPageUrl() }}" aria-label="Next">
+                                            <i class="ri-arrow-right-s-line"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -98,9 +130,11 @@
     </div>
 @endsection
 
-@section('js')
+@section('JS')
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Sweet Alerts js -->
-    <script src="{{ asset('assets/admin/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
 
     <script>
         $(document).ready(function() {
@@ -116,11 +150,15 @@
                     cancelButtonText: 'Hủy',
                     confirmButtonClass: 'btn btn-danger me-2',
                     cancelButtonClass: 'btn btn-light',
-                    buttonsStyling: false
+                    customClass: {
+                        confirmButton: 'btn btn-danger me-2',
+                        cancelButton: 'btn btn-light'
+                    },
+                    buttonsStyling: true
                 }).then(function(result) {
-                    if (result.value) {
+                    if (result.isConfirmed) {
                         $.ajax({
-                            url: "{{ route('categories.destroy', ':id') }}".replace(':id', id),
+                            url: '/admin/categories/' + id,
                             type: 'DELETE',
                             data: {
                                 _token: '{{ csrf_token() }}'
@@ -131,7 +169,9 @@
                                         title: 'Thành công!',
                                         text: response.message,
                                         icon: 'success',
-                                        confirmButtonClass: 'btn btn-success'
+                                        customClass: {
+                                            confirmButton: 'btn btn-success'
+                                        }
                                     }).then(function() {
                                         location.reload();
                                     });
@@ -140,7 +180,9 @@
                                         title: 'Lỗi!',
                                         text: response.message,
                                         icon: 'error',
-                                        confirmButtonClass: 'btn btn-danger'
+                                        customClass: {
+                                            confirmButton: 'btn btn-danger'
+                                        }
                                     });
                                 }
                             },
@@ -149,7 +191,9 @@
                                     title: 'Lỗi!',
                                     text: xhr.responseJSON.message,
                                     icon: 'error',
-                                    confirmButtonClass: 'btn btn-danger'
+                                    customClass: {
+                                        confirmButton: 'btn btn-danger'
+                                    }
                                 });
                             }
                         });

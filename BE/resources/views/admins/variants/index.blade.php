@@ -33,7 +33,7 @@
                             <tbody>
                                 @foreach($variants as $variant)
                                     <tr>
-                                        <td>{{ $loop->iteration }}</td>
+                                        <td>{{ ($variants->currentPage() - 1) * $variants->perPage() + $loop->iteration }}</td>
                                         <td>{{ $variant->name }}</td>
                                         <td>
                                             @if($variant->values->count() > 0)
@@ -63,6 +63,10 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+
+                    <div class="mt-3">
+                        {{ $variants->links() }}
                     </div>
                 </div>
             </div>
