@@ -24,7 +24,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('variants.values.update', [$variant, $value]) }}" method="POST">
+                    <form id="editVariantValueForm" action="{{ route('variants.values.update', [$variant, $value]) }}" method="POST">
                         @csrf
                         @method('PUT')
                         <div class="form-group">
@@ -45,4 +45,8 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('JS')
+    @include('partials.variant-values.edit_js')
 @endsection 

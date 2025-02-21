@@ -3,8 +3,7 @@
 @section('title', 'Danh sách danh mục')
 
 @section('CSS')
-    <!-- Sweet Alert css-->
-    <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+ 
 @endsection
 
 @section('content')
@@ -29,9 +28,14 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Danh sách danh mục</h5>
                         <div class="flex-shrink-0">
-                            <a href="{{ route('categories.create') }}" class="btn btn-success">
-                                <i class="ri-add-line align-bottom me-1"></i> Thêm danh mục
-                            </a>
+                            <div class="d-flex gap-1">
+                                <a href="{{ route('trash.categories') }}" class="btn btn-warning">
+                                    <i class="ri-delete-bin-line align-bottom me-1"></i> Thùng rác
+                                </a>
+                                <a href="{{ route('categories.create') }}" class="btn btn-success">
+                                    <i class="ri-add-line align-bottom me-1"></i> Thêm danh mục
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -131,75 +135,5 @@
 @endsection
 
 @section('JS')
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Sweet Alerts js -->
-    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
-
-    <script>
-        $(document).ready(function() {
-            // Xử lý xóa danh mục
-            $('.delete-item').click(function() {
-                var id = $(this).data('id');
-                Swal.fire({
-                    title: 'Bạn có chắc chắn?',
-                    text: "Bạn sẽ không thể khôi phục lại dữ liệu này!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Xóa',
-                    cancelButtonText: 'Hủy',
-                    confirmButtonClass: 'btn btn-danger me-2',
-                    cancelButtonClass: 'btn btn-light',
-                    customClass: {
-                        confirmButton: 'btn btn-danger me-2',
-                        cancelButton: 'btn btn-light'
-                    },
-                    buttonsStyling: true
-                }).then(function(result) {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            url: '/admin/categories/' + id,
-                            type: 'DELETE',
-                            data: {
-                                _token: '{{ csrf_token() }}'
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    Swal.fire({
-                                        title: 'Thành công!',
-                                        text: response.message,
-                                        icon: 'success',
-                                        customClass: {
-                                            confirmButton: 'btn btn-success'
-                                        }
-                                    }).then(function() {
-                                        location.reload();
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        title: 'Lỗi!',
-                                        text: response.message,
-                                        icon: 'error',
-                                        customClass: {
-                                            confirmButton: 'btn btn-danger'
-                                        }
-                                    });
-                                }
-                            },
-                            error: function(xhr) {
-                                Swal.fire({
-                                    title: 'Lỗi!',
-                                    text: xhr.responseJSON.message,
-                                    icon: 'error',
-                                    customClass: {
-                                        confirmButton: 'btn btn-danger'
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            });
-        });
-    </script>
+   @include('partials.category.index_js')
 @endsection 

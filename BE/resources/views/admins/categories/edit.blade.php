@@ -28,7 +28,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('categories.update', $category->id) }}" method="POST">
+                    <form id="editCategoryForm" action="{{ route('categories.update', $category->id) }}" method="POST">
                         @csrf
                         @method('PUT')
                         <div class="mb-3">
@@ -49,4 +49,8 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('JS')
+    @include('partials.category.edit_js')
 @endsection 
