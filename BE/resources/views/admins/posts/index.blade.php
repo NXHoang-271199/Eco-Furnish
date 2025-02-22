@@ -184,7 +184,7 @@
                             <p class="text-muted mb-2">Bài viết mới nhất</p>
                             <div class="list-group list-group-flush">
                                 @foreach ($featuredPosts as $post)
-                                    <a href="{{ route('posts.show', $post->id) }}"
+                                    <a href="{{ route('posts.show', $post->slug) }}"
                                         class="list-group-item text-muted py-3 px-2">
                                         <div class="d-flex align-items-center">
                                             <div class="flex-shrink-0 me-3">
@@ -260,7 +260,7 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <form action="{{ route('posts.approve', $post->id) }}" method="POST"
+                                                <form action="{{ route('posts.approve', $post->slug) }}" method="POST"
                                                     style="display:inline;">
                                                     @csrf
                                                     <button type="submit" class="btn btn-outline-success">
@@ -273,6 +273,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        {{ $listPosts->links('pagination::bootstrap-5') }}
                     </div>
                     <div class="tab-pane fade" id="baiviet" role="tabpanel">
                         <div class="col-xxl-12">
@@ -323,15 +324,8 @@
                         </div>
                         {{ $listPosts->links('pagination::bootstrap-5') }}
                     </div>
-
                 </div>
-
-
-
-
             </div><!--end col-->
         </div><!--end row-->
-
-
     </div>
 @endsection

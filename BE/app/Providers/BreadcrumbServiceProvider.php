@@ -48,6 +48,23 @@ class BreadcrumbServiceProvider extends ServiceProvider
                 ['name' => 'Chỉnh Sửa', 'url' => '']
             ],
 
+
+            // Role Routes
+            'roles.index' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
+                ['name' => 'Vai trò', 'url' => route('roles.index')],
+            ],
+            'roles.create' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
+                ['name' => 'Vai trò', 'url' => route('roles.index')],
+                ['name' => 'Thêm mới', 'url' => '']
+            ],
+            'roles.edit' => [
+                ['name' => 'Dashboard', 'url' => route('dashboard')],
+                ['name' => 'Vai trò', 'url' => route('roles.index')],
+                ['name' => 'Chình sửa', 'url' => '']
+            ],
+
             // Post Routes
             'posts.index' => [
                 ['name' => 'Dashboard', 'url' => route('dashboard')],
@@ -148,6 +165,12 @@ class BreadcrumbServiceProvider extends ServiceProvider
                 $voucher = \App\Models\Voucher::find($segment);
                 if ($voucher) {
                     $name = $voucher->code; // Lấy mã voucher
+                }
+            }
+            if (is_numeric($segment) && request()->is('admin/roles/*')) {
+                $role = \App\Models\Role::find($segment);
+                if ($role) {
+                    $name = $role->code; // Lấy mã voucher
                 }
             }
     
