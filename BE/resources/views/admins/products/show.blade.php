@@ -128,12 +128,12 @@
             .main-image {
                 height: 300px;
             }
-            
+
             .gallery-container {
                 grid-template-columns: repeat(auto-fill, 70px) !important;
                 gap: 8px !important;
             }
-            
+
             .thumbnail-wrapper {
                 width: 70px !important;
                 height: 70px !important;
@@ -149,7 +149,7 @@
                 grid-template-columns: repeat(auto-fill, 60px) !important;
                 gap: 6px !important;
             }
-            
+
             .thumbnail-wrapper {
                 width: 60px !important;
                 height: 60px !important;
@@ -185,24 +185,24 @@
                     <div class="row gx-lg-5">
                         <div class="col-xl-4 col-md-8 mx-auto">
                             <div class="product-image-container">
-                                <img src="{{ asset('storage/' . $product->image_thumnail) }}" 
-                                     alt="{{ $product->name }}" 
+                                <img src="{{ asset('storage/' . $product->image_thumnail) }}"
+                                     alt="{{ $product->name }}"
                                      class="main-image"
                                      id="main-product-image">
-                                
+
                                 <div class="gallery-section">
                                     <h5>Ảnh phụ sản phẩm</h5>
                                     <div class="gallery-container">
                                         <div class="thumbnail-wrapper active" onclick="changeMainImage('{{ asset('storage/' . $product->image_thumnail) }}')">
-                                            <img src="{{ asset('storage/' . $product->image_thumnail) }}" 
-                                                 alt="Main image" 
+                                            <img src="{{ asset('storage/' . $product->image_thumnail) }}"
+                                                 alt="Main image"
                                                  class="thumbnail">
                                         </div>
                                         @if($product->gallery)
                                             @foreach($product->gallery as $image)
                                                 <div class="thumbnail-wrapper" onclick="changeMainImage('{{ asset('storage/' . $image->image_url) }}')">
-                                                    <img src="{{ asset('storage/' . $image->image_url) }}" 
-                                                         alt="Gallery image {{ $loop->iteration }}" 
+                                                    <img src="{{ asset('storage/' . $image->image_url) }}"
+                                                         alt="Gallery image {{ $loop->iteration }}"
                                                          class="thumbnail">
                                                 </div>
                                             @endforeach
@@ -223,21 +223,12 @@
                                             <a href="{{ route('products.edit', $product->id) }}" class="btn btn-primary">
                                                 <i class="ri-pencil-fill align-bottom"></i> Sửa
                                             </a>
-<<<<<<< HEAD
                                             <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="button" class="btn btn-danger" onclick="confirmDelete(this)">
                                                     <i class="ri-delete-bin-fill align-bottom"></i> Xóa
                                                 </button>
-=======
-                                            <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger">
-                                            <i class="ri-delete-bin-fill align-bottom me-2 text-danger"></i> Xóa
-                                            </button>
->>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                                             </form>
                                         </div>
                                     </div>
@@ -279,8 +270,8 @@
                                                                 </div>
                                                                 @if($product->variants->count() > 0)
                                                                     <div class="mt-2">
-                                                                        <strong>Giá biến thể:</strong> 
-                                                                        {{ number_format($product->variants->min('price')) }} - 
+                                                                        <strong>Giá biến thể:</strong>
+                                                                        {{ number_format($product->variants->min('price')) }} -
                                                                         {{ number_format($product->variants->max('price')) }} VNĐ
                                                                     </div>
                                                                 @endif
@@ -371,17 +362,17 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            
+
             // Force horizontal layout
             const galleryContainer = document.querySelector('.gallery-container');
             if (galleryContainer) {
-                
+
                 // Force layout recalculation
                 galleryContainer.style.display = 'flex';
                 galleryContainer.style.flexDirection = 'row';
                 galleryContainer.style.alignItems = 'center';
-                
-               
+
+
             }
 
             // Initialize first thumbnail
@@ -394,19 +385,19 @@
         function changeMainImage(src) {
             const mainImage = document.getElementById('main-product-image');
             const thumbnails = document.querySelectorAll('.thumbnail-wrapper');
-            
+
             if (mainImage) {
                 mainImage.src = src;
-                
+
                 thumbnails.forEach(thumb => {
                     thumb.classList.remove('active');
                 });
-                
+
                 const activeThumbnail = Array.from(thumbnails).find(thumb => {
                     const img = thumb.querySelector('img');
                     return img && img.src === src;
                 });
-                
+
                 if (activeThumbnail) {
                     activeThumbnail.classList.add('active');
                 }
@@ -430,4 +421,4 @@
             });
         }
     </script>
-@endsection 
+@endsection

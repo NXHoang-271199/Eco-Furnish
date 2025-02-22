@@ -2,11 +2,7 @@
     <!-- LOGO -->
     <div class="navbar-brand-box">
         <!-- Dark Logo-->
-<<<<<<< HEAD
-        <a href="#" class="logo logo-dark">
-=======
         <a href="index.html" class="logo logo-dark">
->>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             <span class="logo-sm">
                 <img src="{{ asset('assets/admins/images/logo-sm.png') }}" alt="" height="22">
             </span>
@@ -15,11 +11,7 @@
             </span>
         </a>
         <!-- Light Logo-->
-<<<<<<< HEAD
-        <a href="#" class="logo logo-light">
-=======
         <a href="index.html" class="logo logo-light">
->>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             <span class="logo-sm">
                 <img src="{{ asset('assets/admins/images/logo-sm.png') }}" alt="" height="22">
             </span>
@@ -67,36 +59,6 @@
                 <li class="menu-title"><span data-key="t-menu">Quản lý</span></li>
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#">
-<<<<<<< HEAD
-                        <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboard</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarSanPham">
-                        <i class="ri-store-2-line"></i> <span data-key="t-products">Quản lý sản phẩm</span>
-                    </a>
-                    <div class="collapse menu-dropdown" id="sidebarSanPham">
-                        <ul class="nav nav-sm flex-column">
-                            <li class="nav-item">
-                                <a href="{{ route('products.index') }}" class="nav-link">
-                                    <i class="ri-list-check-2"></i> Danh sách sản phẩm
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('products.create') }}" class="nav-link">
-                                    <i class="ri-add-circle-line"></i> Thêm sản phẩm
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('categories.index') }}" class="nav-link">
-                                    <i class="ri-folder-2-line"></i> Danh mục sản phẩm
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('variants.index') }}" class="nav-link">
-                                    <i class="ri-layout-grid-line"></i> Quản lý biến thể
-=======
                         <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboards</span>
                     </a>
                 </li>
@@ -115,24 +77,15 @@
                             <li class="nav-item">
                                 <a href="" class="nav-link" data-key="t-nestable-list">
                                     Phân quyền
->>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                                 </a>
                             </li>
                         </ul>
                     </div>
                 </li>
-<<<<<<< HEAD
-                <!-- <li class="nav-item">
-                    <a class="nav-link menu-link" href="#sidebarOrders" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarOrders">
-                        <i class="ri-shopping-cart-2-line"></i>
-                        <span data-key="t-orders">Quản lý đơn hàng</span>
-=======
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarArticle" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarSanPham">
                         <i class="ri-article-line"></i> <span data-key="t-advance-ui">Bài viết</span>
->>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarArticle">
                         <ul class="nav nav-sm flex-column">
@@ -148,22 +101,11 @@
                             </li>
                         </ul>
                     </div>
-<<<<<<< HEAD
-                </li> -->
-
-                
-                <!-- <li class="nav-item">
-                    <a class="nav-link menu-link" href="#sidebarCustomers" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarCustomers">
-                        <i class="ri-user-2-line"></i>
-                        <span data-key="t-customers">Quản lý khách hàng</span>
-=======
                 </li>
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarSanPham">
                         <i class="ri-stack-line"></i> <span data-key="t-advance-ui">Quản lý</span>
->>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarSanPham">
                         <ul class="nav nav-sm flex-column">
@@ -179,14 +121,10 @@
                             </li>
                         </ul>
                     </div>
-<<<<<<< HEAD
-                </li> -->
-=======
                 </li>
 
                 <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
 
->>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             </ul>
         </div>
         <!-- Sidebar -->

@@ -23,7 +23,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::with('category')->latest()->paginate(10);
+        $products = Product::with('category')->latest()->paginate(3);
         $categories = Category::all();
         return view('admins.products.index', compact('products', 'categories'));
     }
@@ -144,7 +144,7 @@ class ProductController extends Controller
     {
         try {
             DB::beginTransaction();
-            
+
             $data = $request->validated();
 
             // Xử lý ảnh đại diện

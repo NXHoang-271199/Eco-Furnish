@@ -17,11 +17,7 @@ class VariantController extends Controller
     public function index()
     {
         try {
-<<<<<<< HEAD
             $variants = Variant::with('values')->latest()->paginate(10);
-=======
-            $variants = Variant::with('values')->get();
->>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
             return view('admins.variants.index', compact('variants'));
         } catch (\Exception $e) {
             Log::error('Error in variant index: ' . $e->getMessage());

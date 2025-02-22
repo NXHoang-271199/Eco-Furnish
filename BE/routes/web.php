@@ -24,16 +24,11 @@ use App\Http\Controllers\Admin\CategoryController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-<<<<<<< HEAD
-
-
-=======
 Route::get('/', function () {
     return view('admins.dashboard');
     // return view('admins.test');
 
 });
->>>>>>> 5a20f9f40f8927cca6e44e85fa82181d1ef73bd1
 
 // Admin Routes
 Route::prefix('admin')->group(function () {
