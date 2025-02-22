@@ -3,12 +3,13 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\VoucherController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,8 +35,13 @@ Route::prefix('admin')->group(function () {
     // User ===============================================
     Route::resource('users', UserController::class);
 
+    // Role ===============================================
+    Route::resource('roles', RoleController::class);
+
     // Post ===============================================
-    Route::resource('posts', PostController::class);
+    Route::resource('posts', PostController::class)->scoped([
+        'post' => 'slug'
+    ]);
     Route::post('/posts/{id}/approve', [PostController::class, 'approve'])->name('posts.approve');
 
     // Category Post ======================================
@@ -44,6 +50,7 @@ Route::prefix('admin')->group(function () {
 
     // Voucher ============================================
     Route::resource('vouchers', VoucherController::class);
+
 
 });
 

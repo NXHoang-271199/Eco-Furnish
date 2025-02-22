@@ -36,6 +36,10 @@ class Post extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
 
     public function user()
     {
