@@ -50,14 +50,18 @@ class VariantValueController extends Controller
             $variant->values()->create($request->validated());
 
             DB::commit();
-            return redirect()->route('variants.values.index', $variant)
-                ->with('success', 'Giá trị biến thể đã được tạo thành công.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Giá trị biến thể đã được tạo thành công',
+                'redirect' => route('variants.values.index', $variant)
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating variant value: ' . $e->getMessage());
-            return back()
-                ->withInput()
-                ->with('error', 'Có lỗi xảy ra khi tạo giá trị biến thể: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi tạo giá trị biến thể: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -93,14 +97,18 @@ class VariantValueController extends Controller
             $value->update($request->validated());
 
             DB::commit();
-            return redirect()->route('variants.values.index', $variant)
-                ->with('success', 'Giá trị biến thể đã được cập nhật thành công.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Giá trị biến thể đã được cập nhật thành công',
+                'redirect' => route('variants.values.index', $variant)
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating variant value: ' . $e->getMessage());
-            return back()
-                ->withInput()
-                ->with('error', 'Có lỗi xảy ra khi cập nhật giá trị biến thể: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật giá trị biến thể: ' . $e->getMessage()
+            ], 500);
         }
     }
 

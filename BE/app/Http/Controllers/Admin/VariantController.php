@@ -49,14 +49,18 @@ class VariantController extends Controller
             Variant::create($request->validated());
 
             DB::commit();
-            return redirect()->route('variants.index')
-                ->with('success', 'Biến thể đã được tạo thành công.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Biến thể đã được tạo thành công',
+                'redirect' => route('variants.index')
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating variant: ' . $e->getMessage());
-            return back()
-                ->withInput()
-                ->with('error', 'Có lỗi xảy ra khi tạo biến thể: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi tạo biến thể: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -92,14 +96,18 @@ class VariantController extends Controller
             $variant->update($request->validated());
 
             DB::commit();
-            return redirect()->route('variants.index')
-                ->with('success', 'Biến thể đã được cập nhật thành công.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Biến thể đã được cập nhật thành công',
+                'redirect' => route('variants.index')
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating variant: ' . $e->getMessage());
-            return back()
-                ->withInput()
-                ->with('error', 'Có lỗi xảy ra khi cập nhật biến thể: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật biến thể: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -113,18 +121,26 @@ class VariantController extends Controller
 
             // Kiểm tra xem biến thể có đang được sử dụng không
             if ($variant->values()->exists()) {
-                return back()->with('error', 'Không thể xóa biến thể này vì đang có giá trị biến thể được sử dụng.');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể xóa biến thể này vì đang có giá trị biến thể được sử dụng.'
+                ], 400);
             }
 
             $variant->delete();
 
             DB::commit();
-            return redirect()->route('variants.index')
-                ->with('success', 'Biến thể đã được xóa thành công.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Biến thể đã được xóa thành công'
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error deleting variant: ' . $e->getMessage());
-            return back()->with('error', 'Có lỗi xảy ra khi xóa biến thể: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi xóa biến thể: ' . $e->getMessage()
+            ], 500);
         }
     }
 

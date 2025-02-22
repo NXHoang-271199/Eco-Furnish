@@ -35,13 +35,18 @@ class CategoryController extends Controller
             Category::create($data);
             
             DB::commit();
-            return redirect()->route('categories.index')
-                ->with('success', 'Thêm danh mục thành công');
+            return response()->json([
+                'success' => true,
+                'message' => 'Thêm danh mục thành công',
+                'redirect' => route('categories.index')
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error creating category: ' . $e->getMessage());
-            return back()->withInput()
-                ->with('error', 'Có lỗi xảy ra khi thêm danh mục: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi thêm danh mục: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -53,10 +58,27 @@ class CategoryController extends Controller
     public function update(UpdateCategoryRequest $request, Category $category)
     {
         try {
-            $category->update($request->validated());
-            return redirect()->route('categories.index')->with('success', 'Cập nhật danh mục thành công');
+            DB::beginTransaction();
+            
+            $data = $request->validated();
+            // Tự động cập nhật slug từ tên
+            $data['slug'] = Str::slug($data['name']);
+            
+            $category->update($data);
+            
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật danh mục thành công',
+                'redirect' => route('categories.index')
+            ]);
         } catch (\Exception $e) {
-            return back()->with('error', 'Có lỗi xảy ra khi cập nhật danh mục');
+            DB::rollBack();
+            \Log::error('Error updating category: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật danh mục: ' . $e->getMessage()
+            ], 500);
         }
     }
 

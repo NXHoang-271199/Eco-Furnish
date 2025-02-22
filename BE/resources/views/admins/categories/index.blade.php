@@ -3,8 +3,7 @@
 @section('title', 'Danh sách danh mục')
 
 @section('CSS')
-    <!-- Sweet Alert css-->
-    <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+ 
 @endsection
 
 @section('content')
@@ -29,9 +28,14 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Danh sách danh mục</h5>
                         <div class="flex-shrink-0">
-                            <a href="{{ route('categories.create') }}" class="btn btn-success">
-                                <i class="ri-add-line align-bottom me-1"></i> Thêm danh mục
-                            </a>
+                            <div class="d-flex gap-1">
+                                <a href="{{ route('trash.categories') }}" class="btn btn-warning">
+                                    <i class="ri-delete-bin-line align-bottom me-1"></i> Thùng rác
+                                </a>
+                                <a href="{{ route('categories.create') }}" class="btn btn-success">
+                                    <i class="ri-add-line align-bottom me-1"></i> Thêm danh mục
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -131,6 +135,7 @@
 @endsection
 
 @section('JS')
+<<<<<<< HEAD
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Sweet Alerts js -->
@@ -203,3 +208,7 @@
         });
     </script>
 @endsection
+=======
+   @include('partials.category.index_js')
+@endsection 
+>>>>>>> aceb2aa46eb463e6e2b422ff821fecf6cfe1d60b

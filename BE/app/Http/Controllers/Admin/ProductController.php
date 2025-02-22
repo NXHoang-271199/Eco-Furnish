@@ -98,11 +98,9 @@ class ProductController extends Controller
 
             DB::commit();
 
-            // Thêm thông báo vào session flash
-            session()->flash('success', 'Thêm sản phẩm thành công');
-
             return response()->json([
                 'success' => true,
+                'message' => 'Thêm sản phẩm thành công',
                 'redirect' => route('products.index')
             ]);
         } catch (\Exception $e) {
@@ -196,11 +194,18 @@ class ProductController extends Controller
             $product->update($data);
 
             DB::commit();
-            return redirect()->route('products.index')->with('success', 'Cập nhật sản phẩm thành công');
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật sản phẩm thành công',
+                'redirect' => route('products.index')
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error updating product: ' . $e->getMessage());
-            return back()->withInput()->with('error', 'Có lỗi xảy ra khi cập nhật sản phẩm: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật sản phẩm: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -230,10 +235,18 @@ class ProductController extends Controller
             $product->delete();
 
             DB::commit();
-            return redirect()->route('products.index')->with('success', 'Xóa sản phẩm thành công');
+            return response()->json([
+                'success' => true,
+                'message' => 'Xóa sản phẩm thành công',
+                'redirect' => route('products.index')
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Có lỗi xảy ra khi xóa sản phẩm');
+            Log::error('Error deleting product: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi xóa sản phẩm: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

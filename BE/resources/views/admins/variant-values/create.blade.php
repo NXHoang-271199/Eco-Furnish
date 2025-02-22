@@ -24,7 +24,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('variants.values.store', $variant) }}" method="POST">
+                    <form id="createVariantValueForm" action="{{ route('variants.values.store', $variant) }}" method="POST">
                         @csrf
                         <div class="form-group">
                             <label for="value">Giá trị</label>
@@ -45,3 +45,10 @@
     </div>
 </div>
 @endsection
+<<<<<<< HEAD
+=======
+
+@section('JS')
+    @include('partials.variant-values.create_js')
+@endsection 
+>>>>>>> aceb2aa46eb463e6e2b422ff821fecf6cfe1d60b
