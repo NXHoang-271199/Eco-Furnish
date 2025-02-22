@@ -12,7 +12,7 @@ use App\Http\Requests\PostRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\File;
 
-class PostsController extends Controller
+class PostController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -106,7 +106,7 @@ class PostsController extends Controller
 
         $filePath = null;
         if ($request->hasFile('image_thumbnail')) {
-            $filePath = $request->file('image_thumbnail')->store('upload/blogs', 'public');
+            $filePath = $request->file('image_thumbnail')->store('uploads/blogs', 'public');
         }
         $slug = Str::slug($request->title);
 
@@ -116,7 +116,7 @@ class PostsController extends Controller
             'image_thumbnail' => $filePath,
             'category_post_id' => $validated['category_id'],
             'user_id' => $validated['user_id'],
-            'status' => '1',
+            'status' => '0',
             'slug' => $slug,
         ]);
         return redirect()->route('posts.index')
@@ -146,6 +146,16 @@ class PostsController extends Controller
     /**
      * Update the specified resource in storage.
      */
+
+    public function approve(Request $request, string $id)
+    {
+        $singerPost = Post::findOrFail($id);
+        $singerPost->status = '1';
+        $singerPost->save();
+
+        return redirect()->back()->with('success', 'Duyệt bài viết thanh công!');
+    }
+     
     public function update(PostRequest $request, string $id)
     {
         $singerPost = Post::findOrFail($id);
@@ -191,7 +201,7 @@ class PostsController extends Controller
                 File::delete(public_path($singerPost->image_thumbnail));
             }
 
-            $filePath = $request->file('image_thumbnail')->store('upload/blogs', 'public');
+            $filePath = $request->file('image_thumbnail')->store('uploads/blogs', 'public');
             $singerPost->image_thumbnail = $filePath;
         }
         $slug = Str::slug($request->title);

@@ -1,8 +1,10 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+use App\Models\User;
+use App\Models\CategoryPost;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -15,8 +17,6 @@ return new class extends Migration
             $table->id();
             $table->string('title', 255);
             $table->text('content');
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('category_post_id');
             $table->string('image_thumbnail', 255)->nullable();
             $table->string('slug', 255)->unique();
             $table->enum('status', ['0', '1'])->default(0);
@@ -24,8 +24,8 @@ return new class extends Migration
             $table->softDeletes();
 
             // Tạo khóa ngoại
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('category_post_id')->references('id')->on('category_posts')->onDelete('cascade');
+            $table->foreignIdFor(User::class)->constrained()->onDelete('cascade');
+            $table->foreignIdFor(CategoryPost::class)->constrained()->onDelete('cascade');
 
         });
     }

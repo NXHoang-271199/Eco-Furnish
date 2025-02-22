@@ -103,20 +103,23 @@
 
 @section('content')
     <div class="container-fluid">
-
-        <!-- start page title -->
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
                     <h4 class="mb-sm-0">Chuyên mục</h4>
-
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ route('category-posts.index') }}">Admin</a></li>
-                            <li class="breadcrumb-item active">Chuyên mục</li>
+                            @foreach ($breadcrumbs as $breadcrumb)
+                                <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
+                                    @if ($breadcrumb['url'])
+                                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
+                                    @else
+                                        {{ $breadcrumb['name'] }}
+                                    @endif
+                                </li>
+                            @endforeach
                         </ol>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -153,7 +156,10 @@
                             <div class="form-group">
                                 <label for="title">Tên danh mục</label>
                                 <input type="text" id="title" name="title" class="form-control"
-                                    placeholder="Nhập tên danh mục" required>
+                                    placeholder="Nhập tên danh mục">
+                                @error('title')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
                             </div>
                             <button type="submit" id="submit-btn" class="btn btn-success mt-3">
                                 <i class="ri-add-fill me-1 align-bottom"></i> Thêm danh mục
@@ -178,14 +184,16 @@
                             <table class="table table-borderless table-nowrap">
                                 <thead>
                                     <tr class="text-center">
+                                        <th scope="col">STT</th>
                                         <th scope="col">Name</th>
                                         <th scope="col">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($listCategoryPost as $cate)
+                                    @foreach ($listCategoryPost as $key => $cate)
                                         <tr class="text-center">
-                                            <th scope="row">{{ $cate->title }}</th>
+                                            <td scope="row">{{ $key + 1 }}</td>
+                                            <td scope="row">{{ $cate->title }}</td>
                                             <td>
                                                 <div class="hstack gap-3 fs-15 justify-content-center">
                                                     <a href="javascript:void(0)" class="text-primary mx-2 edit-category"

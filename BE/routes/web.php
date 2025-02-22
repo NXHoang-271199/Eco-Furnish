@@ -2,12 +2,13 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\PostsController;
-use App\Http\Controllers\UsersController;
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryPostController;
-
-
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\VoucherController;
 
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\VariantController;
@@ -54,21 +55,29 @@ Route::prefix('admin')->group(function () {
         Route::resource('trash-variants', TrashController::class)->only(['index', 'update', 'destroy']);
         Route::resource('trash-variant-values', TrashController::class)->only(['index', 'update', 'destroy']);
     });
+    // return view('admins.dashboard');
+    // return view('admins.test');
 });
+// Login
+Route::get('login', [LoginController::class, 'showFormLogin'])->name('login');
+Route::get('register', [RegisterController::class, 'showFormRegister'])->name('register');
 
 Route::prefix('admin')->group(function () {
-    Route::get('/', function(){
-        return view('admins.dashboard');
-    });
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // User ===============================================
-    Route::resource('users', UsersController::class);
+    Route::resource('users', UserController::class);
 
     // Post ===============================================
-    Route::resource('posts', PostsController::class);
+    Route::resource('posts', PostController::class);
+    Route::post('/posts/{id}/approve', [PostController::class, 'approve'])->name('posts.approve');
 
     // Category Post ======================================
     Route::resource('category-posts', CategoryPostController::class);
+    Route::post('upload-image', [App\Http\Controllers\ImageUploadController::class, 'upload'])->name('upload.image');
+
+    // Voucher ============================================
+    Route::resource('vouchers', VoucherController::class);
 
 });
 

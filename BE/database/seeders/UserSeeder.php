@@ -29,6 +29,7 @@ class UserSeeder extends Seeder
                 'role_id' => $faker->randomElement($roleIds),
                 'avatar' => "https://picsum.photos/200/200?random=" . $faker->unique()->randomNumber(),
                 'email_verified_at' => $faker->dateTimeThisYear(),
+                'is_active' => 1,
                 'access_token' => $faker->uuid,
                 'refresh_token' => $faker->uuid,
                 'created_at' => now(),

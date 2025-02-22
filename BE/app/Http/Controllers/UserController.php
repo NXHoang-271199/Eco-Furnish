@@ -10,7 +10,7 @@ use App\Http\Requests\UserRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
-class UsersController extends Controller
+class UserController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -21,7 +21,13 @@ class UsersController extends Controller
             'name' => $request->input('name'),
             'email' => $request->input('email'),
         ];
-        $listUsers = User::search($filters)->orderByDesc('id')->paginate(15);
+        $userRoleId = Role::where('name', 'user')->value('id');
+
+        $listUsers = User::where('role_id', $userRoleId)
+            ->search($filters)
+            ->orderByDesc('id')
+            ->paginate(15);
+
         return view('admins.users.index', compact('listUsers'));
     }
 
@@ -44,7 +50,7 @@ class UsersController extends Controller
 
         $filePath = null;
         if ($request->hasFile('avatar')) {
-            $filePath = $request->file('avatar')->store('upload/avatar', 'public');
+            $filePath = $request->file('avatar')->store('uploads/avatar', 'public');
         }
         User::create([
             'name' => $validated['name'],
@@ -84,12 +90,12 @@ class UsersController extends Controller
      */
     public function update(UserRequest $request, string $id)
     {
-        $singerUser = User::findOrFail($id);    
+        $singerUser = User::findOrFail($id);
         $validated = $request->validated();
         try {
             $filePath = $singerUser->avatar;
             if ($request->hasFile('avatar')) {
-                $filePath = $request->file('avatar')->store('upload/avatar', 'public');
+                $filePath = $request->file('avatar')->store('uploads/avatar', 'public');
 
                 if ($singerUser->avatar && Storage::disk()->exists($singerUser->avatar)) {
                     Storage::disk()->delete($singerUser->avatar);

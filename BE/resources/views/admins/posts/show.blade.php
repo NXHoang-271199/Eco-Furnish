@@ -9,7 +9,6 @@
             max-width: 100%;
             height: auto;
             display: block;
-            margin: 0 auto;
         }
 
         
@@ -23,14 +22,19 @@
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
                     <h4 class="mb-sm-0">Chi tiết bài viết</h4>
-
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ route('posts.index') }}">Bài Viết</a></li>
-                            <li class="breadcrumb-item active">Chi tiết bài viết</li>
+                            @foreach ($breadcrumbs as $breadcrumb)
+                                <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
+                                    @if ($breadcrumb['url'])
+                                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
+                                    @else
+                                        {{ $breadcrumb['name'] }}
+                                    @endif
+                                </li>
+                            @endforeach
                         </ol>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -45,7 +49,7 @@
                             <h4 class="mb-2">{{ $singerPost->title }}</h4>
                         </div>
                         <div class="row mt-4">
-                            <div class="col-lg-3">
+                            <div class="col-lg-2">
                                 <h6 class="pb-1">Tạo bỏi:</h6>
                                 <div class="d-flex gap-2 mb-3">
                                     <div class="flex-shrink-0">
@@ -60,7 +64,7 @@
                                     </div>
                                 </div>
                             </div><!--end col-->
-                            <div class="col-lg-9 singer-post-content">
+                            <div class="col-lg-10 singer-post-content">
                                 <p>{!! $singerPost->content !!}</p>
                             </div><!--end col-->
                         </div><!--end row-->

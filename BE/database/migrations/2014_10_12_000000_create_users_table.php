@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Role;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -22,9 +23,11 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('access_token', 255)->nullable();
             $table->string('refresh_token', 255)->nullable();
+            $table->boolean('is_active')->default(1);
             $table->timestamps();
 
-            $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
+            $table->foreignIdFor(Role::class)->constrained()->onDelete('cascade');
+            
         });
     }
 
