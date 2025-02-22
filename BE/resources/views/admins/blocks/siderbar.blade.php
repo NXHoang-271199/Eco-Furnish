@@ -58,8 +58,8 @@
             <ul class="navbar-nav" id="navbar-nav">
                 <li class="menu-title"><span data-key="t-menu">Quản lý</span></li>
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="#">
-                        <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboards</span>
+                    <a class="nav-link menu-link" href="#" data-key="t-dashboard">
+                        <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -104,19 +104,29 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarSanPham">
+                        aria-expanded="false" aria-controls="sidebarSanPham" data-key="t-product-management">
                         <i class="ri-store-2-line"></i> <span data-key="t-advance-ui">Quản lý sản phẩm</span>
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarSanPham">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="" class="nav-link" data-key="t-sweet-alerts">
-                                    Danh sách
+                                <a href="{{ route('products.index') }}" class="nav-link" data-key="t-product-list">
+                                    <i class="ri-list-check-2"></i> Danh sách sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="" class="nav-link" data-key="t-nestable-list">
-                                    Thêm mới
+                                <a href="{{ route('products.create') }}" class="nav-link" data-key="t-product-create">
+                                    <i class="ri-add-circle-line"></i> Thêm sản phẩm
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('categories.index') }}" class="nav-link" data-key="t-product-categories">
+                                    <i class="ri-folder-2-line"></i> Danh mục sản phẩm
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('variants.index') }}" class="nav-link" data-key="t-product-variants">
+                                    <i class="ri-layout-grid-line"></i> Quản lý biến thể
                                 </a>
                             </li>
                         </ul>

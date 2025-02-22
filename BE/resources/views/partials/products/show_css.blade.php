@@ -43,7 +43,7 @@
 
         .gallery-container {
             display: grid !important;
-            grid-template-columns: repeat(auto-fill, 80px) !important;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
             gap: 10px !important;
             width: 100% !important;
             margin: 0 !important;
@@ -53,22 +53,14 @@
 
         .thumbnail-wrapper {
             position: relative !important;
-            width: 80px !important;
-            height: 80px !important;
-            min-width: 80px !important;
-            min-height: 80px !important;
-            max-width: 80px !important;
-            max-height: 80px !important;
+            width: 100% !important;
+            padding-bottom: 100% !important; /* Tạo tỷ lệ khung hình vuông */
             border: 1px solid #dee2e6 !important;
             border-radius: 6px !important;
             overflow: hidden !important;
             cursor: pointer !important;
             transition: all 0.2s ease !important;
             background: #fff !important;
-            display: block !important;
-            float: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
         }
 
         .thumbnail-wrapper.add-photo {
@@ -89,12 +81,13 @@
         }
 
         .thumbnail {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
             width: 100% !important;
             height: 100% !important;
             object-fit: cover !important;
-            display: block !important;
-            margin: 0 !important;
-            padding: 0 !important;
+            padding: 5px !important;
         }
 
         .add-photo-icon {
@@ -124,33 +117,15 @@
             }
             
             .gallery-container {
-                grid-template-columns: repeat(auto-fill, 70px) !important;
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important;
                 gap: 8px !important;
-            }
-            
-            .thumbnail-wrapper {
-                width: 70px !important;
-                height: 70px !important;
-                min-width: 70px !important;
-                min-height: 70px !important;
-                max-width: 70px !important;
-                max-height: 70px !important;
             }
         }
 
         @media (max-width: 480px) {
             .gallery-container {
-                grid-template-columns: repeat(auto-fill, 60px) !important;
+                grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)) !important;
                 gap: 6px !important;
-            }
-            
-            .thumbnail-wrapper {
-                width: 60px !important;
-                height: 60px !important;
-                min-width: 60px !important;
-                min-height: 60px !important;
-                max-width: 60px !important;
-                max-height: 60px !important;
             }
         }
     </style>

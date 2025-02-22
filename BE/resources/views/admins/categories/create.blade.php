@@ -54,10 +54,7 @@
         </div>
     </div>
 @endsection
-<<<<<<< HEAD
-=======
 
 @section('JS')
   @include('partials.category.create_js')
-@endsection 
->>>>>>> aceb2aa46eb463e6e2b422ff821fecf6cfe1d60b
+@endsection

@@ -104,7 +104,7 @@
                                                         </tr>
                                                         <tr>
                                                             <th scope="row">Danh mục</th>
-                                                            <td>{{ $product->category->name ?? 'N/A' }}</td>
+                                                            <td>{{ $product->category_name }}</td>
                                                         </tr>
                                                         <tr>
                                                             <th scope="row">Giá bán</th>
@@ -115,8 +115,15 @@
                                                                 @if($product->variants->count() > 0)
                                                                     <div class="mt-2">
                                                                         <strong>Giá biến thể:</strong>
-                                                                        {{ number_format($product->variants->min('price')) }} -
-                                                                        {{ number_format($product->variants->max('price')) }} VNĐ
+                                                                        @php
+                                                                            $minPrice = $product->variants->min('price');
+                                                                            $maxPrice = $product->variants->max('price');
+                                                                        @endphp
+                                                                        @if($minPrice === $maxPrice)
+                                                                            {{ number_format($minPrice) }} VNĐ
+                                                                        @else
+                                                                            {{ number_format($minPrice) }} - {{ number_format($maxPrice) }} VNĐ
+                                                                        @endif
                                                                     </div>
                                                                 @endif
                                                             </td>

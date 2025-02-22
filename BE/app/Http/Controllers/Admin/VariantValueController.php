@@ -120,14 +120,6 @@ class VariantValueController extends Controller
         try {
             DB::beginTransaction();
 
-            // Kiểm tra xem giá trị biến thể có đang được sử dụng không
-            if ($value->products()->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Không thể xóa giá trị biến thể này vì đang được sử dụng trong sản phẩm.'
-                ]);
-            }
-
             $value->delete();
 
             DB::commit();

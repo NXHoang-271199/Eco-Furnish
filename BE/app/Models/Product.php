@@ -27,7 +27,15 @@ class Product extends Model
      */
     public function category()
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(Category::class)->withTrashed();
+    }
+
+    /**
+     * Get the category name even if it's deleted
+     */
+    public function getCategoryNameAttribute()
+    {
+        return $this->category ? $this->category->name : 'N/A';
     }
 
     /**

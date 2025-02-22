@@ -36,6 +36,7 @@
 
         // Preview gallery images
         let galleryFiles = new DataTransfer(); // Biến lưu trữ tất cả files
+        let removedImages = []; // Mảng lưu trữ ID của các ảnh đã xóa
 
         document.getElementById('gallery').addEventListener('change', function(e) {
             const preview = document.getElementById('galleryPreview');
@@ -70,18 +71,24 @@
             const galleryInput = document.getElementById('gallery');
             const item = element.parentElement;
             const container = item.parentElement;
-            const index = Array.from(container.children).indexOf(item) - 1; // Trừ 1 vì có nút add-photo
+            
+            // Nếu là ảnh đã tồn tại (có data-id), thêm vào danh sách ảnh cần xóa
+            const imageId = item.getAttribute('data-id');
+            if (imageId) {
+                removedImages.push(imageId);
+            } else {
+                // Nếu là ảnh mới, xóa khỏi galleryFiles
+                const index = Array.from(container.children).indexOf(item) - 1; // Trừ 1 vì có nút add-photo
+                const dt = new DataTransfer();
+                const files = Array.from(galleryFiles.files);
+                files.splice(index, 1);
+                files.forEach(file => dt.items.add(file));
+                galleryFiles = dt;
+                galleryInput.files = galleryFiles.files;
+            }
             
             // Remove preview
             item.remove();
-            
-            // Remove from galleryFiles
-            const dt = new DataTransfer();
-            const files = Array.from(galleryFiles.files);
-            files.splice(index, 1);
-            files.forEach(file => dt.items.add(file));
-            galleryFiles = dt;
-            galleryInput.files = galleryFiles.files;
         }
 
         $(document).ready(function() {
@@ -207,6 +214,10 @@
                 }
 
                 const formData = new FormData(this);
+                
+                // Thêm danh sách ảnh đã xóa vào formData
+                formData.append('removed_images', JSON.stringify(removedImages));
+                
                 const submitBtn = $(this).find('button[type="submit"]');
                 const originalText = submitBtn.html();
                 submitBtn.prop('disabled', true);

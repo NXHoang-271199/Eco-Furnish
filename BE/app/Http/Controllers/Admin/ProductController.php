@@ -155,14 +155,22 @@ class ProductController extends Controller
             }
 
             // Xử lý gallery images
-            if ($request->hasFile('gallery')) {
-                // Xóa gallery images cũ
-                foreach ($product->gallery as $image) {
-                    Storage::disk('public')->delete($image->image_url);
+            if ($request->has('removed_images')) {
+                // Chuyển chuỗi JSON thành mảng
+                $removedImages = json_decode($request->removed_images, true);
+                
+                // Xóa các ảnh đã được đánh dấu để xóa
+                foreach ($removedImages as $imageId) {
+                    $image = GalleryImage::find($imageId);
+                    if ($image) {
+                        Storage::disk('public')->delete($image->image_url);
+                        $image->delete();
+                    }
                 }
-                $product->gallery()->delete();
+            }
 
-                // Thêm gallery images mới
+            // Thêm ảnh mới vào gallery nếu có
+            if ($request->hasFile('gallery')) {
                 foreach ($request->file('gallery') as $image) {
                     $imagePath = $image->store('products/gallery', 'public');
                     $product->gallery()->create([

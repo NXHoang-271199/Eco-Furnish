@@ -94,12 +94,9 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header border-0">
-                    <div class="row g-4">
-                        <div class="col-sm-auto">
-                            <div class="d-flex gap-1">
-                                <a href="{{ route('trash.products') }}" class="btn btn-warning">
-                                    <i class="ri-delete-bin-line align-bottom me-1"></i> Thùng rác
-                                </a>
+                    <div class="row g-4 align-items-center">
+                        <div class="col">
+                            <div class="d-flex gap-2">
                                 <a href="{{ route('products.create') }}" class="btn btn-success">
                                     <i class="ri-add-line align-bottom me-1"></i> Thêm sản phẩm
                                 </a>
@@ -108,7 +105,12 @@
                                 </a>
                             </div>
                         </div>
-
+                        <div class="col-auto">
+                            <a href="/admin/trash/trash-products" class="btn btn-soft-danger btn-icon btn-sm fs-16"
+                               data-bs-toggle="tooltip" data-bs-placement="top" title="Thùng rác">
+                                <i class="ri-delete-bin-line"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -120,7 +122,7 @@
                                     <table class="table table-nowrap align-middle" id="orderTable">
                                         <thead class="text-muted table-light">
                                             <tr class="text-uppercase">
-                                                <th scope="col" style="width: 50px;">ID</th>
+                                                <th scope="col" style="width: 50px;">STT</th>
                                                 <th scope="col">Sản phẩm</th>
                                                 <th scope="col">Danh mục</th>
                                                 <th scope="col">Giá</th>
@@ -130,7 +132,7 @@
                                         <tbody>
                                             @foreach($products as $product)
                                             <tr>
-                                                <td>{{ $product->id }}</td>
+                                                <td>{{ ($products->currentPage() - 1) * $products->perPage() + $loop->iteration }}</td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="flex-shrink-0 me-3">
@@ -146,7 +148,7 @@
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td>{{ $product->category->name ?? 'N/A' }}</td>
+                                                <td>{{ $product->category_name }}</td>
                                                 <td data-original-price="{{ $product->price }}"
                                                     @if($product->variants->count() > 0)
                                                     data-min-variant-price="{{ $product->variants->min('price') }}"

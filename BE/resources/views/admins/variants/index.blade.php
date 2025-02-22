@@ -10,22 +10,24 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <h4 class="mb-sm-0">Biến thể</h4>
-                <div class="page-title-right d-flex gap-2">
-                    <div class="d-flex gap-1">
-                        <a href="{{ route('trash.variants') }}" class="btn btn-warning">
-                            <i class="ri-delete-bin-line align-bottom me-1"></i> Thùng rác
-                        </a>
-                        <a href="{{ route('variants.create') }}" class="btn btn-success">
-                            <i class="ri-add-line align-bottom me-1"></i> Thêm biến thể
-                        </a>
-                    </div>
-                </div>
-            </div>
+        
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Danh sách biến thể</h3>
+                <div class="card-header border-0">
+                    <div class="row g-4 align-items-center">
+                        <div class="col">
+                            <div class="d-flex">
+                                <a href="{{ route('variants.create') }}" class="btn btn-success">
+                                    <i class="ri-add-line align-bottom me-1"></i> Thêm biến thể
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <a href="/admin/trash/trash-variants" class="btn btn-soft-danger btn-icon btn-sm fs-16" 
+                               data-bs-toggle="tooltip" data-bs-placement="top" title="Thùng rác">
+                                <i class="ri-delete-bin-line"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     @if(session('success'))
@@ -38,7 +40,7 @@
                         <table class="table table-bordered table-hover">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>STT</th>
                                     <th>Tên biến thể</th>
                                     <th>Giá trị</th>
                                     <th>Thao tác</th>
@@ -47,7 +49,7 @@
                             <tbody>
                                 @foreach($variants as $variant)
                                 <tr>
-                                    <td>{{ $variant->id }}</td>
+                                    <td>{{ ($variants->currentPage() - 1) * $variants->perPage() + $loop->iteration }}</td>
                                     <td>{{ $variant->name }}</td>
                                     <td>
                                         @foreach($variant->values as $value)

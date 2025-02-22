@@ -91,14 +91,10 @@
 
     <!-- App js -->
     <script src="{{ asset('assets/admins/js/app.js') }}"></script>
-<<<<<<< HEAD
-
-=======
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Sweet Alerts js -->
     <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
->>>>>>> aceb2aa46eb463e6e2b422ff821fecf6cfe1d60b
     @yield('JS')
 </body>
 

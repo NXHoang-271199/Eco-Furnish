@@ -3,7 +3,7 @@
 @section('title', 'Danh sách danh mục')
 
 @section('CSS')
- 
+
 @endsection
 
 @section('content')
@@ -24,18 +24,20 @@
     <div class="row">
         <div class="col-lg-12">
             <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <h5 class="card-title mb-0 flex-grow-1">Danh sách danh mục</h5>
-                        <div class="flex-shrink-0">
-                            <div class="d-flex gap-1">
-                                <a href="{{ route('trash.categories') }}" class="btn btn-warning">
-                                    <i class="ri-delete-bin-line align-bottom me-1"></i> Thùng rác
-                                </a>
+                <div class="card-header border-0">
+                    <div class="row g-4 align-items-center">
+                        <div class="col">
+                            <div class="d-flex">
                                 <a href="{{ route('categories.create') }}" class="btn btn-success">
                                     <i class="ri-add-line align-bottom me-1"></i> Thêm danh mục
                                 </a>
                             </div>
+                        </div>
+                        <div class="col-auto">
+                            <a href="/admin/trash/trash-categories" class="btn btn-soft-danger btn-icon btn-sm fs-16"
+                               data-bs-toggle="tooltip" data-bs-placement="top" title="Thùng rác">
+                                <i class="ri-delete-bin-line"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -56,7 +58,7 @@
                         <table class="table table-hover table-nowrap align-middle mb-0">
                             <thead>
                                 <tr class="text-muted text-uppercase">
-                                    <th scope="col">ID</th>
+                                    <th scope="col">STT</th>
                                     <th scope="col">Tên danh mục</th>
                                     <th scope="col">Slug</th>
                                     <th scope="col" style="width: 150px;">Thao tác</th>
@@ -65,7 +67,7 @@
                             <tbody>
                                 @foreach($categories as $category)
                                 <tr>
-                                    <td>{{ $category->id }}</td>
+                                    <td>{{ ($categories->currentPage() - 1) * $categories->perPage() + $loop->iteration }}</td>
                                     <td>{{ $category->name }}</td>
                                     <td>{{ $category->slug }}</td>
                                     <td>
@@ -93,16 +95,16 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <div class="row align-items-center mt-4 py-3 px-2">
                         <div class="col-md-5">
                             <div class="text-muted">
-                                Showing 
-                                <span class="fw-semibold">{{ $categories->firstItem() }}</span> 
-                                to 
-                                <span class="fw-semibold">{{ $categories->lastItem() }}</span> 
-                                of 
-                                <span class="fw-semibold">{{ $categories->total() }}</span> 
+                                Showing
+                                <span class="fw-semibold">{{ $categories->firstItem() }}</span>
+                                to
+                                <span class="fw-semibold">{{ $categories->lastItem() }}</span>
+                                of
+                                <span class="fw-semibold">{{ $categories->total() }}</span>
                                 Results
                             </div>
                         </div>
@@ -135,80 +137,5 @@
 @endsection
 
 @section('JS')
-<<<<<<< HEAD
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Sweet Alerts js -->
-    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
-
-    <script>
-        $(document).ready(function() {
-            // Xử lý xóa danh mục
-            $('.delete-item').click(function() {
-                var id = $(this).data('id');
-                Swal.fire({
-                    title: 'Bạn có chắc chắn?',
-                    text: "Bạn sẽ không thể khôi phục lại dữ liệu này!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Xóa',
-                    cancelButtonText: 'Hủy',
-                    confirmButtonClass: 'btn btn-danger me-2',
-                    cancelButtonClass: 'btn btn-light',
-                    customClass: {
-                        confirmButton: 'btn btn-danger me-2',
-                        cancelButton: 'btn btn-light'
-                    },
-                    buttonsStyling: true
-                }).then(function(result) {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            url: '/admin/categories/' + id,
-                            type: 'DELETE',
-                            data: {
-                                _token: '{{ csrf_token() }}'
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    Swal.fire({
-                                        title: 'Thành công!',
-                                        text: response.message,
-                                        icon: 'success',
-                                        customClass: {
-                                            confirmButton: 'btn btn-success'
-                                        }
-                                    }).then(function() {
-                                        location.reload();
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        title: 'Lỗi!',
-                                        text: response.message,
-                                        icon: 'error',
-                                        customClass: {
-                                            confirmButton: 'btn btn-danger'
-                                        }
-                                    });
-                                }
-                            },
-                            error: function(xhr) {
-                                Swal.fire({
-                                    title: 'Lỗi!',
-                                    text: xhr.responseJSON.message,
-                                    icon: 'error',
-                                    customClass: {
-                                        confirmButton: 'btn btn-danger'
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            });
-        });
-    </script>
-@endsection
-=======
    @include('partials.category.index_js')
-@endsection 
->>>>>>> aceb2aa46eb463e6e2b422ff821fecf6cfe1d60b
+@endsection
