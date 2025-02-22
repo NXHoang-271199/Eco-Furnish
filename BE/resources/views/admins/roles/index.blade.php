@@ -34,11 +34,9 @@
 
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Danh sách vai trò</h5>
-                <form action="" method="POST">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
-                        <i class="ri-add-line me-1"></i> Thêm Vai Trò
-                    </button>
-                </form>
+                <a href="{{ route('roles.create') }}" class="btn btn-primary">
+                    <i class="ri-add-line me-1"></i>Thêm vai trò
+                </a>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -48,7 +46,7 @@
                                 <th>Tên vai trò</th>
                                 <th>Số người dùng</th>
                                 <th>Ngày tạo</th>
-                                <th class="text-end">Hành động</th>
+                                <th>Hành động</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -57,15 +55,36 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div>
-                                                <h6 class="mb-0"><a href="{{ route('roles.show', $role->id) }}" class="text-reset">{{ $role->name }}</a></h6>
+                                                <h6 class="mb-0"><a href="{{ route('roles.show', $role->id) }}"
+                                                        class="text-reset">{{ $role->name }}</a></h6>
                                             </div>
                                         </div>
                                     </td>
                                     <td>{{ $role->users()->count() }}</td>
                                     <td>{{ $role->created_at }}</td>
-                                    <td class="text-end">
-                                        <button class="btn btn-soft-info btn-sm"><i class="ri-eye-line"></i></button>
-                                        <button class="btn btn-soft-warning btn-sm"><i class="ri-edit-line"></i></button>
+                                    <td class="">
+                                        <div class="dropdown d-inline-block">
+                                            <button class="btn btn-soft-secondary btn-sm dropdown" type="button"
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="ri-more-fill align-middle"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end" style="">
+                                                <li><a class="dropdown-item edit-item-btn"
+                                                        href="{{ route('roles.edit', $role->id) }}"><i
+                                                            class="ri-pencil-fill align-bottom me-2 text-muted"></i>
+                                                        Edit</a></li>
+                                                <li>
+                                                    <form action="{{ route('roles.show', $role->id) }}" method="POST"
+                                                        class="d-inline" onclick="return confirm('Muốn xóa không ?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button class="dropdown-item edit-item-btn cursor-pointer"><i
+                                                                class="ri-delete-bin-fill align-bottom me-2 text-muted"></i>
+                                                            Xóa</button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

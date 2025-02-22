@@ -260,7 +260,7 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <form action="{{ route('posts.approve', $post->slug) }}" method="POST"
+                                                <form action="{{ route('posts.approve', $post->id) }}" method="POST"
                                                     style="display:inline;">
                                                     @csrf
                                                     <button type="submit" class="btn btn-outline-success">
