@@ -73,9 +73,7 @@ Route::prefix('admin')->group(function () {
     Route::resource('roles', RoleController::class);
 
     // Post ===============================================
-    Route::resource('posts', PostController::class)->scoped([
-        'post' => 'slug'
-    ]);
+    Route::resource('posts', PostController::class);
     Route::post('/posts/{id}/approve', [PostController::class, 'approve'])->name('posts.approve');
 
     // Category Post ======================================

@@ -21,7 +21,7 @@ class RoleController extends Controller
      */
     public function create()
     {
-        //
+        return view('admins.roles.create');
     }
 
     /**
@@ -38,15 +38,19 @@ class RoleController extends Controller
     public function show(string $id)
     {
         $singerRole = Role::findOrFail($id);
-        return view('admins.roles.show', compact('singerRole'));
+        $users = $singerRole->users()->with('role')->get();
+        $roles = Role::all();
+        return view('admins.roles.show', compact('singerRole', 'users', 'roles'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
     public function edit(string $id)
-    {
-        //
+    {   
+        $singerRole = Role::findOrFail($id);
+        $users = $singerRole->users()->with('role')->paginate(10);
+        return view('admins.roles.edit', compact('singerRole','users'));
     }
 
     /**

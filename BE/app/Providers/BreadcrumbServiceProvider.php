@@ -62,7 +62,7 @@ class BreadcrumbServiceProvider extends ServiceProvider
             'roles.edit' => [
                 ['name' => 'Dashboard', 'url' => route('dashboard')],
                 ['name' => 'Vai trò', 'url' => route('roles.index')],
-                ['name' => 'Chình sửa', 'url' => '']
+                ['name' => 'Chỉnh sửa', 'url' => '']
             ],
 
             // Post Routes
@@ -170,7 +170,7 @@ class BreadcrumbServiceProvider extends ServiceProvider
             if (is_numeric($segment) && request()->is('admin/roles/*')) {
                 $role = \App\Models\Role::find($segment);
                 if ($role) {
-                    $name = $role->code; // Lấy mã voucher
+                    $name = $role->name; // Lấy mã role
                 }
             }
     
