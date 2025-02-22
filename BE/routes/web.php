@@ -37,21 +37,10 @@ Route::prefix('admin')->group(function () {
     });
 
     // Routes cho thùng rác
-    Route::prefix('trash')->name('trash.')->group(function () {
-        Route::get('/products', [TrashController::class, 'products'])->name('products');
-        Route::post('/products/{id}/restore', [TrashController::class, 'restoreProduct'])->name('products.restore');
-        Route::post('/products/{id}/force-delete', [TrashController::class, 'forceDeleteProduct'])->name('products.force-delete');
-        
-        Route::get('/categories', [TrashController::class, 'categories'])->name('categories');
-        Route::post('/categories/{id}/restore', [TrashController::class, 'restoreCategory'])->name('categories.restore');
-        Route::post('/categories/{id}/force-delete', [TrashController::class, 'forceDeleteCategory'])->name('categories.force-delete');
-        
-        Route::get('/variants', [TrashController::class, 'variants'])->name('variants');
-        Route::post('/variants/{id}/restore', [TrashController::class, 'restoreVariant'])->name('variants.restore');
-        Route::post('/variants/{id}/force-delete', [TrashController::class, 'forceDeleteVariant'])->name('variants.force-delete');
-        
-        Route::get('/variant-values', [TrashController::class, 'variantValues'])->name('variant-values');
-        Route::post('/variant-values/{id}/restore', [TrashController::class, 'restoreVariantValue'])->name('variant-values.restore');
-        Route::post('/variant-values/{id}/force-delete', [TrashController::class, 'forceDeleteVariantValue'])->name('variant-values.force-delete');
+    Route::prefix('trash')->group(function () {
+        Route::resource('trash-products', TrashController::class)->only(['index', 'update', 'destroy']);
+        Route::resource('trash-categories', TrashController::class)->only(['index', 'update', 'destroy']);
+        Route::resource('trash-variants', TrashController::class)->only(['index', 'update', 'destroy']);
+        Route::resource('trash-variant-values', TrashController::class)->only(['index', 'update', 'destroy']);
     });
 });

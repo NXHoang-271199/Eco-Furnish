@@ -24,18 +24,20 @@
     <div class="row">
         <div class="col-lg-12">
             <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <h5 class="card-title mb-0 flex-grow-1">Danh sách danh mục</h5>
-                        <div class="flex-shrink-0">
-                            <div class="d-flex gap-1">
-                                <a href="{{ route('trash.categories') }}" class="btn btn-warning">
-                                    <i class="ri-delete-bin-line align-bottom me-1"></i> Thùng rác
-                                </a>
+                <div class="card-header border-0">
+                    <div class="row g-4 align-items-center">
+                        <div class="col">
+                            <div class="d-flex">
                                 <a href="{{ route('categories.create') }}" class="btn btn-success">
                                     <i class="ri-add-line align-bottom me-1"></i> Thêm danh mục
                                 </a>
                             </div>
+                        </div>
+                        <div class="col-auto">
+                            <a href="/admin/trash/trash-categories" class="btn btn-soft-danger btn-icon btn-sm fs-16" 
+                               data-bs-toggle="tooltip" data-bs-placement="top" title="Thùng rác">
+                                <i class="ri-delete-bin-line"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -56,7 +58,7 @@
                         <table class="table table-hover table-nowrap align-middle mb-0">
                             <thead>
                                 <tr class="text-muted text-uppercase">
-                                    <th scope="col">ID</th>
+                                    <th scope="col">STT</th>
                                     <th scope="col">Tên danh mục</th>
                                     <th scope="col">Slug</th>
                                     <th scope="col" style="width: 150px;">Thao tác</th>
@@ -65,7 +67,7 @@
                             <tbody>
                                 @foreach($categories as $category)
                                 <tr>
-                                    <td>{{ $category->id }}</td>
+                                    <td>{{ ($categories->currentPage() - 1) * $categories->perPage() + $loop->iteration }}</td>
                                     <td>{{ $category->name }}</td>
                                     <td>{{ $category->slug }}</td>
                                     <td>

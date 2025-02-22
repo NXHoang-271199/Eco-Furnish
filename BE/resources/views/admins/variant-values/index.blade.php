@@ -5,20 +5,21 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Danh sách giá trị biến thể: {{ $variant->name }}</h3>
-                    <div class="card-tools">
-                        <div class="d-flex gap-1">
-                            <a href="{{ route('trash.variant-values') }}" class="btn btn-warning">
-                                <i class="ri-delete-bin-line align-bottom me-1"></i> Thùng rác
-                            </a>
-                            <a href="{{ route('variants.values.create', $variant->id) }}" class="btn btn-success">
-                                <i class="ri-add-line align-bottom me-1"></i> Thêm giá trị
+                <div class="card-header border-0">
+                    <div class="row g-4 align-items-center">
+                        <div class="col">
+                            <div class="d-flex">
+                                <a href="{{ route('variants.values.create', $variant) }}" class="btn btn-success">
+                                    <i class="ri-add-line align-bottom me-1"></i> Thêm giá trị biến thể
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <a href="/admin/trash/trash-variant-values" class="btn btn-soft-danger btn-icon btn-sm fs-16" 
+                               data-bs-toggle="tooltip" data-bs-placement="top" title="Thùng rác">
+                                <i class="ri-delete-bin-line"></i>
                             </a>
                         </div>
-                        <a href="{{ route('variants.index') }}" class="btn btn-default">
-                            <i class="fas fa-arrow-left"></i> Quay lại
-                        </a>
                     </div>
                 </div>
                 <div class="card-body">

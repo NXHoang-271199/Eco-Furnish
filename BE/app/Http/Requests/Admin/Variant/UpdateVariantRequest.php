@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Variant;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateVariantRequest extends FormRequest
 {
@@ -14,7 +15,16 @@ class UpdateVariantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:100|unique:variants,name,' . $this->route('variant')->id
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('variants', 'name')
+                    ->where(function ($query) {
+                        return $query->where('id', '!=', $this->route('variant')->id)
+                            ->whereNull('deleted_at');
+                    })
+            ]
         ];
     }
 

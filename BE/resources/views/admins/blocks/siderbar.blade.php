@@ -60,34 +60,34 @@
             <ul class="navbar-nav" id="navbar-nav">
                 <li class="menu-title"><span data-key="t-menu">Quản lý</span></li>
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="#">
+                    <a class="nav-link menu-link" href="#" data-key="t-dashboard">
                         <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarSanPham">
+                        aria-expanded="false" aria-controls="sidebarSanPham" data-key="t-product-management">
                         <i class="ri-store-2-line"></i> <span data-key="t-advance-ui">Quản lý sản phẩm</span>
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarSanPham">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="{{ route('products.index') }}" class="nav-link">
+                                <a href="{{ route('products.index') }}" class="nav-link" data-key="t-product-list">
                                     <i class="ri-list-check-2"></i> Danh sách sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('products.create') }}" class="nav-link">
+                                <a href="{{ route('products.create') }}" class="nav-link" data-key="t-product-create">
                                     <i class="ri-add-circle-line"></i> Thêm sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('categories.index') }}" class="nav-link">
+                                <a href="{{ route('categories.index') }}" class="nav-link" data-key="t-product-categories">
                                     <i class="ri-folder-2-line"></i> Danh mục sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('variants.index') }}" class="nav-link">
+                                <a href="{{ route('variants.index') }}" class="nav-link" data-key="t-product-variants">
                                     <i class="ri-layout-grid-line"></i> Quản lý biến thể
                                 </a>
                             </li>
@@ -96,14 +96,14 @@
                 </li>
                 <!-- <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarOrders" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarOrders">
+                        aria-expanded="false" aria-controls="sidebarOrders" data-key="t-order-management">
                         <i class="ri-shopping-cart-2-line"></i>
                         <span data-key="t-orders">Quản lý đơn hàng</span>
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarOrders">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="#" class="nav-link">
+                                <a href="#" class="nav-link" data-key="t-order-list">
                                     <i class="ri-file-list-line"></i> Danh sách đơn hàng
                                 </a>
                             </li>
@@ -114,14 +114,14 @@
                 
                 <!-- <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarCustomers" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarCustomers">
+                        aria-expanded="false" aria-controls="sidebarCustomers" data-key="t-customer-management">
                         <i class="ri-user-2-line"></i>
                         <span data-key="t-customers">Quản lý khách hàng</span>
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarCustomers">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="#" class="nav-link">
+                                <a href="#" class="nav-link" data-key="t-customer-list">
                                     <i class="ri-team-line"></i> Danh sách khách hàng
                                 </a>
                             </li>

@@ -298,4 +298,73 @@
             color: #fff;
             border-color: #405189;
         }
+
+        .btn-soft-danger {
+            color: #f06548;
+            background-color: rgba(240, 101, 72, 0.1);
+            border-color: transparent;
+            transition: all 0.2s ease;
+        }
+
+        .btn-soft-danger:hover {
+            color: #fff;
+            background-color: #f06548;
+            transform: translateY(-2px);
+        }
+
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 37px;
+            width: 37px;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        .btn-icon.btn-sm {
+            height: 32px;
+            width: 32px;
+            line-height: 32px;
+        }
+
+        .fs-16 {
+            font-size: 16px !important;
+        }
+
+        /* Hiệu ứng hover cho tooltip */
+        .tooltip {
+            position: absolute;
+            z-index: 1070;
+            display: block;
+            margin: 0;
+            font-style: normal;
+            font-weight: 400;
+            line-height: 1.5;
+            text-align: left;
+            text-decoration: none;
+            text-shadow: none;
+            text-transform: none;
+            letter-spacing: normal;
+            word-break: normal;
+            word-spacing: normal;
+            white-space: normal;
+            line-break: auto;
+            font-size: 0.875rem;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        .tooltip-inner {
+            max-width: 200px;
+            padding: 0.25rem 0.5rem;
+            color: #fff;
+            text-align: center;
+            background-color: #000;
+            border-radius: 0.25rem;
+        }
     </style>

@@ -14,7 +14,7 @@
                         <table class="table table-bordered table-hover">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>STT</th>
                                     <th>Tên giá trị</th>
                                     <th>Biến thể</th>
                                     <th>Ngày xóa</th>
@@ -22,17 +22,17 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($variantValues as $value)
+                                @foreach($items as $item)
                                 <tr>
-                                    <td>{{ $value->id }}</td>
-                                    <td>{{ $value->value }}</td>
-                                    <td>{{ $value->variant->name }}</td>
-                                    <td>{{ $value->deleted_at->format('d/m/Y H:i:s') }}</td>
+                                    <td>{{ ($items->currentPage() - 1) * $items->perPage() + $loop->iteration }}</td>
+                                    <td>{{ $item->value }}</td>
+                                    <td>{{ $item->variant->name }}</td>
+                                    <td>{{ Carbon\Carbon::parse($item->deleted_at)->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i:s') }}</td>
                                     <td>
-                                        <button type="button" class="btn btn-success btn-sm" onclick="confirmRestore({{ $value->id }})">
+                                        <button type="button" class="btn btn-success btn-sm" onclick="confirmRestore({{ $item->id }})">
                                             <i class="fas fa-trash-restore"></i> Khôi phục
                                         </button>
-                                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmForceDelete({{ $value->id }})">
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmForceDelete({{ $item->id }})">
                                             <i class="fas fa-trash"></i> Xóa vĩnh viễn
                                         </button>
                                     </td>
@@ -42,7 +42,7 @@
                         </table>
                     </div>
                     <div class="mt-3">
-                        {{ $variantValues->links() }}
+                        {{ $items->links() }}
                     </div>
                 </div>
             </div>

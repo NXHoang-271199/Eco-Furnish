@@ -17,10 +17,10 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: `/admin/trash/variants/${id}/restore`,
-                        type: 'POST',
-                        data: {
-                            _token: '{{ csrf_token() }}'
+                        url: `/admin/trash/trash-variants/${id}`,
+                        type: 'PUT',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
                         success: function(response) {
                             if (response.success) {
@@ -67,10 +67,10 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: `/admin/trash/variants/${id}/force-delete`,
-                        type: 'POST',
-                        data: {
-                            _token: '{{ csrf_token() }}'
+                        url: `/admin/trash/trash-variants/${id}`,
+                        type: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
                         success: function(response) {
                             if (response.success) {
