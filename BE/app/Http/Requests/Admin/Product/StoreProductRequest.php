@@ -34,7 +34,7 @@ class StoreProductRequest extends FormRequest
             'variants.*.sku' => 'required_with:variants|string|max:50|distinct',
             'variants.*.price' => 'required_with:variants|numeric|min:0|max:999999999',
             'variants.*.values' => 'required_with:variants|array',
-            'variants.*.values.*' => 'required|exists:variant_values,id'
+            'variants.*.values.*' => 'exists:variant_values,id'
         ];
     }
 
@@ -68,7 +68,6 @@ class StoreProductRequest extends FormRequest
             'variants.*.price.min' => 'Giá biến thể phải lớn hơn 0',
             'variants.*.price.max' => 'Giá biến thể không được vượt quá 999,999,999 VNĐ',
             'variants.*.values.required_with' => 'Giá trị biến thể là bắt buộc',
-            'variants.*.values.*.required' => 'Vui lòng chọn giá trị cho tất cả các biến thể',
             'variants.*.values.*.exists' => 'Giá trị biến thể không tồn tại'
         ];
     }

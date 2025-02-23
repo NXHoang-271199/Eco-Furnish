@@ -155,7 +155,16 @@
                                                     data-max-variant-price="{{ $product->variants->max('price') }}"
                                                     @endif>
                                                     <div>
-                                                        <strong>Giá gốc:</strong> {{ number_format($product->price) }} VNĐ
+                                                        @if($product->discount_price)
+                                                            <div class="text-decoration-line-through text-muted">
+                                                                <small>Giá gốc: {{ number_format($product->price) }} VNĐ</small>
+                                                            </div>
+                                                            <div>
+                                                                <strong class="text-danger">Giá KM: {{ number_format($product->discount_price) }} VNĐ</strong>
+                                                            </div>
+                                                        @else
+                                                            <strong>Giá gốc: {{ number_format($product->price) }} VNĐ</strong>
+                                                        @endif
                                                     </div>
                                                     @if($product->variants->count() > 0)
                                                         <div class="mt-2">

@@ -127,12 +127,46 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $categories = Category::all();
-        $variants = Variant::with('values')->get();
-        $colorVariants = VariantValue::where('variant_id', 1)->get();
-        $capacityVariants = VariantValue::where('variant_id', 2)->get();
-        $product->load(['gallery', 'variants.variant', 'variants.variantValue']);
-        return view('admins.products.edit', compact('product', 'categories', 'variants', 'colorVariants', 'capacityVariants'));
+        try {
+            // Load categories
+            $categories = Category::all();
+
+            // Load variants with their values
+            $variants = Variant::with(['values' => function($query) {
+                $query->select('id', 'variant_id', 'value')
+                    ->orderBy('value');
+            }])
+            ->select('id', 'name')
+            ->orderBy('id')
+            ->get();
+
+            // Group variants by name
+            $groupedVariants = $variants->groupBy(function($variant) {
+                return Str::slug($variant->name);
+            });
+            
+            // Load product with related data
+            $product->load([
+                'gallery',
+                'variants' => function($query) {
+                    $query->select('id', 'product_id', 'variant_id', 'variant_value_id', 'sku', 'price');
+                },
+                'variants.variant:id,name',
+                'variants.variantValue:id,value'
+            ]);
+
+            // Log data for debugging
+            \Log::info('Product data:', [
+                'product' => $product->toArray(),
+                'variants' => $groupedVariants->toArray()
+            ]);
+
+            return view('admins.products.edit', compact('product', 'categories', 'variants', 'groupedVariants'));
+        } catch (\Exception $e) {
+            \Log::error('Error loading product edit page: ' . $e->getMessage());
+            return redirect()->route('products.index')
+                ->with('error', 'Có lỗi xảy ra khi tải trang chỉnh sửa sản phẩm');
+        }
     }
 
     /**

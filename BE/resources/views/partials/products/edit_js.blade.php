@@ -96,60 +96,150 @@
             const addVariantBtn = $('#add-variant');
             const form = $('#productForm');
             
-            let variantCount = {{ $product->variants ? $product->variants->groupBy('sku')->count() : 0 }};
+            let variantCount = 0;
+            const groupedVariants = {!! json_encode($groupedVariants) !!};
+            console.log('Danh sách biến thể theo nhóm:', groupedVariants);
 
             // Template HTML cho biến thể mới
-            function getVariantTemplate(index) {
-                return `
-                    <div class="variant-combination mb-3">
+            function getVariantTemplate(index, existingVariant = null) {
+                try {
+                    // Kiểm tra dữ liệu biến thể
+                    if (!groupedVariants || typeof groupedVariants !== 'object') {
+                        console.error('Danh sách biến thể không hợp lệ:', groupedVariants);
+                        return null;
+                    }
+
+                    let variantHtml = '';
+                    let hasValidVariant = false;
+
+                    // Duyệt qua tất cả các biến thể
+                    Object.entries(groupedVariants).forEach(([type, variants]) => {
+                        if (!Array.isArray(variants) || variants.length === 0) {
+                            console.error(`Nhóm biến thể ${type} không hợp lệ:`, variants);
+                            return;
+                        }
+
+                        const variant = variants[0];
+                        if (!variant || !variant.name || !variant.id || !variant.values) {
+                            console.error(`Biến thể trong nhóm ${type} thiếu thông tin:`, variant);
+                            return;
+                        }
+
+                        hasValidVariant = true;
+
+                        // Tạo HTML cho biến thể
+                        variantHtml += `
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>${variant.name}</label>
+                                    <select class="form-control variant-select" name="variants[${index}][variant_values][${variant.id}]">
+                                        <option value="">Chọn ${variant.name.toLowerCase()}</option>`;
+
+                        // Thêm các option cho select
+                        if (Array.isArray(variant.values)) {
+                            variant.values.forEach(value => {
+                                if (value && value.id && value.value) {
+                                    let isSelected = false;
+                                    if (existingVariant && existingVariant.variant_value_id) {
+                                        isSelected = existingVariant.variant_value_id == value.id;
+                                    } else if (existingVariant && existingVariant.variant_values) {
+                                        isSelected = existingVariant.variant_values[variant.id] == value.id;
+                                    }
+                                    
+                                    variantHtml += `<option value="${value.id}" ${isSelected ? 'selected' : ''}>${value.value}</option>`;
+                                }
+                            });
+                        }
+
+                        variantHtml += `
+                                    </select>
+                                </div>
+                            </div>`;
+                    });
+
+                    // Kiểm tra nếu không có biến thể hợp lệ
+                    if (!hasValidVariant) {
+                        console.error('Không có biến thể nào hợp lệ');
+                        return null;
+                    }
+
+                    // Tạo template hoàn chỉnh
+                    const template = document.createElement('div');
+                    template.className = 'variant-combination mb-3';
+                    template.innerHTML = `
                         <div class="row">
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label>Màu sắc</label>
-                                    <select class="form-control variant-select" name="variants[${index}][variant_values][1]" required>
-                                        <option value="">Chọn màu sắc</option>
-                                        @foreach($colorVariants as $value)
-                                        <option value="{{ $value->id }}">{{ $value->value }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-group">
-                                    <label>Kích thước</label>
-                                    <select class="form-control variant-select" name="variants[${index}][variant_values][2]" required>
-                                        <option value="">Chọn kích thước</option>
-                                        @foreach($capacityVariants as $value)
-                                        <option value="{{ $value->id }}">{{ $value->value }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
+                            ${variantHtml}
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label>SKU <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="variants[${index}][sku]" required>
+                                    <input type="text" class="form-control" name="variants[${index}][sku]" value="${existingVariant ? existingVariant.sku : ''}" required>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="form-group">
                                     <label>Giá <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" name="variants[${index}][price]" required min="0">
+                                    <input type="number" class="form-control" name="variants[${index}][price]" value="${existingVariant ? existingVariant.price : ''}" required min="0">
                                 </div>
                             </div>
                         </div>
                         <button type="button" class="btn btn-danger btn-sm mt-2 remove-variant">
                             <i class="fas fa-trash"></i> Xóa biến thể
                         </button>
-                    </div>
-                `;
+                    `;
+                    
+                    return template;
+                } catch (error) {
+                    console.error('Lỗi khi tạo template biến thể:', error);
+                    return null;
+                }
             }
 
-            // Thêm biến thể
+            // Load existing variants if any
+            const existingVariants = {!! isset($product->variants) ? json_encode($product->variants) : '[]' !!};
+            console.log('Existing variants:', existingVariants);
+            
+            // Clear container before loading existing variants
+            variantsContainer.empty();
+            
+            // Group variants by SKU
+            const groupedBySkuVariants = {};
+            if (Array.isArray(existingVariants) && existingVariants.length > 0) {
+                existingVariants.forEach(variant => {
+                    if (!groupedBySkuVariants[variant.sku]) {
+                        groupedBySkuVariants[variant.sku] = {
+                            sku: variant.sku,
+                            price: variant.price,
+                            variant_values: {}
+                        };
+                    }
+                    groupedBySkuVariants[variant.sku].variant_values[variant.variant_id] = variant.variant_value_id;
+                });
+            }
+
+            // Load grouped variants
+            Object.values(groupedBySkuVariants).forEach((variant, index) => {
+                console.log('Loading grouped variant:', variant);
+                const variantTemplate = getVariantTemplate(index, variant);
+                if (variantTemplate) {
+                    variantsContainer.append(variantTemplate);
+                    variantCount = index + 1;
+                }
+            });
+
+            // Thêm biến thể mới
             addVariantBtn.on('click', function() {
                 const newVariant = getVariantTemplate(variantCount);
-                variantsContainer.append(newVariant);
-                variantCount++;
+                if (newVariant) {
+                    variantsContainer.append(newVariant);
+                    variantCount++;
+                } else {
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: 'Không thể thêm biến thể mới. Vui lòng thử lại.',
+                        icon: 'error',
+                        confirmButtonText: 'Đóng'
+                    });
+                }
             });
 
             // Xóa biến thể
@@ -215,7 +305,89 @@
 
                 const formData = new FormData(this);
                 
-                // Thêm danh sách ảnh đã xóa vào formData
+                // Xử lý dữ liệu biến thể
+                const variants = [];
+                let hasError = false;
+
+                $('.variant-combination').each(function(index) {
+                    const variantElement = $(this);
+                    const variantData = {
+                        sku: variantElement.find('input[name$="[sku]"]').val(),
+                        price: variantElement.find('input[name$="[price]"]').val(),
+                        variant_values: {}
+                    };
+
+                    // Kiểm tra SKU và giá
+                    if (!variantData.sku || !variantData.price) {
+                        hasError = true;
+                        if (!variantData.sku) {
+                            variantElement.find('input[name$="[sku]"]').addClass('is-invalid');
+                        }
+                        if (!variantData.price) {
+                            variantElement.find('input[name$="[price]"]').addClass('is-invalid');
+                        }
+                        return false; // break the loop
+                    }
+
+                    // Thu thập giá trị biến thể đã chọn (nếu có)
+                    variantElement.find('select.variant-select').each(function() {
+                        const select = $(this);
+                        const value = select.val();
+                        if (value) {
+                            const variantId = select.attr('name').match(/\[variant_values\]\[(\d+)\]/)[1];
+                            variantData.variant_values[variantId] = value;
+                        }
+                    });
+
+                    variants.push(variantData);
+                });
+
+                if (hasError) {
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: 'Vui lòng điền SKU và giá cho biến thể!',
+                        icon: 'error',
+                        confirmButtonText: 'Đóng'
+                    });
+                    return;
+                }
+
+                // Kiểm tra số lượng biến thể
+                if ($('.variant-combination').length > 0 && variants.length === 0) {
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: 'Vui lòng thêm ít nhất một biến thể!',
+                        icon: 'error',
+                        confirmButtonText: 'Đóng'
+                    });
+                    return;
+                }
+
+                // Reset formData variants
+                for (const key of Array.from(formData.keys())) {
+                    if (key.startsWith('variants[')) {
+                        formData.delete(key);
+                    }
+                }
+
+                // Thêm dữ liệu biến thể mới vào formData
+                variants.forEach((variant, index) => {
+                    formData.append(`variants[${index}][sku]`, variant.sku);
+                    formData.append(`variants[${index}][price]`, variant.price);
+                    
+                    Object.entries(variant.variant_values).forEach(([variantId, valueId]) => {
+                        formData.append(`variants[${index}][variant_values][${variantId}]`, valueId);
+                    });
+                });
+
+                // Log dữ liệu để debug
+                console.log('Variants data:', variants);
+                console.log('Form data entries:');
+                for (let pair of formData.entries()) {
+                    console.log(pair[0] + ':', pair[1]);
+                }
+
+                // Thêm danh sách ảnh đã xóa
                 formData.append('removed_images', JSON.stringify(removedImages));
                 
                 const submitBtn = $(this).find('button[type="submit"]');
