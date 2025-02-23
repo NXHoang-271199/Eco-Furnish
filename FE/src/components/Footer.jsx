@@ -6,8 +6,16 @@ const Footer = () => {
       <div className="max-w-6xl mx-auto text-slate-50">
         <div className="grid grid-cols-4 py-14">
           <div>
-            <div>
-              <img src="/logo.svg" alt="Eco-Furnish" className="leading-8" />
+            <div class="text-2xl font-bold text-black">
+              <div>
+                {/* <img src="/logo.svg" alt="Eco-Furnish" /> */}
+                <p>
+                  <span className="text-yellow-300">E</span>
+                  <span className="text-yellow-50">co-</span>
+                  <span className="text-yellow-300">F</span>
+                  <span className="text-yellow-50">urnish</span>
+                </p>
+              </div>
             </div>
             <p>400 University Drive Suite 200 Coral Gables, FL 33134 USA</p>
           </div>
