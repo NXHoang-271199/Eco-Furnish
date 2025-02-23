@@ -11,6 +11,7 @@ import Contact from "./pages/(website)/Contact/Contact";
 import Cart from "./pages/(website)/Cart/Cart";
 import Blogs from "./pages/(website)/Blogs/Blogs";
 import About from "./pages/(website)/About/About";
+import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
 function App() {
   return (
     <>
@@ -22,6 +23,7 @@ function App() {
           <Route path="contact" element={<Contact />} />
           <Route path="cart" element={<Cart />} />
           <Route path="blogs" element={<Blogs />} />
+          <Route path="blogdetail" element={<BlogsDetail />} />
           <Route path="about" element={<About />} />
         </Route>
       </Routes>
