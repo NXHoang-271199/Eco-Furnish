@@ -1,6 +1,4 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
 import "./App.css";
 import { Route, Routes } from "react-router-dom";
 import LayoutWebsite from "./pages/(website)/layout";
@@ -12,6 +10,7 @@ import Cart from "./pages/(website)/Cart/Cart";
 import Blogs from "./pages/(website)/Blogs/Blogs";
 import About from "./pages/(website)/About/About";
 import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
+import Payment from "./pages/(website)/Payment/Payment";
 function App() {
   return (
     <>
@@ -25,6 +24,7 @@ function App() {
           <Route path="blogs" element={<Blogs />} />
           <Route path="blogdetail" element={<BlogsDetail />} />
           <Route path="about" element={<About />} />
+          <Route path="payment" element={<Payment />} />
         </Route>
       </Routes>
     </>
