@@ -121,20 +121,23 @@
             document.getElementById('add-variant-btn').addEventListener('click', function () {
                 const variantSelects = document.querySelectorAll('.variant-select');
                 const values = [];
-                let isValid = true;
+                let hasValue = false;
 
-                // Kiểm tra các trường select đã chọn chưa
+                // Kiểm tra xem có ít nhất một biến thể được chọn
                 variantSelects.forEach(select => {
                     const valueId = select.value;
-                    if (!valueId) {
-                        isValid = false;
-                        showError(select, 'Vui lòng chọn đầy đủ các biến thể');
-                        return;
+                    values.push(valueId); // Thêm tất cả giá trị vào mảng, kể cả giá trị rỗng
+                    if (valueId) {
+                        hasValue = true;
                     }
-                    values.push(valueId);
                 });
 
-                if (!isValid) return;
+                if (!hasValue) {
+                    variantSelects.forEach(select => {
+                        showError(select, 'Vui lòng chọn ít nhất một biến thể');
+                    });
+                    return;
+                }
 
                 const skuInput = document.getElementById('variant-sku');
                 const priceInput = document.getElementById('variant-price');
@@ -166,8 +169,8 @@
 
                 // Kiểm tra trùng lặp biến thể
                 const isDuplicateVariant = selectedVariants.some(existingVariant => {
-                    const existingValues = existingVariant.values.sort().join(',');
-                    const newValues = values.sort().join(',');
+                    const existingValues = existingVariant.values.filter(v => v).sort().join(',');
+                    const newValues = values.filter(v => v).sort().join(',');
                     return existingValues === newValues;
                 });
 
@@ -206,13 +209,29 @@
                 const variantId = 'variant_' + Date.now();
                 variantElement.dataset.variantId = variantId;
 
+                // Lấy thông tin tất cả các select biến thể
                 const variantSelects = document.querySelectorAll('.variant-select');
-                const variantDisplay = Array.from(variantSelects).map((select, index) => {
-                    const variantName = select.previousElementSibling.textContent.replace(' *', '');
-                    const selectedOption = select.querySelector(`option[value="${variant.values[index]}"]`);
-                    const variantValue = selectedOption ? selectedOption.textContent : '';
-                    return `${variantName}: ${variantValue}`;
-                }).join(' - ');
+                const variantDetails = [];
+
+                // Lặp qua từng select để lấy thông tin biến thể được chọn
+                variantSelects.forEach((select, index) => {
+                    const valueId = variant.values[index];
+                    if (valueId) {
+                        const variantName = select.previousElementSibling.textContent.replace(' *', '');
+                        const selectedOption = select.querySelector(`option[value="${valueId}"]`);
+                        if (selectedOption) {
+                            variantDetails.push({
+                                name: variantName,
+                                value: selectedOption.textContent
+                            });
+                        }
+                    }
+                });
+
+                // Tạo chuỗi hiển thị từ các biến thể đã chọn
+                const variantDisplay = variantDetails
+                    .map(v => `${v.name}: ${v.value}`)
+                    .join(' - ');
 
                 variantElement.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -231,15 +250,17 @@
                             <p class="mb-0">${parseInt(variant.price).toLocaleString('vi-VN')} VNĐ</p>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Biến thể</label>
-                            <p class="mb-0">${variantDisplay}</p>
+                            ${variantDisplay ? `
+                                <label class="form-label">Biến thể</label>
+                                <p class="mb-0">${variantDisplay}</p>
+                            ` : ''}
                         </div>
                     </div>
                     <input type="hidden" name="variants[${selectedVariants.length - 1}][sku]" value="${variant.sku}">
                     <input type="hidden" name="variants[${selectedVariants.length - 1}][price]" value="${variant.price}">
-                    ${variant.values.map((value, index) => `
-                        <input type="hidden" name="variants[${selectedVariants.length - 1}][values][]" value="${value}">
-                    `).join('')}
+                    ${variant.values.map((value, index) => 
+                        value ? `<input type="hidden" name="variants[${selectedVariants.length - 1}][values][]" value="${value}">` : ''
+                    ).join('')}
                 `;
 
                 document.getElementById('variants-container').appendChild(variantElement);
@@ -269,25 +290,43 @@
             // Hàm kiểm tra và hiển thị lỗi
             function showError(input, message) {
                 // Xóa thông báo lỗi cũ nếu có
-                const existingError = input.nextElementSibling;
-                if (existingError && existingError.classList.contains('error-message')) {
-                    existingError.remove();
-                }
+                clearError(input);
                 
-                // Thêm class lỗi và thông báo
+                // Thêm class lỗi cho input
                 input.classList.add('is-invalid');
+
+                // Tạo div chứa thông báo lỗi
                 const errorDiv = document.createElement('div');
-                errorDiv.className = 'error-message text-danger mt-1';
+                errorDiv.className = 'invalid-feedback d-block mt-1'; // Thêm d-block để luôn hiển thị
+                errorDiv.style.fontSize = '0.875em'; // Kích thước chữ nhỏ hơn
+                errorDiv.style.color = '#dc3545'; // Màu đỏ
                 errorDiv.textContent = message;
-                input.parentNode.insertBefore(errorDiv, input.nextSibling);
+
+                // Chèn thông báo lỗi sau input
+                // Nếu input nằm trong input-group, thêm sau input-group
+                const inputGroup = input.closest('.input-group');
+                if (inputGroup) {
+                    inputGroup.parentNode.insertBefore(errorDiv, inputGroup.nextSibling);
+                } else {
+                    input.parentNode.insertBefore(errorDiv, input.nextSibling);
+                }
             }
 
             // Hàm xóa thông báo lỗi
             function clearError(input) {
                 input.classList.remove('is-invalid');
-                const errorDiv = input.nextElementSibling;
-                if (errorDiv && errorDiv.classList.contains('error-message')) {
-                    errorDiv.remove();
+                // Tìm và xóa tất cả thông báo lỗi liên quan
+                const container = input.closest('.form-group') || input.parentNode;
+                const errorDivs = container.querySelectorAll('.invalid-feedback');
+                errorDivs.forEach(div => div.remove());
+
+                // Xóa thông báo lỗi sau input-group nếu có
+                const inputGroup = input.closest('.input-group');
+                if (inputGroup) {
+                    const nextErrorDiv = inputGroup.nextElementSibling;
+                    if (nextErrorDiv && nextErrorDiv.classList.contains('invalid-feedback')) {
+                        nextErrorDiv.remove();
+                    }
                 }
             }
 
@@ -329,6 +368,24 @@
                 }
             });
 
+            // Validate giá khuyến mãi
+            function validateDiscountPrice() {
+                const price = parseFloat(priceInput.value) || 0;
+                const discountPrice = parseFloat(discountPriceInput.value) || 0;
+                
+                if (discountPrice > price) {
+                    showError(discountPriceInput, 'Giá khuyến mãi không được lớn hơn giá gốc');
+                    return false;
+                } else {
+                    clearError(discountPriceInput);
+                    return true;
+                }
+            }
+
+            // Thêm event listener cho input giá
+            priceInput.addEventListener('input', validateDiscountPrice);
+            discountPriceInput.addEventListener('input', validateDiscountPrice);
+
             // Validate form khi submit
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -347,6 +404,11 @@
                         isValid = false;
                     } else if (isNaN(priceInput.value) || parseFloat(priceInput.value) <= 0) {
                         showError(priceInput, 'Giá sản phẩm phải là số dương');
+                        isValid = false;
+                    }
+
+                    // Validate giá khuyến mãi
+                    if (discountPriceInput.value && !validateDiscountPrice()) {
                         isValid = false;
                     }
                 }

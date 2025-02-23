@@ -112,6 +112,11 @@
                                                                 <div>
                                                                     <strong>Giá gốc:</strong> {{ number_format($product->price) }} VNĐ
                                                                 </div>
+                                                                @if($product->discount_price)
+                                                                <div class="mt-2">
+                                                                    <strong>Giá khuyến mãi:</strong> {{ number_format($product->discount_price) }} VNĐ
+                                                                </div>
+                                                                @endif
                                                                 @if($product->variants->count() > 0)
                                                                     <div class="mt-2">
                                                                         <strong>Giá biến thể:</strong> 
@@ -143,8 +148,7 @@
                                                         <thead>
                                                             <tr>
                                                                 <th>Mã SKU</th>
-                                                                <th>Màu sắc</th>
-                                                                <th>Kích thước</th>
+                                                                <th>Biến thể</th>
                                                                 <th>Giá</th>
                                                                 <th>Trạng thái</th>
                                                             </tr>
@@ -155,17 +159,16 @@
                                                             @endphp
                                                             @foreach($groupedVariants as $sku => $variants)
                                                                 @php
-                                                                    $colorVariant = $variants->first(function($variant) {
-                                                                        return $variant->variant && str_contains(strtolower($variant->variant->name), 'màu');
-                                                                    });
-                                                                    $sizeVariant = $variants->first(function($variant) {
-                                                                        return $variant->variant && str_contains(strtolower($variant->variant->name), 'kích');
-                                                                    });
+                                                                    $variantDetails = [];
+                                                                    foreach ($variants as $variant) {
+                                                                        if ($variant->variant && $variant->variantValue) {
+                                                                            $variantDetails[] = $variant->variant->name . ': ' . $variant->variantValue->value;
+                                                                        }
+                                                                    }
                                                                 @endphp
                                                                 <tr>
                                                                     <td>{{ $sku }}</td>
-                                                                    <td>{{ $colorVariant ? $colorVariant->variantValue->value : 'N/A' }}</td>
-                                                                    <td>{{ $sizeVariant ? $sizeVariant->variantValue->value : 'N/A' }}</td>
+                                                                    <td>{{ implode(' - ', $variantDetails) }}</td>
                                                                     <td>{{ number_format($variants->first()->price) }} VNĐ</td>
                                                                     <td>
                                                                         @if($variants->first()->status)

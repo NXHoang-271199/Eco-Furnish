@@ -146,36 +146,23 @@
                             @foreach($product->variants->groupBy('sku') as $sku => $variants)
                                 <div class="variant-combination">
                                     <div class="row">
-                                        <div class="col-md-3">
-                                            <div class="mb-3">
-                                                <label class="form-label">Màu sắc <span class="text-danger">*</span></label>
-                                                <select class="form-select variant-select" 
-                                                    name="variants[{{ $loop->index }}][variant_values][1]" required>
-                                                    <option value="">Chọn màu sắc</option>
-                                                    @foreach($colorVariants as $value)
-                                                        <option value="{{ $value->id }}" 
-                                                            {{ $variants->where('variant_id', 1)->first()?->variant_value_id == $value->id ? 'selected' : '' }}>
-                                                            {{ $value->value }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
+                                        @foreach($variants->groupBy('variant_id') as $variantId => $variantGroup)
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label">{{ $variantGroup->first()->variant->name }} <span class="text-danger">*</span></label>
+                                                    <select class="form-select variant-select" 
+                                                        name="variants[{{ $loop->parent->index }}][variant_values][{{ $variantId }}]" required>
+                                                        <option value="">Chọn {{ strtolower($variantGroup->first()->variant->name) }}</option>
+                                                        @foreach($variants->first()->variant->values as $value)
+                                                            <option value="{{ $value->id }}" 
+                                                                {{ $variantGroup->first()->variant_value_id == $value->id ? 'selected' : '' }}>
+                                                                {{ $value->value }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="mb-3">
-                                                <label class="form-label">Kích thước <span class="text-danger">*</span></label>
-                                                <select class="form-select variant-select" 
-                                                    name="variants[{{ $loop->index }}][variant_values][2]" required>
-                                                    <option value="">Chọn kích thước</option>
-                                                    @foreach($capacityVariants as $value)
-                                                        <option value="{{ $value->id }}" 
-                                                            {{ $variants->where('variant_id', 2)->first()?->variant_value_id == $value->id ? 'selected' : '' }}>
-                                                            {{ $value->value }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
+                                        @endforeach
                                         <div class="col-md-3">
                                             <div class="mb-3">
                                                 <label class="form-label">SKU <span class="text-danger">*</span></label>
