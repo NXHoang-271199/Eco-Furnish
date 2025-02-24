@@ -90,7 +90,7 @@
                 var formData = new FormData();
                 formData.append('image', file);
                 formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute(
-                'content'));
+                    'content'));
 
                 // Hiển thị văn bản "đang tải" thay vì placeholder image
                 var range = quill.getSelection();
@@ -325,6 +325,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="card-body">
                             <div class="mb-3">
                                 <label for="user_id" class="form-label">Chọn người dùng</label>
@@ -339,9 +340,25 @@
                                 </select>
                             </div>
                         </div>
-                        <!-- end card body -->
                     </div>
 
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Trạng thái</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="post-status" class="form-label">Trạng thái bài viết</label>
+                                <select class="form-select" name="status" id="post-status" required>
+                                    <option value="1" {{ $singerPost->status == '1' ? 'selected' : '' }}>Xuất bản
+                                    </option>
+                                    <option value="0" {{ $singerPost->status == '0' ? 'selected' : '' }}>Chưa xuất
+                                        bản</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">Ảnh bìa</h5>

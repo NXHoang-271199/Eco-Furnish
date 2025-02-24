@@ -80,15 +80,6 @@
                             </li>
                         </ul>
                     </div>
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <ul class="mb-0">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
                     <div class="card-body p-4">
                         <div class="tab-content">
                             <div class="tab-pane active" id="personalDetails" role="tabpanel">
@@ -149,6 +140,23 @@
                                                 @endforeach
                                             </select>
                                             @error('role_id')
+                                                <div class="text-danger small">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label for="isActiveSelect" class="form-label">Trạng thái</label>
+                                            <select name="is_active" class="form-select" id="isActiveSelect">
+                                                <option value="1"
+                                                    {{ old('is_active', $singerUser->is_active ?? 1) == 1 ? 'selected' : '' }}>
+                                                    Kích hoạt</option>
+                                                <option value="0"
+                                                    {{ old('is_active', $singerUser->is_active ?? 1) == 0 ? 'selected' : '' }}>
+                                                    Hủy kích hoạt</option>
+                                            </select>
+                                            @error('is_active')
                                                 <div class="text-danger small">{{ $message }}</div>
                                             @enderror
                                         </div>

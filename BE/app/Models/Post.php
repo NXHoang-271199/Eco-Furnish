@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Post extends Model
 {
     use HasFactory, SoftDeletes;
-    
+
     protected $fillable = [
         'title',
         'content',
@@ -23,13 +23,24 @@ class Post extends Model
         'status'
     ];
 
-    public function scopeSearch($query, $fillers)
+    public function scopeSearch($query, $filters)
     {
-        if (!empty($fillers['title'])) {
-            $query->where('title', 'like', '%' . $fillers['title'] . '%');
+        if (!empty($filters['title'])) {
+            $query->where('title', 'like', '%' . $filters['title'] . '%');
+        }
+        if (isset($filters['status']) && in_array($filters['status'], ['0', '1'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (!empty($filters['category_post_id'])) {
+            $query->where('category_post_id', $filters['category_post_id']);
+        }
+        if (!empty($filters['year'])) {
+            $query->whereYear('created_at', $filters['year']);
         }
         return $query;
     }
+
+
 
     protected $casts = [
         'created_at' => 'datetime',
@@ -50,5 +61,4 @@ class Post extends Model
     {
         return $this->belongsTo(CategoryPost::class);
     }
-
 }

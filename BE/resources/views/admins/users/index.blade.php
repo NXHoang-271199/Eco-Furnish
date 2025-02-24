@@ -3,8 +3,59 @@
 @section('title')
     Quản lý người dùng
 @endsection
+@section('CSS')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <style>
+        table.dataTable>thead .sorting:after,
+        table.dataTable>thead .sorting_asc:after,
+        table.dataTable>thead .sorting_asc_disabled:after,
+        table.dataTable>thead .sorting_desc:after,
+        table.dataTable>thead .sorting_desc_disabled:after,
+        table.dataTable>thead .sorting:before,
+        table.dataTable>thead .sorting_asc:before,
+        table.dataTable>thead .sorting_asc_disabled:before,
+        table.dataTable>thead .sorting_desc:before,
+        table.dataTable>thead .sorting_desc_disabled:before {
+            display: none !important
+        }
+    </style>
+@endsection
 @section('JS')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+
+    <script>
+        $(document).ready(function() {
+            $(document).on('click', '.delete-btn', function(e) {
+                e.preventDefault();
+
+                let form = $(this).closest("form");
+
+                // Debug: Kiểm tra xem sự kiện có chạy không
+                console.log("Nút xóa đã được nhấn!");
+
+                Swal.fire({
+                    title: "Bạn có chắc chắn muốn xóa?",
+                    text: "Hành động này không thể hoàn tác!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#dc3545",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Có, xóa!",
+                    cancelButtonText: "Hủy"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log("Đã xác nhận xóa!"); // Debug: Kiểm tra xem có xác nhận không
+                        form.submit(); // Gửi form sau khi xác nhận
+                    } else {
+                        console.log("Hủy xóa!"); // Debug: Kiểm tra nếu người dùng hủy
+                    }
+                });
+            });
+        });
+    </script>
 @endsection
 @section('content')
     <div class="container-fluid">
@@ -126,16 +177,6 @@
                                                         style="width: 100%;" aria-describedby="example_info">
                                                         <thead>
                                                             <tr>
-                                                                <th scope="col" style="width: 17.1778px;"
-                                                                    class="sorting sorting_asc " tabindex="0"
-                                                                    aria-controls="example" rowspan="1" colspan="1"
-                                                                    aria-sort="ascending"
-                                                                    aria-label=": activate to sort column descending">
-                                                                    <div class="form-check text-center">
-                                                                        <input class="form-check-input fs-15"
-                                                                            type="checkbox" id="checkAll" value="option">
-                                                                    </div>
-                                                                </th>
                                                                 <th data-ordering="false" class="sorting text-center"
                                                                     tabindex="0" aria-controls="example" rowspan="1"
                                                                     colspan="1" style="width: 8.2889px;"
@@ -150,7 +191,7 @@
                                                                 </th>
                                                                 <th data-ordering="false" class="sorting" tabindex="0"
                                                                     aria-controls="example" rowspan="1" colspan="1"
-                                                                    style="width: 250px;"
+                                                                    style="width: 230px;"
                                                                     aria-label="ID: activate to sort column ascending">
                                                                     Người dùng
                                                                 </th>
@@ -177,7 +218,7 @@
                                                                     Trạng thái</th>
                                                                 <th class="sorting" tabindex="0"
                                                                     aria-controls="example" rowspan="1" colspan="1"
-                                                                    style="width: 70.2889px;"
+                                                                    style="width: 90.2889px;"
                                                                     aria-label="Action: activate to sort column ascending">
                                                                     Hành động</th>
                                                             </tr>
@@ -185,14 +226,6 @@
                                                         <tbody>
                                                             @foreach ($listUsers as $key => $user)
                                                                 <tr class="odd">
-                                                                    <th scope="row" class="dtr-control sorting_1"
-                                                                        tabindex="0">
-                                                                        <div class="form-check text-center">
-                                                                            <input class="form-check-input fs-15"
-                                                                                type="checkbox" name="checkAll"
-                                                                                value="option1">
-                                                                        </div>
-                                                                    </th>
                                                                     <td class="text-center">
                                                                         {{ $key + 1 + ($listUsers->currentPage() - 1) * $listUsers->perPage() }}
                                                                     </td>
@@ -239,12 +272,11 @@
                                                                                 <li>
                                                                                     <form
                                                                                         action="{{ route('users.show', $user->id) }}"
-                                                                                        method="POST" class="d-inline"
-                                                                                        onclick="return confirm('Muốn xóa không ?')">
+                                                                                        method="POST" class="d-inline">
                                                                                         @csrf
                                                                                         @method('DELETE')
                                                                                         <button
-                                                                                            class="dropdown-item edit-item-btn cursor-pointer"><i
+                                                                                            class="dropdown-item edit-item-btn cursor-pointer delete-btn"><i
                                                                                                 class="ri-delete-bin-fill align-bottom me-2 text-muted"></i>
                                                                                             Xóa</button>
                                                                                     </form>

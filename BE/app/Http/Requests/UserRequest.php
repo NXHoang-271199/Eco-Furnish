@@ -22,16 +22,21 @@ class UserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $userId = $this->route('id');
+        $userId = $this->route('user') ?? $this->route('id');
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255',
-            Rule::unique('users', 'email')->ignore($userId),
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($userId),
+            ],
             'age' => 'required|integer',
-            'password' => 'required',
+            'password' => $userId ? 'nullable' : 'required',
             'role_id' => 'required|exists:roles,id',
             'address' => 'required|max:255',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ];
     }
     public function messages()
@@ -60,8 +65,7 @@ class UserRequest extends FormRequest
 
 
             'avatar.image' => 'Ảnh đại diện phải là tệp hình ảnh!',
-            'avatar.mimes' => 'Ảnh đại diện phải có định dạng jpeg, png, jpg hoặc gif!',
-            'avatar.max' => 'Ảnh đại diện không được lớn hơn 2MB!',
+            'avatar.mimes' => 'Ảnh đại diện phải có định dạng jpeg, png, jpg, gif, webp!',
         ];
     }
 }

@@ -6,6 +6,7 @@
 
 @section('CSS')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <style>
         button[type="submit"] {
             border: none;
@@ -35,6 +36,8 @@
     </style>
 @endsection
 @section('JS')
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const form = document.getElementById("category-form");
@@ -94,6 +97,35 @@
 
                 // Ẩn nút "Hủy"
                 cancelBtn.classList.add("d-none");
+            });
+        });
+
+        $(document).ready(function() {
+            $(document).on('click', '.delete-btn', function(e) {
+                e.preventDefault();
+
+                let form = $(this).closest("form");
+
+                // Debug: Kiểm tra xem sự kiện có chạy không
+                console.log("Nút xóa đã được nhấn!");
+
+                Swal.fire({
+                    title: "Bạn có chắc chắn muốn xóa?",
+                    text: "Hành động này không thể hoàn tác!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#dc3545",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Có, xóa!",
+                    cancelButtonText: "Hủy"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log("Đã xác nhận xóa!"); // Debug: Kiểm tra xem có xác nhận không
+                        form.submit(); // Gửi form sau khi xác nhận
+                    } else {
+                        console.log("Hủy xóa!"); // Debug: Kiểm tra nếu người dùng hủy
+                    }
+                });
             });
         });
     </script>
@@ -205,8 +237,8 @@
                                                         method="POST">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="text-danger mx-2" title="Xóa"
-                                                            onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục này?');">
+                                                        <button type="submit" class="text-danger mx-2 delete-btn"
+                                                            title="Xóa">
                                                             <i class="fas fa-trash-alt"></i>
                                                         </button>
                                                     </form>

@@ -21,12 +21,17 @@ class RoleSeeder extends Seeder
                 'updated_at' => Carbon::now(),
             ],
             [
+                'name' => 'Staff',
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ],
+            [
                 'name' => 'Editor',
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],
             [
-                'name' => 'User',
+                'name' => 'Client',
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],

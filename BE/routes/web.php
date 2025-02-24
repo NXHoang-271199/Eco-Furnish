@@ -40,8 +40,7 @@ Route::prefix('admin')->group(function () {
 
     // Post ===============================================
     Route::resource('posts', PostController::class);
-    Route::post('/posts/{id}/approve', [PostController::class, 'approve'])->name('posts.approve');
-
+    
     // Category Post ======================================
     Route::resource('category-posts', CategoryPostController::class);
     Route::post('upload-image', [App\Http\Controllers\ImageUploadController::class, 'upload'])->name('upload.image');
