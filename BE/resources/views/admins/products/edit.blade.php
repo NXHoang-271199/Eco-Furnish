@@ -79,6 +79,18 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
+
+                    <div class="mb-3" id="discountPriceSection">
+                        <label class="form-label" for="discount_price">Giá khuyến mãi</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control @error('discount_price') is-invalid @enderror" 
+                                id="discount_price" name="discount_price" value="{{ old('discount_price', $product->discount_price) }}" min="0">
+                            <span class="input-group-text">VNĐ</span>
+                        </div>
+                        @error('discount_price')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
             </div>
         </div>
@@ -201,8 +213,8 @@
 
     <div class="row mt-3">
         <div class="col-12">
-            <div class="text-end">
-                <a href="{{ route('products.index') }}" class="btn btn-secondary me-1">
+            <div class="form-actions">
+                <a href="{{ route('products.index') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Quay lại
                 </a>
                 <button type="submit" class="btn btn-primary">

@@ -94,31 +94,59 @@
             const discountPriceSection = document.getElementById('discountPriceSection');
             const priceInput = document.getElementById('price');
             const discountPriceInput = document.getElementById('discount_price');
-            let selectedVariants = [];
             const nameInput = document.getElementById('name');
             const imageInput = document.getElementById('image_thumnail');
+            const categorySelect = document.getElementById('category_id');
+            let selectedVariants = [];
+            
+            // Khởi tạo các biến và event listeners
+            function initializeForm() {
+                if (!form) {
+                    console.error('Không tìm thấy form');
+                    return;
+                }
             
             // Đảm bảo phần biến thể bị ẩn khi tải trang
+                if (variantSection) {
             variantSection.classList.remove('show');
+                }
+                if (hasVariantsInput) {
             hasVariantsInput.value = '0';
+                }
 
             // Xử lý toggle biến thể
+                if (variantToggle) {
             variantToggle.addEventListener('change', function() {
+                        if (variantSection) {
                 variantSection.classList.toggle('show');
+                        }
+                        if (hasVariantsInput) {
                 hasVariantsInput.value = this.checked ? '1' : '0';
-                
-                // Ẩn/hiện phần giá khuyến mãi
-                if (this.checked) {
-                    discountPriceSection.style.display = 'none';
-                    discountPriceInput.value = '';
-                    discountPriceInput.required = false;
-                } else {
-                    discountPriceSection.style.display = 'block';
+                        }
+
+                        // Reset form biến thể khi toggle
+                        if (!this.checked) {
+                            selectedVariants = [];
+                            const variantsContainer = document.getElementById('variants-container');
+                            if (variantsContainer) {
+                                variantsContainer.innerHTML = '';
+                            }
+                        }
+                    });
                 }
-            });
 
             // Thêm biến thể
-            document.getElementById('add-variant-btn').addEventListener('click', function () {
+                const addVariantBtn = document.getElementById('add-variant-btn');
+                if (addVariantBtn) {
+                    addVariantBtn.addEventListener('click', handleAddVariant);
+                }
+
+                // Xử lý submit form
+                form.addEventListener('submit', handleFormSubmit);
+            }
+
+            // Xử lý thêm biến thể
+            function handleAddVariant() {
                 const variantSelects = document.querySelectorAll('.variant-select');
                 const values = [];
                 let hasValue = false;
@@ -126,7 +154,7 @@
                 // Kiểm tra xem có ít nhất một biến thể được chọn
                 variantSelects.forEach(select => {
                     const valueId = select.value;
-                    values.push(valueId); // Thêm tất cả giá trị vào mảng, kể cả giá trị rỗng
+                    values.push(valueId);
                     if (valueId) {
                         hasValue = true;
                     }
@@ -140,31 +168,33 @@
                 }
 
                 const skuInput = document.getElementById('variant-sku');
-                const priceInput = document.getElementById('variant-price');
-                const sku = skuInput.value.trim();
-                const price = priceInput.value;
-
-                // Kiểm tra SKU và giá
-                if (!sku) {
-                    showError(skuInput, 'Vui lòng nhập mã SKU');
+                const variantPriceInput = document.getElementById('variant-price');
+                
+                if (!skuInput || !variantPriceInput) {
+                    console.error('Không tìm thấy input SKU hoặc giá');
                     return;
                 }
 
-                // Kiểm tra SKU trùng lặp
-                const isDuplicateSku = selectedVariants.some(variant => variant.sku === sku);
-                if (isDuplicateSku) {
+                const sku = skuInput.value.trim();
+                const price = variantPriceInput.value;
+
+                // Validate SKU và giá
+                let isValid = true;
+
+                if (!sku) {
+                    showError(skuInput, 'Vui lòng nhập mã SKU');
+                    isValid = false;
+                } else if (selectedVariants.some(v => v.sku === sku)) {
                     showError(skuInput, 'Mã SKU này đã tồn tại');
-                    return;
+                    isValid = false;
                 }
 
                 if (!price) {
-                    showError(priceInput, 'Vui lòng nhập giá');
-                    return;
-                }
-
-                if (isNaN(price) || parseFloat(price) <= 0) {
-                    showError(priceInput, 'Giá phải là số dương');
-                    return;
+                    showError(variantPriceInput, 'Vui lòng nhập giá');
+                    isValid = false;
+                } else if (isNaN(price) || parseFloat(price) <= 0) {
+                    showError(variantPriceInput, 'Giá phải là số dương');
+                    isValid = false;
                 }
 
                 // Kiểm tra trùng lặp biến thể
@@ -178,28 +208,203 @@
                     variantSelects.forEach(select => {
                         showError(select, 'Biến thể này đã tồn tại');
                     });
-                    return;
+                    isValid = false;
                 }
 
-                const variant = {
-                    sku: sku,
-                    price: price,
-                    values: values
-                };
+                if (!isValid) return;
 
+                // Thêm biến thể mới
+                const variant = { sku, price, values };
                 selectedVariants.push(variant);
                 displayVariant(variant);
 
-                // Reset form và xóa thông báo lỗi
+                // Reset form
                 skuInput.value = '';
-                priceInput.value = '';
+                variantPriceInput.value = '';
                 variantSelects.forEach(select => {
                     select.value = '';
                     clearError(select);
                 });
                 clearError(skuInput);
-                clearError(priceInput);
-            });
+                clearError(variantPriceInput);
+            }
+
+            // Xử lý submit form
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                
+                // Reset form state
+                clearAllErrors();
+                
+                let isValid = true;
+                const errors = [];
+
+                // Validate tên sản phẩm
+                if (!nameInput || !nameInput.value.trim()) {
+                    errors.push({
+                        element: nameInput,
+                        message: 'Vui lòng nhập tên sản phẩm'
+                    });
+                    isValid = false;
+                }
+
+                // Validate danh mục
+                if (!categorySelect || !categorySelect.value) {
+                    errors.push({
+                        element: categorySelect,
+                        message: 'Vui lòng chọn danh mục sản phẩm'
+                    });
+                    isValid = false;
+                }
+
+                // Validate ảnh đại diện
+                if (!imageInput || !imageInput.files || !imageInput.files[0]) {
+                    errors.push({
+                        element: imageInput,
+                        message: 'Vui lòng chọn ảnh đại diện'
+                    });
+                    isValid = false;
+                }
+
+                // Validate dựa vào chế độ biến thể
+                if (variantToggle && variantToggle.checked) {
+                    if (selectedVariants.length === 0) {
+                        await Swal.fire({
+                            title: 'Lỗi!',
+                            text: 'Vui lòng thêm ít nhất một biến thể',
+                            icon: 'error',
+                            confirmButtonText: 'Đồng ý'
+                        });
+                        isValid = false;
+                    }
+                } else {
+                    // Validate giá nếu không có biến thể
+                    if (!priceInput || !priceInput.value) {
+                        errors.push({
+                            element: priceInput,
+                            message: 'Vui lòng nhập giá sản phẩm'
+                        });
+                        isValid = false;
+                    }
+                }
+
+                if (!isValid) {
+                    showAllErrors(errors);
+                    return false;
+                }
+
+                // Submit form
+                try {
+                    const formData = new FormData(form);
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    
+                    if (submitBtn) {
+                        const originalText = submitBtn.innerHTML;
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+                        
+                        try {
+                            const response = await fetch(form.action, {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                await Swal.fire({
+                                    title: 'Thành công!',
+                                    text: 'Thêm sản phẩm thành công',
+                                    icon: 'success',
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                                window.location.href = '/admin/products';
+                            } else {
+                                showServerErrors(data.errors || {});
+                            }
+                        } finally {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: 'Có lỗi xảy ra khi thêm sản phẩm. Vui lòng thử lại.',
+                        icon: 'error',
+                        confirmButtonText: 'Đồng ý'
+                    });
+                }
+            }
+
+            // Hiển thị lỗi từ server
+            function showServerErrors(errors) {
+                const errorMessages = [];
+                Object.keys(errors).forEach(key => {
+                    const input = document.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        errorMessages.push({
+                            element: input,
+                            message: errors[key][0]
+                        });
+                    }
+                });
+                showAllErrors(errorMessages);
+            }
+
+            // Xóa tất cả thông báo lỗi
+            function clearAllErrors() {
+                const allErrors = document.querySelectorAll('.invalid-feedback, .alert-danger');
+                allErrors.forEach(error => error.remove());
+                
+                const allInvalidInputs = document.querySelectorAll('.is-invalid');
+                allInvalidInputs.forEach(input => input.classList.remove('is-invalid'));
+            }
+
+            // Hiển thị lỗi cho một trường
+            function showError(element, message) {
+                element.classList.add('is-invalid');
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback d-block';
+                errorDiv.textContent = message;
+                
+                const parent = element.parentElement;
+                const existingError = parent.querySelector('.invalid-feedback');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                parent.appendChild(errorDiv);
+            }
+
+            // Xóa thông báo lỗi
+            function clearError(element) {
+                element.classList.remove('is-invalid');
+                const parent = element.parentElement;
+                const error = parent.querySelector('.invalid-feedback');
+                if (error) {
+                    error.remove();
+                }
+            }
+
+            // Hiển thị tất cả lỗi
+            function showAllErrors(errors) {
+                if (!errors || errors.length === 0) return;
+                
+                errors.forEach(error => {
+                    if (error.element && error.message) {
+                        showError(error.element, error.message);
+                    }
+                });
+
+                // Cuộn đến lỗi đầu tiên
+                if (errors[0].element) {
+                    errors[0].element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
 
             // Hiển thị biến thể
             function displayVariant(variant) {
@@ -263,7 +468,10 @@
                     ).join('')}
                 `;
 
-                document.getElementById('variants-container').appendChild(variantElement);
+                const variantsContainer = document.getElementById('variants-container');
+                if (variantsContainer) {
+                    variantsContainer.appendChild(variantElement);
+                }
             }
 
             // Xóa biến thể
@@ -287,354 +495,7 @@
                 }
             };
 
-            // Hàm kiểm tra và hiển thị lỗi
-            function showError(input, message) {
-                // Xóa thông báo lỗi cũ nếu có
-                clearError(input);
-                
-                // Thêm class lỗi cho input
-                input.classList.add('is-invalid');
-
-                // Tạo div chứa thông báo lỗi
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'invalid-feedback d-block mt-1'; // Thêm d-block để luôn hiển thị
-                errorDiv.style.fontSize = '0.875em'; // Kích thước chữ nhỏ hơn
-                errorDiv.style.color = '#dc3545'; // Màu đỏ
-                errorDiv.textContent = message;
-
-                // Chèn thông báo lỗi sau input
-                // Nếu input nằm trong input-group, thêm sau input-group
-                const inputGroup = input.closest('.input-group');
-                if (inputGroup) {
-                    inputGroup.parentNode.insertBefore(errorDiv, inputGroup.nextSibling);
-                } else {
-                    input.parentNode.insertBefore(errorDiv, input.nextSibling);
-                }
-            }
-
-            // Hàm xóa thông báo lỗi
-            function clearError(input) {
-                input.classList.remove('is-invalid');
-                // Tìm và xóa tất cả thông báo lỗi liên quan
-                const container = input.closest('.form-group') || input.parentNode;
-                const errorDivs = container.querySelectorAll('.invalid-feedback');
-                errorDivs.forEach(div => div.remove());
-
-                // Xóa thông báo lỗi sau input-group nếu có
-                const inputGroup = input.closest('.input-group');
-                if (inputGroup) {
-                    const nextErrorDiv = inputGroup.nextElementSibling;
-                    if (nextErrorDiv && nextErrorDiv.classList.contains('invalid-feedback')) {
-                        nextErrorDiv.remove();
-                    }
-                }
-            }
-
-            // Validate tên sản phẩm
-            nameInput.addEventListener('blur', function() {
-                if (!this.value.trim()) {
-                    showError(this, 'Vui lòng nhập tên sản phẩm');
-                } else {
-                    clearError(this);
-                }
-            });
-
-            // Validate giá sản phẩm
-            priceInput.addEventListener('blur', function() {
-                if (!this.value) {
-                    showError(this, 'Vui lòng nhập giá sản phẩm');
-                } else if (isNaN(this.value) || parseFloat(this.value) <= 0) {
-                    showError(this, 'Giá sản phẩm phải là số dương');
-                } else {
-                    clearError(this);
-                }
-            });
-
-            // Validate ảnh đại diện
-            imageInput.addEventListener('change', function() {
-                if (!this.files || !this.files[0]) {
-                    showError(this, 'Vui lòng chọn ảnh đại diện');
-                } else {
-                    const file = this.files[0];
-                    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-                    
-                    if (!validTypes.includes(file.type)) {
-                        showError(this, 'Vui lòng chọn file ảnh hợp lệ (JPEG, PNG, GIF)');
-                    } else if (file.size > 5 * 1024 * 1024) { // 5MB
-                        showError(this, 'Kích thước ảnh không được vượt quá 5MB');
-                    } else {
-                        clearError(this);
-                    }
-                }
-            });
-
-            // Validate giá khuyến mãi
-            function validateDiscountPrice() {
-                const price = parseFloat(priceInput.value) || 0;
-                const discountPrice = parseFloat(discountPriceInput.value) || 0;
-                
-                if (discountPrice > price) {
-                    showError(discountPriceInput, 'Giá khuyến mãi không được lớn hơn giá gốc');
-                    return false;
-                } else {
-                    clearError(discountPriceInput);
-                    return true;
-                }
-            }
-
-            // Thêm event listener cho input giá
-            priceInput.addEventListener('input', validateDiscountPrice);
-            discountPriceInput.addEventListener('input', validateDiscountPrice);
-
-            // Validate form khi submit
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                let isValid = true;
-                
-                // Validate tên sản phẩm
-                if (!nameInput.value.trim()) {
-                    showError(nameInput, 'Vui lòng nhập tên sản phẩm');
-                    isValid = false;
-                }
-                
-                // Validate giá sản phẩm nếu không có biến thể
-                if (!document.getElementById('variantToggle').checked) {
-                    if (!priceInput.value) {
-                        showError(priceInput, 'Vui lòng nhập giá sản phẩm');
-                        isValid = false;
-                    } else if (isNaN(priceInput.value) || parseFloat(priceInput.value) <= 0) {
-                        showError(priceInput, 'Giá sản phẩm phải là số dương');
-                        isValid = false;
-                    }
-
-                    // Validate giá khuyến mãi
-                    if (discountPriceInput.value && !validateDiscountPrice()) {
-                        isValid = false;
-                    }
-                }
-                
-                // Validate ảnh đại diện
-                if (!imageInput.files || !imageInput.files[0]) {
-                    showError(imageInput, 'Vui lòng chọn ảnh đại diện');
-                    isValid = false;
-                }
-                
-                if (!isValid) {
-                    // Cuộn đến trường lỗi đầu tiên
-                    const firstError = document.querySelector('.is-invalid');
-                    if (firstError) {
-                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                    return;
-                }
-
-                // Submit form nếu validation pass
-                const formData = new FormData(this);
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
-
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Hiển thị thông báo thành công
-                        Swal.fire({
-                            title: 'Thành công!',
-                            text: 'Thêm sản phẩm thành công',
-                            icon: 'success',
-                            showConfirmButton: false,
-                            timer: 1500
-                        }).then(() => {
-                            // Chuyển hướng sau khi hiển thị thông báo
-                            window.location.href = '/admin/products';
-                        });
-                    } else {
-                        // Hiển thị lỗi nếu có
-                        Object.keys(data.errors || {}).forEach(key => {
-                            const input = document.querySelector(`[name="${key}"]`);
-                            if (input) {
-                                showError(input, data.errors[key][0]);
-                            }
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    const errorMessage = document.createElement('div');
-                    errorMessage.className = 'alert alert-danger mt-3';
-                    errorMessage.textContent = 'Có lỗi xảy ra khi thêm sản phẩm. Vui lòng thử lại.';
-                    form.insertBefore(errorMessage, form.firstChild);
-                })
-                .finally(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalText;
-                });
-            });
-        });
-
-        $(document).ready(function() {
-            // Mảng lưu trữ các SKU đã thêm
-            let addedSkus = [];
-
-            // Validate form khi submit
-            $('#createProductForm').on('submit', function(e) {
-                e.preventDefault();
-                
-                // Reset thông báo lỗi
-                $('.invalid-feedback').remove();
-                $('.is-invalid').removeClass('is-invalid');
-                
-                let isValid = true;
-                let errors = {};
-
-                // Validate tên sản phẩm
-                if (!$('#name').val()) {
-                    isValid = false;
-                    errors['name'] = 'Tên sản phẩm là bắt buộc';
-                    $('#name').addClass('is-invalid');
-                    $('#name').after('<div class="invalid-feedback">Tên sản phẩm là bắt buộc</div>');
-                }
-
-                // Validate danh mục
-                if (!$('#category_id').val()) {
-                    isValid = false;
-                    errors['category_id'] = 'Danh mục là bắt buộc';
-                    $('#category_id').addClass('is-invalid');
-                    $('#category_id').after('<div class="invalid-feedback">Danh mục là bắt buộc</div>');
-                }
-
-                // Validate giá gốc nếu không có biến thể
-                if ($('.variant-row').length === 0 && !$('#price').val()) {
-                    isValid = false;
-                    errors['price'] = 'Giá sản phẩm là bắt buộc nếu không có biến thể';
-                    $('#price').addClass('is-invalid');
-                    $('#price').after('<div class="invalid-feedback">Giá sản phẩm là bắt buộc nếu không có biến thể</div>');
-                }
-
-                // Validate ảnh đại diện
-                if (!$('#image_thumnail').val() && !$('#image_thumnail').attr('data-value')) {
-                    isValid = false;
-                    errors['image_thumnail'] = 'Ảnh đại diện là bắt buộc';
-                    $('#image_thumnail').addClass('is-invalid');
-                    $('#image_thumnail').after('<div class="invalid-feedback">Ảnh đại diện là bắt buộc</div>');
-                }
-
-                if (!isValid) {
-                    Swal.fire({
-                        title: 'Lỗi!',
-                        text: 'Vui lòng kiểm tra lại thông tin sản phẩm',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                    return false;
-                }
-
-                // Nếu validation pass thì submit form bằng AJAX
-                var form = $(this);
-                var url = form.attr('action');
-                var formData = new FormData(this);
-                
-                $.ajax({
-                    url: url,
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                title: 'Thành công!',
-                                text: response.message,
-                                icon: 'success',
-                                confirmButtonText: 'OK'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.location.href = response.redirect;
-                                }
-                            });
-                        } else {
-                            Swal.fire({
-                                title: 'Lỗi!',
-                                text: response.message,
-                                icon: 'error',
-                                confirmButtonText: 'OK'
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        var errors = xhr.responseJSON.errors;
-                        var errorMessage = '';
-                        
-                        for (var key in errors) {
-                            errorMessage += errors[key][0] + '\n';
-                        }
-                        
-                        Swal.fire({
-                            title: 'Lỗi!',
-                            text: errorMessage,
-                            icon: 'error',
-                            confirmButtonText: 'OK'
-                        });
-                    }
-                });
-            });
-
-            // Kiểm tra SKU trùng lặp khi thêm biến thể
-            $('#addVariantBtn').on('click', function() {
-                let sku = $('#variantSku').val();
-                
-                // Kiểm tra SKU có được nhập không
-                if (!sku) {
-                    Swal.fire({
-                        title: 'Lỗi!',
-                        text: 'Vui lòng nhập mã SKU',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                    return false;
-                }
-
-                // Kiểm tra SKU đã tồn tại chưa
-                if (addedSkus.includes(sku)) {
-                    Swal.fire({
-                        title: 'Lỗi!',
-                        text: 'Mã SKU này đã được sử dụng',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                    return false;
-                }
-
-                // Kiểm tra các trường bắt buộc khác của biến thể
-                let price = $('#variantPrice').val();
-                let color = $('#variantColor').val();
-                let size = $('#variantSize').val();
-
-                if (!price || !color || !size) {
-                    Swal.fire({
-                        title: 'Lỗi!',
-                        text: 'Vui lòng điền đầy đủ thông tin biến thể',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                    return false;
-                }
-
-                // Nếu validation pass thì thêm SKU vào mảng và thêm biến thể
-                addedSkus.push(sku);
-                addVariant();
-            });
-
-            // Xóa SKU khỏi mảng khi xóa biến thể
-            $(document).on('click', '.remove-variant', function() {
-                let sku = $(this).closest('.variant-row').find('[name="variants[sku][]"]').val();
-                addedSkus = addedSkus.filter(item => item !== sku);
-                $(this).closest('.variant-row').remove();
-            });
+            // Khởi tạo form
+            initializeForm();
         });
     </script>
