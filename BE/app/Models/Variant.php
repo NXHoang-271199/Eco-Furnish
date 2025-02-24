@@ -16,6 +16,11 @@ class Variant extends Model
         return $this->hasMany(VariantValue::class);
     }
 
+    public function valuesWithTrashed()
+    {
+        return $this->hasMany(VariantValue::class)->withTrashed();
+    }
+
     public function productVariants()
     {
         return $this->hasMany(ProductVariant::class);

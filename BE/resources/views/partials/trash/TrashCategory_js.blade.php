@@ -7,7 +7,7 @@
     function confirmRestore(id) {
         Swal.fire({
             title: 'Xác nhận khôi phục?',
-            text: "Bạn có chắc chắn muốn khôi phục giá trị biến thể này?",
+            text: "Bạn có chắc chắn muốn khôi phục danh mục này?",
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Có, khôi phục!',
@@ -17,7 +17,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `/admin/trash/trash-variant-values/${id}`,
+                    url: `/admin/trash/trash-categories/${id}`,
                     type: 'PUT',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -44,7 +44,7 @@
                     error: function(xhr) {
                         Swal.fire({
                             title: 'Lỗi!',
-                            text: 'Có lỗi xảy ra khi khôi phục giá trị biến thể',
+                            text: 'Có lỗi xảy ra khi khôi phục danh mục',
                             icon: 'error',
                             confirmButtonText: 'OK'
                         });
@@ -57,7 +57,7 @@
     function confirmForceDelete(id) {
         function executeDelete(force = false) {
             $.ajax({
-                url: `/admin/trash/trash-variant-values/${id}`,
+                url: `/admin/trash/trash-categories/${id}`,
                 type: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -84,7 +84,8 @@
                             confirmButtonText: 'Có, xóa!',
                             cancelButtonText: 'Hủy',
                             confirmButtonColor: '#dc3545',
-                            cancelButtonColor: '#6c757d'
+                            cancelButtonColor: '#6c757d',
+                            reverseButtons: true
                         }).then((result) => {
                             if (result.isConfirmed) {
                                 executeDelete(true);
@@ -100,7 +101,7 @@
                     }
                 },
                 error: function(xhr) {
-                    let message = 'Có lỗi xảy ra khi xóa vĩnh viễn giá trị biến thể';
+                    let message = 'Có lỗi xảy ra khi xóa vĩnh viễn danh mục';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         message = xhr.responseJSON.message;
                     }
@@ -122,7 +123,8 @@
             confirmButtonText: 'Có, xóa vĩnh viễn!',
             cancelButtonText: 'Hủy',
             confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d'
+            cancelButtonColor: '#6c757d',
+            reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
                 executeDelete(false);

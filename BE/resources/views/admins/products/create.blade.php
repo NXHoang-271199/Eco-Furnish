@@ -25,7 +25,7 @@
     <form id="productForm" action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="has_variants" value="0" id="hasVariants">
-        
+
         <div class="row">
             <!-- Thông tin cơ bản -->
             <div class="col-lg-8">
@@ -44,7 +44,7 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="name" class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('name') is-invalid @enderror" 
+                                    <input type="text" class="form-control @error('name') is-invalid @enderror"
                                         id="name" name="name" value="{{ old('name') }}" required>
                                     @error('name')
                                         <div class="invalid-feedback">{{ $message }}</div>
@@ -53,7 +53,7 @@
 
                                 <div class="form-group mb-3">
                                     <label for="category_id" class="form-label">Danh mục <span class="text-danger">*</span></label>
-                                    <select class="form-select @error('category_id') is-invalid @enderror" 
+                                    <select class="form-select @error('category_id') is-invalid @enderror"
                                         id="category_id" name="category_id" required>
                                         <option value="">Chọn danh mục</option>
                                         @foreach($categories as $category)
@@ -138,7 +138,7 @@
                             @error('gallery.*')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            
+
                             <div class="gallery-preview">
                                 <div class="gallery-preview-container" id="galleryPreview">
                                     <div class="gallery-item add-photo" onclick="document.getElementById('gallery').click()">
