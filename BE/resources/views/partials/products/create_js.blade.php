@@ -122,6 +122,66 @@
                         }
                         if (hasVariantsInput) {
                 hasVariantsInput.value = this.checked ? '1' : '0';
+                            
+                            // Thêm validate cho các trường bắt buộc khi chuyển sang chế độ biến thể
+                            const requiredFields = [nameInput, categorySelect, imageInput, priceInput];
+                            requiredFields.forEach(field => {
+                                // Xóa validate cũ nếu có
+                                field.classList.remove('is-invalid');
+                                const oldErrorDiv = field.nextElementSibling;
+                                if (oldErrorDiv && oldErrorDiv.classList.contains('invalid-feedback')) {
+                                    oldErrorDiv.remove();
+                                }
+
+                                // Kiểm tra giá trị hiện tại
+                                const value = field.value.trim();
+                                const fieldLabel = field.previousElementSibling ? field.previousElementSibling.textContent.replace(' *', '') : 'Trường này';
+                                
+                                if (!value) {
+                                    field.classList.add('is-invalid');
+                                    const errorDiv = document.createElement('div');
+                                    errorDiv.className = 'invalid-feedback';
+                                    errorDiv.textContent = fieldLabel + ' không được để trống';
+                                    field.after(errorDiv);
+                                }
+                            });
+
+                            // Thêm event listener để tắt validate khi các trường được điền
+                            requiredFields.forEach(field => {
+                                if (field) {
+                                    // Xóa event listener cũ nếu có
+                                    field.removeEventListener('input', handleInput);
+                                    field.removeEventListener('change', handleChange);
+
+                                    // Thêm event listener mới
+                                    function handleInput() {
+                                        if (this.value.trim()) {
+                                            this.classList.remove('is-invalid');
+                                            const errorDiv = this.nextElementSibling;
+                                            if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
+                                                errorDiv.remove();
+                                            }
+                                        }
+                                    }
+
+                                    function handleChange() {
+                                        if (this.value) {
+                                            this.classList.remove('is-invalid');
+                                            const errorDiv = this.nextElementSibling;
+                                            if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
+                                                errorDiv.remove();
+                                            }
+                                        }
+                                    }
+
+                                    field.addEventListener('input', handleInput);
+                                    
+                                    // Đặc biệt xử lý cho select
+                                    if (field.tagName === 'SELECT') {
+                                        field.addEventListener('change', handleChange);
+                                    }
+                                }
+                            });
                         }
 
                         // Reset form biến thể khi toggle

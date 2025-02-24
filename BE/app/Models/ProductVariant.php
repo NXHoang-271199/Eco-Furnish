@@ -28,11 +28,11 @@ class ProductVariant extends Model
 
     public function variant()
     {
-        return $this->belongsTo(Variant::class);
+        return $this->belongsTo(Variant::class)->withTrashed();
     }
 
     public function variantValue()
     {
-        return $this->belongsTo(VariantValue::class);
+        return $this->belongsTo(VariantValue::class)->withTrashed();
     }
 }

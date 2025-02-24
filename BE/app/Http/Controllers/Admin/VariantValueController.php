@@ -18,7 +18,7 @@ class VariantValueController extends Controller
     public function index(Variant $variant)
     {
         try {
-            $values = $variant->values()->latest()->paginate(10);
+            $values = $variant->values()->whereNull('deleted_at')->latest()->paginate(10);
             return view('admins.variant-values.index', compact('variant', 'values'));
         } catch (\Exception $e) {
             Log::error('Error in variant value index: ' . $e->getMessage());
