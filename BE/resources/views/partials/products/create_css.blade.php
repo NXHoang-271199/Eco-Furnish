@@ -9,7 +9,7 @@
             width: 133.33%; /* Bù lại kích thước để tránh lệch layout */
             padding-bottom: 2rem;
         }
-        
+ 
         .variant-section {
             display: none;
             transition: all 0.3s ease;

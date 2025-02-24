@@ -45,7 +45,7 @@
                                 <div class="form-group mb-3">
                                     <label for="name" class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control @error('name') is-invalid @enderror" 
-                                        id="name" name="name" value="{{ old('name') }}" required>
+                                        id="name" name="name" value="{{ old('name') }}" >
                                     @error('name')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -54,7 +54,7 @@
                                 <div class="form-group mb-3">
                                     <label for="category_id" class="form-label">Danh mục <span class="text-danger">*</span></label>
                                     <select class="form-select @error('category_id') is-invalid @enderror" 
-                                        id="category_id" name="category_id" required>
+                                        id="category_id" name="category_id">
                                         <option value="">Chọn danh mục</option>
                                         @foreach($categories as $category)
                                             <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
@@ -72,12 +72,12 @@
                                         <label for="price" class="form-label">Giá gốc <span class="text-danger">*</span></label>
                                         <div class="input-group">
                                             <input type="number" class="form-control @error('price') is-invalid @enderror"
-                                                id="price" name="price" value="{{ old('price') }}" required min="0">
+                                                id="price" name="price" value="{{ old('price') }}" min="0">
                                             <span class="input-group-text">VNĐ</span>
+                                            @error('price')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
                                         </div>
-                                        @error('price')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
                                     </div>
 
                                     <div class="form-group mb-3" id="discountPriceSection">
@@ -86,10 +86,10 @@
                                             <input type="number" class="form-control @error('discount_price') is-invalid @enderror"
                                                 id="discount_price" name="discount_price" value="{{ old('discount_price') }}" min="0">
                                             <span class="input-group-text">VNĐ</span>
+                                            @error('discount_price')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
                                         </div>
-                                        @error('discount_price')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
                                     </div>
                                 </div>
                             </div>
@@ -97,11 +97,8 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="description" class="form-label">Mô tả</label>
-                                    <textarea class="form-control @error('description') is-invalid @enderror"
+                                    <textarea class="form-control"
                                         id="description" name="description" rows="3">{{ old('description') }}</textarea>
-                                    @error('description')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
                                 </div>
                             </div>
                         </div>
@@ -119,7 +116,7 @@
                         <div class="form-group mb-4">
                             <label for="image_thumnail" class="form-label">Ảnh đại diện <span class="text-danger">*</span></label>
                             <input type="file" class="form-control @error('image_thumnail') is-invalid @enderror"
-                                id="image_thumnail" name="image_thumnail" required accept="image/*">
+                                id="image_thumnail" name="image_thumnail" accept="image/*">
                             @error('image_thumnail')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
