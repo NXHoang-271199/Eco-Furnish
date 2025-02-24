@@ -5,20 +5,44 @@
 @endsection
 
 @section('CSS')
-    <style>
-        #team-member-list.grid-view .member-item {
-            display: inline-block;
-            width: 30%;
-        }
-
-        #team-member-list.list-view .member-item {
-            display: block;
-            width: 100%;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 @endsection
 
+
 @section('JS')
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+
+    <script>
+        $(document).ready(function() {
+            $(document).on('click', '.delete-btn', function(e) {
+                e.preventDefault();
+
+                let form = $(this).closest("form");
+
+                // Debug: Kiểm tra xem sự kiện có chạy không
+                console.log("Nút xóa đã được nhấn!");
+
+                Swal.fire({
+                    title: "Bạn có chắc chắn muốn xóa?",
+                    text: "Hành động này không thể hoàn tác!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#dc3545",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Có, xóa!",
+                    cancelButtonText: "Hủy"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log("Đã xác nhận xóa!"); // Debug: Kiểm tra xem có xác nhận không
+                        form.submit(); // Gửi form sau khi xác nhận
+                    } else {
+                        console.log("Hủy xóa!"); // Debug: Kiểm tra nếu người dùng hủy
+                    }
+                });
+            });
+        });
+    </script>
 @endsection
 
 @section('content')
@@ -67,13 +91,9 @@
                         <h5>Cập nhật vai trò</h5>
                     </div>
                     <div class="card-body">
-                        <form id="category-form" action="" method="POST">
+                        <form id="category-form" action="{{ route('roles.update', $singerRole->id) }}" method="POST">
                             @csrf
                             @method('PUT')
-                            <input type="hidden" id="category-id" name="id">
-
-                            <div id="method-field"></div>
-
                             <div class="form-group">
                                 <label for="title">Tên vai trò</label>
                                 <input type="text" id="name" name="name" class="form-control"
@@ -114,16 +134,16 @@
                                             <td scope="row"><h5>{{ $user->name }}</h5></td>
                                             <td>
                                                 <div class="hstack gap-3 fs-15 justify-content-center">
-                                                    <form action=""
+                                                    {{-- <form action="{{ route('users.destroy', $user->id) }}"
                                                         method="POST">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="text-danger mx-2 border-0" title="Xóa"
-                                                            onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục này?');">
+                                                        <button type="submit" class="text-danger mx-2 border-0 delete-btn" title="Xóa">
                                                             <i class="ri-delete-bin-5-line"></i>
 
                                                         </button>
-                                                    </form>
+                                                    </form> --}}
+                                                    <a href="{{ route('users.show', $user->id) }}" class="text-primary mx-2 border-0" title="Chỉnh sửa"><i class="ri-eye-line"></i></a>
                                                 </div>
                                             </td>
                                         </tr>

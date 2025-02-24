@@ -5,7 +5,46 @@
 @endsection
 
 @section('CSS')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 @endsection
+
+
+@section('JS')
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+
+    <script>
+        $(document).ready(function() {
+            $(document).on('click', '.delete-btn', function(e) {
+                e.preventDefault();
+
+                let form = $(this).closest("form");
+
+                // Debug: Kiểm tra xem sự kiện có chạy không
+                console.log("Nút xóa đã được nhấn!");
+
+                Swal.fire({
+                    title: "Bạn có chắc chắn muốn xóa?",
+                    text: "Hành động này không thể hoàn tác!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#dc3545",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Có, xóa!",
+                    cancelButtonText: "Hủy"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log("Đã xác nhận xóa!"); // Debug: Kiểm tra xem có xác nhận không
+                        form.submit(); // Gửi form sau khi xác nhận
+                    } else {
+                        console.log("Hủy xóa!"); // Debug: Kiểm tra nếu người dùng hủy
+                    }
+                });
+            });
+        });
+    </script>
+@endsection
+
 
 @section('content')
     <div class="container-fluid">
@@ -29,9 +68,22 @@
                 </div>
             </div>
         </div>
-        <!-- Roles View - Card Grid -->
-        <div class="card">
+        @if (session('success'))
+            <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow" role="alert">
+                <i class="ri-check-double-line me-3 align-middle"></i>
+                <strong>{{ session('success') }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
 
+        @if (session('error'))
+            <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow" role="alert">
+                <i class="ri-alert-line me-3 align-middle"></i> <strong>{{ session('error') }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Danh sách vai trò</h5>
                 <a href="{{ route('roles.create') }}" class="btn btn-primary">
@@ -74,14 +126,17 @@
                                                             class="ri-pencil-fill align-bottom me-2 text-muted"></i>
                                                         Edit</a></li>
                                                 <li>
-                                                    <form action="{{ route('roles.show', $role->id) }}" method="POST"
-                                                        class="d-inline" onclick="return confirm('Muốn xóa không ?')">
+                                                    <form action="{{ route('roles.destroy', $role->id) }}" method="POST"
+                                                        class="d-inline delete-form">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button class="dropdown-item edit-item-btn cursor-pointer"><i
-                                                                class="ri-delete-bin-fill align-bottom me-2 text-muted"></i>
-                                                            Xóa</button>
+                                                        <button type="button"
+                                                            class="dropdown-item edit-item-btn cursor-pointer delete-btn">
+                                                            <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i>
+                                                            Xóa
+                                                        </button>
                                                     </form>
+
                                                 </li>
                                             </ul>
                                         </div>

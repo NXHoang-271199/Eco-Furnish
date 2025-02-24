@@ -312,26 +312,27 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <label class="form-label" for="project-thumbnail-img">Ảnh bìa</label>
-                                    <div class="file-upload-wrapper">
-                                        <label for="project-thumbnail-img" class="custom-file-upload">
-                                            <i class="fas fa-cloud-upload-alt"></i>
-                                            <span>Chọn ảnh bìa</span>
-                                        </label>
-                                        <input class="form-control" id="project-thumbnail-img" type="file"
-                                            accept="image/png, image/gif, image/jpeg" name="image_thumbnail"
-                                            onchange="previewImage(event)">
-                                    </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label" for="project-thumbnail-img">Ảnh bìa</label>
+                                <div class="file-upload-wrapper">
+                                    <label for="project-thumbnail-img" class="custom-file-upload">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Chọn ảnh bìa</span>
+                                    </label>
+                                    <input class="form-control" id="project-thumbnail-img" type="file"
+                                        accept="image/png, image/gif, image/jpeg" name="image_thumbnail"
+                                        onchange="previewImage(event)">
                                 </div>
-                                <!-- Hiển thị ảnh bìa đã chọn -->
-                                <div class="mt-3">
-                                    <img id="thumbnail-preview"
-                                        src="{{ isset($post) ? asset($post->image_thumbnail) : '' }}" alt="Ảnh bìa"
-                                        class="img-fluid" style="display: {{ isset($post) ? 'block' : 'none' }};">
-                                </div>
+                            </div>
+                            <!-- Hiển thị ảnh bìa đã chọn -->
+                            <div class="mt-3">
+                                <img id="thumbnail-preview" src="{{ isset($post) ? asset($post->image_thumbnail) : '' }}"
+                                    alt="Ảnh bìa" class="img-fluid"
+                                    style="display: {{ isset($post) ? 'block' : 'none' }};">
                             </div>
                         </div>
                     </div>

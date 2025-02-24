@@ -22,6 +22,9 @@ class PostController extends Controller
     {
         $filters = [
             'title' => $request->input('title'),
+            'status' => $request->input('status'),
+            'category_post_id' => $request->input('category_post_id'),
+            'year' => $request->input('year'),
         ];
 
         $years = Post::selectRaw('YEAR(created_at) as year')
@@ -34,16 +37,22 @@ class PostController extends Controller
             $postsByYear[$year->year] = Post::whereYear('created_at', $year->year)->count();
         }
 
-        $featuredPosts = Post::orderBy('created_at', 'desc')->limit(3)->get();
+        $featuredPosts = Post::where('status', '1')
+            ->orderBy('created_at', 'desc')
+            ->limit(3)
+            ->get();
 
-        $listPosts = Post::search($filters)->orderByDesc('id')->paginate(5);
+        $listPosts = Post::search($filters)->orderByDesc('created_at')->paginate(10);
 
         $listCategoryPost = CategoryPost::all();
+
         foreach ($listPosts as $post) {
             $post->short_content = $this->limitHtml($post->content, 150);
         }
+
         return view('admins.posts.index', compact('listPosts', 'listCategoryPost', 'years', 'postsByYear', 'featuredPosts'));
     }
+
 
     public function limitHtml($html, $limit = 150, $end = '...')
     {
@@ -155,7 +164,7 @@ class PostController extends Controller
 
         return redirect()->back()->with('success', 'Duyệt bài viết thanh công!');
     }
-     
+
     public function update(PostRequest $request, string $id)
     {
         $singerPost = Post::findOrFail($id);
@@ -211,7 +220,7 @@ class PostController extends Controller
             'content' => $updatedContent,
             'category_post_id' => $validated['category_id'],
             'user_id' => $validated['user_id'],
-            'status' => '1',
+            'status' => $request->input('status'),
             'slug' => $slug,
         ]);
         return redirect()->route('posts.index')->with('success', 'Cập nhật bài viết thành công!');

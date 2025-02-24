@@ -23,8 +23,7 @@ class UserController extends Controller
         ];
         $userRoleId = Role::where('name', 'user')->value('id');
 
-        $listUsers = User::where('role_id', $userRoleId)
-            ->search($filters)
+        $listUsers = User::search($filters)
             ->orderByDesc('id')
             ->paginate(15);
 
@@ -58,6 +57,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'age' => $validated['age'],
             'role_id' => $validated['role_id'],
+            'is_active' => 1,
             'address' => $validated['address'] ?? null,
             'avatar' => $filePath
         ]);
@@ -92,28 +92,27 @@ class UserController extends Controller
     {
         $singerUser = User::findOrFail($id);
         $validated = $request->validated();
-        try {
-            $filePath = $singerUser->avatar;
-            if ($request->hasFile('avatar')) {
-                $filePath = $request->file('avatar')->store('uploads/avatar', 'public');
+        // dd($request->all());
+        $filePath = $singerUser->avatar;
+        if ($request->hasFile('avatar')) {
+            $filePath = $request->file('avatar')->store('uploads/avatar', 'public');
 
-                if ($singerUser->avatar && Storage::disk()->exists($singerUser->avatar)) {
-                    Storage::disk()->delete($singerUser->avatar);
-                }
+            if ($singerUser->avatar && Storage::disk()->exists($singerUser->avatar)) {
+                Storage::disk()->delete($singerUser->avatar);
             }
-            $singerUser->update([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'age' => $validated['age'],
-                'role_id' => $validated['role_id'],
-                'address' => $validated['address'] ?? $singerUser->address,
-                'avatar' => $filePath,
-            ]);
-
-            return redirect()->route('users.index')->with('success', 'Cập nhật người dùng thành công.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Lỗi: ' . $e->getMessage());
         }
+
+        $singerUser->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'age' => $validated['age'],
+            'role_id' => $validated['role_id'],
+            'is_active' => (int) $request->input('is_active'),
+            'address' => $validated['address'] ?? $singerUser->address,
+            'avatar' => $filePath,
+        ]);
+
+        return redirect()->route('users.index')->with('success', 'Cập nhật người dùng thành công.');
     }
 
 

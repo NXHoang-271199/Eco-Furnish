@@ -4,6 +4,44 @@
     Danh sách vouchers
 @endsection
 
+@section('CSS')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+@endsection
+
+@section('JS')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+
+    <script>
+        $(document).ready(function() {
+            $(document).on('click', '.delete-btn', function(e) {
+                e.preventDefault(); // Ngăn form gửi ngay lập tức
+                console.log("Nút xóa được nhấn!"); // Kiểm tra xem sự kiện có kích hoạt không
+
+                let form = $(this).closest("form");
+                Swal.fire({
+                    title: "Bạn có chắc chắn muốn xóa?",
+                    text: "Hành động này không thể hoàn tác!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#dc3545",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Có, xóa!",
+                    cancelButtonText: "Hủy"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log("Đã xác nhận xóa!"); // Kiểm tra xác nhận
+                        form.submit();
+                    } else {
+                        console.log("Hủy xóa!");
+                    }
+                });
+            });
+        });
+    </script>
+@endsection
+
 @section('content')
     <div class="container-fluid">
         <div class="row">
@@ -91,12 +129,11 @@
 
                                                 <!-- Form xóa -->
                                                 <form action="{{ route('vouchers.destroy', $voucher->id) }}" method="POST"
-                                                    style="display:inline-block;"
-                                                    onsubmit="return confirm('Bạn có chắc chắn muốn xóa voucher này?')">
+                                                    style="display:inline-block;">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"
-                                                        class="btn btn-sm btn-outline-danger rounded-3 shadow-sm transition-all duration-300 hover:bg-danger-light">
+                                                        class="btn btn-sm btn-outline-danger rounded-3 shadow-sm transition-all duration-300 hover:bg-danger-light delete-btn">
                                                         <i class="ri-delete-bin-5-line"></i>
                                                     </button>
                                                 </form>
