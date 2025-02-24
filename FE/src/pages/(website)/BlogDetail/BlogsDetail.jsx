@@ -13,7 +13,7 @@ const BlogsDetail = () => {
         </p>
       </div>
       {/* Breadcrumb */}
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mt-10 mx-auto px-4 py-4">
         <nav className="text-gray-600 text-sm">
           <a className="hover:underline" href="#">
             Trang chủ
@@ -42,7 +42,7 @@ const BlogsDetail = () => {
         </div>
         <img
           alt="Minimalist living room with modern furniture"
-          className="w-full mb-4"
+          className="w-full mb-4 rounded-lg transition-transform duration-300 hover:scale-95"
           height="600"
           src="https://storage.googleapis.com/a1aa/image/_0Fo2rLT5qb31Kx7O68dFLCwrMQWvFnbqIC0dpjvnIw.jpg"
           width="1200"
@@ -76,57 +76,29 @@ const BlogsDetail = () => {
         </a>
       </div>
       {/* Related Posts */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-6 py-8 ">
         <h2 className="text-2xl font-bold mb-4">Bài viết bạn có thể thích</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white shadow rounded overflow-hidden">
-            <img
-              alt="Modern living room with comfortable sofa"
-              className="w-full"
-              height="300"
-              src="https://storage.googleapis.com/a1aa/image/vyVG2kxxwpC24KZA-rQ0QCKdXySwdd0G4xznX8ZcoBM.jpg"
-              width="400"
-            />
-            <div className="p-4">
-              <h3 className="text-lg font-bold mb-2">
-                Khám Phá Sự Hoàn Hảo: Top Hiện Đại Mang Lại Sự Thoải Mái Và
-                Phong Cách Cho Ngôi Nhà Bạn
-              </h3>
-              <p className="text-gray-600">Thứ Tư Năm, 19 tháng 12 năm 2024</p>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+            {[...Array(5)].map((_, index) => (
+             <div className="bg-white shadow rounded overflow-hidden">
+             <img
+               alt="Modern living room with comfortable sofa"
+               className="w-full rounded-lg transition-transform duration-300 hover:scale-110"
+               height="300"
+               src="https://storage.googleapis.com/a1aa/image/vyVG2kxxwpC24KZA-rQ0QCKdXySwdd0G4xznX8ZcoBM.jpg"
+               width="400"
+             />
+             <div className="p-4">
+               <h3 className="text-lg font-bold mb-2">
+                 Khám Phá Sự Hoàn Hảo: Top Hiện Đại Mang Lại Sự Thoải Mái Và
+                 Phong Cách Cho Ngôi Nhà Bạn
+               </h3>
+               <p className="text-gray-600">Thứ Tư Năm, 19 tháng 12 năm 2024</p>
+             </div>
+           </div>
+            ))}
           </div>
-          <div className="bg-white shadow rounded overflow-hidden">
-            <img
-              alt="Spacious living room with large windows"
-              className="w-full"
-              height="300"
-              src="https://storage.googleapis.com/a1aa/image/MzeNpPvkJquX2HmfeG8aZ8jCgUh-zZvJXU3QtbzpV10.jpg"
-              width="400"
-            />
-            <div className="p-4">
-              <h3 className="text-lg font-bold mb-2">
-                Tầm Quan Trọng Của Thiết Kế Nội Thất Trong Cuộc Sống
-              </h3>
-              <p className="text-gray-600">Thứ Tư Năm, 12 tháng 12, 2024</p>
-            </div>
-          </div>
-          <div className="bg-white shadow rounded overflow-hidden">
-            <img
-              alt="Elegant dining area with modern furniture"
-              className="w-full"
-              height="300"
-              src="https://storage.googleapis.com/a1aa/image/RhVQd-w1NyKdhF2vK_DNmuONwxIFYidmEYkqPNSXGAQ.jpg"
-              width="400"
-            />
-            <div className="p-4">
-              <h3 className="text-lg font-bold mb-2">
-                Không gian phòng ăn đẳng cấp - nâng tầm trải nghiệm ẩm thực.
-              </h3>
-              <p className="text-gray-600">Thứ Tư, 11 tháng 12, 2024</p>
-            </div>
-          </div>
-        </div>
-      </div>
+       </div>
       {/* Newsletter */}
       <div className="bg-gray-100 py-8">
         <div className="container mx-auto px-4 text-center">
