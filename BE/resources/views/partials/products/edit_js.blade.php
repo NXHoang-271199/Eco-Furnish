@@ -96,6 +96,23 @@
             const addVariantBtn = $('#add-variant');
             const form = $('#productForm');
             
+            // Thêm validate khi blur
+            form.find('input[required], textarea[required], select[required]').not('[name^="variants"]').on('blur', function() {
+                const field = $(this);
+                const value = field.val();
+                
+                // Xóa thông báo lỗi cũ
+                field.removeClass('is-invalid');
+                field.next('.invalid-feedback').remove();
+                
+                if (!value || value.trim() === '') {
+                    field.addClass('is-invalid');
+                    const fieldLabel = field.prev('label').text().replace(' *', '') || 'Trường này';
+                    const errorDiv = $('<div>').addClass('invalid-feedback').text(fieldLabel + ' không được để trống');
+                    field.after(errorDiv);
+                }
+            });
+
             let variantCount = 0;
             const groupedVariants = {!! json_encode($groupedVariants) !!};
             console.log('Danh sách biến thể theo nhóm:', groupedVariants);
@@ -280,34 +297,58 @@
             form.on('submit', function(e) {
                 e.preventDefault();
 
-                // Kiểm tra các trường bắt buộc
-                const requiredFields = $(this).find('[required]');
-                let hasEmptyField = false;
+                // Reset trạng thái validate
+                $('.is-invalid').removeClass('is-invalid');
+                $('.invalid-feedback').remove();
 
+                // Kiểm tra các trường bắt buộc
+                const requiredFields = form.find('input[required], textarea[required], select[required]').not('[name^="variants"]');
+                let hasError = false;
+                let firstErrorField = null;
+
+                // Kiểm tra từng trường bắt buộc
                 requiredFields.each(function() {
-                    if (!$(this).val()) {
-                        $(this).addClass('is-invalid');
-                        hasEmptyField = true;
-                    } else {
-                        $(this).removeClass('is-invalid');
+                    const field = $(this);
+                    const value = field.val();
+                    
+                    if (!value || value.trim() === '') {
+                        hasError = true;
+                        field.addClass('is-invalid');
+                        
+                        // Thêm thông báo lỗi
+                        const fieldLabel = field.prev('label').text().replace(' *', '') || 'Trường này';
+                        const errorDiv = $('<div>').addClass('invalid-feedback').text(fieldLabel + ' không được để trống');
+                        field.after(errorDiv);
+
+                        if (!firstErrorField) {
+                            firstErrorField = field;
+                        }
                     }
                 });
 
-                if (hasEmptyField) {
+                // Nếu có lỗi, hiển thị thông báo và dừng submit
+                if (hasError) {
+                    // Cuộn đến trường lỗi đầu tiên
+                    if (firstErrorField) {
+                        $('html, body').animate({
+                            scrollTop: firstErrorField.offset().top - 100
+                        }, 500);
+                    }
+                    
                     Swal.fire({
                         title: 'Lỗi!',
                         text: 'Vui lòng điền đầy đủ thông tin bắt buộc!',
                         icon: 'error',
                         confirmButtonText: 'Đóng'
                     });
-                    return;
+                    return false;
                 }
 
                 const formData = new FormData(this);
                 
                 // Xử lý dữ liệu biến thể
                 const variants = [];
-                let hasError = false;
+                let variantHasError = false;
 
                 $('.variant-combination').each(function(index) {
                     const variantElement = $(this);
@@ -319,14 +360,18 @@
 
                     // Kiểm tra SKU và giá
                     if (!variantData.sku || !variantData.price) {
-                        hasError = true;
+                        variantHasError = true;
                         if (!variantData.sku) {
-                            variantElement.find('input[name$="[sku]"]').addClass('is-invalid');
+                            const skuInput = variantElement.find('input[name$="[sku]"]');
+                            skuInput.addClass('is-invalid');
+                            skuInput.after($('<div>').addClass('invalid-feedback d-block').text('SKU không được để trống'));
                         }
                         if (!variantData.price) {
-                            variantElement.find('input[name$="[price]"]').addClass('is-invalid');
+                            const priceInput = variantElement.find('input[name$="[price]"]');
+                            priceInput.addClass('is-invalid');
+                            priceInput.after($('<div>').addClass('invalid-feedback d-block').text('Giá không được để trống'));
                         }
-                        return false; // break the loop
+                        return false;
                     }
 
                     // Thu thập giá trị biến thể đã chọn (nếu có)
@@ -342,7 +387,7 @@
                     variants.push(variantData);
                 });
 
-                if (hasError) {
+                if (variantHasError) {
                     Swal.fire({
                         title: 'Lỗi!',
                         text: 'Vui lòng điền SKU và giá cho biến thể!',

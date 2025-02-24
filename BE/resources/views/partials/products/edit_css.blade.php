@@ -213,4 +213,49 @@
             font-size: 12px;
             margin-top: 4px;
         }
+
+        /* Button container styles */
+        .form-actions {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .form-actions .btn {
+            margin-left: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+        }
+
+        .form-actions .btn i {
+            font-size: 14px;
+        }
+
+        .form-actions .btn-secondary {
+            background-color: #74788d;
+            border-color: #74788d;
+            color: #fff;
+        }
+
+        .form-actions .btn-secondary:hover {
+            background-color: #636678;
+            border-color: #636678;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 576px) {
+            .form-actions {
+                text-align: center;
+            }
+            
+            .form-actions .btn {
+                margin: 5px;
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
