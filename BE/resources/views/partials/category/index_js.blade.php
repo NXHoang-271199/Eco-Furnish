@@ -5,27 +5,77 @@
 
     <script>
         $(document).ready(function() {
+            // Xử lý form submit
+            $('#categoryForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var form = $(this);
+                var url = form.attr('action');
+                
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function(response) {
+                        if (response.success) {
+                            // Hiển thị thông báo thành công
+                            Swal.fire({
+                                title: 'Thành công!',
+                                text: response.message,
+                                icon: 'success',
+                                showConfirmButton: false,
+                                timer: 1500
+                            }).then(() => {
+                                // Reload trang sau khi thêm thành công
+                                window.location.reload();
+                            });
+                            
+                            // Reset form
+                            form[0].reset();
+                        } else {
+                            Swal.fire({
+                                title: 'Lỗi!',
+                                text: response.message,
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        var errors = xhr.responseJSON.errors;
+                        var errorMessage = '';
+                        
+                        for (var key in errors) {
+                            errorMessage += errors[key][0] + '\n';
+                        }
+                        
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: errorMessage || 'Có lỗi xảy ra khi thêm danh mục',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
+            });
+
             // Xử lý xóa danh mục
-            $('.delete-item').click(function() {
-                var id = $(this).data('id');
+            $('.delete-item').on('click', function() {
+                var categoryId = $(this).data('id');
+                
                 Swal.fire({
                     title: 'Bạn có chắc chắn?',
-                    text: "Bạn chắc chắn muốn xóa danh mục này?",
+                    text: 'Bạn có muốn xóa danh mục này không?',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'Xóa',
-                    cancelButtonText: 'Hủy',
-                    confirmButtonClass: 'btn btn-danger me-2',
-                    cancelButtonClass: 'btn btn-light',
-                    customClass: {
-                        confirmButton: 'btn btn-danger me-2',
-                        cancelButton: 'btn btn-light'
-                    },
-                    buttonsStyling: true
-                }).then(function(result) {
+                    confirmButtonText: 'Có, xóa nó!',
+                    cancelButtonText: 'Không, hủy bỏ!',
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6'
+                }).then((result) => {
                     if (result.isConfirmed) {
                         $.ajax({
-                            url: '/admin/categories/' + id,
+                            url: '/admin/categories/' + categoryId,
                             type: 'DELETE',
                             data: {
                                 _token: '{{ csrf_token() }}'
@@ -33,34 +83,29 @@
                             success: function(response) {
                                 if (response.success) {
                                     Swal.fire({
-                                        title: 'Thành công!',
+                                        title: 'Đã xóa!',
                                         text: response.message,
                                         icon: 'success',
-                                        customClass: {
-                                            confirmButton: 'btn btn-success'
-                                        }
-                                    }).then(function() {
-                                        location.reload();
+                                        showConfirmButton: false,
+                                        timer: 1500
+                                    }).then(() => {
+                                        window.location.reload();
                                     });
                                 } else {
                                     Swal.fire({
                                         title: 'Lỗi!',
                                         text: response.message,
                                         icon: 'error',
-                                        customClass: {
-                                            confirmButton: 'btn btn-danger'
-                                        }
+                                        confirmButtonText: 'OK'
                                     });
                                 }
                             },
-                            error: function(xhr) {
+                            error: function() {
                                 Swal.fire({
                                     title: 'Lỗi!',
-                                    text: xhr.responseJSON.message,
+                                    text: 'Có lỗi xảy ra khi xóa danh mục',
                                     icon: 'error',
-                                    customClass: {
-                                        confirmButton: 'btn btn-danger'
-                                    }
+                                    confirmButtonText: 'OK'
                                 });
                             }
                         });
