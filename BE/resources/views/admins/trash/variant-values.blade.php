@@ -26,7 +26,7 @@
                                 <tr>
                                     <td>{{ ($items->currentPage() - 1) * $items->perPage() + $loop->iteration }}</td>
                                     <td>{{ $item->value }}</td>
-                                    <td>{{ $item->variant->name }}</td>
+                                    <td>{{ $item->variant ? $item->variant->name : 'N/A' }}</td>
                                     <td>{{ Carbon\Carbon::parse($item->deleted_at)->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i:s') }}</td>
                                     <td>
                                         <button type="button" class="btn btn-success btn-sm" onclick="confirmRestore({{ $item->id }})">

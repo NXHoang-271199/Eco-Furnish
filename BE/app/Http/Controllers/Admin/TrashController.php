@@ -27,7 +27,7 @@ class TrashController extends Controller
                 $items = Variant::onlyTrashed()->latest()->paginate(10);
                 return view('admins.trash.variants', compact('items'));
             case 'trash-variant-values':
-                $items = VariantValue::onlyTrashed()->latest()->paginate(10);
+                $items = VariantValue::onlyTrashed()->with('variant')->latest()->paginate(10);
                 return view('admins.trash.variant-values', compact('items'));
             default:
                 abort(404);
