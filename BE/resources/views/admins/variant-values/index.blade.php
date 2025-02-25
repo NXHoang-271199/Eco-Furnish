@@ -54,7 +54,7 @@
         </div>
 
         <div class="col-lg-8">
-            <div class="card">
+            <div class="card" id="variant-value-list">
                 <div class="card-header d-flex align-items-center">
                     <h4 class="card-title mb-0 flex-grow-1">Danh sách giá trị của: {{ $variant->name }}</h4>
                     <div class="flex-shrink-0">

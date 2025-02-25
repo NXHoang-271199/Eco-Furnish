@@ -53,7 +53,7 @@
         </div>
 
         <div class="col-lg-8">
-            <div class="card">
+            <div class="card" id="category-list">
                 <div class="card-header d-flex align-items-center">
                     <h4 class="card-title mb-0 flex-grow-1">Danh sách chuyên mục</h4>
                     <div class="flex-shrink-0">

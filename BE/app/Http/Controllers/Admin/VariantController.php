@@ -55,7 +55,7 @@ class VariantController extends Controller
                 if ($existingVariant->trashed()) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Tên biến thể đã tồn tại và hiện đang ở trong thùng rác, xin vui lòng khôi phục lại',
+                        'message' => 'Biến thể này đã tồn tại và hiện đang ở trong thùng rác, xin vui lòng khôi phục lại',
                         'variant_in_trash' => true,
                         'variant_id' => $existingVariant->id
                     ], 422);
@@ -74,7 +74,10 @@ class VariantController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Thêm biến thể thành công',
-                'redirect' => route('variants.index')
+                'variant' => [
+                    'id' => $variant->id,
+                    'name' => $variant->name
+                ]
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -118,18 +121,11 @@ class VariantController extends Controller
             $variant->update($request->validated());
 
             DB::commit();
-            return response()->json([
-                'success' => true,
-                'message' => 'Biến thể đã được cập nhật thành công',
-                'redirect' => route('variants.index')
-            ]);
+            return redirect()->route('variants.index')->with('success', 'Biến thể đã được cập nhật thành công');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating variant: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra khi cập nhật biến thể: ' . $e->getMessage()
-            ], 500);
+            return back()->with('error', 'Có lỗi xảy ra khi cập nhật biến thể: ' . $e->getMessage());
         }
     }
 
@@ -166,6 +162,28 @@ class VariantController extends Controller
         } catch (\Exception $e) {
             Log::error('Error getting variant values: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi tải danh sách giá trị biến thể');
+        }
+    }
+
+    /**
+     * Restore the specified variant from trash.
+     */
+    public function restore($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $variant = Variant::withTrashed()->findOrFail($id);
+            $variant->restore();
+
+            DB::commit();
+
+            return redirect()->route('variants.index')
+                ->with('success', 'Biến thể đã được khôi phục thành công');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error restoring variant: ' . $e->getMessage());
+            return back()->with('error', 'Có lỗi xảy ra khi khôi phục biến thể');
         }
     }
 }

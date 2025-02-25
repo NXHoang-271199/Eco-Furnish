@@ -1,11 +1,9 @@
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Sweet Alerts js -->
-<script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
 
 <script>
     $(document).ready(function() {
-        // Xử lý form thêm mới
+        // Xử lý form submit
         $('#createVariantValueForm').on('submit', function(e) {
             e.preventDefault();
             
@@ -23,26 +21,54 @@
                 data: form.serialize(),
                 success: function(response) {
                     if (response.success) {
-                        // Reset form
-                        form[0].reset();
+                        // Thêm giá trị mới vào bảng
+                        var table = $('table tbody');
+                        var newRow = $('<tr></tr>');
+                        var currentPage = {{ $values->currentPage() }};
+                        var perPage = {{ $values->perPage() }};
+                        var rowCount = table.find('tr').length;
+                        var newIndex = ((currentPage - 1) * perPage) + rowCount + 1;
+                        
+                        newRow.append('<td>' + newIndex + '</td>');
+                        newRow.append('<td>' + response.value + '</td>');
+                        newRow.append(
+                            '<td>' +
+                            '<div class="hstack gap-3 fs-15">' +
+                            '<a href="/admin/variants/{{ $variant->id }}/values/' + response.id + '/edit" class="link-primary">' +
+                            '<i class="ri-pencil-fill align-bottom me-2"></i>' +
+                            '</a>' +
+                            '<a href="javascript:void(0);" class="link-danger delete-item" data-id="' + response.id + '">' +
+                            '<i class="ri-delete-bin-fill align-bottom"></i>' +
+                            '</a>' +
+                            '</div>' +
+                            '</td>'
+                        );
+                        
+                        table.append(newRow);
+                        
+                        // Xóa form
+                        $('#createVariantValueForm')[0].reset();
                         
                         // Hiển thị thông báo thành công
-                        Swal.fire({
-                            title: 'Thành công!',
-                            text: response.message,
-                            icon: 'success',
-                            showConfirmButton: false,
-                            timer: 1500
-                        }).then(() => {
-                            window.location.reload();
-                        });
+                        var alertHtml = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                            response.message +
+                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                            '</div>';
+                        $('#variant-value-list .card-body').prepend(alertHtml);
+                        
+                        // Tự động ẩn thông báo sau 2 giây
+                        setTimeout(function() {
+                            $('.alert').fadeOut('slow', function() {
+                                $(this).remove();
+                            });
+                        }, 2000);
                     } else {
-                        Swal.fire({
-                            title: 'Lỗi!',
-                            text: response.message,
-                            icon: 'error',
-                            confirmButtonText: 'OK'
-                        });
+                        // Hiển thị thông báo lỗi
+                        var alertHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                            response.message +
+                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                            '</div>';
+                        $('#variant-value-list .card-body').prepend(alertHtml);
                     }
                 },
                 error: function(xhr) {
@@ -52,18 +78,24 @@
                         for (var key in errors) {
                             errorMessage += errors[key][0] + '\n';
                         }
-                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON) {
+                        if (xhr.responseJSON.variant_value_in_trash) {
+                            errorMessage = xhr.responseJSON.message;
+                            var restoreLink = '/admin/trash/restore-variant-value/' + xhr.responseJSON.variant_value_id;
+                            errorMessage += '<br><a href="' + restoreLink + '" class="btn btn-info btn-sm mt-2">Khôi phục giá trị biến thể</a>';
+                        } else {
+                            errorMessage = xhr.responseJSON.message;
+                        }
                     } else {
                         errorMessage = 'Có lỗi xảy ra khi thêm giá trị biến thể';
                     }
                     
-                    Swal.fire({
-                        title: 'Lỗi!',
-                        text: errorMessage,
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
+                    // Hiển thị thông báo lỗi
+                    var alertHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                        errorMessage +
+                        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                        '</div>';
+                    $('#variant-value-list .card-body').prepend(alertHtml);
                 },
                 complete: function() {
                     // Restore nút submit về trạng thái ban đầu
@@ -73,58 +105,79 @@
             });
         });
 
-        // Xử lý xóa giá trị biến thể
-        $('.delete-item').on('click', function() {
-            var valueId = $(this).data('id');
-            
-            Swal.fire({
-                title: 'Bạn có chắc chắn?',
-                text: 'Bạn có muốn xóa giá trị biến thể này không?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Có, xóa nó!',
-                cancelButtonText: 'Không, hủy bỏ!',
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: '/admin/variants/{{ $variant->id }}/values/' + valueId,
-                        type: 'DELETE',
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire({
-                                    title: 'Đã xóa!',
-                                    text: response.message,
-                                    icon: 'success',
-                                    showConfirmButton: false,
-                                    timer: 1500
-                                }).then(() => {
-                                    window.location.reload();
+        // Xử lý xóa giá trị biến thể sử dụng event delegation
+        $(document).on('click', '.delete-item', function() {
+            var deleteButton = $(this);
+            if (confirm('Bạn có muốn xóa giá trị biến thể này không?')) {
+                var valueId = deleteButton.data('id');
+                
+                $.ajax({
+                    url: '/admin/variants/{{ $variant->id }}/values/' + valueId,
+                    type: 'DELETE',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Xóa hàng khỏi bảng ngay lập tức
+                            var row = deleteButton.closest('tr');
+                            row.fadeOut('fast', function() {
+                                $(this).remove();
+                                
+                                // Cập nhật lại số thứ tự
+                                $('table tbody tr').each(function(index) {
+                                    var currentPage = {{ $values->currentPage() }};
+                                    var perPage = {{ $values->perPage() }};
+                                    $(this).find('td:first').text(((currentPage - 1) * perPage) + index + 1);
                                 });
-                            } else {
-                                Swal.fire({
-                                    title: 'Lỗi!',
-                                    text: response.message,
-                                    icon: 'error',
-                                    confirmButtonText: 'OK'
-                                });
-                            }
-                        },
-                        error: function() {
-                            Swal.fire({
-                                title: 'Lỗi!',
-                                text: 'Có lỗi xảy ra khi xóa giá trị biến thể',
-                                icon: 'error',
-                                confirmButtonText: 'OK'
                             });
+                            
+                            // Hiển thị thông báo thành công
+                            var alertHtml = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                                response.message +
+                                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                                '</div>';
+                            $('#variant-value-list .card-body').prepend(alertHtml);
+                            
+                            // Tự động ẩn thông báo sau 2 giây
+                            setTimeout(function() {
+                                $('.alert').fadeOut('slow', function() {
+                                    $(this).remove();
+                                });
+                            }, 2000);
+                        } else {
+                            // Hiển thị thông báo lỗi
+                            var alertHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                                response.message +
+                                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                                '</div>';
+                            $('#variant-value-list .card-body').prepend(alertHtml);
                         }
-                    });
-                }
-            });
+                    },
+                    error: function(xhr) {
+                        var errorMessage = '';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else {
+                            errorMessage = 'Có lỗi xảy ra khi xóa giá trị biến thể';
+                        }
+                        
+                        // Hiển thị thông báo lỗi
+                        var alertHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                            errorMessage +
+                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                            '</div>';
+                        $('#variant-value-list .card-body').prepend(alertHtml);
+                    }
+                });
+            }
         });
+
+        // Tự động ẩn thông báo sau 400 miligiay
+        setTimeout(function() {
+            $('.alert').fadeOut('slow', function() {
+                $(this).remove();
+            });
+        }, 400);
     });
 </script>
