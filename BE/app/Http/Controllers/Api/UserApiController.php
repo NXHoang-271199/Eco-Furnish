@@ -113,6 +113,51 @@ class UserApiController extends Controller
         ], 201);
     }
 
+    // 3.5. Đăng nhập
+    public function login(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        // Tìm user theo email
+        $user = User::where('email', $request->email)
+                    ->where('is_active', 1)
+                    ->first();
+
+        // Kiểm tra user tồn tại và mật khẩu đúng
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email hoặc mật khẩu không đúng'
+            ], 401);
+        }
+
+        // Tạo token đăng nhập (nếu sử dụng Sanctum hoặc Passport)
+        // $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Đăng nhập thành công',
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role->name,
+                'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                // 'token' => $token // Nếu sử dụng Sanctum hoặc Passport
+            ]
+        ]);
+    }
+
     // 4. Cập nhật thông tin cá nhân
     public function updateProfile(Request $request, $id)
     {
