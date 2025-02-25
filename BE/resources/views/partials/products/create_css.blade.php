@@ -1,22 +1,171 @@
-
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Thêm container wrapper để thu nhỏ form */
-        .form-container {
-            transform: scale(0.75);
-            transform-origin: top left;
-            width: 133.33%; /* Bù lại kích thước để tránh lệch layout */
-            padding-bottom: 2rem;
+        /* Fix logo styles */
+        .logo.logo-light img {
+            max-height: 36px !important;
+            margin: 0 !important;
+            vertical-align: middle !important;
         }
-        
+
+        .logo.logo-light {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            position: relative !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
+
+        /* Specific fix for logo in create product page */
+        body:has(.form-container) .logo.logo-light {
+            margin-top: 20px !important;
+        }
+
+        /* Main content styles */
+        .page-content {
+            padding: 20px;
+        }
+
+        .form-container {
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            transform: none;
+        }
+
+        /* Adjust form content size */
+        .card {
+            font-size: 14px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            padding: 12px 15px;
+            background: linear-gradient(45deg, #3b7ddd, #2f69b8);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .card-body {
+            padding: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-control, .form-select {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            font-size: 13px;
+        }
+
+        /* Adjust spacing */
+        .mb-3 {
+            margin-bottom: 12px !important;
+        }
+
+        .mb-4 {
+            margin-bottom: 15px !important;
+        }
+
+        /* Gallery items */
+        .gallery-item {
+            width: 70px;
+            height: 70px;
+        }
+
+        #thumbnailPreview img {
+            max-width: 120px;
+            max-height: 120px;
+        }
+
+        /* Other existing styles */
         .variant-section {
             display: none;
             transition: all 0.3s ease;
         }
+
         .variant-section.show {
             display: block;
         }
+
+        .form-container {
+            padding: 1rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .form-content {
+            font-size: 14px;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: linear-gradient(45deg, #3b7ddd, #2f69b8);
+            border-radius: 8px 8px 0 0 !important;
+            padding: 15px;
+        }
+
+        .card-header h5 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #344767;
+        }
+
+        .form-control, .form-select {
+            font-size: 13px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .btn {
+            font-size: 13px;
+            padding: 8px 16px;
+        }
+
+        .gallery-item {
+            width: 60px;
+            height: 60px;
+        }
+
+        #thumbnailPreview img {
+            max-width: 120px;
+            max-height: 120px;
+        }
+
+        .page-title-box h4 {
+            font-size: 18px;
+        }
+
+        .breadcrumb {
+            font-size: 12px;
+        }
+
         .card {
             border: none;
             box-shadow: 0 0 20px rgba(0,0,0,0.08);

@@ -2,7 +2,7 @@
    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <!-- CKEditor -->
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
-    
+
     <script>
         // Initialize CKEditor
         ClassicEditor
@@ -15,7 +15,7 @@
         document.getElementById('image_thumnail').addEventListener('change', function(e) {
             const preview = document.getElementById('thumbnailPreview');
             const file = e.target.files[0];
-            
+
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -42,11 +42,11 @@
         document.getElementById('gallery').addEventListener('change', function(e) {
             const preview = document.getElementById('galleryPreview');
             const files = Array.from(e.target.files);
-            
+
             // Thêm các file mới vào galleryFiles
             files.forEach(file => {
                 galleryFiles.items.add(file);
-                
+
                 // Tạo preview
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -62,7 +62,7 @@
                 }
                 reader.readAsDataURL(file);
             });
-            
+
             // Cập nhật lại files cho input
             this.files = galleryFiles.files;
         });
@@ -73,10 +73,10 @@
             const item = element.parentElement;
             const container = item.parentElement;
             const index = Array.from(container.children).indexOf(item);
-            
+
             // Remove preview
             item.remove();
-            
+
             // Remove from galleryFiles
             const dt = new DataTransfer();
             const files = Array.from(galleryFiles.files);
@@ -98,90 +98,30 @@
             const imageInput = document.getElementById('image_thumnail');
             const categorySelect = document.getElementById('category_id');
             let selectedVariants = [];
-            
+
             // Khởi tạo các biến và event listeners
             function initializeForm() {
                 if (!form) {
                     console.error('Không tìm thấy form');
                     return;
                 }
-            
-            // Đảm bảo phần biến thể bị ẩn khi tải trang
+
+                // Đảm bảo phần biến thể bị ẩn khi tải trang
                 if (variantSection) {
-            variantSection.classList.remove('show');
+                    variantSection.classList.remove('show');
                 }
                 if (hasVariantsInput) {
-            hasVariantsInput.value = '0';
+                    hasVariantsInput.value = '0';
                 }
 
-            // Xử lý toggle biến thể
+                // Xử lý toggle biến thể
                 if (variantToggle) {
-            variantToggle.addEventListener('change', function() {
+                    variantToggle.addEventListener('change', function() {
                         if (variantSection) {
-                variantSection.classList.toggle('show');
+                            variantSection.classList.toggle('show');
                         }
                         if (hasVariantsInput) {
-                hasVariantsInput.value = this.checked ? '1' : '0';
-                            
-                            // Thêm validate cho các trường bắt buộc khi chuyển sang chế độ biến thể
-                            const requiredFields = [nameInput, categorySelect, imageInput, priceInput];
-                            requiredFields.forEach(field => {
-                                // Xóa validate cũ nếu có
-                                field.classList.remove('is-invalid');
-                                const oldErrorDiv = field.nextElementSibling;
-                                if (oldErrorDiv && oldErrorDiv.classList.contains('invalid-feedback')) {
-                                    oldErrorDiv.remove();
-                                }
-
-                                // Kiểm tra giá trị hiện tại
-                                const value = field.value.trim();
-                                const fieldLabel = field.previousElementSibling ? field.previousElementSibling.textContent.replace(' *', '') : 'Trường này';
-                                
-                                if (!value) {
-                                    field.classList.add('is-invalid');
-                                    const errorDiv = document.createElement('div');
-                                    errorDiv.className = 'invalid-feedback';
-                                    errorDiv.textContent = fieldLabel + ' không được để trống';
-                                    field.after(errorDiv);
-                                }
-                            });
-
-                            // Thêm event listener để tắt validate khi các trường được điền
-                            requiredFields.forEach(field => {
-                                if (field) {
-                                    // Xóa event listener cũ nếu có
-                                    field.removeEventListener('input', handleInput);
-                                    field.removeEventListener('change', handleChange);
-
-                                    // Thêm event listener mới
-                                    function handleInput() {
-                                        if (this.value.trim()) {
-                                            this.classList.remove('is-invalid');
-                                            const errorDiv = this.nextElementSibling;
-                                            if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
-                                                errorDiv.remove();
-                                            }
-                                        }
-                                    }
-
-                                    function handleChange() {
-                                        if (this.value) {
-                                            this.classList.remove('is-invalid');
-                                            const errorDiv = this.nextElementSibling;
-                                            if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
-                                                errorDiv.remove();
-                                            }
-                                        }
-                                    }
-
-                                    field.addEventListener('input', handleInput);
-                                    
-                                    // Đặc biệt xử lý cho select
-                                    if (field.tagName === 'SELECT') {
-                                        field.addEventListener('change', handleChange);
-                                    }
-                                }
-                            });
+                            hasVariantsInput.value = this.checked ? '1' : '0';
                         }
 
                         // Reset form biến thể khi toggle
@@ -191,11 +131,21 @@
                             if (variantsContainer) {
                                 variantsContainer.innerHTML = '';
                             }
+                        } else {
+                            // Xóa thông báo lỗi và trạng thái của trường giá
+                            const priceInput = document.querySelector('[name="price"]');
+                            if (priceInput) {
+                                const container = priceInput.closest('.input-group').parentElement;
+                                container.querySelectorAll('.invalid-feedback, .valid-feedback').forEach(feedback => {
+                                    feedback.remove();
+                                });
+                                priceInput.classList.remove('is-invalid', 'is-valid');
+                            }
                         }
                     });
                 }
 
-            // Thêm biến thể
+                // Thêm biến thể
                 const addVariantBtn = document.getElementById('add-variant-btn');
                 if (addVariantBtn) {
                     addVariantBtn.addEventListener('click', handleAddVariant);
@@ -222,14 +172,18 @@
 
                 if (!hasValue) {
                     variantSelects.forEach(select => {
-                        showError(select, 'Vui lòng chọn ít nhất một biến thể');
+                        select.classList.add('is-invalid');
+                        const errorDiv = document.createElement('small');
+                        errorDiv.className = 'error-message text-danger d-block mt-1';
+                        errorDiv.textContent = 'Vui lòng chọn ít nhất một biến thể';
+                        select.parentElement.appendChild(errorDiv);
                     });
                     return;
                 }
 
                 const skuInput = document.getElementById('variant-sku');
                 const variantPriceInput = document.getElementById('variant-price');
-                
+
                 if (!skuInput || !variantPriceInput) {
                     console.error('Không tìm thấy input SKU hoặc giá');
                     return;
@@ -242,18 +196,36 @@
                 let isValid = true;
 
                 if (!sku) {
-                    showError(skuInput, 'Vui lòng nhập mã SKU');
+                    skuInput.classList.add('is-invalid');
+                    const errorDiv = document.createElement('small');
+                    errorDiv.className = 'error-message text-danger d-block mt-1';
+                    errorDiv.textContent = 'Vui lòng nhập mã SKU';
+                    skuInput.parentElement.appendChild(errorDiv);
                     isValid = false;
                 } else if (selectedVariants.some(v => v.sku === sku)) {
-                    showError(skuInput, 'Mã SKU này đã tồn tại');
+                    skuInput.classList.add('is-invalid');
+                    const errorDiv = document.createElement('small');
+                    errorDiv.className = 'error-message text-danger d-block mt-1';
+                    errorDiv.textContent = 'Mã SKU này đã tồn tại';
+                    skuInput.parentElement.appendChild(errorDiv);
                     isValid = false;
                 }
 
                 if (!price) {
-                    showError(variantPriceInput, 'Vui lòng nhập giá');
+                    variantPriceInput.classList.add('is-invalid');
+                    const errorDiv = document.createElement('small');
+                    errorDiv.className = 'error-message text-danger d-block mt-1';
+                    errorDiv.textContent = 'Vui lòng nhập giá';
+                    const inputGroup = variantPriceInput.closest('.input-group');
+                    inputGroup.parentElement.appendChild(errorDiv);
                     isValid = false;
                 } else if (isNaN(price) || parseFloat(price) <= 0) {
-                    showError(variantPriceInput, 'Giá phải là số dương');
+                    variantPriceInput.classList.add('is-invalid');
+                    const errorDiv = document.createElement('small');
+                    errorDiv.className = 'error-message text-danger d-block mt-1';
+                    errorDiv.textContent = 'Giá phải là số dương';
+                    const inputGroup = variantPriceInput.closest('.input-group');
+                    inputGroup.parentElement.appendChild(errorDiv);
                     isValid = false;
                 }
 
@@ -266,7 +238,11 @@
 
                 if (isDuplicateVariant) {
                     variantSelects.forEach(select => {
-                        showError(select, 'Biến thể này đã tồn tại');
+                        select.classList.add('is-invalid');
+                        const errorDiv = document.createElement('small');
+                        errorDiv.className = 'error-message text-danger d-block mt-1';
+                        errorDiv.textContent = 'Biến thể này đã tồn tại';
+                        select.parentElement.appendChild(errorDiv);
                     });
                     isValid = false;
                 }
@@ -283,106 +259,158 @@
                 variantPriceInput.value = '';
                 variantSelects.forEach(select => {
                     select.value = '';
-                    clearError(select);
+                    select.classList.remove('is-invalid');
                 });
-                clearError(skuInput);
-                clearError(variantPriceInput);
             }
 
             // Xử lý submit form
             async function handleFormSubmit(e) {
                 e.preventDefault();
-                
-                // Reset form state
-                clearAllErrors();
-                
-                let isValid = true;
-                const errors = [];
 
-                // Validate tên sản phẩm
-                if (!nameInput || !nameInput.value.trim()) {
-                    errors.push({
-                        element: nameInput,
-                        message: 'Vui lòng nhập tên sản phẩm'
+                // Kiểm tra nếu có biến thể nhưng chưa thêm biến thể nào
+                const hasVariants = document.getElementById('variantToggle').checked;
+                const variantsContainer = document.getElementById('variants-container');
+
+                if (hasVariants && (!variantsContainer || variantsContainer.children.length === 0)) {
+                    await Swal.fire({
+                        title: 'Lỗi!',
+                        text: 'Phải thêm ít nhất một biến thể vào sản phẩm',
+                        icon: 'error',
+                        confirmButtonText: 'Đồng ý'
                     });
-                    isValid = false;
-                }
 
-                // Validate danh mục
-                if (!categorySelect || !categorySelect.value) {
-                    errors.push({
-                        element: categorySelect,
-                        message: 'Vui lòng chọn danh mục sản phẩm'
-                    });
-                    isValid = false;
-                }
-
-                // Validate ảnh đại diện
-                if (!imageInput || !imageInput.files || !imageInput.files[0]) {
-                    errors.push({
-                        element: imageInput,
-                        message: 'Vui lòng chọn ảnh đại diện'
-                    });
-                    isValid = false;
-                }
-
-                // Validate dựa vào chế độ biến thể
-                if (variantToggle && variantToggle.checked) {
-                    if (selectedVariants.length === 0) {
-                        await Swal.fire({
-                            title: 'Lỗi!',
-                            text: 'Vui lòng thêm ít nhất một biến thể',
-                            icon: 'error',
-                            confirmButtonText: 'Đồng ý'
-                        });
-                        isValid = false;
-                    }
-                } else {
-                    // Validate giá nếu không có biến thể
-                    if (!priceInput || !priceInput.value) {
-                        errors.push({
-                            element: priceInput,
-                            message: 'Vui lòng nhập giá sản phẩm'
-                        });
-                        isValid = false;
-                    }
-                }
-
-                if (!isValid) {
-                    showAllErrors(errors);
-                    return false;
+                    // Cuộn đến khu vực biến thể
+                    variantSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
                 }
 
                 // Submit form
                 try {
                     const formData = new FormData(form);
                     const submitBtn = form.querySelector('button[type="submit"]');
-                    
+
                     if (submitBtn) {
                         const originalText = submitBtn.innerHTML;
                         submitBtn.disabled = true;
                         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
-                        
+
                         try {
                             const response = await fetch(form.action, {
                                 method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
                                 body: formData
                             });
 
-                            const data = await response.json();
-
-                            if (data.success) {
-                                await Swal.fire({
-                                    title: 'Thành công!',
-                                    text: 'Thêm sản phẩm thành công',
-                                    icon: 'success',
-                                    showConfirmButton: false,
-                                    timer: 1500
-                                });
-                                window.location.href = '/admin/products';
+                            let data;
+                            const contentType = response.headers.get('content-type');
+                            if (contentType && contentType.includes('application/json')) {
+                                data = await response.json();
                             } else {
-                                showServerErrors(data.errors || {});
+                                throw new Error('Response không phải là JSON');
                             }
+
+                            // Xóa trạng thái valid cũ
+                            document.querySelectorAll('.is-valid').forEach(el => {
+                                el.classList.remove('is-valid');
+                            });
+                            document.querySelectorAll('.valid-feedback, .invalid-feedback').forEach(el => {
+                                el.remove();
+                            });
+
+                            if (response.ok) {
+                                if (data.success) {
+                                    await Swal.fire({
+                                        title: 'Thành công!',
+                                        text: 'Thêm sản phẩm thành công',
+                                        icon: 'success',
+                                        showConfirmButton: false,
+                                        timer: 1500
+                                    });
+                                    window.location.href = '/admin/products';
+                                }
+                            } else {
+                                if (response.status === 422) { // Validation error
+                                    // Xóa trạng thái valid cũ
+                                    document.querySelectorAll('.is-valid').forEach(el => {
+                                        el.classList.remove('is-valid');
+                                    });
+                                    document.querySelectorAll('.valid-feedback, .invalid-feedback').forEach(el => {
+                                        el.remove();
+                                    });
+
+                                    // Hiển thị thông báo lỗi validation
+                                    Object.keys(data.errors).forEach(field => {
+                                        const element = document.querySelector(`[name="${field}"]`);
+                                        if (element) {
+                                            element.classList.add('is-invalid');
+
+                                            // Tìm container chứa feedback messages
+                                            let container = element.parentElement;
+                                            if (field === 'price') {
+                                                container = element.closest('.input-group').parentElement;
+                                            }
+
+                                            // Xóa tất cả feedback messages trong container
+                                            const feedbacks = container.querySelectorAll('.invalid-feedback, .valid-feedback');
+                                            feedbacks.forEach(feedback => feedback.remove());
+
+                                            // Thêm thông báo lỗi mới
+                                            const errorDiv = document.createElement('div');
+                                            errorDiv.className = 'invalid-feedback d-block';
+                                            errorDiv.textContent = data.errors[field][0];
+                                            container.appendChild(errorDiv);
+                                        }
+                                    });
+
+                                    // Thêm trạng thái valid cho các trường bắt buộc cụ thể
+                                    document.querySelectorAll('input, select, textarea').forEach(element => {
+                                        const name = element.getAttribute('name');
+                                        const requiredFields = ['name', 'category_id', 'price', 'image_thumnail'];
+
+                                        if (name && !data.errors[name] && requiredFields.includes(name) && element.value.trim() !== '') {
+                                            element.classList.add('is-valid');
+
+                                            // Tìm container chứa feedback messages
+                                            let container = element.parentElement;
+                                            if (name === 'price') {
+                                                container = element.closest('.input-group').parentElement;
+                                            }
+
+                                            // Thêm dấu tích xanh
+                                            const validDiv = document.createElement('div');
+                                            validDiv.className = 'valid-feedback d-block';
+                                            validDiv.innerHTML = '<i class="fas fa-check"></i>';
+                                            container.appendChild(validDiv);
+                                        }
+                                    });
+
+                                    // Cuộn đến trường lỗi đầu tiên
+                                    const firstError = document.querySelector('.is-invalid');
+                                    if (firstError) {
+                                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }
+                                } else {
+                                    // Hiển thị thông báo lỗi chung
+                                    Swal.fire({
+                                        title: 'Lỗi!',
+                                        text: data.message || 'Có lỗi xảy ra khi thêm sản phẩm. Vui lòng thử lại.',
+                                        icon: 'error',
+                                        confirmButtonText: 'Đồng ý'
+                                    });
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            // Hiển thị thông báo lỗi
+                            Swal.fire({
+                                title: 'Lỗi!',
+                                text: 'Có lỗi xảy ra khi thêm sản phẩm. Vui lòng thử lại.',
+                                icon: 'error',
+                                confirmButtonText: 'Đồng ý'
+                            });
                         } finally {
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = originalText;
@@ -399,78 +427,44 @@
                 }
             }
 
-            // Hiển thị lỗi từ server
-            function showServerErrors(errors) {
-                const errorMessages = [];
-                Object.keys(errors).forEach(key => {
-                    const input = document.querySelector(`[name="${key}"]`);
-                    if (input) {
-                        errorMessages.push({
-                            element: input,
-                            message: errors[key][0]
-                        });
+            // Thêm xử lý input event cho tất cả các trường
+            document.querySelectorAll('input, select, textarea').forEach(element => {
+                element.addEventListener('input', function() {
+                    const fieldName = this.getAttribute('name');
+
+                    // Xóa trạng thái và thông báo cũ
+                    this.classList.remove('is-invalid', 'is-valid');
+
+                    // Tìm container chứa feedback messages
+                    let container = this.parentElement;
+                    if (fieldName === 'price') {
+                        container = this.closest('.input-group').parentElement;
+                    }
+
+                    // Xóa tất cả feedback messages trong container
+                    const feedbacks = container.querySelectorAll('.invalid-feedback, .valid-feedback');
+                    feedbacks.forEach(feedback => feedback.remove());
+
+                    // Danh sách các trường bắt buộc cần hiển thị dấu tích
+                    const requiredFields = ['name', 'category_id', 'price', 'image_thumnail'];
+
+                    // Chỉ hiển thị dấu tích xanh cho các trường bắt buộc
+                    if (this.value.trim() !== '' && requiredFields.includes(fieldName)) {
+                        // Thêm trạng thái valid và dấu tích
+                        this.classList.add('is-valid');
+                        const validDiv = document.createElement('div');
+                        validDiv.className = 'valid-feedback d-block';
+                        validDiv.innerHTML = '<i class="fas fa-check"></i>';
+                        container.appendChild(validDiv);
                     }
                 });
-                showAllErrors(errorMessages);
-            }
-
-            // Xóa tất cả thông báo lỗi
-            function clearAllErrors() {
-                const allErrors = document.querySelectorAll('.invalid-feedback, .alert-danger');
-                allErrors.forEach(error => error.remove());
-                
-                const allInvalidInputs = document.querySelectorAll('.is-invalid');
-                allInvalidInputs.forEach(input => input.classList.remove('is-invalid'));
-            }
-
-            // Hiển thị lỗi cho một trường
-            function showError(element, message) {
-                element.classList.add('is-invalid');
-                
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'invalid-feedback d-block';
-                errorDiv.textContent = message;
-                
-                const parent = element.parentElement;
-                const existingError = parent.querySelector('.invalid-feedback');
-                if (existingError) {
-                    existingError.remove();
-                }
-                
-                parent.appendChild(errorDiv);
-            }
-
-            // Xóa thông báo lỗi
-            function clearError(element) {
-                element.classList.remove('is-invalid');
-                const parent = element.parentElement;
-                const error = parent.querySelector('.invalid-feedback');
-                if (error) {
-                    error.remove();
-                }
-            }
-
-            // Hiển thị tất cả lỗi
-            function showAllErrors(errors) {
-                if (!errors || errors.length === 0) return;
-                
-                errors.forEach(error => {
-                    if (error.element && error.message) {
-                        showError(error.element, error.message);
-                    }
-                });
-
-                // Cuộn đến lỗi đầu tiên
-                if (errors[0].element) {
-                    errors[0].element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
+            });
 
             // Hiển thị biến thể
             function displayVariant(variant) {
                 const variantElement = document.createElement('div');
                 variantElement.className = 'variant-item mb-4 border rounded p-3';
-                
+
                 const variantId = 'variant_' + Date.now();
                 variantElement.dataset.variantId = variantId;
 
@@ -523,7 +517,7 @@
                     </div>
                     <input type="hidden" name="variants[${selectedVariants.length - 1}][sku]" value="${variant.sku}">
                     <input type="hidden" name="variants[${selectedVariants.length - 1}][price]" value="${variant.price}">
-                    ${variant.values.map((value, index) => 
+                    ${variant.values.map((value, index) =>
                         value ? `<input type="hidden" name="variants[${selectedVariants.length - 1}][values][]" value="${value}">` : ''
                     ).join('')}
                 `;
@@ -541,7 +535,7 @@
                     const index = Array.from(variantElement.parentElement.children).indexOf(variantElement);
                     selectedVariants.splice(index, 1);
                     variantElement.remove();
-                    
+
                     // Cập nhật lại số thứ tự và name của các input hidden
                     const variantItems = document.querySelectorAll('.variant-item');
                     variantItems.forEach((item, idx) => {
