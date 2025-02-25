@@ -89,6 +89,7 @@ class ProductController extends Controller
                                 'variant_value_id' => $valueId,
                                 'sku' => $variant['sku'],
                                 'price' => $variant['price'],
+                                'quantity' => $variant['quantity'],
                                 'status' => 1
                             ]);
                         }
@@ -118,7 +119,15 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        $product->load(['gallery', 'category', 'variants.variant', 'variants.variantValue']);
+        $product->load([
+            'gallery', 
+            'category',
+            'variants' => function($query) {
+                $query->whereNull('deleted_at');
+            },
+            'variants.variant',
+            'variants.variantValue'
+        ]);
         return view('admins.products.show', compact('product'));
     }
 
@@ -145,11 +154,12 @@ class ProductController extends Controller
                 return Str::slug($variant->name);
             });
             
-            // Load product with related data
+            // Load product with related data, excluding soft deleted variants
             $product->load([
                 'gallery',
                 'variants' => function($query) {
-                    $query->select('id', 'product_id', 'variant_id', 'variant_value_id', 'sku', 'price');
+                    $query->select('id', 'product_id', 'variant_id', 'variant_value_id', 'sku', 'price', 'quantity')
+                        ->whereNull('deleted_at');
                 },
                 'variants.variant:id,name',
                 'variants.variantValue:id,value'
@@ -215,21 +225,109 @@ class ProductController extends Controller
 
             // Xử lý biến thể nếu có
             if ($request->has('variants')) {
-                // Xóa các biến thể cũ
-                $product->variants()->delete();
+                // Lấy danh sách variant_value_id từ request
+                $requestVariantValues = collect();
+                $usedCombinations = [];
+                $duplicateFound = false;
+                $duplicateVariants = [];
 
-                // Thêm biến thể mới
                 foreach ($request->variants as $variant) {
+                    // Tạo một key duy nhất cho mỗi tổ hợp biến thể
+                    $variantKey = [];
                     foreach ($variant['variant_values'] as $variantId => $valueId) {
-                        $product->variants()->create([
+                        $variantKey[] = $variantId . '-' . $valueId;
+                    }
+                    sort($variantKey);
+                    $combinationKey = implode('_', $variantKey);
+
+                    // Kiểm tra xem tổ hợp này đã tồn tại chưa
+                    if (in_array($combinationKey, $usedCombinations)) {
+                        $duplicateFound = true;
+                        // Lấy thông tin biến thể bị trùng để hiển thị trong thông báo lỗi
+                        $variantInfo = [];
+                        foreach ($variant['variant_values'] as $variantId => $valueId) {
+                            $variantValue = DB::table('variant_values')
+                                ->join('variants', 'variants.id', '=', 'variant_values.variant_id')
+                                ->where('variant_values.id', $valueId)
+                                ->select('variants.name', 'variant_values.value')
+                                ->first();
+                            if ($variantValue) {
+                                $variantInfo[] = $variantValue->name . ': ' . $variantValue->value;
+                            }
+                        }
+                        $duplicateVariants[] = implode(' - ', $variantInfo);
+                        continue;
+                    }
+
+                    $usedCombinations[] = $combinationKey;
+
+                    // Thu thập thông tin biến thể
+                    foreach ($variant['variant_values'] as $variantId => $valueId) {
+                        $requestVariantValues->push([
                             'variant_id' => $variantId,
                             'variant_value_id' => $valueId,
                             'sku' => $variant['sku'],
                             'price' => $variant['price'],
+                            'quantity' => $variant['quantity']
+                        ]);
+                    }
+                }
+
+                // Nếu phát hiện biến thể trùng lặp, trả về lỗi
+                if ($duplicateFound) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Phát hiện biến thể trùng lặp: ' . implode(', ', array_unique($duplicateVariants))
+                    ], 422);
+                }
+
+                // Xóa các biến thể không còn trong request
+                $existingVariantIds = $product->variants()
+                    ->whereNull('deleted_at')
+                    ->pluck('id')
+                    ->toArray();
+
+                // Cập nhật hoặc tạo mới các biến thể
+                foreach ($requestVariantValues as $variantData) {
+                    // Tìm biến thể hiện có
+                    $existingVariant = $product->variants()
+                        ->whereNull('deleted_at')
+                        ->where('variant_id', $variantData['variant_id'])
+                        ->where('variant_value_id', $variantData['variant_value_id'])
+                        ->first();
+
+                    if ($existingVariant) {
+                        // Cập nhật biến thể hiện có
+                        $existingVariant->update([
+                            'sku' => $variantData['sku'],
+                            'price' => $variantData['price'],
+                            'quantity' => $variantData['quantity'],
+                            'status' => 1
+                        ]);
+                        // Loại bỏ ID này khỏi danh sách cần xóa
+                        $existingVariantIds = array_diff($existingVariantIds, [$existingVariant->id]);
+                    } else {
+                        // Tạo mới biến thể
+                        $product->variants()->create([
+                            'variant_id' => $variantData['variant_id'],
+                            'variant_value_id' => $variantData['variant_value_id'],
+                            'sku' => $variantData['sku'],
+                            'price' => $variantData['price'],
+                            'quantity' => $variantData['quantity'],
                             'status' => 1
                         ]);
                     }
                 }
+
+                // Xóa các biến thể không còn trong request
+                if (!empty($existingVariantIds)) {
+                    $product->variants()
+                        ->whereIn('id', $existingVariantIds)
+                        ->delete();
+                }
+            } else {
+                // Nếu không có biến thể nào được gửi lên, xóa tất cả biến thể cũ
+                $product->variants()->delete();
             }
 
             // Cập nhật thông tin sản phẩm

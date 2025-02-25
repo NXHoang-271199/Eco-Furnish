@@ -131,15 +131,23 @@
                             if (variantsContainer) {
                                 variantsContainer.innerHTML = '';
                             }
-                        } else {
-                            // Xóa thông báo lỗi và trạng thái của trường giá
+
+                            // Kiểm tra validate cho trường giá khi tắt biến thể
                             const priceInput = document.querySelector('[name="price"]');
-                            if (priceInput) {
+                            if (priceInput && !priceInput.value.trim()) {
                                 const container = priceInput.closest('.input-group').parentElement;
+                                priceInput.classList.add('is-invalid');
+                                
+                                // Xóa feedback cũ nếu có
                                 container.querySelectorAll('.invalid-feedback, .valid-feedback').forEach(feedback => {
                                     feedback.remove();
                                 });
-                                priceInput.classList.remove('is-invalid', 'is-valid');
+                                
+                                // Thêm thông báo lỗi mới
+                                const errorDiv = document.createElement('div');
+                                errorDiv.className = 'invalid-feedback d-block';
+                                errorDiv.textContent = 'Giá sản phẩm là bắt buộc';
+                                container.appendChild(errorDiv);
                             }
                         }
                     });
@@ -161,6 +169,10 @@
                 const values = [];
                 let hasValue = false;
 
+                // Xóa tất cả thông báo lỗi cũ
+                document.querySelectorAll('.error-message').forEach(el => el.remove());
+                document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
                 // Kiểm tra xem có ít nhất một biến thể được chọn
                 variantSelects.forEach(select => {
                     const valueId = select.value;
@@ -181,33 +193,35 @@
                     return;
                 }
 
-                const skuInput = document.getElementById('variant-sku');
+                const variantSkuInput = document.getElementById('variant-sku');
                 const variantPriceInput = document.getElementById('variant-price');
+                const variantQuantityInput = document.getElementById('variant-quantity');
                 
-                if (!skuInput || !variantPriceInput) {
-                    console.error('Không tìm thấy input SKU hoặc giá');
+                if (!variantSkuInput || !variantPriceInput || !variantQuantityInput) {
+                    console.error('Không tìm thấy input SKU, giá hoặc số lượng');
                     return;
                 }
 
-                const sku = skuInput.value.trim();
+                const sku = variantSkuInput.value.trim();
                 const price = variantPriceInput.value;
+                const quantity = variantQuantityInput.value;
 
                 // Validate SKU và giá
                 let isValid = true;
 
                 if (!sku) {
-                    skuInput.classList.add('is-invalid');
+                    variantSkuInput.classList.add('is-invalid');
                     const errorDiv = document.createElement('small');
                     errorDiv.className = 'error-message text-danger d-block mt-1';
                     errorDiv.textContent = 'Vui lòng nhập mã SKU';
-                    skuInput.parentElement.appendChild(errorDiv);
+                    variantSkuInput.parentElement.appendChild(errorDiv);
                     isValid = false;
                 } else if (selectedVariants.some(v => v.sku === sku)) {
-                    skuInput.classList.add('is-invalid');
+                    variantSkuInput.classList.add('is-invalid');
                     const errorDiv = document.createElement('small');
                     errorDiv.className = 'error-message text-danger d-block mt-1';
                     errorDiv.textContent = 'Mã SKU này đã tồn tại';
-                    skuInput.parentElement.appendChild(errorDiv);
+                    variantSkuInput.parentElement.appendChild(errorDiv);
                     isValid = false;
                 }
 
@@ -229,34 +243,58 @@
                     isValid = false;
                 }
 
-                // Kiểm tra trùng lặp biến thể
-                const isDuplicateVariant = selectedVariants.some(existingVariant => {
-                    const existingValues = existingVariant.values.filter(v => v).sort().join(',');
-                    const newValues = values.filter(v => v).sort().join(',');
-                    return existingValues === newValues;
-                });
-
-                if (isDuplicateVariant) {
-                    variantSelects.forEach(select => {
-                        select.classList.add('is-invalid');
-                        const errorDiv = document.createElement('small');
-                        errorDiv.className = 'error-message text-danger d-block mt-1';
-                        errorDiv.textContent = 'Biến thể này đã tồn tại';
-                        select.parentElement.appendChild(errorDiv);
-                    });
+                if (!quantity || parseFloat(quantity) < 0) {
+                    variantQuantityInput.classList.add('is-invalid');
+                    const errorDiv = document.createElement('small');
+                    errorDiv.className = 'error-message text-danger d-block mt-1';
+                    errorDiv.textContent = 'Số lượng phải là số dương';
+                    const inputGroup = variantQuantityInput.closest('.input-group');
+                    inputGroup.parentElement.appendChild(errorDiv);
                     isValid = false;
+                }
+
+                // Kiểm tra trùng lặp biến thể - chỉ so sánh các giá trị đã chọn
+                const selectedValues = values.filter(v => v); // Lọc ra các giá trị đã chọn
+                if (selectedValues.length > 0) { // Chỉ kiểm tra nếu có ít nhất 1 giá trị được chọn
+                    const isDuplicateVariant = selectedVariants.some(existingVariant => {
+                        // Lấy các giá trị không rỗng từ biến thể hiện tại và biến thể đã tồn tại
+                        const existingSelectedValues = existingVariant.values.filter(v => v);
+                        
+                        // Chỉ coi là trùng khi số lượng giá trị đã chọn bằng nhau và tất cả các giá trị đều giống nhau
+                        if (existingSelectedValues.length === selectedValues.length) {
+                            // Sắp xếp và so sánh từng giá trị
+                            const sortedExisting = [...existingSelectedValues].sort();
+                            const sortedNew = [...selectedValues].sort();
+                            return sortedExisting.every((value, index) => value === sortedNew[index]);
+                        }
+                        return false;
+                    });
+
+                    if (isDuplicateVariant) {
+                        variantSelects.forEach(select => {
+                            if (select.value) { // Chỉ hiển thị lỗi trên các select đã chọn
+                                select.classList.add('is-invalid');
+                                const errorDiv = document.createElement('small');
+                                errorDiv.className = 'error-message text-danger d-block mt-1';
+                                errorDiv.textContent = 'Biến thể này đã tồn tại';
+                                select.parentElement.appendChild(errorDiv);
+                            }
+                        });
+                        isValid = false;
+                    }
                 }
 
                 if (!isValid) return;
 
                 // Thêm biến thể mới
-                const variant = { sku, price, values };
+                const variant = { sku, price, quantity, values };
                 selectedVariants.push(variant);
                 displayVariant(variant);
 
                 // Reset form
-                skuInput.value = '';
+                variantSkuInput.value = '';
                 variantPriceInput.value = '';
+                variantQuantityInput.value = '';
                 variantSelects.forEach(select => {
                     select.value = '';
                     select.classList.remove('is-invalid');
@@ -460,6 +498,18 @@
                 });
             });
 
+            // Thêm event listener cho các select biến thể
+            document.querySelectorAll('.variant-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    // Xóa thông báo lỗi khi thay đổi giá trị
+                    this.classList.remove('is-invalid');
+                    const errorMessage = this.parentElement.querySelector('.error-message');
+                    if (errorMessage) {
+                        errorMessage.remove();
+                    }
+                });
+            });
+
             // Hiển thị biến thể
             function displayVariant(variant) {
                 const variantElement = document.createElement('div');
@@ -492,35 +542,49 @@
                     .map(v => `${v.name}: ${v.value}`)
                     .join(' - ');
 
-                variantElement.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="mb-0">Biến thể #${selectedVariants.length}</h6>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="removeVariant('${variantId}')">
-                            <i class="bi bi-trash me-2"></i>Xóa
-                        </button>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label class="form-label">SKU</label>
-                            <p class="mb-0">${variant.sku}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Giá</label>
-                            <p class="mb-0">${parseInt(variant.price).toLocaleString('vi-VN')} VNĐ</p>
-                        </div>
-                        <div class="col-md-6">
-                            ${variantDisplay ? `
-                                <label class="form-label">Biến thể</label>
-                                <p class="mb-0">${variantDisplay}</p>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <input type="hidden" name="variants[${selectedVariants.length - 1}][sku]" value="${variant.sku}">
-                    <input type="hidden" name="variants[${selectedVariants.length - 1}][price]" value="${variant.price}">
-                    ${variant.values.map((value, index) => 
-                        value ? `<input type="hidden" name="variants[${selectedVariants.length - 1}][values][]" value="${value}">` : ''
-                    ).join('')}
-                `;
+                variantElement.innerHTML = 
+                    '<div class="variant-preview p-3 bg-light border rounded mb-3">' +
+                        '<div class="d-flex justify-content-between align-items-center mb-3">' +
+                            '<h6 class="mb-0 text-primary">Biến thể #' + selectedVariants.length + '</h6>' +
+                            '<button type="button" class="btn btn-soft-danger btn-sm" onclick="removeVariant(\'' + variantId + '\')">' +
+                                '<i class="fas fa-trash me-1"></i>Xóa' +
+                            '</button>' +
+                        '</div>' +
+                        '<div class="row g-3">' +
+                            '<div class="col-md-2">' +
+                                '<div class="variant-info">' +
+                                    '<label class="form-label text-muted mb-1">SKU</label>' +
+                                    '<p class="mb-0 fw-medium">' + variant.sku + '</p>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="col-md-2">' +
+                                '<div class="variant-info">' +
+                                    '<label class="form-label text-muted mb-1">Giá</label>' +
+                                    '<p class="mb-0 fw-medium">' + parseInt(variant.price).toLocaleString('vi-VN') + ' VNĐ</p>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="col-md-2">' +
+                                '<div class="variant-info">' +
+                                    '<label class="form-label text-muted mb-1">Số lượng</label>' +
+                                    '<p class="mb-0 fw-medium">' + variant.quantity + '</p>' +
+                                '</div>' +
+                            '</div>' +
+                            (variantDisplay ? 
+                                '<div class="col-md-6">' +
+                                    '<div class="variant-info">' +
+                                        '<label class="form-label text-muted mb-1">Thông tin biến thể</label>' +
+                                        '<p class="mb-0 fw-medium">' + variantDisplay + '</p>' +
+                                    '</div>' +
+                                '</div>' : ''
+                            ) +
+                        '</div>' +
+                    '</div>' +
+                    '<input type="hidden" name="variants[' + (selectedVariants.length - 1) + '][sku]" value="' + variant.sku + '">' +
+                    '<input type="hidden" name="variants[' + (selectedVariants.length - 1) + '][price]" value="' + variant.price + '">' +
+                    '<input type="hidden" name="variants[' + (selectedVariants.length - 1) + '][quantity]" value="' + variant.quantity + '">' +
+                    variant.values.map((value, index) => 
+                        value ? '<input type="hidden" name="variants[' + (selectedVariants.length - 1) + '][values][]" value="' + value + '">' : ''
+                    ).join('');
 
                 const variantsContainer = document.getElementById('variants-container');
                 if (variantsContainer) {

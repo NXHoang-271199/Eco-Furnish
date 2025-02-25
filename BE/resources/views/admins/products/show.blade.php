@@ -142,7 +142,7 @@
                                             </div>
                                         </div>
                                         <div class="tab-pane fade" id="nav-variants" role="tabpanel">
-                                            @if($product->variants->count() > 0)
+                                            @if($product->variants->isNotEmpty())
                                                 <div class="table-responsive">
                                                     <table class="table mb-0">
                                                         <thead>
@@ -150,14 +150,12 @@
                                                                 <th>Mã SKU</th>
                                                                 <th>Biến thể</th>
                                                                 <th>Giá</th>
+                                                                <th>Số lượng</th>
                                                                 <th>Trạng thái</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            @php
-                                                                $groupedVariants = $product->variants->groupBy('sku');
-                                                            @endphp
-                                                            @foreach($groupedVariants as $sku => $variants)
+                                                            @foreach($product->variants->groupBy('sku') as $sku => $variants)
                                                                 @php
                                                                     $variantDetails = [];
                                                                     foreach ($variants as $variant) {
@@ -170,6 +168,7 @@
                                                                     <td>{{ $sku }}</td>
                                                                     <td>{{ implode(' - ', $variantDetails) }}</td>
                                                                     <td>{{ number_format($variants->first()->price) }} VNĐ</td>
+                                                                    <td>{{ number_format($variants->first()->quantity) }}</td>
                                                                     <td>
                                                                         @if($variants->first()->status)
                                                                             <span class="badge bg-success-subtle text-success">Đang bán</span>

@@ -150,9 +150,9 @@
                                                 </td>
                                                 <td>{{ $product->category_name }}</td>
                                                 <td data-original-price="{{ $product->price }}" 
-                                                    @if($product->variants->count() > 0)
-                                                    data-min-variant-price="{{ $product->variants->min('price') }}"
-                                                    data-max-variant-price="{{ $product->variants->max('price') }}"
+                                                    @if($product->variants()->whereNull('deleted_at')->count() > 0)
+                                                    data-min-variant-price="{{ $product->variants()->whereNull('deleted_at')->min('price') }}"
+                                                    data-max-variant-price="{{ $product->variants()->whereNull('deleted_at')->max('price') }}"
                                                     @endif>
                                                     <div>
                                                         @if($product->discount_price)
@@ -166,12 +166,12 @@
                                                             <strong>Giá gốc: {{ number_format($product->price) }} VNĐ</strong>
                                                         @endif
                                                     </div>
-                                                    @if($product->variants->count() > 0)
+                                                    @if($product->variants()->whereNull('deleted_at')->count() > 0)
                                                         <div class="mt-2">
                                                             <strong>Giá biến thể:</strong> 
                                                             @php
-                                                                $minPrice = $product->variants->min('price');
-                                                                $maxPrice = $product->variants->max('price');
+                                                                $minPrice = $product->variants()->whereNull('deleted_at')->min('price');
+                                                                $maxPrice = $product->variants()->whereNull('deleted_at')->max('price');
                                                             @endphp
                                                             @if($minPrice === $maxPrice)
                                                                 {{ number_format($minPrice) }} VNĐ

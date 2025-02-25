@@ -46,12 +46,34 @@ class VariantController extends Controller
         try {
             DB::beginTransaction();
 
-            Variant::create($request->validated());
+            // Kiểm tra biến thể đã tồn tại (kể cả trong thùng rác)
+            $existingVariant = Variant::withTrashed()
+                ->where('name', $request->name)
+                ->first();
+
+            if ($existingVariant) {
+                if ($existingVariant->trashed()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tên biến thể đã tồn tại và hiện đang ở trong thùng rác, xin vui lòng khôi phục lại',
+                        'variant_in_trash' => true,
+                        'variant_id' => $existingVariant->id
+                    ], 422);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tên biến thể đã tồn tại'
+                    ], 422);
+                }
+            }
+
+            $variant = Variant::create($request->validated());
 
             DB::commit();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Biến thể đã được tạo thành công',
+                'message' => 'Thêm biến thể thành công',
                 'redirect' => route('variants.index')
             ]);
         } catch (\Exception $e) {
@@ -59,7 +81,7 @@ class VariantController extends Controller
             Log::error('Error creating variant: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Có lỗi xảy ra khi tạo biến thể: ' . $e->getMessage()
+                'message' => 'Có lỗi xảy ra khi thêm biến thể: ' . $e->getMessage()
             ], 500);
         }
     }

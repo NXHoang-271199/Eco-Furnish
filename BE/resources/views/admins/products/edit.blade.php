@@ -34,6 +34,11 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
+                        <label class="form-label" for="product_code">Mã sản phẩm</label>
+                        <input type="text" class="form-control" id="product_code" name="product_code" 
+                            value="{{ $product->product_code }}" readonly>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label" for="name">Tên sản phẩm <span class="text-danger">*</span></label>
                         <input type="text" class="form-control @error('name') is-invalid @enderror" 
                             id="name" name="name" value="{{ old('name', $product->name) }}" required>

@@ -25,14 +25,15 @@ class StoreProductRequest extends FormRequest
             'name' => 'required|string|max:255',
             'product_code' => 'nullable|string|max:50|unique:products',
             'category_id' => 'required|exists:categories,id',
-            'price' => 'required_without:variants|numeric|min:0|max:999999999',
+            'price' => 'required_without:variants|required|numeric|min:0|max:999999999',
             'discount_price' => 'nullable|numeric|min:0|max:999999999',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string', 
             'image_thumnail' => 'required|image|mimes:jpeg,png,jpg,gif|max:30720',
             'gallery.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:30720',
             'variants' => 'array|nullable',
             'variants.*.sku' => 'required_with:variants|string|max:50|distinct',
             'variants.*.price' => 'required_with:variants|numeric|min:0|max:999999999',
+            'variants.*.quantity' => 'required_with:variants|numeric|min:0|max:999999999',
             'variants.*.values' => 'required_with:variants|array',
             'variants.*.values.*' => 'exists:variant_values,id'
         ];
@@ -48,6 +49,7 @@ class StoreProductRequest extends FormRequest
             'category_id.required' => 'Danh mục là bắt buộc',
             'category_id.exists' => 'Danh mục không tồn tại',
             'price.required_without' => 'Giá sản phẩm là bắt buộc nếu không có biến thể',
+            'price.required' => 'Giá sản phẩm là bắt buộc',
             'price.numeric' => 'Giá sản phẩm phải là số',
             'price.min' => 'Giá sản phẩm phải lớn hơn 0',
             'price.max' => 'Giá sản phẩm không được vượt quá 999,999,999 VNĐ',
@@ -67,6 +69,9 @@ class StoreProductRequest extends FormRequest
             'variants.*.price.numeric' => 'Giá biến thể phải là số',
             'variants.*.price.min' => 'Giá biến thể phải lớn hơn 0',
             'variants.*.price.max' => 'Giá biến thể không được vượt quá 999,999,999 VNĐ',
+            'variants.*.quantity.required_with' => 'Số lượng là bắt buộc cho mỗi biến thể',
+            'variants.*.quantity.numeric' => 'Số lượng biến thể phải là số',
+            'variants.*.quantity.min' => 'Số lượng biến thể không được nhỏ hơn 0',
             'variants.*.values.required_with' => 'Giá trị biến thể là bắt buộc',
             'variants.*.values.*.exists' => 'Giá trị biến thể không tồn tại'
         ];
