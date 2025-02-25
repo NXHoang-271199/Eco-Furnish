@@ -110,7 +110,7 @@ const Header = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/blogs" className="hover:text-yellow-400">
+                <Link to="/blog" className="hover:text-yellow-400">
                   Blog
                 </Link>
               </li>
@@ -131,7 +131,7 @@ const Header = () => {
             <Link to="/cart">
               <IoCartOutline />
             </Link>
-            <Link to="/auth/login">
+            <Link to="/signin">
               <AiOutlineUser />
             </Link>
           </div>
