@@ -267,8 +267,10 @@
                                 <div class="ms-2">
                                     <select name="status" class="form-control">
                                         <option value="">-- Chọn trạng thái --</option>
-                                        <option value="1">Đã duyệt</option>
-                                        <option value="0">Chưa duyệt</option>
+                                        <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>Đã duyệt
+                                        </option>
+                                        <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>Chưa duyệt
+                                        </option>
                                     </select>
                                 </div>
                                 <div class="d-flex justify-content-start ms-2">
@@ -293,8 +295,9 @@
                                     </div>
                                     <div class="col-xxl-9 col-lg-7">
                                         <p class="mb-2 text-primary text-uppercase">
-                                            {{ $post->categoryPost->title }}
+                                            {{ $post->categoryPost?->title ?? 'Không có chuyên mục' }}
                                         </p>
+
 
                                         <a href="{{ route('posts.show', $post->id) }}">
                                             <h5 class="fs-15 fw-semibold">{{ $post->title }}</h5>

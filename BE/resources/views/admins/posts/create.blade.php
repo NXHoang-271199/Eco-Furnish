@@ -86,6 +86,8 @@
 
 @section('JS')
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="{{ asset('assets/admins/js/pages/form-validation.init.js') }}"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Khởi tạo toolbar với nút upload ảnh
@@ -180,7 +182,7 @@
                 quill.insertEmbed(range.index, 'image', '/path/to/placeholder-image.jpg');
 
                 // Gửi request lên server
-                fetch('{{ route('upload.image') }}', {
+                fetch('upload-image-route', {
                         method: 'POST',
                         body: formData
                     })
@@ -202,12 +204,104 @@
                     });
             }
 
-            // Cập nhật nội dung vào trường ẩn khi submit form
+            // Lấy form
             var form = document.querySelector('form');
-            form.addEventListener('submit', function() {
+
+            // Validate Quill Editor khi có thay đổi
+            quill.on('text-change', function() {
+                var editorContent = quill.root.innerHTML;
+                document.getElementById('content').value = editorContent;
+
+                // Kiểm tra nội dung (bỏ qua các thẻ HTML trống)
+                var textOnly = quill.getText().trim();
+                var editorContainer = document.getElementById('editor-container');
+
+                if (textOnly.length > 0) {
+                    editorContainer.classList.remove('is-invalid');
+                    editorContainer.classList.add('is-valid');
+                } else {
+                    editorContainer.classList.remove('is-valid');
+                    editorContainer.classList.add('is-invalid');
+                }
+            });
+
+            // Validate file ảnh bìa
+            var thumbnailInput = document.getElementById('project-thumbnail-img');
+            thumbnailInput.addEventListener('change', function(event) {
+                previewImage(event);
+
+                if (thumbnailInput.files && thumbnailInput.files.length > 0) {
+                    thumbnailInput.classList.remove('is-invalid');
+                    thumbnailInput.classList.add('is-valid');
+                    // Cập nhật trạng thái valid cho container của file upload
+                    document.querySelector('.file-upload-wrapper').classList.remove('is-invalid');
+                    document.querySelector('.file-upload-wrapper').classList.add('is-valid');
+                } else {
+                    thumbnailInput.classList.remove('is-valid');
+                    thumbnailInput.classList.add('is-invalid');
+                    // Cập nhật trạng thái invalid cho container của file upload
+                    document.querySelector('.file-upload-wrapper').classList.remove('is-valid');
+                    document.querySelector('.file-upload-wrapper').classList.add('is-invalid');
+                }
+            });
+
+            // Validate các trường input, select, textarea thông thường
+            form.querySelectorAll('input:not([type="file"]), select, textarea').forEach(function(input) {
+                input.addEventListener('input', function() {
+                    if (input.checkValidity()) {
+                        input.classList.remove('is-invalid');
+                        input.classList.add('is-valid');
+                    } else {
+                        input.classList.remove('is-valid');
+                        input.classList.add('is-invalid');
+                    }
+                });
+            });
+
+            // Cập nhật nội dung vào trường ẩn khi submit form
+            form.addEventListener('submit', function(event) {
+                // Cập nhật nội dung Quill vào trường ẩn
                 var content = quill.root.innerHTML;
                 document.getElementById('content').value = content;
+
+                // Validate tất cả các trường trước khi submit
+                var isValid = true;
+
+                // Kiểm tra nội dung Quill
+                var textOnly = quill.getText().trim();
+                var editorContainer = document.getElementById('editor-container');
+                if (textOnly.length === 0) {
+                    editorContainer.classList.add('is-invalid');
+                    isValid = false;
+                }
+
+                // Kiểm tra file ảnh bìa
+                if (!thumbnailInput.files || thumbnailInput.files.length === 0) {
+                    thumbnailInput.classList.add('is-invalid');
+                    document.querySelector('.file-upload-wrapper').classList.add('is-invalid');
+                    isValid = false;
+                }
+
+                // Nếu có lỗi, ngăn form submit
+                if (!isValid) {
+                    event.preventDefault();
+                }
             });
+
+            // Hàm hiển thị ảnh preview
+            function previewImage(event) {
+                var input = event.target;
+                var preview = document.getElementById('thumbnail-preview');
+
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
         });
 
         function previewImage(event) {
@@ -249,25 +343,38 @@
             </div>
         </div>
         <div class="row">
-            <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data" class="d-flex">
+            <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data" class="d-flex"
+                class="needs-validation" novalidate>
                 @csrf
                 <meta name="csrf-token" content="{{ csrf_token() }}">
                 <div class="col-lg-8 mx-1">
                     <div class="card">
                         <div class="card-body">
                             <div class="mb-3">
-                                <input type="text" class="form-control" id="project-title-input"
-                                    placeholder="Nhập tiêu đề...." name="title" value="{{ old('title') }}"
-                                    style="font-size: 23px;">
-                                @error('title')
-                                    <div class="text-danger small">{{ $message }}</div>
-                                @enderror
+                                <input type="text" class="form-control @error('title') is-invalid @enderror"
+                                    id="project-title-input" placeholder="Nhập tiêu đề...." name="title"
+                                    value="{{ old('title') }}" style="font-size: 23px;" required>
+                                <div class="invalid-feedback">
+                                    @error('title')
+                                        {{ $message }}
+                                    @else
+                                        Vui nhập tên bài viết.
+                                    @enderror
+                                </div>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label" for="content">Nội dung</label>
-                                <div id="editor-container" class="quill-editor"></div>
-                                <input type="hidden" name="content" id="content" value="{{ old('content') }}">
+                                <div id="editor-container" class="quill-editor @error('content') is-invalid @enderror">
+                                </div>
+                                <input type="hidden" name="content" id="content" value="{{ old('content') }}" required>
+                                <div class="invalid-feedback">
+                                    @error('content')
+                                        {{ $message }}
+                                    @else
+                                        Vui nhập nôi dung bài viết.
+                                    @enderror
+                                </div>
                             </div>
                             <div class="text-end mb-4">
                                 <button type="submit" class="btn btn-success w-sm">Tạo bài viết</button>
@@ -284,7 +391,8 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label for="choices-categories-input" class="form-label">Chuyên mục</label>
-                                <select class="form-select" id="choices-categories-input" name="category_id">
+                                <select class="form-select @error('category_id') is-invalid @enderror"
+                                    id="choices-categories-input" name="category_id" required>
                                     <option value="" selected></option>
                                     @foreach ($listCategoryPost as $category)
                                         <option value="{{ $category->id }}"
@@ -293,9 +401,13 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                @error('category_id')
-                                    <div class="text-danger small">{{ $message }}</div>
-                                @enderror
+                                <div class="invalid-feedback">
+                                    @error('category_id')
+                                        {{ $message }}
+                                    @else
+                                        Chọn chuyên mục.
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                         <div class="card-body">
@@ -315,6 +427,29 @@
                     </div>
 
                     <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Trạng thái</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="post-status" class="form-label">Trạng thái bài viết</label>
+                                <select class="form-select @error('status') is-invalid @enderror" name="status"
+                                    id="post-status" required>
+                                    <option value="1" {{ old('status') == '1' ? 'selected' : '' }}>Xuất bản</option>
+                                    <option value="0" {{ old('status') == '0' ? 'selected' : '' }}>Chưa xuất bản</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    @error('status')
+                                        {{ $message }}
+                                    @else
+                                        Vui lòng chọn trạng thái.
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label" for="project-thumbnail-img">Ảnh bìa</label>
@@ -325,7 +460,14 @@
                                     </label>
                                     <input class="form-control" id="project-thumbnail-img" type="file"
                                         accept="image/png, image/gif, image/jpeg" name="image_thumbnail"
-                                        onchange="previewImage(event)">
+                                        onchange="previewImage(event)" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    @error('image_thumbnail')
+                                        {{ $message }}
+                                    @else
+                                        Chọn ảnh
+                                    @enderror
                                 </div>
                             </div>
                             <!-- Hiển thị ảnh bìa đã chọn -->

@@ -19,65 +19,78 @@
 @endsection
 
 @section('JS')
+    <script src="{{ asset('assets/admins/js/pages/form-validation.init.js') }}"></script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const form = document.getElementById("category-form");
 
             form.addEventListener("submit", function(event) {
-                event.preventDefault(); // Ngăn chặn reload trang mặc định
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                } else {
+                    event.preventDefault(); // Chỉ chặn nếu gửi bằng fetch API
+                    const formData = new FormData(this);
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML =
+                        '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';
 
-                const formData = new FormData(this);
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML =
-                    '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+                    fetch(this.action, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: 'Thành công!',
+                                    text: 'Thêm vai trò thành công',
+                                    icon: 'success',
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                }).then(() => {
+                                    window.location.href = '/admin/roles';
+                                });
+                            } else {
+                                document.querySelectorAll('.text-danger').forEach(el => el.remove());
+                                Object.keys(data.errors || {}).forEach(key => {
+                                    const input = document.querySelector(`[name="${key}"]`);
+                                    if (input) {
+                                        input.classList.add('is-invalid'); // Thêm dấu ❌
+                                        input.classList.remove('is-valid'); // Xóa dấu ✅
+                                        const errorDiv = document.createElement('div');
+                                        errorDiv.className = 'text-danger small';
+                                        errorDiv.textContent = data.errors[key][0];
+                                        input.parentNode.appendChild(errorDiv);
+                                    }
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        })
+                        .finally(() => {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                        });
+                }
+                form.classList.add("was-validated");
+            });
 
-                fetch(this.action, {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Hiển thị thông báo thành công
-                            Swal.fire({
-                                title: 'Thành công!',
-                                text: 'Thêm vai trò thành công',
-                                icon: 'success',
-                                showConfirmButton: false,
-                                timer: 1500
-                            }).then(() => {
-                                // Chuyển hướng sau khi hiển thị thông báo
-                                window.location.href = '/admin/roles';
-                            });
-                        } else {
-                            // Xóa các lỗi cũ trước khi hiển thị lỗi mới
-                            document.querySelectorAll('.text-danger').forEach(el => el.remove());
-
-                            // Hiển thị lỗi nếu có
-                            Object.keys(data.errors || {}).forEach(key => {
-                                const input = document.querySelector(`[name="${key}"]`);
-                                if (input) {
-                                    const errorDiv = document.createElement('div');
-                                    errorDiv.className = 'text-danger small';
-                                    errorDiv.textContent = data.errors[key][0];
-                                    input.parentNode.appendChild(errorDiv);
-                                }
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        const errorMessage = document.createElement('div');
-                        errorMessage.className = 'alert alert-danger mt-3';
-                        errorMessage.textContent = 'Có lỗi xảy ra khi thêm vai trò. Vui lòng thử lại.';
-                        form.insertBefore(errorMessage, form.firstChild);
-                    })
-                    .finally(() => {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalText;
-                    });
+            // Xóa lỗi khi người dùng nhập lại
+            document.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.checkValidity()) {
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    } else {
+                        this.classList.remove('is-valid');
+                        this.classList.add('is-invalid');
+                    }
+                });
             });
         });
     </script>
@@ -130,15 +143,21 @@
                         <h5>Thêm mới vai trò</h5>
                     </div>
                     <div class="card-body">
-                        <form id="category-form" action="{{ route('roles.store') }}" method="POST">
+                        <form id="category-form" action="{{ route('roles.store') }}" method="POST" class="needs-validation"
+                            novalidate>
                             @csrf
                             <div class="form-group">
                                 <label for="title">Tên vai trò</label>
-                                <input type="text" id="name" name="name" class="form-control"
-                                    placeholder="Nhập tên vai trò..." value="">
-                                @error('name')
-                                    <div class="text-danger small">{{ $message }}</div>
-                                @enderror
+                                <input type="text" id="name" name="name"
+                                    class="form-control @error('name') is-invalid @enderror"
+                                    placeholder="Nhập tên vai trò..." value="" required>
+                                <div class="invalid-feedback">
+                                    @error('name')
+                                        {{ $message }}
+                                    @else
+                                        Vui nhập tên vai trò.
+                                    @enderror
+                                </div>
                             </div>
                             <button type="submit" id="submit-btn" class="btn btn-success mt-3">
                                 <i class="ri-add-fill me-1 align-bottom"></i> Thêm mới vai trò

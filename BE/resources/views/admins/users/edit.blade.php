@@ -3,12 +3,15 @@
 @section('title')
     Cập nhật thông tin người dùng: {{ $singerUser->name }}
 @endsection
+
 @section('CSS')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/pnotify/5.2.0/PNotifyBrightTheme.min.css" rel="stylesheet">
 @endsection
+
 @section('JS')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pnotify/5.2.0/PNotify.min.js"></script>
 @endsection
+
 @section('content')
     <div class="container-fluid">
         <div class="row">
@@ -31,22 +34,27 @@
                 </div>
             </div>
         </div>
-        <div class="row mt-5">
-            <div class="col-xxl-3">
-                <div class="card mt-n5">
-                    <div class="card-body p-4">
-                        <form action="{{ route('users.update', $singerUser->id) }}" method="POST"
-                            enctype="multipart/form-data">
-                            @csrf
-                            @method('PUT')
+
+        <form action="{{ route('users.update', $singerUser->id) }}" method="POST" enctype="multipart/form-data"
+            class="needs-validation" novalidate>
+            @csrf
+            @method('PUT')
+            <div class="row">
+                <!-- Avatar Section -->
+                <div class="col-xxl-3 mt-5">
+                    <div class="card mt-n5">
+                        <div class="card-body p-4">
                             <div class="text-center">
-                                <div class="profile-user position-relative d-inline-block mx-auto  mb-4">
-                                    <img src="{{ Storage::url($singerUser->avatar) }}"
+                                <div class="profile-user position-relative d-inline-block mx-auto">
+                                    <img id="preview-image"
+                                        src="{{ $singerUser->avatar ? Storage::url($singerUser->avatar) : asset('path-to-default-avatar.png') }}"
                                         class="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
                                         alt="user-profile-image">
+
                                     <div class="avatar-xs p-0 rounded-circle profile-photo-edit">
-                                        <input id="profile-img-file-input" type="file" class="profile-img-file-input"
-                                            name="avatar">
+                                        <input id="profile-img-file-input" type="file"
+                                            class="profile-img-file-input @error('avatar') is-invalid @enderror"
+                                            name="avatar" accept="image/jpeg,image/png,image/jpg,image/gif">
                                         <label for="profile-img-file-input" class="profile-photo-edit avatar-xs">
                                             <span class="avatar-title rounded-circle bg-light text-body material-shadow">
                                                 <i class="ri-camera-fill"></i>
@@ -54,166 +62,167 @@
                                         </label>
                                     </div>
                                 </div>
-                                <h5 class="fs-16 mb-1">{{ $singerUser->name }}</h5>
-                                <p class="text-muted mb-0">{{ $singerUser->role->name }}</p>
+
+                                <div class="mb-4">
+                                    <h4 class="text-center mb-2">Avatar</h4>
+                                    @error('avatar')
+                                        <div class="invalid-feedback d-block text-danger">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted d-block mt-2">Cho phép JPG, JPEG, PNG hoặc GIF. Tối đa
+                                        2MB</small>
+                                </div>
                             </div>
+                        </div>
                     </div>
                 </div>
-                <!--end card-->
-            </div>
-            <!--end col-->
-            <div class="col-xxl-9">
-                <div class="card mt-xxl-n5">
-                    <div class="card-header">
-                        <ul class="nav nav-tabs-custom rounded card-header-tabs border-bottom-0" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link active" data-bs-toggle="tab" href="#personalDetails" role="tab"
-                                    aria-selected="true">
-                                    <i class="fas fa-home"></i> Chi tiết cá nhân
-                                </a>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link" data-bs-toggle="tab" href="#resetPassword" role="tab"
-                                    aria-selected="false" tabindex="-1">
-                                    <i class="far fa-user"></i> Reset mật khẩu
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="tab-content">
-                            <div class="tab-pane active" id="personalDetails" role="tabpanel">
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label for="firstnameInput" class="form-label">Tên người dùng</label>
-                                            <input type="text" class="form-control" id="firstnameInput"
-                                                placeholder="Enter your firstname" value="{{ $singerUser->name }}"
-                                                name="name">
-                                            @error('name')
-                                                <div class="text-danger small">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                    <!--end col-->
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label for="lastnameInput" class="form-label">Tuổi</label>
-                                            <input type="text" class="form-control" id="lastnameInput"
-                                                placeholder="Enter your lastname" value="{{ $singerUser->age }}"
-                                                name="age">
-                                            @error('age')
-                                                <div class="text-danger small">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                    <!--end col-->
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label for="emailInput" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="emailInput"
-                                                placeholder="Enter your email" value="{{ $singerUser->email }}"
-                                                name="email">
-                                            @error('email')
-                                                <div class="text-danger small">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                    <!--end col-->
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label for="JoiningdatInput" class="form-label">Ngày tham gia</label>
-                                            <input type="text" class="form-control flatpickr-input"
-                                                placeholder="{{ $singerUser->created_at }}" readonly="readonly">
-                                        </div>
-                                    </div>
-                                    <!--end col-->
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label for="countryInput" class="form-label">Phân quyền</label>
-                                            <select name="role_id" class="form-select" id="">
-                                                <option value="">Chưa phân quyền</option>
-                                                @foreach ($listRoles as $role)
-                                                    <option value="{{ $role->id }}"
-                                                        {{ $role->id == $singerUser->role_id ? 'selected' : '' }}>
-                                                        {{ $role->name }}</option>
-                                                @endforeach
-                                            </select>
-                                            @error('role_id')
-                                                <div class="text-danger small">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
 
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label for="isActiveSelect" class="form-label">Trạng thái</label>
-                                            <select name="is_active" class="form-select" id="isActiveSelect">
-                                                <option value="1"
-                                                    {{ old('is_active', $singerUser->is_active ?? 1) == 1 ? 'selected' : '' }}>
-                                                    Kích hoạt</option>
-                                                <option value="0"
-                                                    {{ old('is_active', $singerUser->is_active ?? 1) == 0 ? 'selected' : '' }}>
-                                                    Hủy kích hoạt</option>
-                                            </select>
-                                            @error('is_active')
-                                                <div class="text-danger small">{{ $message }}</div>
+                <!-- Form Fields Section -->
+                <div class="col-xxl-9">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Cập nhật người dùng</h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <!-- User Name -->
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="nameInput" class="form-label">Tên người dùng</label>
+                                        <input type="text" class="form-control @error('name') is-invalid @enderror"
+                                            id="nameInput" name="name" placeholder="Nhập tên người dùng"
+                                            value="{{ old('name', $singerUser->name) }}" required>
+                                        <div class="invalid-feedback">
+                                            @error('name')
+                                                {{ $message }}
+                                            @else
+                                                Vui lòng nhập tên người dùng.
                                             @enderror
                                         </div>
                                     </div>
-                                    <!--end col-->
-                                    <div class="col-lg-12">
-                                        <div class="mb-3">
-                                            <label for="countryInput" class="form-label">Địa chỉ</label>
-                                            <input type="text" class="form-control" id="countryInput"
-                                                placeholder="Country" value="{{ $singerUser->address }}" name="address">
-                                            @error('address')
-                                                <div class="text-danger small">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                    <!--end col-->
-                                    <div class="col-lg-12">
-                                        <div class="hstack gap-2 justify-content-end">
-                                            <button type="submit" class="btn btn-primary">Cập nhật</button>
-                                            <a href="{{ route('users.index') }}" type="button"
-                                                class="btn btn-soft-success">Hủy bỏ</a>
-                                        </div>
-                                    </div>
-                                    <!--end col-->
                                 </div>
-                                <!--end row-->
-                                </form>
-                            </div>
-                            <!--end tab-pane-->
-                            <div class="tab-pane" id="resetPassword" role="tabpanel">
-                                <form action="javascript:void(0);">
-                                    <div class="row g-2">
-                                        <div class="col-lg-4">
-                                            <div>
-                                                <label for="newpasswordInput" class="form-label">New Password*</label>
-                                                <input type="password" class="form-control" id="newpasswordInput"
-                                                    placeholder="Enter new password" value="123456">
-                                            </div>
+
+                                <!-- Age -->
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="ageInput" class="form-label">Tuổi</label>
+                                        <input type="number" class="form-control @error('age') is-invalid @enderror"
+                                            id="ageInput" name="age" placeholder="Nhập tuổi"
+                                            value="{{ old('age', $singerUser->age) }}" required>
+                                        <div class="invalid-feedback">
+                                            @error('age')
+                                                {{ $message }}
+                                            @else
+                                                Vui lòng nhập tuổi hợp lệ.
+                                            @enderror
                                         </div>
-                                        <div class="col-lg-12">
-                                            <div class="text-end">
-                                                <button type="submit" class="btn btn-success">Change Password</button>
-                                            </div>
-                                        </div>
-                                        <!--end col-->
                                     </div>
-                                    <!--end row-->
-                                </form>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="emailInput" class="form-label">Email</label>
+                                        <input type="email" class="form-control @error('email') is-invalid @enderror"
+                                            id="emailInput" name="email" placeholder="Nhập email"
+                                            value="{{ old('email', $singerUser->email) }}" required>
+                                        <div class="invalid-feedback">
+                                            @error('email')
+                                                {{ $message }}
+                                            @else
+                                                Vui lòng nhập email hợp lệ.
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Password -->
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="passwordInput" class="form-label">Mật khẩu</label>
+                                        <input type="password" class="form-control @error('password') is-invalid @enderror"
+                                            id="passwordInput" name="password" placeholder="Nhập mật khẩu">
+                                        <div class="invalid-feedback">
+                                            @error('password')
+                                                {{ $message }}
+                                            @else
+                                                Vui lòng nhập mật khẩu.
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Role -->
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="roleInput" class="form-label">Phân quyền</label>
+                                        <select name="role_id" class="form-select @error('role_id') is-invalid @enderror"
+                                            id="roleInput" required>
+                                            <option value="">Chọn phân quyền</option>
+                                            @foreach ($listRoles as $role)
+                                                <option value="{{ $role->id }}"
+                                                    {{ old('role_id', $singerUser->role_id) == $role->id ? 'selected' : '' }}>
+                                                    {{ $role->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        <div class="invalid-feedback">
+                                            @error('role_id')
+                                                {{ $message }}
+                                            @else
+                                                Vui lòng chọn phân quyền.
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="statusInput" class="form-label">Trạng thái</label>
+                                        <select name="is_active"
+                                            class="form-select @error('is_active') is-invalid @enderror" id="statusInput"
+                                            required>
+                                            <option value="1"
+                                                {{ old('is_active', $singerUser->is_active ?? 1) == 1 ? 'selected' : '' }}>
+                                                Kích hoạt</option>
+                                            <option value="0"
+                                                {{ old('is_active', $singerUser->is_active ?? 1) == 0 ? 'selected' : '' }}>
+                                                Hủy kích hoạt</option>
+                                        </select>
+                                        <div class="invalid-feedback">
+                                            @error('is_active')
+                                                {{ $message }}
+                                            @else
+                                                Vui lòng chọn trạng thái.
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Address -->
+                                <div class="col-lg-12">
+                                    <div class="mb-3">
+                                        <label for="addressInput" class="form-label">Địa chỉ</label>
+                                        <input type="text" class="form-control @error('address') is-invalid @enderror"
+                                            id="addressInput" name="address" placeholder="Nhập địa chỉ"
+                                            value="{{ old('address', $singerUser->address) }}" required>
+                                        <div class="invalid-feedback">
+                                            @error('address')
+                                                {{ $message }}
+                                            @else
+                                                Vui lòng nhập địa chỉ.
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div class="col-lg-12 text-end">
+                                    <button type="submit" class="btn btn-primary">Cập nhật</button>
+                                    <a href="{{ route('users.index') }}" class="btn btn-soft-secondary">Hủy bỏ</a>
+                                </div>
                             </div>
-                            <!--end tab-pane-->
                         </div>
                     </div>
                 </div>
             </div>
-            <!--end col-->
-        </div>
-        <!--end row-->
-
+        </form>
     </div>
 @endsection

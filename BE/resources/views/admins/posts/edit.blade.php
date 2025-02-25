@@ -151,6 +151,19 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
+
+        document.getElementById('project-thumbnail-img').addEventListener('change', function(event) {
+            var input = event.target;
+            var preview = document.querySelector('.image-container img'); // Ảnh hiển thị
+
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result; // Thay đổi ảnh hiển thị ngay lập tức
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        });
     </script>
 @endsection
 @section('CSS')
@@ -358,7 +371,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">Ảnh bìa</h5>
