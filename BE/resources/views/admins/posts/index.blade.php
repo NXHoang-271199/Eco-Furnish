@@ -267,10 +267,8 @@
                                 <div class="ms-2">
                                     <select name="status" class="form-control">
                                         <option value="">-- Chọn trạng thái --</option>
-                                        <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>Đã duyệt
-                                        </option>
-                                        <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>Chưa duyệt
-                                        </option>
+                                        <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>Đã duyệt</option>
+                                        <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>Chưa duyệt</option>
                                     </select>
                                 </div>
                                 <div class="d-flex justify-content-start ms-2">
@@ -297,7 +295,7 @@
                                         <p class="mb-2 text-primary text-uppercase">
                                             {{ $post->categoryPost?->title ?? 'Không có chuyên mục' }}
                                         </p>
-
+                                        
 
                                         <a href="{{ route('posts.show', $post->id) }}">
                                             <h5 class="fs-15 fw-semibold">{{ $post->title }}</h5>
@@ -347,7 +345,7 @@
                         </div>
 
                     @empty
-                        <p class="text-muted text-center">Không có bài viết đã duyệt.</p>
+                        <p class="text-muted text-center">Không có bài viết</p>
                     @endforelse
                 </div>
                 {{ $listPosts->appends(['tab' => 'baiviet'])->links('pagination::bootstrap-5') }}

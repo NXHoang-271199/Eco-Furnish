@@ -77,7 +77,7 @@ class PostController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(PostRequest $request)
-    {
+    {   
         $validated = $request->validated();
         $content = $request->input('content');
 
@@ -125,7 +125,7 @@ class PostController extends Controller
             'image_thumbnail' => $filePath,
             'category_post_id' => $validated['category_id'],
             'user_id' => $validated['user_id'],
-            'status' => '0',
+            'status' => $request->input('status'),
             'slug' => $slug,
         ]);
         return redirect()->route('posts.index')

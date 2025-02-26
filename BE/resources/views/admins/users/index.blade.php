@@ -106,7 +106,7 @@
                         </div><!-- end card header -->
 
                         @if (session('success'))
-                            <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow w-25"
+                            <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow"
                                 role="alert">
                                 <i class="ri-check-double-line me-3 align-middle"></i>
                                 <strong>{{ session('success') }}</strong>
@@ -116,7 +116,7 @@
                         @endif
 
                         @if (session('error'))
-                            <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow w-25"
+                            <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow"
                                 role="alert">
                                 <i class="ri-alert-line me-3 align-middle"></i> <strong>{{ session('error') }}</strong>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"

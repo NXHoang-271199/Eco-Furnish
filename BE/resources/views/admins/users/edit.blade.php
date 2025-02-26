@@ -10,6 +10,23 @@
 
 @section('JS')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pnotify/5.2.0/PNotify.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const input = document.getElementById("profile-img-file-input");
+            const previewImage = document.getElementById("preview-image");
+
+            input.addEventListener("change", function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result; // Cập nhật ảnh xem trước
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    </script>
 @endsection
 
 @section('content')
@@ -130,22 +147,6 @@
                                                 {{ $message }}
                                             @else
                                                 Vui lòng nhập email hợp lệ.
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Password -->
-                                <div class="col-lg-6">
-                                    <div class="mb-3">
-                                        <label for="passwordInput" class="form-label">Mật khẩu</label>
-                                        <input type="password" class="form-control @error('password') is-invalid @enderror"
-                                            id="passwordInput" name="password" placeholder="Nhập mật khẩu">
-                                        <div class="invalid-feedback">
-                                            @error('password')
-                                                {{ $message }}
-                                            @else
-                                                Vui lòng nhập mật khẩu.
                                             @enderror
                                         </div>
                                     </div>

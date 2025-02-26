@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('address', 255)->nullable();
             $table->string('avatar', 255)->nullable();
             $table->timestamp('email_verified_at')->nullable();
+            $table->string('remember_token', 100)->nullable();
             $table->string('access_token', 255)->nullable();
             $table->string('refresh_token', 255)->nullable();
             $table->boolean('is_active')->default(1);

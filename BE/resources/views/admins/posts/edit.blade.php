@@ -285,16 +285,6 @@
                 <div class="col-lg-8 mx-1">
                     <div class="card">
                         <div class="card-body">
-                            @if ($errors->any())
-                                <div class="alert alert-danger">
-                                    <ul class="mb-0">
-                                        @foreach ($errors->all() as $error)
-                                            <li>{{ $error }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
                             <div class="mb-3">
                                 <h1><input type="text" class="form-control" id="project-title-input"
                                         placeholder="Nhập tiêu đề...." name="title" value="{{ $singerPost->title }}"

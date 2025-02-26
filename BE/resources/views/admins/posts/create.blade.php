@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .quill-editor {
-            height: 450px;
+            height: 500px;
             background: #fff;
         }
 
@@ -18,6 +18,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
             width: 100%;
             background-color: #f8f9fa;
             border: 1px solid #dce0e3;
@@ -80,6 +81,25 @@
 
         .img-fluid {
             border-radius: 7px;
+        }
+
+        /* Thêm CSS cho thông báo lỗi */
+        .log_css {
+            display: none;
+            /* color: red; */
+            font-size: 12px;
+            margin-top: 5px;
+            text-align: center;
+            position: absolute;
+            bottom: -21px;
+            left: 22%;
+            transform: translateX(-50%);
+            width: 100%;
+        }
+
+        /* Hiển thị thông báo lỗi khi có lỗi */
+        .is-invalid+.log_css {
+            display: block;
         }
     </style>
 @endsection
@@ -258,36 +278,6 @@
                 });
             });
 
-            // Cập nhật nội dung vào trường ẩn khi submit form
-            form.addEventListener('submit', function(event) {
-                // Cập nhật nội dung Quill vào trường ẩn
-                var content = quill.root.innerHTML;
-                document.getElementById('content').value = content;
-
-                // Validate tất cả các trường trước khi submit
-                var isValid = true;
-
-                // Kiểm tra nội dung Quill
-                var textOnly = quill.getText().trim();
-                var editorContainer = document.getElementById('editor-container');
-                if (textOnly.length === 0) {
-                    editorContainer.classList.add('is-invalid');
-                    isValid = false;
-                }
-
-                // Kiểm tra file ảnh bìa
-                if (!thumbnailInput.files || thumbnailInput.files.length === 0) {
-                    thumbnailInput.classList.add('is-invalid');
-                    document.querySelector('.file-upload-wrapper').classList.add('is-invalid');
-                    isValid = false;
-                }
-
-                // Nếu có lỗi, ngăn form submit
-                if (!isValid) {
-                    event.preventDefault();
-                }
-            });
-
             // Hàm hiển thị ảnh preview
             function previewImage(event) {
                 var input = event.target;
@@ -436,7 +426,8 @@
                                 <select class="form-select @error('status') is-invalid @enderror" name="status"
                                     id="post-status" required>
                                     <option value="1" {{ old('status') == '1' ? 'selected' : '' }}>Xuất bản</option>
-                                    <option value="0" {{ old('status') == '0' ? 'selected' : '' }}>Chưa xuất bản</option>
+                                    <option value="0" {{ old('status') == '0' ? 'selected' : '' }}>Chưa xuất bản
+                                    </option>
                                 </select>
                                 <div class="invalid-feedback">
                                     @error('status')
@@ -458,26 +449,27 @@
                                         <i class="fas fa-cloud-upload-alt"></i>
                                         <span>Chọn ảnh bìa</span>
                                     </label>
-                                    <input class="form-control" id="project-thumbnail-img" type="file"
-                                        accept="image/png, image/gif, image/jpeg" name="image_thumbnail"
-                                        onchange="previewImage(event)" required>
+                                    <input class="form-control @error('image_thumbnail') is-invalid @enderror"
+                                        id="project-thumbnail-img" type="file" accept="image/png, image/gif, image/jpeg"
+                                        name="image_thumbnail" onchange="previewImage(event)" required>
+                                    <div class="invalid-feedback log_css">
+                                        @error('image_thumbnail')
+                                            {{ $message }}
+                                        @else
+                                            Chọn ảnh bìa hợp lệ (JPEG, PNG, JPG, GIF, tối đa 2MB).
+                                        @enderror
+                                    </div>
                                 </div>
-                                <div class="invalid-feedback">
-                                    @error('image_thumbnail')
-                                        {{ $message }}
-                                    @else
-                                        Chọn ảnh
-                                    @enderror
+                                <!-- Hiển thị ảnh bìa đã chọn -->
+                                <div class="mt-3">
+                                    <img id="thumbnail-preview"
+                                        src="{{ isset($post) ? asset($post->image_thumbnail) : '' }}" alt="Ảnh bìa"
+                                        class="img-fluid" style="display: {{ isset($post) ? 'block' : 'none' }};">
                                 </div>
-                            </div>
-                            <!-- Hiển thị ảnh bìa đã chọn -->
-                            <div class="mt-3">
-                                <img id="thumbnail-preview" src="{{ isset($post) ? asset($post->image_thumbnail) : '' }}"
-                                    alt="Ảnh bìa" class="img-fluid"
-                                    style="display: {{ isset($post) ? 'block' : 'none' }};">
                             </div>
                         </div>
                     </div>
+                </div>
             </form>
         </div>
     </div>
