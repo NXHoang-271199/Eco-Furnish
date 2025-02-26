@@ -33,6 +33,8 @@
     <link href="{{ asset('assets/admins/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- App Css-->
     <link href="{{ asset('assets/admins/css/app.min.css') }}" rel="stylesheet" type="text/css" />
+    {{-- toastify --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <!-- custom Css-->
     <link href="{{ asset('assets/admins/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
     @yield('CSS')
@@ -49,8 +51,10 @@
 
         <div class="main-content">
             <div class="page-content">
+                @include('components.alert')
 
                 @yield('content')
+
 
             </div>
 
@@ -60,6 +64,8 @@
     </div>
 
     {{-- Các đoạn script dùng chung --}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
     <script src="{{ asset('assets/admins/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/simplebar/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/node-waves/waves.min.js') }}"></script>
@@ -88,6 +94,8 @@
 
     <!-- App js -->
     <script src="{{ asset('assets/admins/js/app.js') }}"></script>
+    <!-- toastify -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
     @yield('JS')
 </body>

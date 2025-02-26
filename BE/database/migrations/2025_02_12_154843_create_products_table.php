@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('product_code', 255);
             $table->string('name', 255);
-            $table->unsignedBigInteger('category_id');
+            $table->integer('category_id');
             $table->text('image_thumnail');
             $table->decimal('price', 15, 2);
             $table->decimal('discount_price', 15, 2)->nullable();
@@ -24,7 +24,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
+            // $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
         });
     }
 
