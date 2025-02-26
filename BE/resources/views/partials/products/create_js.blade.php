@@ -131,24 +131,6 @@
                             if (variantsContainer) {
                                 variantsContainer.innerHTML = '';
                             }
-
-                            // Kiểm tra validate cho trường giá khi tắt biến thể
-                            const priceInput = document.querySelector('[name="price"]');
-                            if (priceInput && !priceInput.value.trim()) {
-                                const container = priceInput.closest('.input-group').parentElement;
-                                priceInput.classList.add('is-invalid');
-                                
-                                // Xóa feedback cũ nếu có
-                                container.querySelectorAll('.invalid-feedback, .valid-feedback').forEach(feedback => {
-                                    feedback.remove();
-                                });
-                                
-                                // Thêm thông báo lỗi mới
-                                const errorDiv = document.createElement('div');
-                                errorDiv.className = 'invalid-feedback d-block';
-                                errorDiv.textContent = 'Giá sản phẩm là bắt buộc';
-                                container.appendChild(errorDiv);
-                            }
                         }
                     });
                 }
@@ -475,13 +457,30 @@
                     
                     // Tìm container chứa feedback messages
                     let container = this.parentElement;
-                    if (fieldName === 'price') {
+                    if (fieldName === 'price' || fieldName === 'discount_price') {
                         container = this.closest('.input-group').parentElement;
                     }
                     
                     // Xóa tất cả feedback messages trong container
                     const feedbacks = container.querySelectorAll('.invalid-feedback, .valid-feedback');
                     feedbacks.forEach(feedback => feedback.remove());
+
+                    // Kiểm tra giá khuyến mãi không được lớn hơn giá gốc
+                    if (fieldName === 'price' || fieldName === 'discount_price') {
+                        const priceInput = document.querySelector('[name="price"]');
+                        const discountPriceInput = document.querySelector('[name="discount_price"]');
+                        
+                        if (priceInput && discountPriceInput && 
+                            priceInput.value && discountPriceInput.value && 
+                            parseFloat(discountPriceInput.value) >= parseFloat(priceInput.value)) {
+                            discountPriceInput.classList.add('is-invalid');
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'invalid-feedback d-block';
+                            errorDiv.textContent = 'Giá khuyến mãi phải nhỏ hơn giá gốc';
+                            discountPriceInput.closest('.input-group').parentElement.appendChild(errorDiv);
+                            return;
+                        }
+                    }
 
                     // Danh sách các trường bắt buộc cần hiển thị dấu tích
                     const requiredFields = ['name', 'category_id', 'price', 'image_thumnail'];

@@ -3,7 +3,7 @@
 @section('title', 'Danh sách danh mục')
 
 @section('CSS')
-    <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+
 @endsection
 
 @section('content')
