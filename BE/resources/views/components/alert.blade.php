@@ -4,7 +4,7 @@
             @if(session('success'))
                 Toastify({
                     text: "{{ session('success') }}",
-                    duration: 600,
+                    duration: 500,
                     close: true,
                     gravity: "top",
                     position: "right",
@@ -20,7 +20,7 @@
             @if(session('error'))
                 Toastify({
                     text: "{{ session('error') }}",
-                    duration: 600,
+                    duration: 1500,
                     close: true,
                     gravity: "top",
                     position: "right",
