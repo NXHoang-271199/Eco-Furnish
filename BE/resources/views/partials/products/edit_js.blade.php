@@ -198,6 +198,12 @@
                                     <input type="number" class="form-control" name="variants[${index}][price]" value="${existingVariant ? existingVariant.price : ''}" required min="0">
                                 </div>
                             </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Số lượng <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="variants[${index}][quantity]" value="${existingVariant ? existingVariant.quantity : ''}" required min="0">
+                                </div>
+                            </div>
                         </div>
                         <button type="button" class="btn btn-danger btn-sm mt-2 remove-variant">
                             <i class="fas fa-trash"></i> Xóa biến thể
@@ -226,6 +232,7 @@
                         groupedBySkuVariants[variant.sku] = {
                             sku: variant.sku,
                             price: variant.price,
+                            quantity: variant.quantity,
                             variant_values: {}
                         };
                     }
@@ -355,11 +362,12 @@
                     const variantData = {
                         sku: variantElement.find('input[name$="[sku]"]').val(),
                         price: variantElement.find('input[name$="[price]"]').val(),
+                        quantity: variantElement.find('input[name$="[quantity]"]').val(),
                         variant_values: {}
                     };
 
-                    // Kiểm tra SKU và giá
-                    if (!variantData.sku || !variantData.price) {
+                    // Kiểm tra SKU, giá và số lượng
+                    if (!variantData.sku || !variantData.price || !variantData.quantity) {
                         variantHasError = true;
                         if (!variantData.sku) {
                             const skuInput = variantElement.find('input[name$="[sku]"]');
@@ -370,6 +378,11 @@
                             const priceInput = variantElement.find('input[name$="[price]"]');
                             priceInput.addClass('is-invalid');
                             priceInput.after($('<div>').addClass('invalid-feedback d-block').text('Giá không được để trống'));
+                        }
+                        if (!variantData.quantity) {
+                            const quantityInput = variantElement.find('input[name$="[quantity]"]');
+                            quantityInput.addClass('is-invalid');
+                            quantityInput.after($('<div>').addClass('invalid-feedback d-block').text('Số lượng không được để trống'));
                         }
                         return false;
                     }
@@ -390,7 +403,7 @@
                 if (variantHasError) {
                     Swal.fire({
                         title: 'Lỗi!',
-                        text: 'Vui lòng điền SKU và giá cho biến thể!',
+                        text: 'Vui lòng điền SKU, giá và số lượng cho biến thể!',
                         icon: 'error',
                         confirmButtonText: 'Đóng'
                     });
@@ -419,6 +432,7 @@
                 variants.forEach((variant, index) => {
                     formData.append(`variants[${index}][sku]`, variant.sku);
                     formData.append(`variants[${index}][price]`, variant.price);
+                    formData.append(`variants[${index}][quantity]`, variant.quantity);
                     
                     Object.entries(variant.variant_values).forEach(([variantId, valueId]) => {
                         formData.append(`variants[${index}][variant_values][${variantId}]`, valueId);
@@ -452,9 +466,10 @@
                                 title: 'Thành công!',
                                 text: response.message,
                                 icon: 'success',
+                                showCancelButton: false,
                                 confirmButtonText: 'OK'
                             }).then((result) => {
-                                if (result.isConfirmed) {
+                                if (result.isConfirmed && response.redirect) {
                                     window.location.href = response.redirect;
                                 }
                             });
@@ -465,6 +480,8 @@
                                 icon: 'error',
                                 confirmButtonText: 'Đóng'
                             });
+                            submitBtn.prop('disabled', false);
+                            submitBtn.html(originalText);
                         }
                     },
                     error: function(xhr) {

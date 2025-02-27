@@ -15,6 +15,7 @@ class ProductVariant extends Model
         'variant_value_id',
         'sku',
         'price',
+        'quantity',
         'status'
     ];
     protected $casts = [

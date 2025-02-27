@@ -55,6 +55,9 @@ Route::prefix('admin')->group(function () {
         Route::resource('trash-categories', TrashController::class)->only(['index', 'update', 'destroy']);
         Route::resource('trash-variants', TrashController::class)->only(['index', 'update', 'destroy']);
         Route::resource('trash-variant-values', TrashController::class)->only(['index', 'update', 'destroy']);
+        Route::get('restore-variant/{id}', [VariantController::class, 'restore']);
+        Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
+        Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
     });
     // return view('admins.dashboard');
     // return view('admins.test');

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Variant;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreVariantRequest extends FormRequest
 {
@@ -14,7 +15,12 @@ class StoreVariantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:100|unique:variants,name'
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('variants', 'name')->whereNull('deleted_at')
+            ]
         ];
     }
 

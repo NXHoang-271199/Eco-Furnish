@@ -8,84 +8,6 @@
             vertical-align: middle !important;
         }
 
-        .logo.logo-light {
-            margin-top: 0 !important;
-            padding-top: 0 !important;
-            position: relative !important;
-            top: 0 !important;
-            left: 0 !important;
-        }
-
-        /* Specific fix for logo in create product page */
-        body:has(.form-container) .logo.logo-light {
-            margin-top: 20px !important;
-        }
-
-        /* Main content styles */
-        .page-content {
-            padding: 20px;
-        }
-
-        .form-container {
-            width: 100%;
-            padding: 0;
-            margin: 0;
-            transform: none;
-        }
-
-        /* Adjust form content size */
-        .card {
-            font-size: 14px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .card-header {
-            padding: 12px 15px;
-            background: linear-gradient(45deg, #3b7ddd, #2f69b8);
-            border-radius: 8px 8px 0 0;
-        }
-
-        .card-body {
-            padding: 15px;
-        }
-
-        .form-group {
-            margin-bottom: 12px;
-        }
-
-        .form-control, .form-select {
-            padding: 8px 12px;
-            font-size: 13px;
-        }
-
-        .btn {
-            padding: 8px 15px;
-            font-size: 13px;
-        }
-
-        /* Adjust spacing */
-        .mb-3 {
-            margin-bottom: 12px !important;
-        }
-
-        .mb-4 {
-            margin-bottom: 15px !important;
-        }
-
-        /* Gallery items */
-        .gallery-item {
-            width: 70px;
-            height: 70px;
-        }
-
-        #thumbnailPreview img {
-            max-width: 120px;
-            max-height: 120px;
-        }
-
-        /* Other existing styles */
         .variant-section {
             display: none;
             transition: all 0.3s ease;
@@ -354,7 +276,7 @@
             border: 1px solid #dee2e6;
             max-width: fit-content;
         }
-      
+
         #thumbnailPreview img {
             max-width: 150px;
             max-height: 150px;

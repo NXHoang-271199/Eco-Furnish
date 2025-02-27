@@ -14,7 +14,12 @@ class StoreVariantValueRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'value' => 'required|string|max:100'
+            'value' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('variant_values', 'value')->whereNull('deleted_at')
+            ]
         ];
     }
 

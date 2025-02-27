@@ -13,7 +13,7 @@ class VariantValue extends Model
 
     public function variant()
     {
-        return $this->belongsTo(Variant::class);
+        return $this->belongsTo(Variant::class)->withTrashed();
     }
 
     public function products()
