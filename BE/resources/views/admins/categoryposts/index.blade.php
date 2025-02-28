@@ -64,8 +64,8 @@
                     // Thêm input hidden để Laravel hiểu đây là PUT request
                     methodField.innerHTML = '<input type="hidden" name="_method" value="PUT">';
 
-                    // Đổi tiêu đề thành "Cập nhật danh mục"
-                    formTitle.textContent = "Cập nhật danh mục";
+                    // Đổi tiêu đề thành "Cập nhật chuyên mục"
+                    formTitle.textContent = "Cập nhật chuyên mục";
 
                     // Đổi nút thành "Cập nhật"
                     submitBtn.innerHTML = '<i class="fas fa-save me-1"></i> Cập nhật';
@@ -87,11 +87,11 @@
                 // Xóa input `_method` để Laravel hiểu đây là POST request
                 methodField.innerHTML = "";
 
-                // Đổi tiêu đề về "Thêm danh mục mới"
-                formTitle.textContent = "Thêm danh mục mới";
+                // Đổi tiêu đề về "Thêm chuyên mục mới"
+                formTitle.textContent = "Thêm chuyên mục mới";
 
-                // Đổi nút thành "Thêm danh mục"
-                submitBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Thêm danh mục';
+                // Đổi nút thành "Thêm chuyên mục"
+                submitBtn.innerHTML = '<i class="ri-add-fill me-1 align-bottom"></i> Thêm chuyên mục';
                 submitBtn.classList.remove("btn-warning");
                 submitBtn.classList.add("btn-success");
 
@@ -128,10 +128,23 @@
                 });
             });
         });
+        document.addEventListener("DOMContentLoaded", function() {
+            const titleInput = document.getElementById("title");
+
+            titleInput.addEventListener("input", function() {
+                let value = this.value.trim();
+
+                if (value.length > 0) {
+                    this.classList.remove("is-invalid");
+                    this.classList.add("is-valid"); // Velzon sẽ tự động hiển thị dấu tick xanh
+                } else {
+                    this.classList.remove("is-valid");
+                    this.classList.add("is-invalid");
+                }
+            });
+        });
     </script>
 @endsection
-
-
 
 @section('content')
     <div class="container-fluid">
@@ -155,20 +168,6 @@
                 </div>
             </div>
         </div>
-        @if (session('success'))
-            <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow" role="alert">
-                <i class="ri-check-double-line me-3 align-middle"></i>
-                <strong>{{ session('success') }}</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
-        @if (session('error'))
-            <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow" role="alert">
-                <i class="ri-alert-line me-3 align-middle"></i> <strong>{{ session('error') }}</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
         <!-- end page title -->
 
         <div class="row">
@@ -176,25 +175,31 @@
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5>Thêm danh mục mới</h5>
+                        <h5>Thêm chuyên mục mới</h5>
                     </div>
                     <div class="card-body">
-                        <form id="category-form" action="{{ route('category-posts.store') }}" method="POST">
+                        <form id="category-form" action="{{ route('category-posts.store') }}" method="POST"
+                            class="needs-validation" novalidate>
                             @csrf
                             <input type="hidden" id="category-id" name="id">
 
                             <div id="method-field"></div>
 
                             <div class="form-group">
-                                <label for="title">Tên danh mục</label>
-                                <input type="text" id="title" name="title" class="form-control"
-                                    placeholder="Nhập tên danh mục">
-                                @error('title')
-                                    <div class="text-danger small">{{ $message }}</div>
-                                @enderror
+                                <label for="title">Tên chuyên mục</label>
+                                <input type="text" id="title" name="title"
+                                    class="form-control @error('title') is-invalid @enderror"
+                                    placeholder="Nhập tên chuyên mục" required>
+                                <div class="invalid-feedback">
+                                    @error('title')
+                                        {{ $message }}
+                                    @else
+                                        Vui nhập tên chuyên mục.
+                                    @enderror
+                                </div>
                             </div>
                             <button type="submit" id="submit-btn" class="btn btn-success mt-3">
-                                <i class="ri-add-fill me-1 align-bottom"></i> Thêm danh mục
+                                <i class="ri-add-fill me-1 align-bottom"></i> Thêm chuyên mục
                             </button>
 
                             <button type="button" id="cancel-btn" class="btn btn-secondary mt-3 d-none">Hủy</button>
@@ -255,4 +260,6 @@
         </div>
 
     </div>
+
+    <x-alert />
 @endsection

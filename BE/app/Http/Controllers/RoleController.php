@@ -23,8 +23,8 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $users = User::with('role')->paginate(10);
-        return view('admins.roles.create', compact('users'));
+        $listRoles = Role::paginate(10);
+        return view('admins.roles.create', compact('listRoles'));
     }
 
     /**
@@ -38,8 +38,18 @@ class RoleController extends Controller
             'name' => $validated['name'],
         ]);
 
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Vai trò đã được tạo thành công!',
+                'redirect' => route('roles.index')
+            ]);
+        }
+
         return redirect()->route('roles.index')->with('success', 'Vai trò đã được tạo thành công!');
     }
+
+
 
     /**
      * Display the specified resource.
@@ -81,7 +91,7 @@ class RoleController extends Controller
     public function destroy(string $id)
     {
         $role = Role::findOrFail($id);
-        
+
         if ($role->users()->count() > 0) {
             return redirect()->route('roles.index')->with('error', 'Không thể xóa vai trò vì có người dùng đang sử dụng.');
         }

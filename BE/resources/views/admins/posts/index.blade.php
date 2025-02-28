@@ -161,21 +161,7 @@
             </div>
         </div>
 
-        @if (session('success'))
-            <div class="alert alert-secondary alert-border-left alert-dismissible fade show material-shadow" role="alert">
-                <i class="ri-check-double-line me-3 align-middle"></i>
-                <strong>{{ session('success') }}</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
-        @if (session('error'))
-            <div class="alert alert-warning alert-border-left alert-dismissible fade show material-shadow" role="alert">
-                <i class="ri-alert-line me-3 align-middle"></i> <strong>{{ session('error') }}</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-        <!-- end page title -->
+        <x-alert />
 
         <div class="row">
             <div class="col-xxl-3">
@@ -267,8 +253,8 @@
                                 <div class="ms-2">
                                     <select name="status" class="form-control">
                                         <option value="">-- Chọn trạng thái --</option>
-                                        <option value="1">Đã duyệt</option>
-                                        <option value="0">Chưa duyệt</option>
+                                        <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>Đã duyệt</option>
+                                        <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>Chưa duyệt</option>
                                     </select>
                                 </div>
                                 <div class="d-flex justify-content-start ms-2">
@@ -293,8 +279,9 @@
                                     </div>
                                     <div class="col-xxl-9 col-lg-7">
                                         <p class="mb-2 text-primary text-uppercase">
-                                            {{ $post->categoryPost->title }}
+                                            {{ $post->categoryPost?->title ?? 'Không có chuyên mục' }}
                                         </p>
+                                        
 
                                         <a href="{{ route('posts.show', $post->id) }}">
                                             <h5 class="fs-15 fw-semibold">{{ $post->title }}</h5>
@@ -344,7 +331,7 @@
                         </div>
 
                     @empty
-                        <p class="text-muted text-center">Không có bài viết đã duyệt.</p>
+                        <p class="text-muted text-center">Không có bài viết</p>
                     @endforelse
                 </div>
                 {{ $listPosts->appends(['tab' => 'baiviet'])->links('pagination::bootstrap-5') }}

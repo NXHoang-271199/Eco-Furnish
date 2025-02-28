@@ -46,11 +46,11 @@ class UserController extends Controller
     {
 
         $validated = $request->validated();
-
         $filePath = null;
         if ($request->hasFile('avatar')) {
             $filePath = $request->file('avatar')->store('uploads/avatar', 'public');
         }
+        // dd($request->all());
         User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -92,7 +92,6 @@ class UserController extends Controller
     {
         $singerUser = User::findOrFail($id);
         $validated = $request->validated();
-        // dd($request->all());
         $filePath = $singerUser->avatar;
         if ($request->hasFile('avatar')) {
             $filePath = $request->file('avatar')->store('uploads/avatar', 'public');
@@ -114,6 +113,7 @@ class UserController extends Controller
 
         return redirect()->route('users.index')->with('success', 'Cập nhật người dùng thành công.');
     }
+
 
 
     /**
