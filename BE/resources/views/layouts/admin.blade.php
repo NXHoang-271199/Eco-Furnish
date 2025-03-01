@@ -35,6 +35,8 @@
     <link href="{{ asset('assets/admins/css/app.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- custom Css-->
     <link href="{{ asset('assets/admins/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
+    <!-- Sweet Alert css-->
+    <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
     @yield('CSS')
 </head>
 
@@ -88,7 +90,10 @@
 
     <!-- App js -->
     <script src="{{ asset('assets/admins/js/app.js') }}"></script>
-
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Sweet Alerts js -->
+    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     @yield('JS')
 </body>
 
