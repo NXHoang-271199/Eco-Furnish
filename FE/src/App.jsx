@@ -14,10 +14,18 @@ import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
 import Blogs from "./pages/(website)/Blog/Blogs";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
+import CursorGlow from "./CursorGlow";
+import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
+
+import EmailVerification from "./pages/EmailVerification/EmailVerification";
+import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import ConfirmPassword from "./pages/(website)/ConfirmPassword/ConfirmPassword";
+
 // import ForgotPasswordModal from "./pages/SignIn/ForgotPasswordModal";
 function App() {
   return (
     <>
+      {/* <CursorGlow /> */}
       <Routes>
         <Route path="/" element={<LayoutWebsite />}>
           <Route index element={<Homes />} />
@@ -32,6 +40,10 @@ function App() {
         <Route path="signin" element={<SignIn />} />
         {/* <Route path="changepass" element={<ForgotPasswordModal />} /> */}
         <Route path="signup" element={<SignUp />} />
+        <Route path="verifyemail" element={< VerifyEmail/>} />
+        <Route path="reset" element={<ResetPassword/>} />
+        <Route path="confirm" element={<ConfirmPassword />} />
+        <Route path="emailverification" element={<EmailVerification />} />
       </Routes>
     </>
   );

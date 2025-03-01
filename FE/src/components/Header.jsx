@@ -62,10 +62,12 @@ const Header = () => {
           <div className="text-2xl font-bold text-black">
             <div>
               {/* <img src="/logo.svg" alt="Eco-Furnish" /> */}
-              <p>
-                <span className="text-yellow-300">E</span>co-
-                <span className="text-yellow-300">F</span>urnish
-              </p>
+              <a href="/">
+              <span className="text-yellow-300">E</span>co-
+              <span className="text-yellow-300">F</span>urnish
+              </a>
+                
+              
             </div>
           </div>
 
