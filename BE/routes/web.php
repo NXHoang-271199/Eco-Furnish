@@ -19,7 +19,6 @@ use App\Http\Controllers\Admin\TrashController;
 */
 
 
-
 // Admin Routes
 Route::prefix('admin')->group(function () {
     // Categories routes
@@ -46,4 +45,7 @@ Route::prefix('admin')->group(function () {
         Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
         Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
     });
+Route::get('/', function () {
+    return view('admins.dashboard');
+    // return view('admins.test');
 });
