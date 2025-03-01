@@ -1,10 +1,17 @@
 import React from "react";
 import { FaArrowRight } from "react-icons/fa6";
+import { motion } from "framer-motion";
+
 const Contact = () => {
   return (
     <div className="font-roboto">
       <main className="container mx-auto px-4 py-16">
-        <div className="text-left pr-96">
+        <motion.div
+          className="text-left pr-96"
+          initial={{ x: "-100%", opacity: 0 }} // Bắt đầu từ ngoài màn hình (bên trái)
+          animate={{ x: "0%", opacity: 1 }} // Di chuyển vào vị trí bình thường
+          transition={{ duration: 1.2, ease: "easeOut" }} // Thời gian chuyển động
+        >
           <h1 className="text-4xl font-bold text-gray-900 pt-8 mb-4">
             Chúng tôi tin vào thiết kế nội thất bền vững và đam mê tạo ra không
             gian sống đẹp, thoải mái cho ngôi nhà của bạn.
@@ -16,6 +23,8 @@ const Contact = () => {
           </p>
         </div>
         <div className="flex flex-col md:flex-row items-center md:space-x-8 bg-gray-100">
+        </motion.div>
+        <div className="flex flex-col md:flex-row items-center md:space-x-8">
           <img
             src="https://storage.googleapis.com/a1aa/image/17RKU44o-p0wL_aV7UMwpptAv70oSYYp01uylGBfbOM.jpg"
             alt="Decorative wooden floor"
@@ -63,7 +72,9 @@ const Contact = () => {
             <div className="flex items-center space-x-4 mb-8 md:mb-0">
               <i className="fas fa-map-marker-alt text-2xl text-gray-500"></i>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">SỐ ĐIỆN THOẠI</h3>
+                <h3 className="text-lg font-bold text-gray-900">
+                  SỐ ĐIỆN THOẠI
+                </h3>
                 <p className="text-gray-600">0901121111</p>
               </div>
             </div>

@@ -5,16 +5,15 @@ const SignUp = () => {
   return (
     <div className="flex w-full bg-white shadow-lg">
       <div className="relative overflow-hidden w-1/2 hidden md:block">
-      <motion.img
-        src="https://i.pinimg.com/236x/0a/c9/ce/0ac9ce43730b62e7563a8ab9d0e8d5ba.jpg"
-        alt="Background"
-        className="object-cover w-full h-[800px]"
-        initial={{ x: "100%" }}
-        animate={{ x: "0%" }}
-        transition={{ duration: 1.5, ease: "easeInOut" }
-      }
-      />
-    </div>
+        <motion.img
+          src="https://i.pinimg.com/236x/0a/c9/ce/0ac9ce43730b62e7563a8ab9d0e8d5ba.jpg"
+          alt="Background"
+          className="object-cover w-full h-[800px]"
+          initial={{ x: "100%" }}
+          animate={{ x: "0%" }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
+        />
+      </div>
       <div className="w-full md:w-1/2 p-32">
         <h2 className="text-2xl font-bold mb-2">Đăng Ký</h2>
         <p className="mb-4">
