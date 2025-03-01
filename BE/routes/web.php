@@ -27,6 +27,7 @@ Route::prefix('admin')->group(function () {
 
     // Products routes
     Route::resource('products', ProductController::class);
+    Route::post('products/generate-variants', [ProductController::class, 'generateVariants'])->name('products.generate-variants');
 
     // Variants routes
     Route::resource('variants', VariantController::class);

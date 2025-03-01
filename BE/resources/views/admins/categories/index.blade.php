@@ -64,12 +64,6 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    @if(session('success'))
-                        <div class="alert alert-success">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-
                     @if(session('error'))
                         <div class="alert alert-danger">
                             {{ session('error') }}
@@ -89,10 +83,10 @@
                                 @foreach($categories as $category)
                                 <tr>
                                     <td>{{ ($categories->currentPage() - 1) * $categories->perPage() + $loop->iteration }}</td>
-                                    <td>{{ $category->name }}</td>
+                                    <td class="edit-name" data-id="{{ $category->id }}">{{ $category->name }}</td>
                                     <td>
                                         <div class="hstack gap-3 fs-15">
-                                            <a href="{{ route('categories.edit', $category->id) }}" class="link-primary">
+                                            <a href="javascript:void(0);" class="link-primary edit-trigger" data-id="{{ $category->id }}">
                                                 <i class="ri-pencil-fill align-bottom me-2"></i>
                                             </a>
                                             <a href="javascript:void(0);" class="link-danger delete-item" data-id="{{ $category->id }}">

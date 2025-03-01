@@ -1,4 +1,3 @@
-
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -243,5 +242,264 @@
             padding: 10px;
             border-radius: 8px;
             border: 1px solid #dee2e6;
+        }
+
+        /* CSS cho phần chọn biến thể */
+        .variant-selector {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        /* CSS cho danh sách biến thể đã chọn */
+        #selectedVariantTypes {
+            background: #fff;
+            border-radius: 8px;
+        }
+
+        .selected-variant-type {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+        }
+
+        .selected-variant-type:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .selected-variant-type .variant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .selected-variant-type .variant-values {
+            margin-top: 10px;
+        }
+
+        .variant-value-select {
+            height: auto !important;
+            min-height: 120px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e0e6ed;
+        }
+        
+        .variant-value-select option {
+            padding: 10px 12px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .variant-value-select option:checked {
+            background: linear-gradient(45deg, #3b7ddd, #2f69b8) !important;
+            color: white;
+            font-weight: 500;
+        }
+
+        .variant-value-select:focus {
+            border-color: #3b7ddd;
+            box-shadow: 0 0 0 0.2rem rgba(59, 125, 221, 0.1);
+        }
+
+        .variant-value-select.is-invalid {
+            border-color: #dc3545;
+        }
+
+        .variant-value-select.is-invalid:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        /* CSS cho container tạo biến thể tự động */
+        #generate-variants-container {
+            transition: all 0.3s ease;
+            margin: 25px 0;
+        }
+        
+        #generate-variants-btn {
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 114, 255, 0.3);
+            transition: all 0.3s ease;
+            padding: 12px 25px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            font-size: 1.05rem;
+        }
+        
+        #generate-variants-btn:hover {
+            background: linear-gradient(45deg, #0072ff, #00c6ff);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 114, 255, 0.4);
+        }
+        
+        #generate-variants-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 114, 255, 0.3);
+        }
+
+        /* CSS cho các tổ hợp biến thể được tạo ra */
+        .variant-combination {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .variant-combination:hover {
+            border-color: #3b7ddd;
+            box-shadow: 0 5px 15px rgba(59, 125, 221, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .variant-combination.active {
+            border-color: #3b7ddd;
+            box-shadow: 0 5px 20px rgba(59, 125, 221, 0.15);
+            background-color: #f8fbff;
+        }
+
+        .variant-combination .combination-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            color: #344767;
+            margin-bottom: 5px;
+        }
+
+        .variant-combination .combination-attributes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .variant-combination .attribute-tag {
+            background: #f0f4f8;
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 13px;
+            color: #506690;
+            font-weight: 500;
+        }
+
+        .variant-combination .attribute-tag span {
+            font-weight: 600;
+            color: #3b7ddd;
+        }
+
+        /* CSS cho form chỉnh sửa biến thể */
+        .variant-edit-form {
+            background: #f8fbff;
+            border: 1px solid #d0e1fd;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 10px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .variant-edit-form.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .variant-edit-form .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .variant-edit-form .form-group {
+            flex: 1;
+        }
+
+        .variant-edit-form .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .empty-variant-message {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            border: 1px dashed #d1d9e6;
+            color: #6c757d;
+        }
+
+        .empty-variant-message i {
+            font-size: 40px;
+            color: #adb5bd;
+            margin-bottom: 15px;
+        }
+
+        .empty-variant-message h5 {
+            margin-bottom: 10px;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        /* CSS cho thông báo lỗi và thành công trong input-group */
+        .input-group ~ .invalid-feedback,
+        .input-group ~ .valid-feedback {
+            display: block;
+            margin-top: 0.25rem;
+        }
+        
+        .input-group .form-control.is-invalid,
+        .input-group .form-control.is-valid {
+            z-index: 1;
+        }
+        
+        .input-group .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+        
+        .input-group .form-control.is-valid {
+            border-color: #198754;
+        }
+        
+        .input-group .form-control.is-invalid:focus,
+        .input-group .form-control.is-valid:focus {
+            box-shadow: none;
+        }
+        
+        .input-group .input-group-text {
+            z-index: 0;
+        }
+        
+        .input-group .form-control.is-invalid + .input-group-text {
+            border-color: #dc3545;
+        }
+        
+        .input-group .form-control.is-valid + .input-group-text {
+            border-color: #198754;
         }
     </style>

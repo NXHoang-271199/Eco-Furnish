@@ -48,27 +48,10 @@
                             
                             // Xóa form
                             $('#categoryForm')[0].reset();
-                            
-                            // Hiển thị thông báo thành công
-                            var alertHtml = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                                response.message +
-                                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                                '</div>';
-                            $('#category-list .card-body').prepend(alertHtml);
-                            
-                            // Tự động ẩn thông báo sau 2 giây
-                            setTimeout(function() {
-                                $('.alert').fadeOut('slow', function() {
-                                    $(this).remove();
-                                });
-                            }, 2000);
-                        } else {
-                            // Hiển thị thông báo lỗi
-                            var alertHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                                response.message +
-                                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                                '</div>';
-                            $('#category-list .card-body').prepend(alertHtml);
+
+                            if (response.redirect) {
+                                window.location.href = response.redirect;
+                            }
                         }
                     },
                     error: function(xhr) {
@@ -119,39 +102,9 @@
                         },
                         success: function(response) {
                             if (response.success) {
-                                // Xóa hàng khỏi bảng ngay lập tức
-                                var row = deleteButton.closest('tr');
-                                row.fadeOut('fast', function() {
-                                    $(this).remove();
-                                    
-                                    // Cập nhật lại số thứ tự
-                                    $('table tbody tr').each(function(index) {
-                                        var currentPage = {{ $categories->currentPage() }};
-                                        var perPage = {{ $categories->perPage() }};
-                                        $(this).find('td:first').text(((currentPage - 1) * perPage) + index + 1);
-                                    });
-                                });
-                                
-                                // Hiển thị thông báo thành công
-                                var alertHtml = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                                    response.message +
-                                    '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                                    '</div>';
-                                $('#category-list .card-body').prepend(alertHtml);
-                                
-                                // Tự động ẩn thông báo sau 2 giây
-                                setTimeout(function() {
-                                    $('.alert').fadeOut('slow', function() {
-                                        $(this).remove();
-                                    });
-                                }, 2000);
-                            } else {
-                                // Hiển thị thông báo lỗi
-                                var alertHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                                    response.message +
-                                    '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                                    '</div>';
-                                $('#category-list .card-body').prepend(alertHtml);
+                                if (response.redirect) {
+                                    window.location.href = response.redirect;
+                                }
                             }
                         },
                         error: function(xhr) {
@@ -173,11 +126,102 @@
                 }
             });
 
-            // Tự động ẩn thông báo sau 400 miligiay
-            setTimeout(function() {
-                $('.alert').fadeOut('slow', function() {
-                    $(this).remove();
+            // Xử lý khi click vào nút edit
+            $(document).on('click', '.edit-trigger', function(e) {
+                e.preventDefault();
+                var categoryId = $(this).data('id');
+                var td = $(this).closest('tr').find('.edit-name');
+                td.trigger('click');
+            });
+
+            // Xử lý chỉnh sửa danh mục trực tiếp
+            $(document).on('click', '.edit-name', function() {
+                var td = $(this);
+                // Kiểm tra nếu đã có input thì không tạo input mới
+                if (td.find('input').length > 0) {
+                    return;
+                }
+                
+                var categoryId = td.data('id');
+                var currentName = td.text().trim();
+                
+                // Tạo input để chỉnh sửa
+                var input = $('<input>')
+                    .attr('type', 'text')
+                    .val(currentName)
+                    .addClass('form-control');
+                
+                // Thay thế text bằng input
+                td.html(input);
+                input.focus();
+                
+                // Xử lý khi nhấn Enter
+                input.on('keypress', function(e) {
+                    if (e.which === 13) {
+                        e.preventDefault();
+                        var newName = $(this).val().trim();
+                        
+                        if (newName !== '' && newName !== currentName) {
+                            // Gửi request cập nhật
+                            $.ajax({
+                                url: '/admin/categories/' + categoryId,
+                                type: 'PUT',
+                                data: {
+                                    _token: '{{ csrf_token() }}',
+                                    name: newName
+                                },
+                                success: function(response) {
+                                    if (response.success) {
+                                        td.html(newName);
+                                        // Hiển thị thông báo thành công
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Thành công',
+                                            text: response.message || 'Cập nhật danh mục thành công',
+                                            showConfirmButton: false,
+                                            timer: 1500
+                                        });
+                                    }
+                                },
+                                error: function(xhr) {
+                                    var errorMessage = '';
+                                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                                        var errors = xhr.responseJSON.errors;
+                                        for (var key in errors) {
+                                            errorMessage += errors[key][0] + '\n';
+                                        }
+                                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                                        errorMessage = xhr.responseJSON.message;
+                                    } else {
+                                        errorMessage = 'Có lỗi xảy ra khi cập nhật danh mục';
+                                    }
+                                    
+                                    // Hiển thị thông báo lỗi
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Lỗi',
+                                        text: errorMessage,
+                                        showConfirmButton: false,
+                                        timer: 1500
+                                    });
+                                    
+                                    // Khôi phục tên cũ
+                                    td.html(currentName);
+                                }
+                            });
+                        } else {
+                            // Khôi phục tên cũ nếu không có thay đổi hoặc input rỗng
+                            td.html(currentName);
+                        }
+                    }
                 });
-            }, 400);
+
+                // Xử lý khi click ra ngoài
+                input.on('blur', function() {
+                    setTimeout(function() {
+                        td.html(currentName); // Khôi phục lại tên cũ khi click ra ngoài
+                    }, 200); // Thêm độ trễ để đảm bảo sự kiện Enter được xử lý trước
+                });
+            });
         });
     </script>

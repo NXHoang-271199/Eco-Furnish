@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
@@ -388,5 +389,189 @@ class ProductController extends Controller
                 'message' => 'Có lỗi xảy ra khi xóa sản phẩm: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Generate product variants based on selected attributes
+     */
+    public function generateVariants(Request $request)
+    {
+        try {
+            // Xử lý dữ liệu từ FormData
+            $jsonData = $request->input('data');
+            
+            // Log dữ liệu nhận được để debug
+            \Log::info('Received data for variant generation:', [
+                'raw_data' => $request->all(),
+                'json_data' => $jsonData
+            ]);
+            
+            if (empty($jsonData)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không nhận được dữ liệu'
+                ], 400);
+            }
+            
+            // Parse JSON data
+            $data = json_decode($jsonData, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dữ liệu JSON không hợp lệ: ' . json_last_error_msg()
+                ], 400);
+            }
+            
+            $productId = $data['product_id'] ?? null;
+            $variantAttributes = $data['variant_attributes'] ?? [];
+            
+            if (empty($variantAttributes)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng chọn ít nhất một thuộc tính biến thể'
+                ], 400);
+            }
+            
+            // Lấy thông tin sản phẩm nếu có
+            $product = null;
+            if ($productId) {
+                $product = Product::find($productId);
+                if (!$product) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Không tìm thấy sản phẩm'
+                    ], 404);
+                }
+            }
+            
+            // Lấy thông tin các thuộc tính và giá trị
+            $attributeValues = [];
+            foreach ($variantAttributes as $variantId => $valueIds) {
+                if (empty($valueIds)) continue;
+                
+                $variant = Variant::find($variantId);
+                if (!$variant) continue;
+                
+                $values = VariantValue::whereIn('id', $valueIds)
+                    ->where('variant_id', $variantId)
+                    ->get();
+                
+                if ($values->isEmpty()) continue;
+                
+                $attributeValues[$variantId] = [
+                    'name' => $variant->name,
+                    'values' => $values->map(function($value) {
+                        return [
+                            'id' => $value->id,
+                            'value' => $value->value
+                        ];
+                    })->toArray()
+                ];
+            }
+            
+            if (empty($attributeValues)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy giá trị thuộc tính hợp lệ'
+                ], 400);
+            }
+            
+            // Tạo tất cả các tổ hợp có thể
+            $combinations = $this->generateCombinations($attributeValues);
+            
+            // Kiểm tra các biến thể đã tồn tại nếu đang chỉnh sửa sản phẩm
+            $existingVariants = [];
+            if ($product) {
+                $existingVariants = $product->variants()
+                    ->with(['variant:id,name', 'variantValue:id,value'])
+                    ->get()
+                    ->map(function($variant) {
+                        return [
+                            'id' => $variant->id,
+                            'variant_id' => $variant->variant_id,
+                            'variant_name' => $variant->variant->name,
+                            'variant_value_id' => $variant->variant_value_id,
+                            'variant_value' => $variant->variantValue->value,
+                            'sku' => $variant->sku,
+                            'price' => $variant->price,
+                            'quantity' => $variant->quantity,
+                            'status' => $variant->status
+                        ];
+                    })
+                    ->toArray();
+            }
+            
+            // Chuẩn bị dữ liệu phản hồi
+            $variants = [];
+            $basePrice = $product ? $product->price : 0;
+            
+            foreach ($combinations as $combination) {
+                $variantData = [
+                    'attributes' => $combination,
+                    'sku' => $product ? $product->product_code . '-' : 'SKU-',
+                    'price' => $basePrice,
+                    'quantity' => 0,
+                    'status' => 1
+                ];
+                
+                // Tạo SKU dựa trên tổ hợp thuộc tính
+                foreach ($combination as $attr) {
+                    $variantData['sku'] .= strtoupper(substr($attr['value'], 0, 2));
+                }
+                
+                $variants[] = $variantData;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'variants' => $variants,
+                'existing_variants' => $existingVariants
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error generating variants: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Xử lý lỗi mã hóa UTF-8
+            $errorMessage = $e->getMessage();
+            if (strpos($errorMessage, 'Malformed UTF-8 characters') !== false) {
+                $errorMessage = 'Lỗi mã hóa ký tự Unicode. Vui lòng kiểm tra lại các giá trị thuộc tính có chứa ký tự đặc biệt.';
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi tạo biến thể: ' . $errorMessage,
+                'error_type' => get_class($e)
+            ], 500);
+        }
+    }
+    
+    /**
+     * Generate all possible combinations of attribute values
+     */
+    private function generateCombinations($attributeValues)
+    {
+        $result = [[]];
+        
+        foreach ($attributeValues as $variantId => $attribute) {
+            $append = [];
+            
+            foreach ($result as $product) {
+                foreach ($attribute['values'] as $value) {
+                    $product[] = [
+                        'variant_id' => $variantId,
+                        'variant_name' => $attribute['name'],
+                        'value_id' => $value['id'],
+                        'value' => $value['value']
+                    ];
+                    $append[] = $product;
+                }
+            }
+            
+            $result = $append;
+        }
+        
+        return $result;
     }
 }

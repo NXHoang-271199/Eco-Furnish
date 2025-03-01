@@ -71,13 +71,11 @@ class VariantController extends Controller
 
             DB::commit();
 
+            session()->flash('success', 'Thêm biến thể thành công');
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Thêm biến thể thành công',
-                'variant' => [
-                    'id' => $variant->id,
-                    'name' => $variant->name
-                ]
+                'redirect' => route('variants.index')
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -121,7 +119,9 @@ class VariantController extends Controller
             $variant->update($request->validated());
 
             DB::commit();
-            return redirect()->route('variants.index')->with('success', 'Biến thể đã được cập nhật thành công');
+
+            return redirect()->route('variants.index')
+                ->with('success', 'Cập nhật biến thể thành công');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating variant: ' . $e->getMessage());
@@ -140,9 +140,12 @@ class VariantController extends Controller
             $variant->delete();
 
             DB::commit();
+            
+            session()->flash('success', 'Xóa biến thể thành công');
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Biến thể đã được xóa thành công'
+                'redirect' => route('variants.index')
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

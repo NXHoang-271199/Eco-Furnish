@@ -58,6 +58,9 @@
                 <div class="card-header d-flex align-items-center">
                     <h4 class="card-title mb-0 flex-grow-1">Danh sách giá trị của: {{ $variant->name }}</h4>
                     <div class="flex-shrink-0">
+                        <a href="{{ route('variants.index') }}" class="btn btn-soft-primary btn-sm me-2">
+                            <i class="ri-arrow-left-line align-bottom"></i> Quay lại
+                        </a>
                         <a href="/admin/trash/trash-variant-values" class="btn btn-soft-danger btn-icon btn-sm fs-16" 
                            data-bs-toggle="tooltip" data-bs-placement="top" title="Thùng rác">
                             <i class="ri-delete-bin-line"></i>
@@ -65,12 +68,6 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    @if(session('success'))
-                        <div class="alert alert-success">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-
                     @if(session('error'))
                         <div class="alert alert-danger">
                             {{ session('error') }}
