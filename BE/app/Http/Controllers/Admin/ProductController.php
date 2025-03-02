@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Intervention\Image\Facades\Image;
 
 class ProductController extends Controller
 {
@@ -54,18 +55,43 @@ class ProductController extends Controller
             $nextId = $latestProduct ? $latestProduct->id + 1 : 1;
             $data['product_code'] = 'SP' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
 
-            // Xử lý ảnh đại diện
-            if ($request->hasFile('image_thumnail')) {
-                $data['image_thumnail'] = $request->file('image_thumnail')->store('products', 'public');
-            }
-
             // Tạo sản phẩm
             $product = Product::create($data);
 
+            // Xử lý ảnh đại diện
+            if ($request->hasFile('image_thumnail')) {
+                // Tạo thư mục cho sản phẩm
+                $productFolder = 'products/' . $product->id;
+                Storage::disk('public')->makeDirectory($productFolder);
+
+                // Xử lý ảnh và lưu trữ
+                $image = $request->file('image_thumnail');
+                $imageName = 'thumbnail.webp';
+                $imagePath = $productFolder . '/' . $imageName;
+                
+                // Chuyển đổi ảnh sang WebP
+                $this->convertToWebP($image, $imagePath);
+                
+                // Lưu đường dẫn vào cơ sở dữ liệu
+                $product->image_thumnail = $imagePath;
+                $product->save();
+            }
+
             // Xử lý gallery images nếu có
             if ($request->hasFile('gallery')) {
-                foreach ($request->file('gallery') as $image) {
-                    $imagePath = $image->store('products/gallery', 'public');
+                // Tạo thư mục gallery bên trong thư mục sản phẩm
+                $galleryFolder = 'products/' . $product->id . '/gallery';
+                Storage::disk('public')->makeDirectory($galleryFolder);
+
+                foreach ($request->file('gallery') as $index => $image) {
+                    // Xử lý ảnh và lưu trữ
+                    $imageName = 'gallery_' . ($index + 1) . '.webp';
+                    $imagePath = $galleryFolder . '/' . $imageName;
+                    
+                    // Chuyển đổi ảnh sang WebP
+                    $this->convertToWebP($image, $imagePath);
+                    
+                    // Lưu thông tin vào cơ sở dữ liệu
                     GalleryImage::create([
                         'product_id' => $product->id,
                         'image_url' => $imagePath
@@ -196,7 +222,21 @@ class ProductController extends Controller
                 if ($product->image_thumnail) {
                     Storage::disk('public')->delete($product->image_thumnail);
                 }
-                $data['image_thumnail'] = $request->file('image_thumnail')->store('products', 'public');
+                
+                // Tạo thư mục cho sản phẩm nếu chưa tồn tại
+                $productFolder = 'products/' . $product->id;
+                Storage::disk('public')->makeDirectory($productFolder);
+
+                // Xử lý ảnh và lưu trữ
+                $image = $request->file('image_thumnail');
+                $imageName = 'thumbnail.webp';
+                $imagePath = $productFolder . '/' . $imageName;
+                
+                // Chuyển đổi ảnh sang WebP
+                $this->convertToWebP($image, $imagePath);
+                
+                // Lưu đường dẫn vào dữ liệu
+                $data['image_thumnail'] = $imagePath;
             }
 
             // Xử lý gallery images
@@ -216,8 +256,22 @@ class ProductController extends Controller
 
             // Thêm ảnh mới vào gallery nếu có
             if ($request->hasFile('gallery')) {
-                foreach ($request->file('gallery') as $image) {
-                    $imagePath = $image->store('products/gallery', 'public');
+                // Tạo thư mục gallery bên trong thư mục sản phẩm nếu chưa tồn tại
+                $galleryFolder = 'products/' . $product->id . '/gallery';
+                Storage::disk('public')->makeDirectory($galleryFolder);
+                
+                // Đếm số ảnh hiện có trong gallery
+                $currentGalleryCount = $product->gallery()->count();
+
+                foreach ($request->file('gallery') as $index => $image) {
+                    // Xử lý ảnh và lưu trữ
+                    $imageName = 'gallery_' . ($currentGalleryCount + $index + 1) . '.webp';
+                    $imagePath = $galleryFolder . '/' . $imageName;
+                    
+                    // Chuyển đổi ảnh sang WebP
+                    $this->convertToWebP($image, $imagePath);
+                    
+                    // Lưu thông tin vào cơ sở dữ liệu
                     $product->gallery()->create([
                         'image_url' => $imagePath
                     ]);
@@ -573,5 +627,48 @@ class ProductController extends Controller
         }
         
         return $result;
+    }
+
+    private function convertToWebP($image, $imagePath)
+    {
+        // Đọc ảnh gốc
+        $sourceImage = null;
+        $extension = strtolower($image->getClientOriginalExtension());
+        
+        // Tạo hình ảnh từ file dựa trên định dạng
+        switch ($extension) {
+            case 'jpeg':
+            case 'jpg':
+                $sourceImage = imagecreatefromjpeg($image->getPathname());
+                break;
+            case 'png':
+                $sourceImage = imagecreatefrompng($image->getPathname());
+                break;
+            case 'gif':
+                $sourceImage = imagecreatefromgif($image->getPathname());
+                break;
+            default:
+                // Nếu không phải định dạng hỗ trợ, lưu trực tiếp
+                Storage::disk('public')->putFileAs(dirname($imagePath), $image, basename($imagePath));
+                return;
+        }
+        
+        if (!$sourceImage) {
+            // Nếu không đọc được ảnh, lưu trực tiếp
+            Storage::disk('public')->putFileAs(dirname($imagePath), $image, basename($imagePath));
+            return;
+        }
+        
+        // Lưu ảnh dưới dạng webp
+        ob_start();
+        imagewebp($sourceImage, null, 80);
+        $webpData = ob_get_contents();
+        ob_end_clean();
+        
+        // Giải phóng bộ nhớ
+        imagedestroy($sourceImage);
+        
+        // Lưu ảnh WebP vào storage
+        Storage::disk('public')->put($imagePath, $webpData);
     }
 }

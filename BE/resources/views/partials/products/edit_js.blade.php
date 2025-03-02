@@ -183,7 +183,6 @@
             }
 
             // Cập nhật giao diện nút tạo biến thể tự động
-            $('#generate-variants-btn').addClass('btn-primary').removeClass('btn-info');
             $('#generate-variants-btn').html('<i class="fas fa-magic me-2"></i>Tạo biến thể tự động');
 
             // Khởi tạo trạng thái hiển thị của phần biến thể dựa vào toggle
@@ -323,8 +322,8 @@
                         header.className = 'variant-header d-flex justify-content-between align-items-center';
                         header.innerHTML = `
                             <h6 class="mb-0 text-primary">${variantName}</h6>
-                            <button type="button" class="btn-remove-variant btn btn-sm btn-outline-danger" onclick="removeVariantType('${variantId}')">
-                                <i class="fas fa-times"></i> Xóa
+                            <button type="button" class="btn-remove-variant" onclick="removeVariantType('${variantId}')">
+                                <i class="fas fa-times"></i>
                             </button>
                         `;
 
@@ -454,9 +453,6 @@
             // Cải thiện giao diện cho form thêm biến thể
             $('#variantForm').addClass('variant-info-section');
             
-            // Cải thiện giao diện cho nút tạo biến thể tự động
-            $('#generate-variants-btn').addClass('btn-primary').removeClass('btn-info');
-            
             // Cải thiện giao diện cho phần hiển thị biến thể đã tạo
             function updateVariantsContainerUI() {
                 if ($('#variants-container').children().length > 0) {
@@ -494,8 +490,8 @@
                         <div class="variant-preview p-3 cursor-pointer" onclick="toggleVariantEdit('${variantId}')">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="mb-0 text-primary">Biến thể #${variantIndex + 1}</h6>
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeVariant('${variantId}', event)">
-                                    <i class="fas fa-trash me-1"></i> Xóa
+                                <button type="button" class="btn-remove-variant" onclick="removeVariant('${variantId}', event)">
+                                    <i class="fas fa-times"></i>
                                 </button>
                             </div>
                             <div class="row g-3">

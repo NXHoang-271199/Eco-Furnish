@@ -502,4 +502,28 @@
         .input-group .form-control.is-valid + .input-group-text {
             border-color: #198754;
         }
+
+        /* CSS cho nút xóa biến thể */
+        .btn-remove-variant {
+            background: none;
+            border: none;
+            color: #dc3545;
+            font-size: 16px;
+            padding: 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        
+        .btn-remove-variant:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        
+        .btn-remove-variant i {
+            font-size: 14px;
+        }
     </style>

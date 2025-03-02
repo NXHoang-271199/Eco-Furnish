@@ -522,4 +522,64 @@
             margin-bottom: 0;
             cursor: pointer;
         }
+
+        .variant-edit {
+            display: none;
+        }
+        
+        /* CSS cho nút xóa biến thể */
+        .btn-remove-variant {
+            background: none;
+            border: none;
+            color: #dc3545;
+            font-size: 16px;
+            padding: 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        
+        .btn-remove-variant:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        
+        .btn-remove-variant i {
+            font-size: 14px;
+        }
+        
+        /* CSS cho nút tạo biến thể tự động */
+        #generate-variants-btn {
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 114, 255, 0.3);
+            transition: all 0.3s ease;
+            padding: 12px 25px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            font-size: 1.05rem;
+            color: #ffffff;
+        }
+        
+        #generate-variants-btn:hover {
+            background: linear-gradient(45deg, #0072ff, #00c6ff);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 114, 255, 0.4);
+            color: #ffffff;
+        }
+        
+        #generate-variants-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 114, 255, 0.3);
+            color: #ffffff;
+        }
+        
+        /* CSS cho container tạo biến thể tự động */
+        #generate-variants-container {
+            transition: all 0.3s ease;
+            margin: 25px 0;
+        }
     </style>

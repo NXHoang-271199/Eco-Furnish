@@ -242,7 +242,7 @@
                                     </div>
                                 </div>
                                 <div class="text-end mt-3">
-                                    <button type="button" class="btn btn-primary" id="generate-variants-btn" style="display: none;">
+                                    <button type="button" class="btn" id="generate-variants-btn" style="display: none;">
                                         <i class="fas fa-magic me-2"></i>Tạo biến thể tự động
                                     </button>
                                 </div>

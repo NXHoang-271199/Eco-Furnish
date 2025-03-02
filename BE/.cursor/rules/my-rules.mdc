@@ -1,0 +1,8 @@
+---
+description: rule này giúp tôi sửa lỗi và edit code cẩn thận hơn mà không bị xóa nhầm logic code không liên quan khi thực hiện yêu cầu của tôi
+globs: 
+alwaysApply: true
+---
+# Your rule content
+
+làm theo yêu cầu của tôi cẩn thận mà không gây ảnh hưởng đến logic khác không liên quan đến yêu cầu của tôi

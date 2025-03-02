@@ -1023,7 +1023,7 @@
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0 text-primary">Biến thể #${variantIndex + 1}</h6>
                             <button type="button" class="btn-remove-variant" onclick="removeVariant('${variantId}', event)">
-                                <i class="fas fa-trash"></i> Xóa
+                                <i class="fas fa-times"></i>
                             </button>
                         </div>
                         <div class="row g-3">
