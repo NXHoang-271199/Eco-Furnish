@@ -12,7 +12,12 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\Auth\RegisterController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
-use App\Providers\RouteServiceProvider;
+use App\Providers\RouteServiceProvider;use App\Http\Controllers\ProductController;
+use App\Http\Controllers\VariantController;
+use App\Http\Controllers\VariantValueController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\TrashController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -24,6 +29,34 @@ use App\Providers\RouteServiceProvider;
 |
 */
 
+
+// Admin Routes
+Route::prefix('admin')->group(function () {
+    // Categories routes
+    Route::resource('categories', CategoryController::class);
+
+    // Products routes
+    Route::resource('products', ProductController::class);
+    Route::post('products/generate-variants', [ProductController::class, 'generateVariants'])->name('products.generate-variants');
+
+    // Variants routes
+    Route::resource('variants', VariantController::class);
+    
+    // Variant Values Routes
+    Route::prefix('variants/{variant}')->name('variants.')->group(function () {
+        Route::resource('values', VariantValueController::class);
+    });
+
+    // Routes cho thùng rác
+    Route::prefix('trash')->group(function () {
+        Route::resource('trash-products', TrashController::class)->only(['index', 'update', 'destroy']);
+        Route::resource('trash-categories', TrashController::class)->only(['index', 'update', 'destroy']);
+        Route::resource('trash-variants', TrashController::class)->only(['index', 'update', 'destroy']);
+        Route::resource('trash-variant-values', TrashController::class)->only(['index', 'update', 'destroy']);
+        Route::get('restore-variant/{id}', [VariantController::class, 'restore']);
+        Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
+        Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
+    });
 Route::get('/', function () {
     // return view('admins.dashboard');
     return view('auth.login');
