@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Product\StoreProductRequest;
@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Intervention\Image\Facades\Image;
 
 class ProductController extends Controller
 {
@@ -53,18 +55,43 @@ class ProductController extends Controller
             $nextId = $latestProduct ? $latestProduct->id + 1 : 1;
             $data['product_code'] = 'SP' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
 
-            // Xử lý ảnh đại diện
-            if ($request->hasFile('image_thumnail')) {
-                $data['image_thumnail'] = $request->file('image_thumnail')->store('products', 'public');
-            }
-
             // Tạo sản phẩm
             $product = Product::create($data);
 
+            // Xử lý ảnh đại diện
+            if ($request->hasFile('image_thumnail')) {
+                // Tạo thư mục cho sản phẩm
+                $productFolder = 'products/' . $product->id;
+                Storage::disk('public')->makeDirectory($productFolder);
+
+                // Xử lý ảnh và lưu trữ
+                $image = $request->file('image_thumnail');
+                $imageName = 'thumbnail.webp';
+                $imagePath = $productFolder . '/' . $imageName;
+                
+                // Chuyển đổi ảnh sang WebP
+                $this->convertToWebP($image, $imagePath);
+                
+                // Lưu đường dẫn vào cơ sở dữ liệu
+                $product->image_thumnail = $imagePath;
+                $product->save();
+            }
+
             // Xử lý gallery images nếu có
             if ($request->hasFile('gallery')) {
-                foreach ($request->file('gallery') as $image) {
-                    $imagePath = $image->store('products/gallery', 'public');
+                // Tạo thư mục gallery bên trong thư mục sản phẩm
+                $galleryFolder = 'products/' . $product->id . '/gallery';
+                Storage::disk('public')->makeDirectory($galleryFolder);
+
+                foreach ($request->file('gallery') as $index => $image) {
+                    // Xử lý ảnh và lưu trữ
+                    $imageName = 'gallery_' . ($index + 1) . '.webp';
+                    $imagePath = $galleryFolder . '/' . $imageName;
+                    
+                    // Chuyển đổi ảnh sang WebP
+                    $this->convertToWebP($image, $imagePath);
+                    
+                    // Lưu thông tin vào cơ sở dữ liệu
                     GalleryImage::create([
                         'product_id' => $product->id,
                         'image_url' => $imagePath
@@ -195,7 +222,21 @@ class ProductController extends Controller
                 if ($product->image_thumnail) {
                     Storage::disk('public')->delete($product->image_thumnail);
                 }
-                $data['image_thumnail'] = $request->file('image_thumnail')->store('products', 'public');
+                
+                // Tạo thư mục cho sản phẩm nếu chưa tồn tại
+                $productFolder = 'products/' . $product->id;
+                Storage::disk('public')->makeDirectory($productFolder);
+
+                // Xử lý ảnh và lưu trữ
+                $image = $request->file('image_thumnail');
+                $imageName = 'thumbnail.webp';
+                $imagePath = $productFolder . '/' . $imageName;
+                
+                // Chuyển đổi ảnh sang WebP
+                $this->convertToWebP($image, $imagePath);
+                
+                // Lưu đường dẫn vào dữ liệu
+                $data['image_thumnail'] = $imagePath;
             }
 
             // Xử lý gallery images
@@ -215,8 +256,22 @@ class ProductController extends Controller
 
             // Thêm ảnh mới vào gallery nếu có
             if ($request->hasFile('gallery')) {
-                foreach ($request->file('gallery') as $image) {
-                    $imagePath = $image->store('products/gallery', 'public');
+                // Tạo thư mục gallery bên trong thư mục sản phẩm nếu chưa tồn tại
+                $galleryFolder = 'products/' . $product->id . '/gallery';
+                Storage::disk('public')->makeDirectory($galleryFolder);
+                
+                // Đếm số ảnh hiện có trong gallery
+                $currentGalleryCount = $product->gallery()->count();
+
+                foreach ($request->file('gallery') as $index => $image) {
+                    // Xử lý ảnh và lưu trữ
+                    $imageName = 'gallery_' . ($currentGalleryCount + $index + 1) . '.webp';
+                    $imagePath = $galleryFolder . '/' . $imageName;
+                    
+                    // Chuyển đổi ảnh sang WebP
+                    $this->convertToWebP($image, $imagePath);
+                    
+                    // Lưu thông tin vào cơ sở dữ liệu
                     $product->gallery()->create([
                         'image_url' => $imagePath
                     ]);
@@ -388,5 +443,232 @@ class ProductController extends Controller
                 'message' => 'Có lỗi xảy ra khi xóa sản phẩm: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Generate product variants based on selected attributes
+     */
+    public function generateVariants(Request $request)
+    {
+        try {
+            // Xử lý dữ liệu từ FormData
+            $jsonData = $request->input('data');
+            
+            // Log dữ liệu nhận được để debug
+            \Log::info('Received data for variant generation:', [
+                'raw_data' => $request->all(),
+                'json_data' => $jsonData
+            ]);
+            
+            if (empty($jsonData)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không nhận được dữ liệu'
+                ], 400);
+            }
+            
+            // Parse JSON data
+            $data = json_decode($jsonData, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dữ liệu JSON không hợp lệ: ' . json_last_error_msg()
+                ], 400);
+            }
+            
+            $productId = $data['product_id'] ?? null;
+            $variantAttributes = $data['variant_attributes'] ?? [];
+            
+            if (empty($variantAttributes)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng chọn ít nhất một thuộc tính biến thể'
+                ], 400);
+            }
+            
+            // Lấy thông tin sản phẩm nếu có
+            $product = null;
+            if ($productId) {
+                $product = Product::find($productId);
+                if (!$product) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Không tìm thấy sản phẩm'
+                    ], 404);
+                }
+            }
+            
+            // Lấy thông tin các thuộc tính và giá trị
+            $attributeValues = [];
+            foreach ($variantAttributes as $variantId => $valueIds) {
+                if (empty($valueIds)) continue;
+                
+                $variant = Variant::find($variantId);
+                if (!$variant) continue;
+                
+                $values = VariantValue::whereIn('id', $valueIds)
+                    ->where('variant_id', $variantId)
+                    ->get();
+                
+                if ($values->isEmpty()) continue;
+                
+                $attributeValues[$variantId] = [
+                    'name' => $variant->name,
+                    'values' => $values->map(function($value) {
+                        return [
+                            'id' => $value->id,
+                            'value' => $value->value
+                        ];
+                    })->toArray()
+                ];
+            }
+            
+            if (empty($attributeValues)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy giá trị thuộc tính hợp lệ'
+                ], 400);
+            }
+            
+            // Tạo tất cả các tổ hợp có thể
+            $combinations = $this->generateCombinations($attributeValues);
+            
+            // Kiểm tra các biến thể đã tồn tại nếu đang chỉnh sửa sản phẩm
+            $existingVariants = [];
+            if ($product) {
+                $existingVariants = $product->variants()
+                    ->with(['variant:id,name', 'variantValue:id,value'])
+                    ->get()
+                    ->map(function($variant) {
+                        return [
+                            'id' => $variant->id,
+                            'variant_id' => $variant->variant_id,
+                            'variant_name' => $variant->variant->name,
+                            'variant_value_id' => $variant->variant_value_id,
+                            'variant_value' => $variant->variantValue->value,
+                            'sku' => $variant->sku,
+                            'price' => $variant->price,
+                            'quantity' => $variant->quantity,
+                            'status' => $variant->status
+                        ];
+                    })
+                    ->toArray();
+            }
+            
+            // Chuẩn bị dữ liệu phản hồi
+            $variants = [];
+            $basePrice = $product ? $product->price : 0;
+            
+            foreach ($combinations as $combination) {
+                $variantData = [
+                    'attributes' => $combination,
+                    'sku' => $product ? $product->product_code . '-' : 'SKU-',
+                    'price' => $basePrice,
+                    'quantity' => 0,
+                    'status' => 1
+                ];
+                
+                // Tạo SKU dựa trên tổ hợp thuộc tính
+                foreach ($combination as $attr) {
+                    $variantData['sku'] .= strtoupper(substr($attr['value'], 0, 2));
+                }
+                
+                $variants[] = $variantData;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'variants' => $variants,
+                'existing_variants' => $existingVariants
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error generating variants: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Xử lý lỗi mã hóa UTF-8
+            $errorMessage = $e->getMessage();
+            if (strpos($errorMessage, 'Malformed UTF-8 characters') !== false) {
+                $errorMessage = 'Lỗi mã hóa ký tự Unicode. Vui lòng kiểm tra lại các giá trị thuộc tính có chứa ký tự đặc biệt.';
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi tạo biến thể: ' . $errorMessage,
+                'error_type' => get_class($e)
+            ], 500);
+        }
+    }
+    
+    /**
+     * Generate all possible combinations of attribute values
+     */
+    private function generateCombinations($attributeValues)
+    {
+        $result = [[]];
+        
+        foreach ($attributeValues as $variantId => $attribute) {
+            $append = [];
+            
+            foreach ($result as $product) {
+                foreach ($attribute['values'] as $value) {
+                    $product[] = [
+                        'variant_id' => $variantId,
+                        'variant_name' => $attribute['name'],
+                        'value_id' => $value['id'],
+                        'value' => $value['value']
+                    ];
+                    $append[] = $product;
+                }
+            }
+            
+            $result = $append;
+        }
+        
+        return $result;
+    }
+
+    private function convertToWebP($image, $imagePath)
+    {
+        // Đọc ảnh gốc
+        $sourceImage = null;
+        $extension = strtolower($image->getClientOriginalExtension());
+        
+        // Tạo hình ảnh từ file dựa trên định dạng
+        switch ($extension) {
+            case 'jpeg':
+            case 'jpg':
+                $sourceImage = imagecreatefromjpeg($image->getPathname());
+                break;
+            case 'png':
+                $sourceImage = imagecreatefrompng($image->getPathname());
+                break;
+            case 'gif':
+                $sourceImage = imagecreatefromgif($image->getPathname());
+                break;
+            default:
+                // Nếu không phải định dạng hỗ trợ, lưu trực tiếp
+                Storage::disk('public')->putFileAs(dirname($imagePath), $image, basename($imagePath));
+                return;
+        }
+        
+        if (!$sourceImage) {
+            // Nếu không đọc được ảnh, lưu trực tiếp
+            Storage::disk('public')->putFileAs(dirname($imagePath), $image, basename($imagePath));
+            return;
+        }
+        
+        // Lưu ảnh dưới dạng webp
+        ob_start();
+        imagewebp($sourceImage, null, 80);
+        $webpData = ob_get_contents();
+        ob_end_clean();
+        
+        // Giải phóng bộ nhớ
+        imagedestroy($sourceImage);
+        
+        // Lưu ảnh WebP vào storage
+        Storage::disk('public')->put($imagePath, $webpData);
     }
 }

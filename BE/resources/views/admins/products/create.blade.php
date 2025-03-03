@@ -24,7 +24,7 @@
         </div>
     </div>
 
-    <form id="productForm" action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data">
+    <form id="productForm" action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" data-ajax="false">
         @csrf
         <input type="hidden" name="has_variants" value="0" id="hasVariants">
 
@@ -156,28 +156,40 @@
                         <h5 class="text-white mb-0">Biến thể sản phẩm</h5>
                     </div>
                     <div class="card-body">
-                        <!-- Form thêm biến thể -->
-                        <div id="variantForm" class="border rounded p-4 mb-4" style="background: #f8f9fa;">
-                            <div class="row">
-                                @foreach($variants as $variant)
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">{{ $variant->name }} <span class="text-danger">*</span></label>
-                                        <select class="form-select variant-select" data-variant-id="{{ $variant->id }}">
-                                            <option value="">Chọn {{ strtolower($variant->name) }}</option>
-                                            @foreach($variant->values as $value)
-                                                <option value="{{ $value->id }}">{{ $value->value }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                @endforeach
+                        <!-- Form chọn biến thể -->
+                        <div class="variant-selector mb-4">
+                            <div class="row align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">Chọn thuộc tính</label>
+                                    <select class="form-select" id="variantTypeSelect">
+                                        <option value="">Chọn thuộc tính biến thể</option>
+                                        @foreach($variants as $variant)
+                                            <option value="{{ $variant->id }}" data-values='@json($variant->values)'>{{ $variant->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-primary w-100" id="addVariantTypeBtn">
+                                        <i class="fas fa-plus me-2"></i>Thêm
+                                    </button>
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- Danh sách các biến thể đã chọn -->
+                        <div id="selectedVariantTypes" class="mb-4">
+                            <!-- Các biến thể đã chọn sẽ được thêm vào đây bằng JavaScript -->
+                        </div>
+
+                        <!-- Form thêm biến thể -->
+                        <div id="variantForm" class="border rounded p-4 mb-4 d-none" style="background: #f8f9fa;">
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">SKU <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="variant-sku">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Giá của biến thể <span class="text-danger">*</span></label>
+                                    <label class="form-label">Giá <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <input type="number" class="form-control" id="variant-price" min="0">
                                         <span class="input-group-text">VNĐ</span>
@@ -187,9 +199,27 @@
                                     <label class="form-label">Số lượng <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control" id="variant-quantity" min="0">
                                 </div>
-                                <div class="col-md-4 d-flex align-items-end">
-                                    <button type="button" class="btn btn-primary w-100" id="add-variant-btn">
-                                        <i class="fas fa-plus me-2"></i>Thêm biến thể
+                            </div>
+                            <button type="button" class="btn btn-primary" id="add-variant-btn">
+                                <i class="fas fa-plus me-2"></i>Thêm biến thể
+                            </button>
+                        </div>
+
+                        <!-- Nút tạo biến thể tự động -->
+                        <div id="generate-variants-container" class="mb-4" style="display: none;">
+                            <div class="alert alert-info">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-info-circle fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1">Tạo biến thể tự động</h5>
+                                        <p class="mb-0">Hệ thống sẽ tạo tất cả các tổ hợp biến thể có thể từ các thuộc tính và giá trị bạn đã chọn.</p>
+                                    </div>
+                                </div>
+                                <div class="text-end mt-3">
+                                    <button type="button" class="btn btn-info" id="generate-variants-btn" style="display: none;">
+                                        <i class="fas fa-magic me-2"></i>Tạo biến thể tự động
                                     </button>
                                 </div>
                             </div>

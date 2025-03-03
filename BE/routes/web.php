@@ -11,11 +11,11 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\Auth\RegisterController;
 
-use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\VariantController;
-use App\Http\Controllers\Admin\VariantValueController;
-use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\TrashController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\VariantController;
+use App\Http\Controllers\VariantValueController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\TrashController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +40,7 @@ Route::prefix('admin')->group(function () {
 
     // Products routes
     Route::resource('products', ProductController::class);
+    Route::post('products/generate-variants', [ProductController::class, 'generateVariants'])->name('products.generate-variants');
 
     // Variants routes
     Route::resource('variants', VariantController::class);
@@ -77,7 +78,7 @@ Route::prefix('admin')->group(function () {
 
     // Post ===============================================
     Route::resource('posts', PostController::class);
-    
+
     // Category Post ======================================
     Route::resource('category-posts', CategoryPostController::class);
     Route::post('upload-image', [App\Http\Controllers\ImageUploadController::class, 'upload'])->name('upload.image');
