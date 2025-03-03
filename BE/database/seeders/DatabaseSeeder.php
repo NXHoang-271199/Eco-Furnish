@@ -15,7 +15,11 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             UserSeeder::class,
             PostSeeder::class,
-            RoleSeeder::class
+            RoleSeeder::class,
+            PaymentMethodSeeder::class,
+            OrderSeeder::class,
+            OrderItemSeeder::class,
+            OrderNotificationSeeder::class,
         ]);
     }
 }

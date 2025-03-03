@@ -1,21 +1,26 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\VoucherController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\CategoryPostController;
-use App\Http\Controllers\Auth\RegisterController;
-
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\TrashController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VariantController;
-use App\Http\Controllers\VariantValueController;
+
+use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\TrashController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ImageUploadController;
+use App\Http\Controllers\CategoryPostController;
+use App\Http\Controllers\VariantValueController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\OrderNotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,10 +67,27 @@ Route::prefix('admin')->group(function () {
     });
     // return view('admins.dashboard');
     // return view('admins.test');
+      // phương thức thanh toán
+      Route::resource('payment-methods', PaymentMethodController::class);
+      /// kết nối phương thức
+      Route::prefix('payment-methods')->name('payment-methods.')->group(function () {
+          Route::get('{id}/connect', [PaymentMethodController::class, 'getConnectForm'])->name('connect.form');
+          Route::post('{id}/connect', [PaymentMethodController::class, 'connect'])->name('connect');
+          Route::post('{id}/disconnect', [PaymentMethodController::class, 'disconnect'])->name('disconnect');
+      });
+
+      // đơn hàng
+      Route::resource('orders', OrderController::class);
+      // cập nhật trạng thái đơn hàng
+      Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
+
+      // thông báo đơn hàng
+      Route::get('order-notifications', [OrderNotificationController::class, 'index'])->name('order.notifications');
+      Route::post('order-notifications/{id}/read', [OrderNotificationController::class, 'markAsRead'])->name('order.notification.read');
 });
 // Login
-Route::get('login', [LoginController::class, 'showFormLogin'])->name('login');
-Route::get('register', [RegisterController::class, 'showFormRegister'])->name('register');
+// Route::get('login', [LoginController::class, 'showFormLogin'])->name('login');
+// Route::get('register', [RegisterController::class, 'showFormRegister'])->name('register');
 
 Route::prefix('admin')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');

@@ -22,4 +22,8 @@ class Voucher extends Model
         'usage_limit',
         'image'
     ];
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 }

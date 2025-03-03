@@ -36,4 +36,8 @@ class ProductVariant extends Model
     {
         return $this->belongsTo(VariantValue::class)->withTrashed();
     }
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 }

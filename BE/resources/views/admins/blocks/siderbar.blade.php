@@ -142,6 +142,44 @@
                         </ul>
                     </div>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="#sidebarPayment" data-bs-toggle="collapse" role="button"
+                        aria-expanded="false" aria-controls="sidebarPayment">
+                        <i class="las la-comments-dollar"></i> <span data-key="t-advance-ui">Quản Lý Thanh Toán</span>
+                    </a>
+                    <div class="collapse menu-dropdown" id="sidebarPayment">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('payment-methods.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                    Danh sách
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('payment-methods.create') }}" class="nav-link" data-key="t-nestable-list">
+                                    Thêm mới
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="#sidebarOrder" data-bs-toggle="collapse" role="button"
+                        aria-expanded="false" aria-controls="sidebarOrder">
+                        <i class="ri-rocket-line"></i> <span data-key="t-advance-ui">Quản Lý Đơn Hàng</span>
+                    </a>
+                    <div class="collapse menu-dropdown" id="sidebarOrder">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('orders.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                    Đơn hàng
+                                </a>
+                                <a href="{{ route('order.notifications') }}" class="nav-link" data-key="t-sweet-alerts">
+                                    Thông báo
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
 
                 <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
 
