@@ -19,35 +19,35 @@ const ProductDetail = () => {
           <div className="flex justify-start space-x-5">
             <div className="mt-4">
               <img
-                src="https://picsum.photos/id/1/77/77"
+                src="https://picsum.photos/77/77"
                 alt=""
                 className="w-20 rounded-md"
               />
             </div>
             <div className="mt-4">
               <img
-                src="https://picsum.photos/id/1/77/77"
+                src="https://picsum.photos/77/77"
                 alt=""
                 className="w-20 rounded-md"
               />
             </div>
             <div className="mt-4">
               <img
-                src="https://picsum.photos/id/1/77/77"
+                src="https://picsum.photos/77/77"
                 alt=""
                 className="w-20 rounded-md"
               />
             </div>
             <div className="mt-4">
               <img
-                src="https://picsum.photos/id/1/77/77"
+                src="https://picsum.photos/77/77"
                 alt=""
                 className="w-20 rounded-md"
               />
             </div>
             <div className="mt-4">
               <img
-                src="https://picsum.photos/id/1/77/77"
+                src="https://picsum.photos/77/77"
                 alt=""
                 className="w-20 rounded-md"
               />
