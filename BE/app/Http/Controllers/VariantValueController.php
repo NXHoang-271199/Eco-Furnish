@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\VariantValue\StoreVariantValueRequest;
@@ -76,11 +76,11 @@ class VariantValueController extends Controller
                 'value' => $request->value
             ]);
 
+            session()->flash('success', 'Thêm giá trị biến thể ' . $request->value . ' thành công');
+
             return response()->json([
                 'success' => true,
-                'message' => 'Thêm giá trị biến thể "' . $request->value . '" thành công',
-                'value' => $request->value,
-                'id' => $variant->values()->latest()->first()->id
+                'redirect' => route('variants.values.index', $variant)
             ]);
         } catch (\Exception $e) {
             \Log::error('Error creating variant value: ' . $e->getMessage());
@@ -139,9 +139,10 @@ class VariantValueController extends Controller
                 'value' => $request->value
             ]);
 
+            session()->flash('success', 'Cập nhật giá trị biến thể thành công');
+
             return response()->json([
                 'success' => true,
-                'message' => 'Cập nhật giá trị biến thể thành công',
                 'redirect' => route('variants.values.index', $variant)
             ]);
         } catch (\Exception $e) {
@@ -164,9 +165,12 @@ class VariantValueController extends Controller
             $value->delete();
 
             DB::commit();
+
+            session()->flash('success', 'Giá trị biến thể đã được xóa thành công');
+
             return response()->json([
                 'success' => true,
-                'message' => 'Giá trị biến thể đã được xóa thành công.'
+                'redirect' => route('variants.values.index', $variant)
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

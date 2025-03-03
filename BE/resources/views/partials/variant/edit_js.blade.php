@@ -19,37 +19,27 @@
                 data: form.serialize(),
                 success: function(response) {
                     if (response.success) {
-                        // Hiển thị thông báo thành công
-                        var alertHtml = '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                            response.message +
-                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                            '</div>';
-                        $('.card-body').prepend(alertHtml);
-                        
-                        // Tự động ẩn thông báo sau 2 giây
-                        setTimeout(function() {
-                            $('.alert').fadeOut('slow', function() {
-                                $(this).remove();
-                                window.location.href = response.redirect;
-                            });
-                        }, 2000);
-                    } else {
-                        // Hiển thị thông báo lỗi
-                        var alertHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                            response.message +
-                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                            '</div>';
-                        $('.card-body').prepend(alertHtml);
+                        if (response.redirect) {
+                        window.location.href = response.redirect;
+                    }
                     }
                 },
                 error: function(xhr) {
                     const response = xhr.responseJSON;
-                    // Hiển thị thông báo lỗi
-                    var alertHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                        (response.message || 'Có lỗi xảy ra khi cập nhật biến thể') +
-                        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                        '</div>';
-                    $('.card-body').prepend(alertHtml);
+                      // Hiển thị thông báo lỗi dạng toast
+                Toastify({
+                    text: errorMessage || 'Có lỗi xảy ra khi cập nhật danh mục',
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    className: "bg-danger",
+                    style: {
+                        background: "var(--vz-danger)",
+                        color: "#fff",
+                        boxShadow: "0 10px 20px -10px var(--vz-danger)"
+                    }
+                }).showToast();
                 },
                 complete: function() {
                     submitBtn.prop('disabled', false);

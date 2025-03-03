@@ -37,6 +37,8 @@
     <link href="{{ asset('assets/admins/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- Sweet Alert css-->
     <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     @yield('CSS')
 </head>
 
@@ -51,9 +53,8 @@
 
         <div class="main-content">
             <div class="page-content">
-
+                <x-alert />
                 @yield('content')
-
             </div>
 
             @include('admins.blocks.footer')
@@ -94,6 +95,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Sweet Alerts js -->
     <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+    <!-- Toastify JS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     @yield('JS')
 </body>
 

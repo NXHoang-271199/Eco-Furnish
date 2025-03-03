@@ -144,24 +144,134 @@
 
         /* Variant section styles */
         .variant-section {
-            margin-top: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none; /* Ẩn mặc định */
         }
 
-        .variant-combination {
+        .variant-section.show {
+            display: block;
+        }
+
+        .variant-section .card-header {
+            background: #3b5998;
+            color: white;
+            border-radius: 8px 8px 0 0;
+            padding: 15px 20px;
+        }
+
+        .variant-type-select {
+            max-width: 300px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .variant-value-form select {
+            border-color: #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .variant-value-form select:focus {
+            border-color: #3b5998;
+            box-shadow: 0 0 0 0.2rem rgba(59, 89, 152, 0.25);
+        }
+
+        .variant-info-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        #variant-values-container:empty {
+            display: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            height: 0 !important;
+        }
+
+        #variant-values-container {
+            margin-bottom: 20px;
+        }
+
+        #addVariantTypeBtn {
+            background-color: #3b5998;
+            border-color: #3b5998;
+            transition: all 0.3s ease;
+            height: 38px;
+        }
+
+        #addVariantTypeBtn:hover {
+            background-color: #2d4373;
+            border-color: #2d4373;
+        }
+
+        #add-variant {
+            background-color: #3b5998;
+            border-color: #3b5998;
+            transition: all 0.3s ease;
+        }
+
+        #add-variant:hover {
+            background-color: #2d4373;
+            border-color: #2d4373;
+        }
+
+        .form-select {
+            min-width: 200px;
+        }
+
+        .input-group-text {
+            font-size: 13px;
+            padding: 0.375rem 0.75rem;
+            background-color: #f8f9fa;
+            border-color: #e0e0e0;
+            color: #6c757d;
+            height: 38px;
+            display: flex;
+            align-items: center;
+        }
+
+        .remove-variant-type {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            z-index: 1;
+        }
+
+        .remove-variant-type:hover {
+            opacity: 1;
+        }
+
+        .variant-item {
             background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .variant-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .variant-header {
             padding: 15px;
-            margin-bottom: 15px;
+            cursor: pointer;
         }
 
-        .variant-combination .form-group {
-            margin-bottom: 15px;
-        }
-
-        .variant-combination .btn-danger {
-            padding: 5px 10px;
-            font-size: 14px;
+        .variant-form {
+            border-top: 1px solid #e0e0e0;
+            padding: 15px;
+            background: white;
+            border-radius: 0 0 8px 8px;
         }
 
         /* Button styles */
@@ -257,5 +367,219 @@
                 width: 100%;
                 justify-content: center;
             }
+        }
+
+        .input-group .invalid-feedback {
+            display: none;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #dc3545;
+        }
+
+        .input-group .is-invalid ~ .invalid-feedback {
+            display: block;
+        }
+
+        .input-group.has-validation {
+            flex-wrap: wrap;
+        }
+
+        .input-group.has-validation > .invalid-feedback {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        /* Form validation styles */
+        .form-control.is-invalid,
+        .form-select.is-invalid {
+            border-color: #dc3545;
+            padding-right: calc(1.5em + 0.75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+
+        .form-control.is-valid,
+        .form-select.is-valid {
+            border-color: #198754;
+            padding-right: calc(1.5em + 0.75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+
+        .valid-feedback {
+            display: none;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #198754;
+        }
+
+        .was-validated .form-control:valid,
+        .form-control.is-valid,
+        .was-validated .form-select:valid,
+        .form-select.is-valid {
+            border-color: #198754;
+        }
+
+        .was-validated .form-control:valid:focus,
+        .form-control.is-valid:focus,
+        .was-validated .form-select:valid:focus,
+        .form-select.is-valid:focus {
+            border-color: #198754;
+            box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+        }
+
+        .was-validated .form-control:valid ~ .valid-feedback,
+        .form-control.is-valid ~ .valid-feedback,
+        .was-validated .form-select:valid ~ .valid-feedback,
+        .form-select.is-valid ~ .valid-feedback {
+            display: block;
+        }
+
+        .input-group .form-control.is-invalid,
+        .input-group .form-select.is-invalid {
+            z-index: 3;
+        }
+
+        .input-group.has-validation {
+            flex-wrap: wrap;
+        }
+
+        .input-group.has-validation > :nth-last-child(n + 3):not(.last-child):not(.dropdown-toggle):not(.dropdown-menu),
+        .input-group.has-validation > .dropdown-toggle:nth-last-child(n + 4) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .input-group.has-validation > .invalid-feedback {
+            margin-top: 0.25rem;
+            flex-basis: 100%;
+        }
+
+        /* Alert styles */
+        .alert {
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+        }
+
+        .alert-danger {
+            color: #842029;
+            background-color: #f8d7da;
+            border-color: #f5c2c7;
+        }
+
+        .combination-error {
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        /* Switch toggle styles */
+        .switch-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .form-check-input {
+            width: 2.5em;
+            height: 1.25em;
+            margin-top: 0;
+            vertical-align: middle;
+            background-color: #fff;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+            background-position: left center;
+            background-repeat: no-repeat;
+            background-size: contain;
+            border: 1px solid rgba(0, 0, 0, 0.25);
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            transition: background-position 0.15s ease-in-out;
+        }
+
+        .form-check-input:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+            background-position: right center;
+        }
+
+        .form-switch .form-check-input {
+            border-radius: 2em;
+            margin-right: 0.5em;
+        }
+
+        .form-check-label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        .variant-edit {
+            display: none;
+        }
+        
+        /* CSS cho nút xóa biến thể */
+        .btn-remove-variant {
+            background: none;
+            border: none;
+            color: #dc3545;
+            font-size: 16px;
+            padding: 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        
+        .btn-remove-variant:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        
+        .btn-remove-variant i {
+            font-size: 14px;
+        }
+        
+        /* CSS cho nút tạo biến thể tự động */
+        #generate-variants-btn {
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 114, 255, 0.3);
+            transition: all 0.3s ease;
+            padding: 12px 25px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            font-size: 1.05rem;
+            color: #ffffff;
+        }
+        
+        #generate-variants-btn:hover {
+            background: linear-gradient(45deg, #0072ff, #00c6ff);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 114, 255, 0.4);
+            color: #ffffff;
+        }
+        
+        #generate-variants-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 114, 255, 0.3);
+            color: #ffffff;
+        }
+        
+        /* CSS cho container tạo biến thể tự động */
+        #generate-variants-container {
+            transition: all 0.3s ease;
+            margin: 25px 0;
         }
     </style>

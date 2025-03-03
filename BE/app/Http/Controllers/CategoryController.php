@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Category\StoreCategoryRequest;
@@ -50,13 +50,16 @@ class CategoryController extends Controller
             $category = Category::create($data);
             
             DB::commit();
+
+            session()->flash('success', 'Thêm danh mục thành công');
+
             return response()->json([
                 'success' => true,
-                'message' => 'Thêm danh mục thành công',
                 'category' => [
                     'id' => $category->id,
                     'name' => $category->name
-                ]
+                ],
+                'redirect' => route('categories.index')
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -85,10 +88,10 @@ class CategoryController extends Controller
             $category->update($data);
             
             DB::commit();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Cập nhật danh mục thành công',
-                'redirect' => route('categories.index')
+                'message' => 'Cập nhật danh mục thành công'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -105,9 +108,11 @@ class CategoryController extends Controller
         try {
             $category->delete();
 
+            session()->flash('success', 'Danh mục đã được xóa thành công');
+
             return response()->json([
                 'success' => true,
-                'message' => 'Danh mục đã được xóa thành công.'
+                'redirect' => route('categories.index')
             ]);
         } catch (\Exception $e) {
             return response()->json([
