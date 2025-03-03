@@ -13,6 +13,13 @@ class DatabaseSeeder extends Seeder
             VariantSeeder::class,
             VariantValueSeeder::class,
             ProductSeeder::class,
+            UserSeeder::class,
+            PostSeeder::class,
+            RoleSeeder::class,
+            PaymentMethodSeeder::class,
+            OrderSeeder::class,
+            OrderItemSeeder::class,
+            OrderNotificationSeeder::class,
         ]);
     }
-} 
+}
