@@ -351,7 +351,6 @@
                         <p class="text-muted text-center">Không có bài viết</p>
                     @endforelse
                 </div>
-
                 {{ $listPosts->appends(['tab' => 'baiviet'])->links('pagination::bootstrap-5') }}
             </div>
         </div><!--end col-->

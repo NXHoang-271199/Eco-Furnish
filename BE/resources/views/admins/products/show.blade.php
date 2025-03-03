@@ -29,24 +29,24 @@
                     <div class="row gx-lg-5">
                         <div class="col-xl-4 col-md-8 mx-auto">
                             <div class="product-image-container">
-                                <img src="{{ asset('storage/' . $product->image_thumnail) }}" 
-                                     alt="{{ $product->name }}" 
+                                <img src="{{ asset('storage/' . $product->image_thumnail) }}"
+                                     alt="{{ $product->name }}"
                                      class="main-image"
                                      id="main-product-image">
-                                
+
                                 <div class="gallery-section">
                                     <h5>Ảnh phụ sản phẩm</h5>
                                     <div class="gallery-container">
                                         <div class="thumbnail-wrapper active" onclick="changeMainImage('{{ asset('storage/' . $product->image_thumnail) }}')">
-                                            <img src="{{ asset('storage/' . $product->image_thumnail) }}" 
-                                                 alt="Main image" 
+                                            <img src="{{ asset('storage/' . $product->image_thumnail) }}"
+                                                 alt="Main image"
                                                  class="thumbnail">
                                         </div>
                                         @if($product->gallery)
                                             @foreach($product->gallery as $image)
                                                 <div class="thumbnail-wrapper" onclick="changeMainImage('{{ asset('storage/' . $image->image_url) }}')">
-                                                    <img src="{{ asset('storage/' . $image->image_url) }}" 
-                                                         alt="Gallery image {{ $loop->iteration }}" 
+                                                    <img src="{{ asset('storage/' . $image->image_url) }}"
+                                                         alt="Gallery image {{ $loop->iteration }}"
                                                          class="thumbnail">
                                                 </div>
                                             @endforeach
@@ -119,7 +119,7 @@
                                                                 @endif
                                                                 @if($product->variants->count() > 0)
                                                                     <div class="mt-2">
-                                                                        <strong>Giá biến thể:</strong> 
+                                                                        <strong>Giá biến thể:</strong>
                                                                         @php
                                                                             $minPrice = $product->variants->min('price');
                                                                             $maxPrice = $product->variants->max('price');
@@ -207,4 +207,4 @@
 
 @section('JS')
     @include('partials.products.show_js')
-@endsection 
+@endsection

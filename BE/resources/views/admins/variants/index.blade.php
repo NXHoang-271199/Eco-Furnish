@@ -3,7 +3,7 @@
 @section('title', 'Quản lý biến thể')
 
 @section('CSS')
-  
+
 @endsection
 
 @section('content')

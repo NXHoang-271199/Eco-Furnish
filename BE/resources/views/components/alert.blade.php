@@ -27,7 +27,7 @@
                     className: "bg-danger",
                     style: {
                         background: "var(--vz-danger)",
-                        color: "#fff", 
+                        color: "#fff",
                         boxShadow: "0 10px 20px -10px var(--vz-danger)"
                     }
                 }).showToast();

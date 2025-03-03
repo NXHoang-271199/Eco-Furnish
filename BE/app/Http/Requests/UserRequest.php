@@ -65,7 +65,6 @@ class UserRequest extends FormRequest
             'address.required' => 'Địa chỉ không được để trống!',
             'address.max' => 'Địa chỉ không được dài hơn 255 ký tự!',
 
-
             'avatar.image' => 'Ảnh đại diện phải là tệp hình ảnh!',
             'avatar.mimes' => 'Ảnh đại diện phải có định dạng jpeg, png, jpg, gif, webp!',
             'avatar.max' => 'Ảnh đại diện khó quá 20MB!',

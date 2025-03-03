@@ -32,8 +32,8 @@
                         @csrf
                         <div class="mb-3">
                             <label class="form-label" for="name">Tên danh mục</label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" 
-                                id="name" name="name" value="{{ old('name') }}" 
+                            <input type="text" class="form-control @error('name') is-invalid @enderror"
+                                id="name" name="name" value="{{ old('name') }}"
                                 placeholder="Nhập tên danh mục">
                             @error('name')
                                 <div class="invalid-feedback">
@@ -57,7 +57,7 @@
                 <div class="card-header d-flex align-items-center">
                     <h4 class="card-title mb-0 flex-grow-1">Danh sách chuyên mục</h4>
                     <div class="flex-shrink-0">
-                        <a href="/admin/trash/trash-categories" class="btn btn-soft-danger btn-icon btn-sm fs-16" 
+                        <a href="/admin/trash/trash-categories" class="btn btn-soft-danger btn-icon btn-sm fs-16"
                            data-bs-toggle="tooltip" data-bs-placement="top" title="Thùng rác">
                             <i class="ri-delete-bin-line"></i>
                         </a>
@@ -107,4 +107,4 @@
 
 @section('JS')
     @include('partials.category.index_js')
-@endsection 
+@endsection

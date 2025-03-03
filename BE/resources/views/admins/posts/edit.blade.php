@@ -373,21 +373,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        {{-- <div class="card-body">
-                            <div class="mb-3">
-                                <label for="user_id" class="form-label">Chọn người dùng</label>
-                                <select class="form-select" name="user_id" id="user_id" required>
-                                    <option value="">Chọn người dùng</option>
-                                    @foreach ($users as $user)
-                                        <option value="{{ $user->id }}"
-                                            @if ($user->id == $singerPost->user_id) selected @endif>
-                                            {{ $user->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div> --}}
                     </div>
 
                     <div class="card">

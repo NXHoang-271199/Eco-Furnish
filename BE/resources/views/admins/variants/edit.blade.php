@@ -3,7 +3,7 @@
 @section('title', 'Sửa biến thể')
 
 @section('CSS')
-   
+
 @endsection
 
 @section('content')
@@ -41,7 +41,7 @@
                         @method('PUT')
                         <div class="mb-3">
                             <label class="form-label" for="name">Tên biến thể <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" 
+                            <input type="text" class="form-control @error('name') is-invalid @enderror"
                                 id="name" name="name" value="{{ old('name', $variant->name) }}" required>
                             @error('name')
                                 <div class="invalid-feedback">
@@ -64,4 +64,4 @@
 
 @section('JS')
    @include('partials.variant.edit_js')
-@endsection 
+@endsection

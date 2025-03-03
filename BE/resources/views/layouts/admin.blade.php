@@ -77,7 +77,11 @@
     <script src="{{ asset('assets/admins/libs/jsvectormap/jsvectormap.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/jsvectormap/maps/world-merc.js') }}"></script>
 
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 10364d08a8bcd4f28ff782a9812e783852789c1f
     <!--Swiper slider js-->
     <script src="{{ asset('assets/admins/libs/swiper/swiper-bundle.min.js') }}"></script>
 

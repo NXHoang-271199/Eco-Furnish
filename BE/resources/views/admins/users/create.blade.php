@@ -114,7 +114,6 @@
                                     </div>
                                 </div>
 
-
                                 <div class="mb-4">
                                     <h4 class="text-center mb-2">Avatar</h4>
                                     @error('avatar')
@@ -240,21 +239,6 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                {{-- <div class="col-lg-6">
-                                    <div class="mb-3">
-                                        <label for="confirmPasswordInput" class="form-label">Xác nhận mật khẩu</label>
-                                        <input type="password" class="form-control @error('password_confirmation') is-invalid @enderror"
-                                            id="confirmPasswordInput" name="password_confirmation"
-                                            placeholder="Nhập lại mật khẩu" required autocomplete="new-password">
-                                        <div class="invalid-feedback">
-                                            @error('password_confirmation')
-                                                {{ $message }}
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div> --}}
-
                                 <div class="col-lg-12 text-end">
                                     <button type="submit" class="btn btn-primary">Thêm mới</button>
                                     <a href="{{ route('users.index') }}" class="btn btn-soft-secondary">Hủy bỏ</a>
