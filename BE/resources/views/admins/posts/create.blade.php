@@ -109,112 +109,74 @@
     <script src="{{ asset('assets/admins/js/pages/form-validation.init.js') }}"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Khởi tạo toolbar với nút upload ảnh
             var toolbarOptions = [
                 ['bold', 'italic', 'underline', 'strike'],
                 ['blockquote', 'code-block'],
-                [{
-                    'header': 1
-                }, {
-                    'header': 2
-                }],
-                [{
-                    'list': 'ordered'
-                }, {
-                    'list': 'bullet'
-                }],
-                [{
-                    'script': 'sub'
-                }, {
-                    'script': 'super'
-                }],
-                [{
-                    'indent': '-1'
-                }, {
-                    'indent': '+1'
-                }],
-                [{
-                    'direction': 'rtl'
-                }],
-                [{
-                    'size': ['small', false, 'large', 'huge']
-                }],
-                [{
-                    'header': [1, 2, 3, 4, 5, 6, false]
-                }],
-                [{
-                    'color': []
-                }, {
-                    'background': []
-                }],
-                [{
-                    'font': []
-                }],
-                [{
-                    'align': []
-                }],
+                [{ 'header': 1 }, { 'header': 2 }],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                [{ 'script': 'sub' }, { 'script': 'super' }],
+                [{ 'indent': '-1' }, { 'indent': '+1' }],
+                [{ 'direction': 'rtl' }],
+                [{ 'size': ['small', false, 'large', 'huge'] }],
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'font': [] }],
+                [{ 'align': [] }],
                 ['link', 'image'],
                 ['clean']
             ];
-
+        
             // Khởi tạo Quill
             var quill = new Quill('#editor-container', {
-                modules: {
-                    toolbar: toolbarOptions
-                },
+                modules: { toolbar: toolbarOptions },
                 theme: 'snow'
             });
-
+        
             var oldContent = document.getElementById('content').value;
             if (oldContent) {
                 quill.root.innerHTML = oldContent;
             }
-
+        
             // Lấy toolbar từ Quill
             var toolbar = quill.getModule('toolbar');
             toolbar.addHandler('image', imageHandler);
-
+        
             // Xử lý khi người dùng chọn tải ảnh lên
             function imageHandler() {
                 var input = document.createElement('input');
                 input.setAttribute('type', 'file');
                 input.setAttribute('accept', 'image/*');
                 input.click();
-
-                input.onchange = function() {
+        
+                input.onchange = function () {
                     var file = input.files[0];
                     if (file) {
                         uploadImage(file);
                     }
                 };
             }
-
+        
             // Hàm upload ảnh lên server
             function uploadImage(file) {
                 var formData = new FormData();
                 formData.append('image', file);
-                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute(
-                    'content'));
-
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        
                 // Hiển thị placeholder cho ảnh đang upload
                 var range = quill.getSelection();
                 quill.insertEmbed(range.index, 'image', '/path/to/placeholder-image.jpg');
-
+        
                 // Gửi request lên server
-                fetch('upload-image-route', {
+                fetch('{{ route("upload.image") }}', {  // Đổi route thành route thực tế của bạn
                         method: 'POST',
                         body: formData
                     })
                     .then(response => response.json())
                     .then(result => {
-                        // Xóa placeholder
-                        quill.deleteText(range.index, 1);
-
-                        // Chèn ảnh thật đã upload
+                        quill.deleteText(range.index, 1); // Xóa placeholder
                         quill.insertEmbed(range.index, 'image', result.url);
-
-                        // Di chuyển con trỏ sau ảnh
                         quill.setSelection(range.index + 1);
                     })
                     .catch(error => {
@@ -223,19 +185,17 @@
                         quill.deleteText(range.index, 1);
                     });
             }
-
+        
             // Lấy form
-            var form = document.querySelector('form');
-
+            var form = document.getElementById("postForm");
+        
             // Validate Quill Editor khi có thay đổi
-            quill.on('text-change', function() {
-                var editorContent = quill.root.innerHTML;
-                document.getElementById('content').value = editorContent;
-
-                // Kiểm tra nội dung (bỏ qua các thẻ HTML trống)
+            quill.on('text-change', function () {
                 var textOnly = quill.getText().trim();
                 var editorContainer = document.getElementById('editor-container');
-
+        
+                document.getElementById('content').value = quill.root.innerHTML; // Lưu nội dung vào input ẩn
+        
                 if (textOnly.length > 0) {
                     editorContainer.classList.remove('is-invalid');
                     editorContainer.classList.add('is-valid');
@@ -244,30 +204,24 @@
                     editorContainer.classList.add('is-invalid');
                 }
             });
-
+        
             // Validate file ảnh bìa
             var thumbnailInput = document.getElementById('project-thumbnail-img');
-            thumbnailInput.addEventListener('change', function(event) {
+            thumbnailInput.addEventListener('change', function (event) {
                 previewImage(event);
-
+        
                 if (thumbnailInput.files && thumbnailInput.files.length > 0) {
                     thumbnailInput.classList.remove('is-invalid');
                     thumbnailInput.classList.add('is-valid');
-                    // Cập nhật trạng thái valid cho container của file upload
-                    document.querySelector('.file-upload-wrapper').classList.remove('is-invalid');
-                    document.querySelector('.file-upload-wrapper').classList.add('is-valid');
                 } else {
                     thumbnailInput.classList.remove('is-valid');
                     thumbnailInput.classList.add('is-invalid');
-                    // Cập nhật trạng thái invalid cho container của file upload
-                    document.querySelector('.file-upload-wrapper').classList.remove('is-valid');
-                    document.querySelector('.file-upload-wrapper').classList.add('is-invalid');
                 }
             });
-
+        
             // Validate các trường input, select, textarea thông thường
-            form.querySelectorAll('input:not([type="file"]), select, textarea').forEach(function(input) {
-                input.addEventListener('input', function() {
+            form.querySelectorAll('input:not([type="file"]), select, textarea').forEach(function (input) {
+                input.addEventListener('input', function () {
                     if (input.checkValidity()) {
                         input.classList.remove('is-invalid');
                         input.classList.add('is-valid');
@@ -277,15 +231,15 @@
                     }
                 });
             });
-
+        
             // Hàm hiển thị ảnh preview
             function previewImage(event) {
                 var input = event.target;
                 var preview = document.getElementById('thumbnail-preview');
-
+        
                 if (input.files && input.files[0]) {
                     var reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = function (e) {
                         preview.src = e.target.result;
                         preview.style.display = 'block';
                     };
@@ -293,21 +247,7 @@
                 }
             }
         });
-
-        function previewImage(event) {
-            var input = event.target;
-            var preview = document.getElementById('thumbnail-preview');
-
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-    </script>
+        </script>
 @endsection
 
 @section('content')
@@ -334,7 +274,7 @@
         </div>
         <div class="row">
             <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data" class="d-flex"
-                class="needs-validation" novalidate>
+                class="needs-validation" novalidate id="postForm">
                 @csrf
                 <meta name="csrf-token" content="{{ csrf_token() }}">
                 <div class="col-lg-8 mx-1">
@@ -400,7 +340,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body">
+                        {{-- <div class="card-body">
                             <div class="mb-3">
                                 <label for="user_id" class="form-label">Chọn người dùng</label>
                                 <select class="form-select" name="user_id" id="user_id">
@@ -413,7 +353,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                        </div>
+                        </div> --}}
                     </div>
 
                     <div class="card">

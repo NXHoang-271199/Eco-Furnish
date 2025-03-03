@@ -24,7 +24,6 @@ class PostRequest extends FormRequest
         $rules = [
             'title' => 'required|string|max:255',
             'category_id' => 'required|exists:category_posts,id',
-            'user_id' => 'required|exists:users,id',
             'content' => 'required|string',
             'status' => 'required|in:0,1',
         ];

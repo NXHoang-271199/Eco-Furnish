@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
-
+use Illuminate\Http\JsonResponse;
 class LoginController extends Controller
 {
     /*
@@ -28,7 +28,7 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = RouteServiceProvider::DASHBOARD;
+    protected $redirectTo = RouteServiceProvider::ADMIN;
 
     /**
      * Create a new controller instance.
@@ -40,6 +40,7 @@ class LoginController extends Controller
         $this->middleware('guest')->except('logout');
         $this->middleware('auth')->only('logout');
     }
+
 
     public function logout(Request $request)
     {
@@ -55,7 +56,7 @@ class LoginController extends Controller
 
         return $request->wantsJson()
             ? new JsonResponse([], 204)
-            : redirect(route('login'));
+            : redirect(route('admin.login'));
     }
 
     protected function validateLogin(Request $request)
@@ -74,10 +75,10 @@ class LoginController extends Controller
         );
     }
 
-    protected function sendFailedLoginResponse(Request $request)
+    protected function sendFailedLoginResponse(Request $request, $message = null)
     {
         throw ValidationException::withMessages([
-            $this->username() => ['Những thông tin này không khớp với hồ sơ của chúng tôi.'],
+            $this->username() => [$message ?? 'Những thông tin này không khớp với hồ sơ của chúng tôi.'],
         ]);
     }
 }

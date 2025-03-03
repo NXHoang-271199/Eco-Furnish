@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\Auth\RegisterController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Providers\RouteServiceProvider;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -25,7 +26,7 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 Route::get('/', function () {
     // return view('admins.dashboard');
-    return view('admins.test');
+    return view('auth.login');
 });
 
 // FRONT-END
@@ -40,7 +41,7 @@ Route::get('/email/verify', function () {
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
  
-    return redirect('/admin/dashboard');
+    return redirect(RouteServiceProvider::ADMIN);
 })->middleware(['auth', 'signed'])->name('verification.verify');
 
 Route::post('/email/verification-notification', function (Request $request) {
@@ -49,11 +50,16 @@ Route::post('/email/verification-notification', function (Request $request) {
     return back()->with('message', 'Verification link sent!');
 })->middleware(['auth', 'throttle:6,1'])->name('verification.resend');
 
+// Route login không cần middleware auth
+Route::prefix('admin')->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('admin.login');
+    Route::post('/login', [LoginController::class, 'login'])->name('admin.login');
+    Route::get('/logout', [LoginController::class, 'logout'])->name('admin.logout');
+});
 
-
-
+// Các route khác cần middleware auth
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
-
+    // Dashboard =========================================
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // User ===============================================
