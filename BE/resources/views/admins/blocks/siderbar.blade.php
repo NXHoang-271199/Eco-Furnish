@@ -120,22 +120,22 @@
                     <div class="collapse menu-dropdown" id="sidebarSanPham">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="{{ route('products.index') }}" class="nav-link" data-key="t-product-list">
+                                <a href="{{ route('products.index') }}" class="nav-link" data-key="t-sweet-alerts">
                                     <i class="ri-list-check-2"></i> Danh sách sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('products.create') }}" class="nav-link" data-key="t-product-create">
+                                <a href="{{ route('products.create') }}" class="nav-link" data-key="t-nestable-list">
                                     <i class="ri-add-circle-line"></i> Thêm sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('categories.index') }}" class="nav-link" data-key="t-product-categories">
+                                <a href="{{ route('categories.index') }}" class="nav-link" data-key="t-nestable-list">
                                     <i class="ri-folder-2-line"></i> Danh mục sản phẩm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('variants.index') }}" class="nav-link" data-key="t-product-variants">
+                                <a href="{{ route('variants.index') }}" class="nav-link" data-key="t-nestable-list">
                                     <i class="ri-layout-grid-line"></i> Quản lý biến thể
                                 </a>
                             </li>
