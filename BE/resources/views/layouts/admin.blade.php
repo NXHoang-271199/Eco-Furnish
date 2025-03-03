@@ -37,6 +37,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <!-- custom Css-->
     <link href="{{ asset('assets/admins/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
+    <!-- Sweet Alert css-->
+    <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     @yield('CSS')
 </head>
 
@@ -51,11 +55,16 @@
 
         <div class="main-content">
             <div class="page-content">
+<<<<<<< HEAD
                 @include('components.alert')
 
                 @yield('content')
 
 
+=======
+                <x-alert />
+                @yield('content')
+>>>>>>> 111b2cf7b331a3bd56268381dce795463d612451
             </div>
 
             @include('admins.blocks.footer')
@@ -94,9 +103,18 @@
 
     <!-- App js -->
     <script src="{{ asset('assets/admins/js/app.js') }}"></script>
+<<<<<<< HEAD
     <!-- toastify -->
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
+=======
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Sweet Alerts js -->
+    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+    <!-- Toastify JS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+>>>>>>> 111b2cf7b331a3bd56268381dce795463d612451
     @yield('JS')
 </body>
 

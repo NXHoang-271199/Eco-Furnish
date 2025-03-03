@@ -11,6 +11,7 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+<<<<<<< HEAD
         'product_code',
         'name',
         'category_id',
@@ -25,11 +26,55 @@ class Product extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+=======
+        'name',
+        'product_code',
+        'category_id',
+        'image_thumnail',
+        'short_description',
+        'description',
+        'price',
+        'discount_price',
+        'status'
+    ];
+
+    /**
+     * Get the category that owns the product.
+     */
+    public function category()
+    {
+        return $this->belongsTo(Category::class)->withTrashed();
+    }
+
+    /**
+     * Get the category name even if it's deleted
+     */
+    public function getCategoryNameAttribute()
+    {
+        return $this->category ? $this->category->name : 'N/A';
+    }
+
+    /**
+     * Get the variants for the product.
+     */
+>>>>>>> 111b2cf7b331a3bd56268381dce795463d612451
     public function variants()
     {
         return $this->hasMany(ProductVariant::class)->withTrashed();
     }
+<<<<<<< HEAD
     public function productVariant(){
         return $this->hasMany(ProductVariant::class);
     }
+=======
+
+    /**
+     * Get the gallery images for the product.
+     */
+    public function gallery()
+    {
+        return $this->hasMany(GalleryImage::class);
+    }
+
+>>>>>>> 111b2cf7b331a3bd56268381dce795463d612451
 }
