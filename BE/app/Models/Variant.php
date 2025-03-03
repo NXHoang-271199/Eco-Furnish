@@ -5,17 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-<<<<<<< HEAD
-
-class Variant extends Model
-{
-    use HasFactory, SoftDeletes;
-=======
 class Variant extends Model
 {
     use HasFactory , SoftDeletes;
 
->>>>>>> 111b2cf7b331a3bd56268381dce795463d612451
     protected $fillable = ['name'];
 
     public function values()

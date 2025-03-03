@@ -29,8 +29,8 @@
                         @method('PUT')
                         <div class="form-group">
                             <label for="value">Giá trị</label>
-                            <input type="text" class="form-control @error('value') is-invalid @enderror" 
-                                id="value" name="value" value="{{ old('value', $value->value) }}" 
+                            <input type="text" class="form-control @error('value') is-invalid @enderror"
+                                id="value" name="value" value="{{ old('value', $value->value) }}"
                                 placeholder="VD: Đỏ, XL, 512GB">
                             @error('value')
                                 <span class="invalid-feedback">{{ $message }}</span>
@@ -49,4 +49,4 @@
 
 @section('JS')
     @include('partials.variant-values.edit_js')
-@endsection 
+@endsection

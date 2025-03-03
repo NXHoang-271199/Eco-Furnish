@@ -33,8 +33,6 @@
     <link href="{{ asset('assets/admins/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- App Css-->
     <link href="{{ asset('assets/admins/css/app.min.css') }}" rel="stylesheet" type="text/css" />
-    {{-- toastify --}}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <!-- custom Css-->
     <link href="{{ asset('assets/admins/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- Sweet Alert css-->
@@ -55,16 +53,8 @@
 
         <div class="main-content">
             <div class="page-content">
-<<<<<<< HEAD
-                @include('components.alert')
-
-                @yield('content')
-
-
-=======
                 <x-alert />
                 @yield('content')
->>>>>>> 111b2cf7b331a3bd56268381dce795463d612451
             </div>
 
             @include('admins.blocks.footer')
@@ -73,8 +63,6 @@
     </div>
 
     {{-- Các đoạn script dùng chung --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-
     <script src="{{ asset('assets/admins/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/simplebar/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/node-waves/waves.min.js') }}"></script>
@@ -89,32 +77,27 @@
     <script src="{{ asset('assets/admins/libs/jsvectormap/jsvectormap.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/jsvectormap/maps/world-merc.js') }}"></script>
 
+
     <!--Swiper slider js-->
     <script src="{{ asset('assets/admins/libs/swiper/swiper-bundle.min.js') }}"></script>
 
   <!-- ckeditor -->
-  <script src="{{ asset('assets/libs/%40ckeditor/ckeditor5-build-classic/build/ckeditor.js')}}"></script>
+  {{-- <script src="{{ asset('assets/libs/%40ckeditor/ckeditor5-build-classic/build/ckeditor.js')}}"></script> --}}
 
     <!-- quill js -->
-    <script src="{{ asset('assets/libs/quill/quill.min.js')}}"></script>
+    {{-- <script src="{{ asset('assets/libs/quill/quill.min.js')}}"></script> --}}
 
     <!-- Dashboard init -->
     <script src="{{ asset('assets/admins/js/pages/dashboard-ecommerce.init.js') }}"></script>
 
     <!-- App js -->
     <script src="{{ asset('assets/admins/js/app.js') }}"></script>
-<<<<<<< HEAD
-    <!-- toastify -->
-    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-
-=======
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Sweet Alerts js -->
     <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <!-- Toastify JS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
->>>>>>> 111b2cf7b331a3bd56268381dce795463d612451
     @yield('JS')
 </body>
 

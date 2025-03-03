@@ -69,7 +69,7 @@ return [
     |
     */
 
-    'timezone' => 'Asia/Ho_Chi_Minh',
+    'timezone' => 'UTC',
 
     /*
     |--------------------------------------------------------------------------
@@ -185,6 +185,7 @@ return [
         /*
          * Package Service Providers...
          */
+
         /*
          * Application Service Providers...
          */
@@ -193,6 +194,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\BreadcrumbServiceProvider::class,
 
     ],
 
@@ -207,7 +209,8 @@ return [
     |
     */
 
-    'aliases' => Facade::defaultAliases()->merge([        // 'ExampleClass' => App\Example\ExampleClass::class,
+    'aliases' => Facade::defaultAliases()->merge([
+        // 'ExampleClass' => App\Example\ExampleClass::class,
     ])->toArray(),
 
 ];

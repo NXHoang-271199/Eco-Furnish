@@ -26,6 +26,7 @@ class OrderSeeder extends Seeder
                 'order_status' => 'Chưa Xác Nhận', // Trạng thái đơn hàng
                 'voucher_id' => 1, // ID voucher
                 'total_price' => 200000,
+                'created_at' => now(),
             ]);
         }
     }

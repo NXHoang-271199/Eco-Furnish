@@ -2,7 +2,7 @@
    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <!-- CKEditor -->
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
-    
+
     <script>
         // Initialize CKEditor
         ClassicEditor
@@ -15,7 +15,7 @@
         document.getElementById('image_thumnail').addEventListener('change', function(e) {
             const preview = document.getElementById('thumbnailPreview');
             const file = e.target.files[0];
-            
+
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -42,11 +42,11 @@
         document.getElementById('gallery').addEventListener('change', function(e) {
             const preview = document.getElementById('galleryPreview');
             const files = Array.from(e.target.files);
-            
+
             // Thêm các file mới vào galleryFiles
             files.forEach(file => {
                 galleryFiles.items.add(file);
-                
+
                 // Tạo preview
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -62,7 +62,7 @@
                 }
                 reader.readAsDataURL(file);
             });
-            
+
             // Cập nhật lại files cho input
             this.files = galleryFiles.files;
         });
@@ -73,10 +73,10 @@
             const item = element.parentElement;
             const container = item.parentElement;
             const index = Array.from(container.children).indexOf(item);
-            
+
             // Remove preview
             item.remove();
-            
+
             // Remove from galleryFiles
             const dt = new DataTransfer();
             const files = Array.from(galleryFiles.files);
@@ -103,14 +103,14 @@
             const categorySelect = document.getElementById('category_id');
             let selectedVariants = [];
             let selectedTypes = new Set();
-            
+
             // Khởi tạo các biến và event listeners
             function initializeForm() {
                 if (!form) {
                     console.error('Không tìm thấy form');
                     return;
                 }
-            
+
                 // Đảm bảo phần biến thể bị ẩn khi tải trang
                 if (variantSection) {
                     variantSection.classList.remove('show');
@@ -146,7 +146,7 @@
                 if (addVariantBtn) {
                     addVariantBtn.addEventListener('click', handleAddVariant);
                 }
-                
+
                 // Xử lý tạo biến thể tự động
                 const generateVariantsBtn = document.getElementById('generate-variants-btn');
                 if (generateVariantsBtn) {
@@ -160,14 +160,14 @@
             // Xử lý submit form
             function handleFormSubmit(e) {
                 e.preventDefault();
-                
+
                 // Reset validation states
                 clearAllValidation();
-                
+
                 // Validate các trường bắt buộc
                 let isValid = true;
                 let firstErrorElement = null;
-                
+
                 // Validate tên sản phẩm
                 if (!nameInput.value.trim()) {
                     showError(nameInput, 'Tên sản phẩm là bắt buộc');
@@ -236,34 +236,34 @@
                         let hasEmptyVariant = false;
                         let emptyVariantIndex = -1;
                         let missingFields = [];
-                        
+
                         for (let i = 0; i < selectedVariants.length; i++) {
                             const variant = selectedVariants[i];
                             missingFields = [];
-                            
+
                             if (!variant.sku || variant.sku.trim() === '') {
                                 missingFields.push('SKU');
                             }
-                            
+
                             if (!variant.price || isNaN(parseFloat(variant.price)) || parseFloat(variant.price) <= 0) {
                                 missingFields.push('Giá');
                             }
-                            
+
                             if (variant.quantity === undefined || variant.quantity === '' || isNaN(parseInt(variant.quantity))) {
                                 missingFields.push('Số lượng');
                             }
-                            
+
                             if (!variant.values || Object.keys(variant.values).length === 0) {
                                 missingFields.push('Giá trị thuộc tính');
                             }
-                            
+
                             if (missingFields.length > 0) {
                                 hasEmptyVariant = true;
                                 emptyVariantIndex = i;
                                 break;
                             }
                         }
-                        
+
                         if (hasEmptyVariant) {
                             Swal.fire({
                                 title: 'Lỗi!',
@@ -274,7 +274,7 @@
                             isValid = false;
                             return;
                         }
-                        
+
                         // Kiểm tra trùng lặp SKU
                         const skus = selectedVariants.map(v => v.sku);
                         const uniqueSkus = [...new Set(skus)];
@@ -307,13 +307,13 @@
 
                 // Submit form using AJAX
                 const formData = new FormData(form);
-                
+
                 // Đảm bảo dữ liệu biến thể được gửi đúng cách
                 if (variantToggle.checked && selectedVariants.length > 0) {
                     // Xóa tất cả các input hidden biến thể cũ (nếu có)
                     const oldVariantInputs = form.querySelectorAll('input[name^="variants["]');
                     oldVariantInputs.forEach(input => input.remove());
-                    
+
                     // Thêm dữ liệu biến thể vào formData
                     selectedVariants.forEach((variant, index) => {
                         // Kiểm tra dữ liệu biến thể trước khi thêm vào formData
@@ -321,11 +321,11 @@
                             console.error(`Biến thể #${index + 1} thiếu thông tin:`, variant);
                             return;
                         }
-                        
+
                         formData.append(`variants[${index}][sku]`, variant.sku);
                         formData.append(`variants[${index}][price]`, variant.price);
                         formData.append(`variants[${index}][quantity]`, variant.quantity);
-                        
+
                         // Thêm các giá trị thuộc tính
                         if (variant.values && Object.keys(variant.values).length > 0) {
                             Object.entries(variant.values).forEach(([variantId, valueId]) => {
@@ -343,13 +343,13 @@
                     formData.delete('variants');
                     formData.append('has_variants', '0');
                 }
-                
+
                 // Log dữ liệu gửi đi để debug
                 console.log('Dữ liệu gửi đi:');
                 for (let pair of formData.entries()) {
                     console.log(pair[0] + ': ' + pair[1]);
                 }
-                
+
                 fetch(form.action, {
                     method: 'POST',
                     body: formData,
@@ -361,7 +361,7 @@
                 .then(response => {
                     // Kiểm tra content type của response
                     const contentType = response.headers.get('content-type');
-                    
+
                     // Kiểm tra status code trước
                     if (!response.ok) {
                         // Nếu response không ok, thử lấy thông tin lỗi từ response
@@ -373,7 +373,7 @@
                             throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
                         }
                     }
-                    
+
                     // Nếu response ok, kiểm tra content type
                     if (contentType && contentType.includes('application/json')) {
                         return response.json().then(data => ({
@@ -413,7 +413,7 @@
                         // Xử lý lỗi validation
                         const errors = data.errors || {};
                         console.error('Lỗi validation:', errors);
-                        
+
                         // Hiển thị tất cả các lỗi
                         let errorMessages = [];
                         Object.keys(errors).forEach(field => {
@@ -426,11 +426,11 @@
                             }
                             errorMessages.push(errors[field][0]);
                         });
-                        
+
                         if (firstErrorElement) {
                             firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
-                        
+
                         Swal.fire({
                             title: 'Lỗi!',
                             html: `
@@ -448,10 +448,10 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    
+
                     // Hiển thị thông báo lỗi chi tiết hơn
                     let errorMessage = error.message || 'Có lỗi xảy ra khi thêm sản phẩm';
-                    
+
                     // Kiểm tra nếu có response từ server
                     if (error.response) {
                         try {
@@ -464,14 +464,14 @@
                             console.error('Không thể parse response JSON:', e);
                         }
                     }
-                    
+
                     Swal.fire({
                         title: 'Lỗi!',
                         text: errorMessage,
                         icon: 'error',
                         confirmButtonText: 'Đóng'
                     });
-                    
+
                     // Log thêm thông tin để debug
                     console.log('Form data được gửi:');
                     for (let pair of formData.entries()) {
@@ -500,7 +500,7 @@
             // Xử lý thêm loại biến thể
             function handleAddVariantType() {
                 const variantId = variantTypeSelect.value;
-                
+
                 if (!variantId) {
                     showError(variantTypeSelect, 'Vui lòng chọn thuộc tính biến thể');
                     return;
@@ -537,12 +537,12 @@
                     preConfirm: () => {
                         const selectedValues = Array.from(document.getElementById('variant-value-selection').selectedOptions)
                             .map(option => ({id: option.value, value: option.text}));
-                        
+
                         if (selectedValues.length === 0) {
                             document.querySelector('.variant-value-selection .invalid-feedback').style.display = 'block';
                             return false;
                         }
-                        
+
                         return selectedValues;
                     },
                     didOpen: () => {
@@ -551,7 +551,7 @@
                         select.addEventListener('change', function() {
                             const selectedCount = this.selectedOptions.length;
                             const feedback = document.querySelector('.variant-value-selection .invalid-feedback');
-                            
+
                             if (selectedCount > 0) {
                                 feedback.style.display = 'none';
                                 // Thêm thông báo số lượng đã chọn
@@ -574,7 +574,7 @@
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
                         const selectedValues = result.value;
-                        
+
                         // Thêm thuộc tính và giá trị đã chọn
                         selectedTypes.add(variantId);
 
@@ -596,7 +596,7 @@
                         // Tạo phần hiển thị giá trị đã chọn
                         const valueDisplay = document.createElement('div');
                         valueDisplay.className = 'variant-values mt-2';
-                        
+
                         // Hiển thị các giá trị đã chọn dưới dạng badge
                         valueDisplay.innerHTML = `
                             <div class="selected-values">
@@ -604,7 +604,7 @@
                                     <span class="badge bg-primary me-1 mb-1">${value.value}</span>
                                 `).join('')}
                             </div>
-                            <input type="hidden" class="variant-value-data" data-variant-id="${variantId}" 
+                            <input type="hidden" class="variant-value-data" data-variant-id="${variantId}"
                                 value='${JSON.stringify(selectedValues)}'>
                         `;
 
@@ -612,7 +612,7 @@
                         variantTypeContainer.appendChild(valueDisplay);
 
                         selectedVariantTypes.appendChild(variantTypeContainer);
-                        
+
                         // Hiển thị nút tạo biến thể tự động
                         document.getElementById('generate-variants-container').style.display = 'block';
                         document.getElementById('generate-variants-btn').style.display = 'inline-block';
@@ -678,10 +678,10 @@
             // Hàm xóa thông báo lỗi
             function clearValidation(input) {
                 input.classList.remove('is-invalid', 'is-valid');
-                
+
                 // Xác định parent element để xóa thông báo
                 let parent = input.parentElement;
-                
+
                 // Kiểm tra nếu input nằm trong input-group
                 if (parent.classList.contains('input-group')) {
                     // Xóa tất cả các thông báo lỗi và thành công trong input-group parent
@@ -699,7 +699,7 @@
                 clearValidation(input);
                 input.classList.add('is-invalid');
                 input.classList.remove('is-valid');
-                
+
                 // Xử lý đặc biệt cho form biến thể
                 if (input === variantForm) {
                     // Xóa thông báo lỗi cũ nếu có
@@ -707,7 +707,7 @@
                     if (oldError) {
                         oldError.remove();
                     }
-                    
+
                     // Tạo thông báo lỗi mới
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'alert alert-danger variant-form-error mt-2';
@@ -715,29 +715,29 @@
                     input.insertBefore(errorDiv, input.firstChild);
                     return;
                 }
-                
+
                 // Xác định parent element để thêm thông báo lỗi
                 let parent = input.parentElement;
-                
+
                 // Kiểm tra nếu input nằm trong input-group
                 if (parent.classList.contains('input-group')) {
                     // Xóa tất cả các thông báo lỗi cũ trong input-group
                     const oldErrorDivs = parent.querySelectorAll('.invalid-feedback');
                     oldErrorDivs.forEach(div => div.remove());
-                    
+
                     // Tạo div thông báo lỗi mới
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'invalid-feedback';
                     errorDiv.textContent = message;
                     errorDiv.style.display = 'block';
-                    
+
                     // Thêm vào sau input-group
                     parent.parentElement.appendChild(errorDiv);
                 } else {
                     // Xóa tất cả các thông báo lỗi cũ
                     const oldErrorDivs = parent.querySelectorAll('.invalid-feedback');
                     oldErrorDivs.forEach(div => div.remove());
-                    
+
                     // Tạo div thông báo lỗi mới
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'invalid-feedback';
@@ -752,29 +752,29 @@
                 clearValidation(input);
                 input.classList.remove('is-invalid');
                 input.classList.add('is-valid');
-                
+
                 // Xác định parent element để thêm thông báo thành công
                 let parent = input.parentElement;
-                
+
                 // Kiểm tra nếu input nằm trong input-group
                 if (parent.classList.contains('input-group')) {
                     // Xóa tất cả các thông báo thành công cũ trong input-group
                     const oldSuccessDivs = parent.querySelectorAll('.valid-feedback');
                     oldSuccessDivs.forEach(div => div.remove());
-                    
+
                     // Tạo div thông báo thành công mới
                     const successDiv = document.createElement('div');
                     successDiv.className = 'valid-feedback';
                     successDiv.textContent = 'Hợp lệ';
                     successDiv.style.display = 'block';
-                    
+
                     // Thêm vào sau input-group
                     parent.parentElement.appendChild(successDiv);
                 } else {
                     // Xóa tất cả các thông báo thành công cũ
                     const oldSuccessDivs = parent.querySelectorAll('.valid-feedback');
                     oldSuccessDivs.forEach(div => div.remove());
-                    
+
                     // Tạo div thông báo thành công mới
                     const successDiv = document.createElement('div');
                     successDiv.className = 'valid-feedback';
@@ -882,14 +882,14 @@
                     // So sánh từng cặp giá trị biến thể
                     const existingKeys = Object.keys(existingVariant.values);
                     const newKeys = Object.keys(variant.values);
-                    
+
                     // Kiểm tra số lượng thuộc tính có giống nhau không
                     if (existingKeys.length !== newKeys.length) {
                         return false;
                     }
-                    
+
                     // Kiểm tra từng giá trị có giống nhau không
-                    return existingKeys.every(key => 
+                    return existingKeys.every(key =>
                         existingVariant.values[key] === variant.values[key]
                     );
                 });
@@ -898,7 +898,7 @@
                     showError(variantForm, 'Tổ hợp biến thể này đã tồn tại');
                     return;
                 }
-                
+
                 // Thêm biến thể mới vào danh sách
                 selectedVariants.push(variant);
                 displayVariant(variant);
@@ -907,12 +907,12 @@
                 skuInput.value = '';
                 priceInput.value = '';
                 quantityInput.value = '';
-                
+
                 // Reset validation cho tất cả các trường
                 clearValidation(skuInput);
                 clearValidation(priceInput);
                 clearValidation(quantityInput);
-                
+
                 // Reset các select giá trị biến thể và validation của chúng
                 selectedTypes.forEach(variantId => {
                     const select = document.querySelector(`.variant-value-select[data-variant-id="${variantId}"]`);
@@ -948,7 +948,7 @@
                     showError(this, 'Số lượng phải lớn hơn 0');
                 }
             });
-            
+
             // Thêm sự kiện input cho các trường trong form biến thể tự động
             document.addEventListener('click', function(e) {
                 // Kiểm tra nếu người dùng nhấp vào nút lưu biến thể
@@ -958,7 +958,7 @@
                         const skuInput = variantItem.querySelector('.variant-sku-input');
                         const priceInput = variantItem.querySelector('.variant-price-input');
                         const quantityInput = variantItem.querySelector('.variant-quantity-input');
-                        
+
                         // Thêm sự kiện input cho các trường này nếu chưa có
                         if (skuInput && !skuInput.dataset.hasInputEvent) {
                             skuInput.dataset.hasInputEvent = 'true';
@@ -970,7 +970,7 @@
                                 }
                             });
                         }
-                        
+
                         if (priceInput && !priceInput.dataset.hasInputEvent) {
                             priceInput.dataset.hasInputEvent = 'true';
                             priceInput.addEventListener('input', function() {
@@ -982,7 +982,7 @@
                                 }
                             });
                         }
-                        
+
                         if (quantityInput && !quantityInput.dataset.hasInputEvent) {
                             quantityInput.dataset.hasInputEvent = 'true';
                             quantityInput.addEventListener('input', function() {
@@ -1002,7 +1002,7 @@
             function displayVariant(variant) {
                 const variantElement = document.createElement('div');
                 variantElement.className = 'variant-item mb-4';
-                
+
                 // Tạo ID duy nhất cho biến thể dựa trên index trong mảng selectedVariants
                 const variantIndex = selectedVariants.length - 1;
                 const variantId = 'variant_' + variantIndex;
@@ -1088,7 +1088,7 @@
                     <input type="hidden" name="variants[${variantIndex}][sku]" class="variant-sku-hidden" value="${variant.sku || ''}">
                     <input type="hidden" name="variants[${variantIndex}][price]" class="variant-price-hidden" value="${variant.price || ''}">
                     <input type="hidden" name="variants[${variantIndex}][quantity]" class="variant-quantity-hidden" value="${variant.quantity || ''}">
-                    ${Object.entries(variant.values).map(([variantId, valueId]) => 
+                    ${Object.entries(variant.values).map(([variantId, valueId]) =>
                         `<input type="hidden" name="variants[${variantIndex}][values][${variantId}]" value="${valueId}">`
                     ).join('')}
                 `;
@@ -1136,7 +1136,7 @@
                 const skuInput = variantElement.querySelector('.variant-sku-input');
                 const priceInput = variantElement.querySelector('.variant-price-input');
                 const quantityInput = variantElement.querySelector('.variant-quantity-input');
-                
+
                 // Validate dữ liệu
                 let isValid = true;
 
@@ -1170,7 +1170,7 @@
 
                 // Kiểm tra trùng lặp SKU
                 const isDuplicateSku = selectedVariants.some((v, i) => i !== variantIndex && v.sku === skuInput.value.trim());
-                
+
                 if (isDuplicateSku) {
                     showError(skuInput, 'SKU này đã tồn tại');
                     return;
@@ -1207,44 +1207,44 @@
                         console.error('Không tìm thấy biến thể với index:', variantIndex);
                         return;
                     }
-                    
+
                     // Xóa biến thể khỏi mảng
                     selectedVariants.splice(variantIndex, 1);
                     variantElement.remove();
-                    
+
                     // Cập nhật lại index và hiển thị cho tất cả các biến thể còn lại
                     updateVariantIndexes();
                 }
             };
-            
+
             // Hàm cập nhật lại index và hiển thị cho tất cả các biến thể
             function updateVariantIndexes() {
                 const variantItems = document.querySelectorAll('.variant-item');
                 variantItems.forEach((item, idx) => {
                     // Cập nhật index trong dataset
                     item.dataset.variantIndex = idx;
-                    
+
                     // Cập nhật số thứ tự hiển thị
                     item.querySelector('h6').textContent = `Biến thể #${idx + 1}`;
-                    
+
                     // Cập nhật ID của biến thể
                     const oldId = item.dataset.variantId;
                     const newId = 'variant_' + idx;
                     item.dataset.variantId = newId;
-                    
+
                     // Cập nhật các sự kiện onclick
                     const previewDiv = item.querySelector('.variant-preview');
                     previewDiv.setAttribute('onclick', `toggleVariantEdit('${newId}')`);
-                    
+
                     const removeBtn = item.querySelector('.btn-remove-variant');
                     removeBtn.setAttribute('onclick', `removeVariant('${newId}', event)`);
-                    
+
                     const cancelBtn = item.querySelector('.btn-secondary');
                     cancelBtn.setAttribute('onclick', `toggleVariantEdit('${newId}')`);
-                    
+
                     const saveBtn = item.querySelector('.btn-primary');
                     saveBtn.setAttribute('onclick', `saveVariantEdit('${newId}')`);
-                    
+
                     // Cập nhật name của các input hidden
                     const inputs = item.querySelectorAll('.variant-hidden-inputs input[type="hidden"]');
                     inputs.forEach(input => {
@@ -1258,13 +1258,13 @@
             function attachEventsToGeneratedVariants() {
                 // Lấy tất cả các biến thể
                 const variantItems = document.querySelectorAll('.variant-item');
-                
+
                 variantItems.forEach(variantItem => {
                     // Lấy các trường input
                     const skuInput = variantItem.querySelector('.variant-sku-input');
                     const priceInput = variantItem.querySelector('.variant-price-input');
                     const quantityInput = variantItem.querySelector('.variant-quantity-input');
-                    
+
                     // Thêm sự kiện input cho SKU
                     if (skuInput && !skuInput.dataset.hasInputEvent) {
                         skuInput.dataset.hasInputEvent = 'true';
@@ -1276,7 +1276,7 @@
                             }
                         });
                     }
-                    
+
                     // Thêm sự kiện input cho giá
                     if (priceInput && !priceInput.dataset.hasInputEvent) {
                         priceInput.dataset.hasInputEvent = 'true';
@@ -1289,7 +1289,7 @@
                             }
                         });
                     }
-                    
+
                     // Thêm sự kiện input cho số lượng
                     if (quantityInput && !quantityInput.dataset.hasInputEvent) {
                         quantityInput.dataset.hasInputEvent = 'true';
@@ -1304,7 +1304,7 @@
                     }
                 });
             }
-            
+
             // Thêm hàm tạo biến thể tự động
             function handleGenerateVariants() {
                 // Kiểm tra xem có thuộc tính nào được chọn không
@@ -1312,17 +1312,17 @@
                     showError(variantTypeSelect, 'Vui lòng chọn ít nhất một thuộc tính biến thể');
                     return;
                 }
-                
+
                 // Hiển thị loading
                 const generateBtn = document.getElementById('generate-variants-btn');
                 const originalBtnText = generateBtn.innerHTML;
                 generateBtn.disabled = true;
                 generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang tạo biến thể...';
-                
+
                 // Thu thập các giá trị thuộc tính đã chọn
                 const variantTypes = [];
                 const variantValues = [];
-                
+
                 // Lấy thông tin các thuộc tính và giá trị đã chọn
                 selectedTypes.forEach(variantId => {
                     const valueDataInput = document.querySelector(`.variant-value-data[data-variant-id="${variantId}"]`);
@@ -1333,19 +1333,19 @@
                                 // Thêm thông tin thuộc tính
                                 const variantOption = variantTypeSelect.querySelector(`option[value="${variantId}"]`);
                                 const variantName = variantOption.text;
-                                
+
                                 variantTypes.push({
                                     id: variantId,
                                     name: variantName
                                 });
-                                
+
                                 // Thêm thông tin giá trị
                                 const values = selectedValues.map(v => ({
                                     id: v.id,
                                     value: v.value,
                                     variantId: variantId
                                 }));
-                                
+
                                 variantValues.push(values);
                             }
                         } catch (error) {
@@ -1353,7 +1353,7 @@
                         }
                     }
                 });
-                
+
                 if (variantTypes.length === 0 || variantValues.length === 0) {
                     Swal.fire({
                         title: 'Lỗi!',
@@ -1365,13 +1365,13 @@
                     generateBtn.innerHTML = originalBtnText;
                     return;
                 }
-                
+
                 // Tạo tất cả các tổ hợp có thể từ các giá trị đã chọn
                 const combinations = generateCombinations(variantValues);
-                
+
                 // Tạo các biến thể từ các tổ hợp
                 const variants = [];
-                
+
                 combinations.forEach((combination) => {
                     // Tạo biến thể
                     const variant = {
@@ -1380,28 +1380,28 @@
                         quantity: '',
                         values: {}
                     };
-                    
+
                     // Thêm các giá trị thuộc tính
                     combination.forEach(item => {
                         variant.values[item.variantId] = item.id;
                     });
-                    
+
                     variants.push(variant);
                 });
-                
+
                 // Xóa các biến thể hiện tại
                 selectedVariants = [];
                 document.getElementById('variants-container').innerHTML = '';
-                
+
                 // Thêm các biến thể mới
                 variants.forEach(variant => {
                     selectedVariants.push(variant);
                     displayVariant(variant);
                 });
-                
+
                 // Gắn sự kiện cho các trường trong biến thể tự động
                 attachEventsToGeneratedVariants();
-                
+
                 // Hiển thị thông báo thành công
                 Swal.fire({
                     title: 'Thành công!',
@@ -1409,24 +1409,24 @@
                     icon: 'success',
                     confirmButtonText: 'OK'
                 });
-                
+
                 // Khôi phục trạng thái nút
                 generateBtn.disabled = false;
                 generateBtn.innerHTML = originalBtnText;
             }
-            
+
             // Hàm tạo tất cả các tổ hợp có thể từ các giá trị đã chọn
             function generateCombinations(arrays) {
                 // Nếu chỉ có một mảng, trả về mảng đó
                 if (arrays.length === 1) {
                     return arrays[0].map(item => [item]);
                 }
-                
+
                 // Lấy mảng đầu tiên
                 const first = arrays[0];
                 // Lấy các tổ hợp của các mảng còn lại
                 const rest = generateCombinations(arrays.slice(1));
-                
+
                 // Kết hợp mảng đầu tiên với các tổ hợp của các mảng còn lại
                 const result = [];
                 for (let i = 0; i < first.length; i++) {
@@ -1434,7 +1434,7 @@
                         result.push([first[i], ...rest[j]]);
                     }
                 }
-                
+
                 return result;
             }
 
@@ -1481,15 +1481,15 @@
                     clearValidation(this);
                     return;
                 }
-                
+
                 const value = parseFloat(this.value);
                 const basePrice = parseFloat(priceInput.value);
-                
+
                 if (isNaN(basePrice) || basePrice <= 0) {
                     showError(this, 'Vui lòng nhập giá gốc hợp lệ trước');
                     return;
                 }
-                
+
                 if (value >= basePrice) {
                     showError(this, 'Giá khuyến mãi phải nhỏ hơn giá gốc');
                 } else {
