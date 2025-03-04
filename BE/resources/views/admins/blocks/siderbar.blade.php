@@ -53,8 +53,6 @@
     </div>
     <div id="scrollbar">
         <div class="container-fluid">
-
-
             <div id="two-column-menu">
             </div>
             <ul class="navbar-nav" id="navbar-nav">
@@ -81,11 +79,32 @@
                                     <i class="ri-user-settings-line"></i>Vai trò
                                 </a>
                             </li>
+                            @if(auth()->user()->isAdmin())
                             <li class="nav-item">
-                                <a href="" class="nav-link" data-key="t-nestable-list">
-                                    <i class="ri-admin-line"></i>Phân quyền
+                                <a class="nav-link menu-link" href="#sidebarPermissions" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarPermissions">
+                                    <i class="ri-shield-keyhole-line"></i> <span data-key="t-permissions">Phân quyền</span>
                                 </a>
+                                <div class="collapse menu-dropdown" id="sidebarPermissions">
+                                    <ul class="nav nav-sm flex-column">
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.permissions.index') }}" class="nav-link" data-key="t-roles-permissions">
+                                                <i class="ri-user-settings-line"></i> Vai trò & Quyền
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.permissions.create-role') }}" class="nav-link" data-key="t-add-role">
+                                                <i class="ri-user-add-line"></i> Thêm vai trò
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.permissions.create-permission') }}" class="nav-link" data-key="t-add-permission">
+                                                <i class="ri-key-line"></i> Thêm quyền
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
@@ -189,6 +208,8 @@
                 </li>
 
                 <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
+
+           
 
             </ul>
         </div>

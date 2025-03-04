@@ -8,6 +8,17 @@ use App\Models\Order;
 class OrderController extends Controller
 {
     /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-orders');
+        $this->middleware('permission:create-orders', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-orders', ['only' => ['edit', 'update', 'updateStatus']]);
+        $this->middleware('permission:delete-orders', ['only' => ['destroy']]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)

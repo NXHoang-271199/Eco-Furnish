@@ -13,6 +13,16 @@ use Illuminate\Support\Facades\Storage;
 
 class TrashController extends Controller
 {
+    /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-dashboard');
+        $this->middleware('permission:restore-products', ['only' => ['update']]);
+        $this->middleware('permission:delete-products', ['only' => ['destroy']]);
+    }
+
     public function index()
     {
         $type = request()->segment(3);

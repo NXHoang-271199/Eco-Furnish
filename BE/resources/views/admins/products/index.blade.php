@@ -15,6 +15,11 @@
                     <button type="button" class="btn btn-primary" onclick="toggleFilter()">
                         <i class="ri-filter-2-line align-bottom me-1"></i> Bộ lọc
                     </button>
+                    @can('create-products')
+                    <a href="{{ route('products.create') }}" class="btn btn-success">
+                        <i class="ri-add-line align-bottom me-1"></i> Thêm sản phẩm
+                    </a>
+                    @endcan
                 </div>
             </div>
         </div>

@@ -40,6 +40,42 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(Role::class);
     }
 
+    /**
+     * Kiểm tra xem người dùng có quyền cụ thể không
+     *
+     * @param string|array $permissions
+     * @return bool
+     */
+    public function hasPermission($permissions)
+    {
+        if (!$this->role) {
+            return false;
+        }
+        
+        return $this->role->hasPermission($permissions);
+    }
+
+    /**
+     * Kiểm tra xem người dùng có phải là admin không
+     *
+     * @return bool
+     */
+    public function isAdmin()
+    {
+        return $this->role && $this->role->slug === 'admin';
+    }
+
+    /**
+     * Kiểm tra xem người dùng có phải là chủ sở hữu của một model không
+     *
+     * @param mixed $model
+     * @return bool
+     */
+    public function owns($model)
+    {
+        return $model && $model->user_id === $this->id;
+    }
+
     public function scopeSearch($query, $fillers)
     {
         if (!empty($fillers['name'])) {

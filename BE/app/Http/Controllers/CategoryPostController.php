@@ -9,6 +9,17 @@ use App\Http\Requests\CategoryPostRequest;
 class CategoryPostController extends Controller
 {
     /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-category-posts');
+        $this->middleware('permission:create-category-posts', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-category-posts', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-category-posts', ['only' => ['destroy']]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)

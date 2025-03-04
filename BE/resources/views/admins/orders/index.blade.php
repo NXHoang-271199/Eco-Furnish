@@ -5,9 +5,11 @@
 @endsection
 @section('content')
     <div class="container-fluid">
-        <div class="card">
-            <div class="m-3" style="margin-left: 20px">
-                <a href="{{ route('orders.index') }}"><b class="fs-4 fw-bold">Danh Sách Đơn Hàng</b></a>
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Quản lý đơn hàng</h4>
+                </div>
             </div>
         </div>
 
@@ -48,96 +50,106 @@
         <!-- Tabs Content -->
         <div class="tab-content" id="pills-tabContent">
             @foreach ($groupedOrders as $status => $orders)
-                <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="pills-{{ Str::slug($status) }}"
-                    role="tabpanel" aria-labelledby="pills-{{ Str::slug($status) }}-tab">
-                    @if ($orders->count() > 0)
+                @php $slug = Str::slug($status) @endphp
+                <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="pills-{{ $slug }}"
+                    role="tabpanel" aria-labelledby="pills-{{ $slug }}-tab">
+                    <div class="card">
                         <div class="card-body">
-                            <table class="table table-bordered table-hover">
-                                @forelse ($orders as $order)
-                                    <div class="card shadow-sm mb-4">
-                                        <div class="card-body">
-                                            <div class="d-flex align-items-center border-bottom">
-                                                @foreach ($order->orderItems as $item)
-                                                    <div class="col-md">
-                                                        <img src="{{ Storage::url($item->image_url) }}" width="40px"
-                                                            height="40px" alt="Product" class="img-fluid rounded">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped align-middle table-nowrap mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã đơn hàng</th>
+                                            <th>Người nhận</th>
+                                            <th>Tổng tiền</th>
+                                            <th>Ngày đặt</th>
+                                            <th>Trạng thái</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($orders as $order)
+                                            <tr>
+                                                <td>{{ $order->id }}</td>
+                                                <td>{{ $order->receiver_name }}</td>
+                                                <td>{{ number_format($order->total_amount) }} đ</td>
+                                                <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
+                                                <td>
+                                                    <span class="badge 
+                                                        @if($order->status == 'Đang xử lý') bg-warning
+                                                        @elseif($order->status == 'Đã xác nhận') bg-info
+                                                        @elseif($order->status == 'Đang giao hàng') bg-primary
+                                                        @elseif($order->status == 'Đã giao hàng') bg-success
+                                                        @elseif($order->status == 'Đã hủy') bg-danger
+                                                        @endif">
+                                                        {{ $order->status }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="hstack gap-3 fs-15">
+                                                        <a href="{{ route('orders.detail', $order->id) }}" class="link-primary">
+                                                            <i class="ri-eye-line"></i>
+                                                        </a>
+                                                        
+                                                        @can('update-orders')
+                                                        @if($order->status != 'Đã giao hàng' && $order->status != 'Đã hủy')
+                                                        <div class="dropdown">
+                                                            <a class="link-warning dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <i class="ri-edit-line"></i>
+                                                            </a>
+                                                            <ul class="dropdown-menu">
+                                                                <li>
+                                                                    <form action="{{ route('orders.update-status', $order->id) }}" method="POST">
+                                                                        @csrf
+                                                                        @method('PUT')
+                                                                        <input type="hidden" name="status" value="Đã xác nhận">
+                                                                        <button type="submit" class="dropdown-item">Xác nhận</button>
+                                                                    </form>
+                                                                </li>
+                                                                <li>
+                                                                    <form action="{{ route('orders.update-status', $order->id) }}" method="POST">
+                                                                        @csrf
+                                                                        @method('PUT')
+                                                                        <input type="hidden" name="status" value="Đang giao hàng">
+                                                                        <button type="submit" class="dropdown-item">Đang giao hàng</button>
+                                                                    </form>
+                                                                </li>
+                                                                <li>
+                                                                    <form action="{{ route('orders.update-status', $order->id) }}" method="POST">
+                                                                        @csrf
+                                                                        @method('PUT')
+                                                                        <input type="hidden" name="status" value="Đã giao hàng">
+                                                                        <button type="submit" class="dropdown-item">Đã giao hàng</button>
+                                                                    </form>
+                                                                </li>
+                                                                <li>
+                                                                    <form action="{{ route('orders.update-status', $order->id) }}" method="POST">
+                                                                        @csrf
+                                                                        @method('PUT')
+                                                                        <input type="hidden" name="status" value="Đã hủy">
+                                                                        <button type="submit" class="dropdown-item">Hủy đơn</button>
+                                                                    </form>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                        @endif
+                                                        @endcan
                                                     </div>
-                                                @endforeach
-                                                <div class="col-md-9">
-                                                    <p class="mb-1 ms-3">
-                                                        Ngày xác nhận:
-                                                        <span class="text-primary fw-bold">
-                                                            @if (
-                                                                $order->order_status === 'Đã Xác Nhận' ||
-                                                                    $order->order_status === 'Đang Chuẩn Bị Hàng' ||
-                                                                    $order->order_status === 'Đang Giao' ||
-                                                                    $order->order_status === 'Đã Giao' ||
-                                                                    $order->order_status === 'Đã Nhận' ||
-                                                                    $order->order_status === 'Thành Công' ||
-                                                                    $order->order_status === 'Hoàn Hàng' ||
-                                                                    $order->order_status === 'Hủy Đơn' ||
-                                                                    $order->payment_status === '2')
-                                                                {{ $order->updated_at ? $order->updated_at->format('d/m/Y H:i') : 'Chưa xác nhận' }}
-                                                            @else
-                                                                Chưa xác nhận
-                                                            @endif
-                                                        </span>
-                                                    </p>
-                                                    <p class="mb-1 ms-3">Mã đơn hàng: <span
-                                                            class="fw-bold">{{ $order->order_code }}</span></p>
-                                                    <p class="mb-1 ms-3 text-muted">Tên người nhận: {{ $order->user_name }}
-                                                    </p>
-                                                    <p class="mb-1 ms-3 text-danger fw-600"><strong>Tổng tiền:
-                                                            {{ number_format($order->total_price, 0, ',', '.') }}
-                                                            đ</strong></p>
-                                                </div>
-                                                <div class="col-md-2 text-end">
-                                                    <form action="{{ route('order.updateStatus', $order->id) }}"
-                                                        method="POST">
-                                                        @csrf
-                                                        <input type="hidden" name="current_status" value="{{ $order->order_status }}">
-                                                        <select name="order_status" class="form-control fw-bold" onchange="this.form.submit()"
-                                                                {{ $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' ? 'disabled' : '' }}>
-                                                            <option value="Chưa Xác Nhận" {{ $order->order_status === 'Chưa Xác Nhận' ? 'selected' : '' }}>Chưa Xác Nhận</option>
-                                                            <option value="Đã Xác Nhận" {{ $order->order_status === 'Đã Xác Nhận' ? 'selected' : '' }}>Đã Xác Nhận</option>
-                                                            <option value="Đang Chuẩn Bị Hàng" {{ $order->order_status === 'Đang Chuẩn Bị Hàng' ? 'selected' : '' }}>Đang Chuẩn Bị Hàng</option>
-                                                            <option value="Đang Giao" {{ $order->order_status === 'Đang Giao' ? 'selected' : '' }}>Đang Giao</option>
-                                                            <option value="Đã Giao" {{ $order->order_status === 'Đã Giao' ? 'selected' : '' }}>Đã Giao</option>
-                                                            <option value="Đã Nhận" {{ $order->order_status === 'Đã Nhận' ? 'selected' : '' }}>Đã Nhận</option>
-                                                            <option value="Thành Công" {{ $order->order_status === 'Thành Công' ? 'selected' : '' }}>Thành Công</option>
-                                                            <option value="Hoàn Hàng" {{ $order->order_status === 'Hoàn Hàng' ? 'selected disabled' : '' }}>Hoàn Hàng</option>
-                                                            <option value="Hủy Đơn" {{ $order->order_status === 'Hủy Đơn' ? 'selected disabled' : '' }}>Hủy Đơn</option>
-                                                        </select>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                            <div class="mt-3">
-
-                                                <div class="text-end mt-3 d-flex justify-content-between gap-2">
-                                                    <p style="font-size:13px;">Ngày đặt hàng:
-                                                        {{ $order->created_at->format('d/m/Y H:i:s') }}</p>
-                                                    <div class="d-flex gap-2">
-                                                        <div><a href="{{ route('orders.show', $order->id) }}"
-                                                                class="btn border border-danger btn-sm text-dark">Xem Chi
-                                                                Tiết Đơn Hàng</a></div>
-
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @empty
-                                    <p class="text-center">Không có đơn hàng nào.</p>
-                                @endforelse
-                            </table>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="6" class="text-center">Không có đơn hàng nào</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-end mt-3">
+                                {{ $orders->links() }}
+                            </div>
                         </div>
-                        <!-- tab -->
-                        <div class="d-flex justify-content-end me-3">
-                            {{ $orders->links('pagination::bootstrap-5') }}
-                        </div>
-                    @else
-                        <p class="text-center">Không có đơn hàng trong trạng thái này.</p>
-                    @endif
+                    </div>
                 </div>
             @endforeach
         </div>

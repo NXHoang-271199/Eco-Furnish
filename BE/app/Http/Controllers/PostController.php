@@ -16,6 +16,17 @@ use Illuminate\Support\Facades\File;
 class PostController extends Controller
 {
     /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-posts');
+        $this->middleware('permission:create-posts', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-posts', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-posts', ['only' => ['destroy']]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
 

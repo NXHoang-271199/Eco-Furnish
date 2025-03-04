@@ -11,6 +11,17 @@ use Illuminate\Support\Facades\Storage;
 
 class PaymentMethodController extends Controller
 {
+    /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-payment-methods');
+        $this->middleware('permission:create-payment-methods', ['only' => ['create', 'store', 'getConnectForm', 'connect']]);
+        $this->middleware('permission:update-payment-methods', ['only' => ['edit', 'update', 'disconnect']]);
+        $this->middleware('permission:delete-payment-methods', ['only' => ['destroy']]);
+    }
+
     public function index()
     {
         $methods = PaymentMethod::all();
