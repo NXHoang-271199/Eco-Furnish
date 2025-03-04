@@ -124,7 +124,7 @@ class PostController extends Controller
             'content' => $updatedContent,
             'image_thumbnail' => $filePath,
             'category_post_id' => $validated['category_id'],
-            'user_id' => $validated['user_id'],
+            'user_id' => auth()->id(),
             'status' => $request->input('status'),
             'slug' => $slug,
         ]);
@@ -219,7 +219,7 @@ class PostController extends Controller
             'title' => $validated['title'],
             'content' => $updatedContent,
             'category_post_id' => $validated['category_id'],
-            'user_id' => $validated['user_id'],
+            'user_id' => auth()->id(),
             'status' => $request->input('status'),
             'slug' => $slug,
         ]);

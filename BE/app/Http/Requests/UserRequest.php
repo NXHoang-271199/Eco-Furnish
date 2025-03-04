@@ -32,11 +32,11 @@ class UserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($userId),
             ],
-            'age' => 'required|integer',
+            'age' => 'required|integer|max:90',
             'password' => $userId ? 'nullable' : 'required',
             'role_id' => 'required|exists:roles,id',
             'address' => 'required|max:255',
-            'avatar' => $this->hasFile('avatar') ? 'required|image|mimes:jpeg,png,jpg,gif|max:2048' : 'nullable',
+            'avatar' => $this->hasFile('avatar') ? 'image|mimes:jpeg,png,jpg,gif|max:2048' : 'nullable',
 
         ];
     }
@@ -55,6 +55,7 @@ class UserRequest extends FormRequest
 
             'age.required' => 'Tuổi không được để trống!',
             'age.integer' => 'Tuổi phải là số nguyên!',
+            'age.max' => 'Tuổi không được lớn hơn 90!',
 
             'password.required' => 'Mật khâu không được để trống!',
 
@@ -64,7 +65,6 @@ class UserRequest extends FormRequest
             'address.required' => 'Địa chỉ không được để trống!',
             'address.max' => 'Địa chỉ không được dài hơn 255 ký tự!',
 
-            'avatar.required' => 'Vui lòng chọn Ảnh đại diện!',
             'avatar.image' => 'Ảnh đại diện phải là tệp hình ảnh!',
             'avatar.mimes' => 'Ảnh đại diện phải có định dạng jpeg, png, jpg, gif, webp!',
             'avatar.max' => 'Ảnh đại diện khó quá 20MB!',
