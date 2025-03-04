@@ -1,6 +1,5 @@
 import React from "react";
 import { FaArrowRight } from "react-icons/fa6";
-
 const Contact = () => {
   return (
     <div className="font-roboto">
@@ -17,6 +16,7 @@ const Contact = () => {
           </p>
         </div>
         <div className="flex flex-col md:flex-row items-center md:space-x-8 bg-gray-100">
+
           <img
             src="https://storage.googleapis.com/a1aa/image/17RKU44o-p0wL_aV7UMwpptAv70oSYYp01uylGBfbOM.jpg"
             alt="Decorative wooden floor"
@@ -37,11 +37,13 @@ const Contact = () => {
               href="products"
             >
               Mua ngay <FaArrowRight className="mt-2 ml-2 size-[15px] " />
+
             </a>
           </div>
         </div>
       </main>
-      <div className=" mx-auto px-4 text-center bg-gray-50 py-8">
+      <div className=" mx-auto px-4 text-center  py-8">
+
         <h2 className="text-3xl font-bold text-gray-900">
           Liên hệ với chúng tôi
         </h2>

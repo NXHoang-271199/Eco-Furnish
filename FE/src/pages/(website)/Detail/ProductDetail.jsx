@@ -90,6 +90,7 @@ const ProductDetail = () => {
             <div>
               <button className="justify-center flex items-center border border-[#CA8A04] rounded-[5px] w-[215px] h-[44px] ml-3 text-[#CA8A04]">
                 <a href="cart">Add To Cart</a>
+
               </button>
             </div>
             <div>
@@ -131,8 +132,6 @@ const ProductDetail = () => {
             <Link to="/">Description</Link>
           </li>
         </ul>
-        {/* comment */}
-
         <div class="flex justify-between items-center border p-2 rounded-md">
           <input
             type="text"
