@@ -1,16 +1,19 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
 import "./App.css";
 import { Route, Routes } from "react-router-dom";
-import LayoutWebsite from "./pages/layout";
-import Homes from "./pages/Home/Homes";
-import Products from "./pages/Products/Products";
-import ProductDetail from "./pages/Detail/ProductDetail";
-import Contact from "./pages/Contact/Contact";
-import Cart from "./pages/Cart/Cart";
-import Blogs from "./pages/Blogs/Blogs";
-import About from "./pages/About/About";
+import LayoutWebsite from "./pages/(website)/layout";
+import Homes from "./pages/(website)/Home/Homes";
+import Products from "./pages/(website)/Products/Products";
+import ProductDetail from "./pages/(website)/Detail/ProductDetail";
+import Contact from "./pages/(website)/Contact/Contact";
+import Cart from "./pages/(website)/Cart/Cart";
+import About from "./pages/(website)/About/About";
+// import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
+// import Payment from "./pages/(website)/Payment/Payment";
+import Blogs from "./pages/(website)/Blog/Blogs";
+import SignIn from "./pages/auth/SignIn/SignIn";
+import SignUp from "./pages/auth/SignUp/SignUp";
+// import ForgotPasswordModal from "./pages/SignIn/ForgotPasswordModal";
 function App() {
   return (
     <>
@@ -21,9 +24,15 @@ function App() {
           <Route path="product" element={<ProductDetail />} />
           <Route path="contact" element={<Contact />} />
           <Route path="cart" element={<Cart />} />
-          <Route path="blogs" element={<Blogs />} />
+          <Route path="blog" element={<Blogs />} />
+          {/* <Route path="blogdetail" element={<BlogsDetail />} /> */}
           <Route path="about" element={<About />} />
+          <Route path="payment" element={<Payment />} />
+          <Route path="blog-detail" element={<BlogDetail />} />
         </Route>
+        <Route path="signin" element={<SignIn />} />
+        {/* <Route path="changepass" element={<ForgotPasswordModal />} /> */}
+        <Route path="signup" element={<SignUp />} />
       </Routes>
     </>
   );

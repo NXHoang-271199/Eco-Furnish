@@ -106,7 +106,7 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <a href="/admin/trash/trash-products" class="btn btn-soft-danger btn-icon btn-sm fs-16" 
+                            <a href="/admin/trash/trash-products" class="btn btn-soft-danger btn-icon btn-sm fs-16"
                                data-bs-toggle="tooltip" data-bs-placement="top" title="Thùng rác">
                                 <i class="ri-delete-bin-line"></i>
                             </a>
@@ -149,7 +149,7 @@
                                                     </div>
                                                 </td>
                                                 <td>{{ $product->category_name }}</td>
-                                                <td data-original-price="{{ $product->price }}" 
+                                                <td data-original-price="{{ $product->price }}"
                                                     @if($product->variants()->whereNull('deleted_at')->count() > 0)
                                                     data-min-variant-price="{{ $product->variants()->whereNull('deleted_at')->min('price') }}"
                                                     data-max-variant-price="{{ $product->variants()->whereNull('deleted_at')->max('price') }}"
@@ -168,7 +168,7 @@
                                                     </div>
                                                     @if($product->variants()->whereNull('deleted_at')->count() > 0)
                                                         <div class="mt-2">
-                                                            <strong>Giá biến thể:</strong> 
+                                                            <strong>Giá biến thể:</strong>
                                                             @php
                                                                 $minPrice = $product->variants()->whereNull('deleted_at')->min('price');
                                                                 $maxPrice = $product->variants()->whereNull('deleted_at')->max('price');
@@ -214,14 +214,14 @@
                                 <div class="pagination-wrapper">
                                     <div class="d-flex align-items-center justify-content-between">
                                         <div class="pagination-info">
-                                            Hiển thị {{ $products->firstItem() }} đến {{ $products->lastItem() }} 
+                                            Hiển thị {{ $products->firstItem() }} đến {{ $products->lastItem() }}
                                             trên tổng số {{ $products->total() }} sản phẩm
                                         </div>
                                         <ul class="pagination">
                                             {{-- Nút Previous --}}
                                             <li class="page-item">
-                                                <a class="page-link {{ $products->onFirstPage() ? 'disabled' : '' }}" 
-                                                   href="{{ $products->previousPageUrl() }}" 
+                                                <a class="page-link {{ $products->onFirstPage() ? 'disabled' : '' }}"
+                                                   href="{{ $products->previousPageUrl() }}"
                                                    {{ $products->onFirstPage() ? 'tabindex="-1"' : '' }}>
                                                     <i class="ri-arrow-left-s-line"></i>
                                                 </a>
@@ -230,7 +230,7 @@
                                             {{-- Hiển thị các số trang --}}
                                             @for ($i = 1; $i <= $products->lastPage(); $i++)
                                                 <li class="page-item">
-                                                    <a class="page-link {{ $products->currentPage() == $i ? 'active' : '' }}" 
+                                                    <a class="page-link {{ $products->currentPage() == $i ? 'active' : '' }}"
                                                        href="{{ $products->url($i) }}">
                                                         {{ $i }}
                                                     </a>
@@ -239,7 +239,7 @@
 
                                             {{-- Nút Next --}}
                                             <li class="page-item">
-                                                <a class="page-link {{ !$products->hasMorePages() ? 'disabled' : '' }}" 
+                                                <a class="page-link {{ !$products->hasMorePages() ? 'disabled' : '' }}"
                                                    href="{{ $products->nextPageUrl() }}"
                                                    {{ !$products->hasMorePages() ? 'tabindex="-1"' : '' }}>
                                                     <i class="ri-arrow-right-s-line"></i>

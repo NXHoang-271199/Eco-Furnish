@@ -1,21 +1,93 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Thêm container wrapper để thu nhỏ form */
-        .form-container {
-            transform: scale(0.75);
-            transform-origin: top left;
-            width: 133.33%; /* Bù lại kích thước để tránh lệch layout */
-            padding-bottom: 2rem;
+        /* Fix logo styles */
+        .logo.logo-light img {
+            max-height: 36px !important;
+            margin: 0 !important;
+            vertical-align: middle !important;
         }
- 
+
         .variant-section {
             display: none;
             transition: all 0.3s ease;
         }
+
         .variant-section.show {
             display: block;
         }
+
+        .form-container {
+            padding: 1rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .form-content {
+            font-size: 14px;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: linear-gradient(45deg, #3b7ddd, #2f69b8);
+            border-radius: 8px 8px 0 0 !important;
+            padding: 15px;
+        }
+
+        .card-header h5 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #344767;
+        }
+
+        .form-control, .form-select {
+            font-size: 13px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .btn {
+            font-size: 13px;
+            padding: 8px 16px;
+        }
+
+        .gallery-item {
+            width: 60px;
+            height: 60px;
+        }
+
+        #thumbnailPreview img {
+            max-width: 120px;
+            max-height: 120px;
+        }
+
+        .page-title-box h4 {
+            font-size: 18px;
+        }
+
+        .breadcrumb {
+            font-size: 12px;
+        }
+
         .card {
             border: none;
             box-shadow: 0 0 20px rgba(0,0,0,0.08);
@@ -204,7 +276,7 @@
             border: 1px solid #dee2e6;
             max-width: fit-content;
         }
-      
+
         #thumbnailPreview img {
             max-width: 150px;
             max-height: 150px;
@@ -291,7 +363,7 @@
             border-radius: 8px;
             border: 1px solid #e0e6ed;
         }
-        
+
         .variant-value-select option {
             padding: 10px 12px;
             margin-bottom: 4px;
@@ -299,7 +371,7 @@
             cursor: pointer;
             transition: background-color 0.2s ease;
         }
-        
+
         .variant-value-select option:checked {
             background: linear-gradient(45deg, #3b7ddd, #2f69b8) !important;
             color: white;
@@ -325,7 +397,7 @@
             transition: all 0.3s ease;
             margin: 25px 0;
         }
-        
+
         #generate-variants-btn {
             background: linear-gradient(45deg, #00c6ff, #0072ff);
             border: none;
@@ -336,13 +408,13 @@
             letter-spacing: 0.5px;
             font-size: 1.05rem;
         }
-        
+
         #generate-variants-btn:hover {
             background: linear-gradient(45deg, #0072ff, #00c6ff);
             transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(0, 114, 255, 0.4);
         }
-        
+
         #generate-variants-btn:active {
             transform: translateY(0);
             box-shadow: 0 2px 8px rgba(0, 114, 255, 0.3);
@@ -465,40 +537,40 @@
             color: #495057;
             font-weight: 500;
         }
-        
+
         /* CSS cho thông báo lỗi và thành công trong input-group */
         .input-group ~ .invalid-feedback,
         .input-group ~ .valid-feedback {
             display: block;
             margin-top: 0.25rem;
         }
-        
+
         .input-group .form-control.is-invalid,
         .input-group .form-control.is-valid {
             z-index: 1;
         }
-        
+
         .input-group .form-control.is-invalid {
             border-color: #dc3545;
         }
-        
+
         .input-group .form-control.is-valid {
             border-color: #198754;
         }
-        
+
         .input-group .form-control.is-invalid:focus,
         .input-group .form-control.is-valid:focus {
             box-shadow: none;
         }
-        
+
         .input-group .input-group-text {
             z-index: 0;
         }
-        
+
         .input-group .form-control.is-invalid + .input-group-text {
             border-color: #dc3545;
         }
-        
+
         .input-group .form-control.is-valid + .input-group-text {
             border-color: #198754;
         }
@@ -518,11 +590,11 @@
             height: 24px;
             border-radius: 50%;
         }
-        
+
         .btn-remove-variant:hover {
             background-color: rgba(220, 53, 69, 0.1);
         }
-        
+
         .btn-remove-variant i {
             font-size: 14px;
         }

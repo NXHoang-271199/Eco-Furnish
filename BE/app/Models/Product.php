@@ -53,5 +53,11 @@ class Product extends Model
     {
         return $this->hasMany(GalleryImage::class);
     }
-
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+    public function productVariant(){
+        return $this->hasMany(ProductVariant::class);
+    }
 }
