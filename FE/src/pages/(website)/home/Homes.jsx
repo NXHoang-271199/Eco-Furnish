@@ -65,6 +65,7 @@ const Homes = () => {
         <div className="max-w-6xl mx-auto mt-20 my-5">
           <div>
             <div>
+
               <div className="text-center m-auto">
                 <h2 className="mb-6 text-4xl font-semibold">New Product</h2>
                 <p className="w-[65%] m-auto">
@@ -90,6 +91,7 @@ const Homes = () => {
                   </div>
                 </Link>
               </div>
+
               <div>
                 <Link to={"product"}>
                   <div className="mb-2">

@@ -14,8 +14,6 @@ import Blogs from "./pages/(website)/Blog/Blogs";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
 // import ForgotPasswordModal from "./pages/SignIn/ForgotPasswordModal";
-import Payment from "./pages/(website)/Payment/Payment";
-import BlogDetail from "./pages/(website)/BlogDetail/BlogDetail";
 function App() {
   return (
     <>
