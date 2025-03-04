@@ -61,11 +61,13 @@ const Products = () => {
                   />
                 </div>
                 <div className="my-4">
-                  <h4 className="font-bold">Syltherine</h4>
+                  <a href="product">
+                    <h4 className="font-bold">Syltherine</h4>
 
-                  <p className="text-1xl font-somibold text-red-600 pt-1">
-                    2.500.000đ
-                  </p>
+                    <p className="text-1xl font-somibold text-red-600 pt-1">
+                      2.500.000đ
+                    </p>
+                  </a>
                 </div>
               </div>
               {/* end product */}

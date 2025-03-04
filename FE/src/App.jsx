@@ -1,6 +1,4 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
 import "./App.css";
 import { Route, Routes } from "react-router-dom";
 import LayoutWebsite from "./pages/(website)/layout";
@@ -10,7 +8,8 @@ import ProductDetail from "./pages/(website)/Detail/ProductDetail";
 import Contact from "./pages/(website)/Contact/Contact";
 import Cart from "./pages/(website)/Cart/Cart";
 import About from "./pages/(website)/About/About";
-import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
+// import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
+// import Payment from "./pages/(website)/Payment/Payment";
 import Blogs from "./pages/(website)/Blog/Blogs";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
@@ -26,8 +25,10 @@ function App() {
           <Route path="contact" element={<Contact />} />
           <Route path="cart" element={<Cart />} />
           <Route path="blog" element={<Blogs />} />
-          <Route path="blogdetail" element={<BlogsDetail />} />
+          {/* <Route path="blogdetail" element={<BlogsDetail />} /> */}
           <Route path="about" element={<About />} />
+          <Route path="payment" element={<Payment />} />
+          <Route path="blog-detail" element={<BlogDetail />} />
         </Route>
         <Route path="signin" element={<SignIn />} />
         {/* <Route path="changepass" element={<ForgotPasswordModal />} /> */}

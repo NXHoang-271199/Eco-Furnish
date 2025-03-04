@@ -28,7 +28,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreignIdFor(Role::class)->constrained()->onDelete('cascade');
-            
+
         });
     }
 

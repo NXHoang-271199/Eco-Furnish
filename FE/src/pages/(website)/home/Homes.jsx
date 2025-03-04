@@ -64,7 +64,8 @@ const Homes = () => {
       <section>
         <div className="max-w-6xl mx-auto mt-20 my-5">
           <div>
-            <div className="">
+            <div>
+
               <div className="text-center m-auto">
                 <h2 className="mb-6 text-4xl font-semibold">New Product</h2>
                 <p className="w-[65%] m-auto">
@@ -74,7 +75,7 @@ const Homes = () => {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-4 grid-rows-1 gap-4 my-12">
+            <div className="grid grid-cols-4 grid-rows-1 gap-4 my-12 ">
               <div>
                 <Link to={"product"}>
                   <div className="mb-2">
