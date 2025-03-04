@@ -4,8 +4,8 @@ const Contact = () => {
   return (
     <div className="font-roboto">
       <main className="container mx-auto px-4 py-16">
-        <div className="text-left w-[50%] ">
-          <h1 className="text-6xl font-semibold  text-gray-900 pt-8 mb-4 leading-snug">
+        <div className="text-left pr-96">
+          <h1 className="text-4xl font-bold text-gray-900 pt-8 mb-4">
             Chúng tôi tin vào thiết kế nội thất bền vững và đam mê tạo ra không
             gian sống đẹp, thoải mái cho ngôi nhà của bạn.
           </h1>
@@ -24,8 +24,8 @@ const Contact = () => {
             // width="600"
             // height="400"
           />
-          <div className="bg-gray-100 pr-12 pl-12 pt-56 h-[600px] space-y-auto">
-            <h2 className="text-5xl font-semibold text-gray-900 mb-4 ">
+          <div className="bg-gray-100 pr-12 pl-12 pt-56 h-[600px]">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Về chúng tôi
             </h2>
             <p className="text-gray-600 mb-4 w-[65%] font-semibold">
@@ -66,9 +66,7 @@ const Contact = () => {
             <div className="flex items-center space-x-4 mb-8 md:mb-0">
               <i className="fas fa-map-marker-alt text-2xl text-gray-500"></i>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  SỐ ĐIỆN THOẠI
-                </h3>
+                <h3 className="text-lg font-bold text-gray-900">SỐ ĐIỆN THOẠI</h3>
                 <p className="text-gray-600">0901121111</p>
               </div>
             </div>
@@ -81,9 +79,9 @@ const Contact = () => {
             </div>
           </div>
           <div className="flex flex-col md:flex-row justify-between items-start md:space-x-8 ">
-            <form className="w-full md:w-1/2 mb-8 md:mb-0 bg-gray-100 px-12 ] text-left font-semibold">
-              <div className="my-3 ">
-                <label className="block text-gray-700 " htmlFor="name">
+            <form className="w-full md:w-1/2 mb-8 md:mb-0 bg-gray-100 pr-12 pl-12 ]">
+              <div className="mb-4">
+                <label className="block text-gray-700" htmlFor="name">
                   Họ tên
                 </label>
                 <input
@@ -116,7 +114,7 @@ const Contact = () => {
                 ></textarea>
               </div>
               <button
-                className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 my-3"
+                className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 mb-4"
                 type="submit"
               >
                 Gửi
