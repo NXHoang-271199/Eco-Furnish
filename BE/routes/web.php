@@ -2,15 +2,17 @@
 
 use App\Models\User;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TrashController;
+
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VariantController;
-
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -54,7 +56,7 @@ Route::prefix('admin')->group(function () {
     Route::prefix('variants/{variant}')->name('variants.')->group(function () {
         Route::resource('values', VariantValueController::class);
     });
-
+});
     // Routes cho thùng rác
     Route::prefix('trash')->group(function () {
         Route::resource('trash-products', TrashController::class)->only(['index', 'update', 'destroy']);
@@ -81,13 +83,13 @@ Route::get('/email/verify', function () {
 
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
- 
+
     return redirect(RouteServiceProvider::ADMIN);
 })->middleware(['auth', 'signed'])->name('verification.verify');
 
 Route::post('/email/verification-notification', function (Request $request) {
     $request->user()->sendEmailVerificationNotification();
- 
+
     return back()->with('message', 'Verification link sent!');
 })->middleware(['auth', 'throttle:6,1'])->name('verification.resend');
 
