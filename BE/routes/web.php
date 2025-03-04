@@ -27,7 +27,6 @@ Route::prefix('admin')->group(function () {
     // Products routes
     Route::resource('products', ProductController::class);
     Route::post('products/generate-variants', [ProductController::class, 'generateVariants'])->name('products.generate-variants');
-
     // Variants routes
     Route::resource('variants', VariantController::class);
     
@@ -46,7 +45,8 @@ Route::prefix('admin')->group(function () {
         Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
         Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
     });
+});
 Route::get('/', function () {
-    return view('admins.dashboard');
-    // return view('admins.test');
+return view('admins.dashboard');
+// return view('admins.test');
 });
