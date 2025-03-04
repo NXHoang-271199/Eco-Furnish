@@ -6,10 +6,10 @@ import { AiOutlineUser, AiOutlineSearch, AiOutlineHeart } from "react-icons/ai";
 const Header = () => {
   return (
     <>
-      <header class="bg-white fixed top-0 left-0 w-full z-50">
-        <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
+      <header className="bg-white fixed top-0 left-0 w-full z-50">
+        <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
           {/* <!-- Logo --> */}
-          <div class="text-2xl font-bold text-black">
+          <div className="text-2xl font-bold text-black">
             <div>
               <p>
                 <span className="text-yellow-300">E</span>co-
@@ -19,7 +19,7 @@ const Header = () => {
           </div>
 
           {/* <!-- Navigation --> */}
-          <nav class="hidden md:flex space-x-6">
+          <nav className="hidden md:flex space-x-6">
             <ul className="flex justify-center space-x-6 ">
               <li>
                 <Link to="/" className="hover:text-yellow-400">
@@ -110,7 +110,7 @@ const Header = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/blogs" className="hover:text-yellow-400">
+                <Link to="/blog" className="hover:text-yellow-400">
                   Blog
                 </Link>
               </li>
@@ -118,7 +118,7 @@ const Header = () => {
           </nav>
 
           {/* <!-- Icons --> */}
-          <div class="flex items-center space-x-4">
+          <div className="flex items-center space-x-4">
             {/* <!-- Login --> */}
             {/* <a href="#" class="text-gray-700 hidden md:block hover:text-black">
               Login / Register
@@ -131,7 +131,7 @@ const Header = () => {
             <Link to="/cart">
               <IoCartOutline />
             </Link>
-            <Link to="/auth/login">
+            <Link to="/signin">
               <AiOutlineUser />
             </Link>
           </div>

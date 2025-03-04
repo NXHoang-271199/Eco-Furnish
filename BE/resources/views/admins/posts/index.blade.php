@@ -7,9 +7,27 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <style>
-        .thumnail-sm {
-            max-width: 200px;
-            max-height: 200px;
+        .fixed-thumbnail {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 8px;
+
+        }
+
+        .post-thumbnail-container {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .post-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+
         }
 
         .button-list {
@@ -35,9 +53,6 @@
             opacity: 0.8;
         }
 
-        <style>
-
-        /* Tùy chỉnh nav-tabs */
         .nav-tabs {
             border-bottom: 2px solid #ddd;
         }
@@ -62,7 +77,6 @@
             display: flex;
             gap: 10px;
             justify-content: flex-end;
-            /* Đẩy nút sang bên phải */
             align-items: center;
             z-index: 10;
         }
@@ -111,11 +125,10 @@
 
     <script>
         $(document).on('click', '.delete-btn', function(e) {
-            e.preventDefault(); // Ngăn chặn form submit ngay lập tức
+            e.preventDefault();
 
-            let form = $(this).closest("form"); // Lấy form chứa nút xóa
+            let form = $(this).closest("form");
 
-            // Debug: Kiểm tra xem sự kiện có chạy không
             console.log("Nút xóa đã được nhấn!");
 
             Swal.fire({
@@ -129,8 +142,8 @@
                 cancelButtonText: "Hủy"
             }).then((result) => {
                 if (result.isConfirmed) {
-                    console.log("Đã xác nhận xóa!"); // Debug kiểm tra
-                    form.submit(); // Gửi form sau khi xác nhận
+                    console.log("Đã xác nhận xóa!");
+                    form.submit();
                 } else {
                     console.log("Hủy xóa!");
                 }
@@ -219,8 +232,7 @@
                                         <div class="d-flex align-items-center">
                                             <div class="flex-shrink-0 me-3">
                                                 <img src="{{ Storage::url($post->image_thumbnail) }}"
-                                                    alt="{{ $post->title }}"
-                                                    class="avatar-md h-auto d-block rounded thumnail-sm">
+                                                    alt="{{ $post->title }}" class="fixed-thumbnail rounded">
                                             </div>
                                             <div class="flex-grow-1 overflow-hidden">
                                                 <h5 class="fs-15 text-truncate">{{ $post->title }}</h5>
@@ -252,9 +264,11 @@
                                 </div>
                                 <div class="ms-2">
                                     <select name="status" class="form-control">
-                                        <option value="">-- Chọn trạng thái --</option>
-                                        <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>Đã duyệt</option>
-                                        <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>Chưa duyệt</option>
+                                        <option value="">--Tất cả trạng thái--</option>
+                                        <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>Đã duyệt
+                                        </option>
+                                        <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>Chưa duyệt
+                                        </option>
                                     </select>
                                 </div>
                                 <div class="d-flex justify-content-start ms-2">
@@ -269,19 +283,26 @@
 
                 <div class="col-xxl-12">
                     @forelse ($listPosts as $post)
-                        <div class="card position-relative post-card {{ $post->status == 0 ? 'bg-warning-subtle' : '' }}">
+                        <div
+                            class="card position-relative post-card {{ $post->status == 1 ? 'post-published' : 'post-unpublished bg-warning-subtle' }}">
+                            <div class="position-absolute top-0 end-0 m-2">
+                                <span class="badge rounded-pill {{ $post->status == 1 ? 'bg-success' : 'bg-danger' }}">
+                                    <i class="{{ $post->status == 1 ? 'ri-check-double-line' : 'ri-time-line' }}"></i>
+                                    {{ $post->status == 1 ? 'Đã xuất bản' : 'Chưa xuất bản' }}
+                                </span>
+                            </div>
                             <div class="card-body">
                                 <div class="row g-4">
                                     <div class="col-xxl-3 col-lg-5">
-                                        <img src="{{ Storage::url($post->image_thumbnail) }}"
-                                            alt="ảnh {{ $post->title }}"
-                                            class="img-fluid rounded w-100 object-fit-cover thumnail-sm">
+                                        <div class="post-thumbnail-container rounded">
+                                            <img src="{{ Storage::url($post->image_thumbnail) }}"
+                                                alt="ảnh {{ $post->title }}" class="post-thumbnail rounded">
+                                        </div>
                                     </div>
                                     <div class="col-xxl-9 col-lg-7">
                                         <p class="mb-2 text-primary text-uppercase">
                                             {{ $post->categoryPost?->title ?? 'Không có chuyên mục' }}
                                         </p>
-                                        
 
                                         <a href="{{ route('posts.show', $post->id) }}">
                                             <h5 class="fs-15 fw-semibold">{{ $post->title }}</h5>
@@ -299,33 +320,29 @@
                                             </span>
                                         </div>
 
-                                        @if ($post->status == 0)
-                                            <span class="badge bg-danger">Chưa xuất bản</span>
-                                        @endif
-
                                         <p>{{ $post->short_content }}</p>
                                         <a href="{{ route('posts.show', $post->id) }}" class="text-decoration-underline">
                                             Read more <i class="ri-arrow-right-line"></i>
                                         </a>
+
+                                        <!-- Đưa hành động xuống dưới -->
+                                        <div class="post-actions d-flex justify-content-end">
+                                            <a href="{{ route('posts.edit', $post->id) }}"
+                                                class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                                <i class="ri-edit-line"></i>
+                                            </a>
+                                            <form action="{{ route('posts.destroy', $post->id) }}" method="POST"
+                                                class="delete-form">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
+                                                    title="Xóa">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+
                                     </div>
-
-                                    <div class="post-actions position-absolute top-0 end-0 m-2">
-                                        <a href="{{ route('posts.edit', $post->id) }}"
-                                            class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
-                                            <i class="ri-edit-line"></i>
-                                        </a>
-                                        <form action="{{ route('posts.destroy', $post->id) }}" method="POST"
-                                            class="delete-form">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                                                title="Xóa">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </button>
-                                        </form>
-
-                                    </div>
-
                                 </div>
                             </div>
                         </div>

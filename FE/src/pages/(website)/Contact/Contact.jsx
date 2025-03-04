@@ -5,18 +5,18 @@ const Contact = () => {
   return (
     <div className="font-roboto">
       <main className="container mx-auto px-4 py-16">
-        <div className="text-left w-[50%] ">
-          <h1 className="text-6xl font-semibold  text-gray-900 pt-8 mb-4 leading-snug">
+        <div className="text-left pr-96">
+          <h1 className="text-4xl font-bold text-gray-900 pt-8 mb-4">
             Chúng tôi tin vào thiết kế nội thất bền vững và đam mê tạo ra không
             gian sống đẹp, thoải mái cho ngôi nhà của bạn.
           </h1>
-          <p className="text-gray-600 mb-8 font-medium text-2xl">
+          <p className="text-gray-600 mb-8">
             Cửa hàng của chúng tôi cung cấp các sản phẩm mới nhất mang phong
             cách cổ điển, với chất liệu tự nhiên, đường cong, góc cạnh và thiết
             kế cổ điển, có thể phù hợp với bất kỳ dự án trang trí nào.
           </p>
         </div>
-        <div className="flex flex-col md:flex-row items-center md:space-x-8 bg-gray-100">
+        <div className="flex flex-col md:flex-row items-center md:space-x-8">
           <img
             src="https://storage.googleapis.com/a1aa/image/17RKU44o-p0wL_aV7UMwpptAv70oSYYp01uylGBfbOM.jpg"
             alt="Decorative wooden floor"
@@ -24,24 +24,21 @@ const Contact = () => {
             // width="600"
             // height="400"
           />
-          <div className="bg-gray-100 pr-12 pl-12 pt-56 h-[600px] space-y-auto">
-            <h2 className="text-5xl font-semibold text-gray-900 mb-4 ">
+          <div className="bg-gray-100 pr-12 pl-12 pt-56 h-[600px]">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Về chúng tôi
             </h2>
-            <p className="text-gray-600 mb-4 w-[65%] font-semibold">
+            <p className="text-gray-600 mb-4">
               Nội thất River là cửa hàng quà tặng và trang trí trụ sở tại Thành
-              phố Hà Nội, Việt Nam. Thành lập từ năm 2025.
+              phố Hà Nội, Việt Nam. Thành lập từ năm 2019.
             </p>
-            <a
-              className="text-black font-medium underline hover:translate-x-4 duration-700  hover:ease-in flex"
-              href="products"
-            >
-              Mua ngay <FaArrowRight className="mt-2 ml-2 size-[15px] " />
+            <a className="text-blue-500 hover:text-blue-700" href="#">
+              Mua ngay <i className="fas fa-arrow-right"></i>
             </a>
           </div>
         </div>
       </main>
-      <div className=" mx-auto px-4 text-center  py-8">
+      <div className=" mx-auto px-4 text-center bg-gray-50 py-8">
         <h2 className="text-3xl font-bold text-gray-900">
           Liên hệ với chúng tôi
         </h2>
@@ -79,9 +76,9 @@ const Contact = () => {
             </div>
           </div>
           <div className="flex flex-col md:flex-row justify-between items-start md:space-x-8 ">
-            <form className="w-full md:w-1/2 mb-8 md:mb-0 bg-gray-100 px-12 ] text-left font-semibold">
-              <div className="my-3 ">
-                <label className="block text-gray-700 " htmlFor="name">
+            <form className="w-full md:w-1/2 mb-8 md:mb-0 bg-gray-100 pr-12 pl-12 ]">
+              <div className="mb-4">
+                <label className="block text-gray-700" htmlFor="name">
                   Họ tên
                 </label>
                 <input
@@ -91,7 +88,7 @@ const Contact = () => {
                   type="text"
                 />
               </div>
-              <div className="my-3">
+              <div className="mb-4">
                 <label className="block text-gray-700" htmlFor="email">
                   E-mail
                 </label>
@@ -102,7 +99,7 @@ const Contact = () => {
                   type="email"
                 />
               </div>
-              <div className="my-3">
+              <div className="mb-4">
                 <label className="block text-gray-700" htmlFor="message">
                   Tin nhắn
                 </label>
@@ -114,7 +111,7 @@ const Contact = () => {
                 ></textarea>
               </div>
               <button
-                className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 my-3"
+                className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700 mb-4"
                 type="submit"
               >
                 Gửi

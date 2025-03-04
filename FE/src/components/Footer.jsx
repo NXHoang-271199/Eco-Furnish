@@ -6,7 +6,7 @@ const Footer = () => {
       <div className="max-w-6xl mx-auto text-slate-50">
         <div className="grid grid-cols-4 py-14">
           <div>
-            <div class="text-2xl font-bold text-black">
+            <div className="text-2xl font-bold text-black">
               <div>
                 {/* <img src="/logo.svg" alt="Eco-Furnish" /> */}
                 <p>

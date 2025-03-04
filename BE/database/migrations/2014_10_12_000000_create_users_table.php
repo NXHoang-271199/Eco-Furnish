@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name', 255);
-            $table->integer('age');
+            $table->integer('age')->nullable();
             $table->string('email', 255)->unique();
             $table->string('password', 255);
             $table->string('address', 255)->nullable();
@@ -37,7 +37,7 @@ return new class extends Migration
      * Reverse the migrations.
      */
     public function down(): void
-    {
+    {   
         Schema::table('users', function (Blueprint $table) {
             $table->dropForeign(['role_id']);
         });

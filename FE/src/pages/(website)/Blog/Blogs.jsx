@@ -1,9 +1,10 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Blogs = () => {
   return (
     <div className="bg-gray-100 mt-10">
-      <main className="container mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8">
         <section className="relative">
           <img
             src="https://storage.googleapis.com/a1aa/image/L2WwzaWj82s6j2ILIlmI8ucu4kkoaXdYw6hBRSqLzYY.jpg"
@@ -34,7 +35,7 @@ const Blogs = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(12)].map((_, index) => (
-              <a href="/blog-detail">
+              <a href="/BlogDetail">
                 <div key={index} className="bg-white rounded-lg shadow p-4">
                   <img
                     src={`https://picsum.photos/200/300`}
