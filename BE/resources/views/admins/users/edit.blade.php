@@ -12,8 +12,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pnotify/5.2.0/PNotify.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            const form = document.querySelector(".needs-validation");
             const input = document.getElementById("profile-img-file-input");
             const previewImage = document.getElementById("preview-image");
+
+            form.addEventListener("submit", function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add("was-validated");
+            });
 
             input.addEventListener("change", function(event) {
                 const file = event.target.files[0];
@@ -53,7 +62,7 @@
         </div>
 
         <form action="{{ route('users.update', $singerUser->id) }}" method="POST" enctype="multipart/form-data"
-            class="needs-validation" novalidate>
+            autocomplete="off" class="needs-validation" novalidate>
             @csrf
             @method('PUT')
             <div class="row">
@@ -62,18 +71,23 @@
                     <div class="card mt-n5">
                         <div class="card-body p-4">
                             <div class="text-center">
-                                <div class="profile-user position-relative d-inline-block mx-auto">
-                                    <img id="preview-image"
-                                        src="{{ $singerUser->avatar ? Storage::url($singerUser->avatar) : asset('path-to-default-avatar.png') }}"
-                                        class="rounded-circle avatar-xl img-thumbnail user-profile-image material-shadow"
-                                        alt="user-profile-image">
+                                <div class="profile-user position-relative d-inline-block mx-auto mb-4">
+                                    @if ($singerUser->avatar)
+                                        <img id="preview-image" src="{{ Storage::url($singerUser->avatar) }}"
+                                            class="rounded-circle avatar-xl img-thumbnail user-profile-image"
+                                            alt="user-profile-image">
+                                    @else
+                                        <img id="preview-image"
+                                            src="{{ asset('assets/admins/images/users/user-dummy-img.jpg') }}"
+                                            class="rounded-circle avatar-xl img-thumbnail user-profile-image"
+                                            alt="user-profile-image">
+                                    @endif
 
                                     <div class="avatar-xs p-0 rounded-circle profile-photo-edit">
-                                        <input id="profile-img-file-input" type="file"
-                                            class="profile-img-file-input @error('avatar') is-invalid @enderror"
-                                            name="avatar" accept="image/jpeg,image/png,image/jpg,image/gif">
+                                        <input id="profile-img-file-input" type="file" name="avatar"
+                                            class="profile-img-file-input @error('avatar') is-invalid @enderror">
                                         <label for="profile-img-file-input" class="profile-photo-edit avatar-xs">
-                                            <span class="avatar-title rounded-circle bg-light text-body material-shadow">
+                                            <span class="avatar-title rounded-circle bg-light text-body">
                                                 <i class="ri-camera-fill"></i>
                                             </span>
                                         </label>
@@ -107,7 +121,7 @@
                                         <label for="nameInput" class="form-label">Tên người dùng</label>
                                         <input type="text" class="form-control @error('name') is-invalid @enderror"
                                             id="nameInput" name="name" placeholder="Nhập tên người dùng"
-                                            value="{{ old('name', $singerUser->name) }}" required>
+                                            value="{{ old('name', $singerUser->name) }}" required autocomplete="off">
                                         <div class="invalid-feedback">
                                             @error('name')
                                                 {{ $message }}
@@ -141,45 +155,44 @@
                                         <label for="emailInput" class="form-label">Email</label>
                                         <input type="email" class="form-control @error('email') is-invalid @enderror"
                                             id="emailInput" name="email" placeholder="Nhập email"
-                                            value="{{ old('email', $singerUser->email) }}" required>
+                                            value="{{ old('email', $singerUser->email) }}" required autocomplete="off">
                                         <div class="invalid-feedback">
                                             @error('email')
                                                 {{ $message }}
-                                            @else
-                                                Vui lòng nhập email hợp lệ.
                                             @enderror
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Role -->
                                 <div class="col-lg-6">
                                     <div class="mb-3">
-                                        <label for="roleInput" class="form-label">Phân quyền</label>
-                                        <select name="role_id" class="form-select @error('role_id') is-invalid @enderror"
-                                            id="roleInput" required>
-                                            <option value="">Chọn phân quyền</option>
+                                        <label for="roleSelect" class="form-label">Vai trò</label>
+                                        <select class="form-select @error('role_id') is-invalid @enderror" id="roleSelect"
+                                            name="role_id" required autocomplete="off">
+                                            <option value="">Chọn vai trò</option>
                                             @foreach ($listRoles as $role)
                                                 <option value="{{ $role->id }}"
                                                     {{ old('role_id', $singerUser->role_id) == $role->id ? 'selected' : '' }}>
-                                                    {{ $role->name }}</option>
+                                                    {{ $role->name }}
+                                                </option>
                                             @endforeach
                                         </select>
+
                                         <div class="invalid-feedback">
                                             @error('role_id')
                                                 {{ $message }}
                                             @else
-                                                Vui lòng chọn phân quyền.
+                                                Vui lòng chọn vai trò.
                                             @enderror
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-lg-6">
                                     <div class="mb-3">
-                                        <label for="statusInput" class="form-label">Trạng thái</label>
+                                        <label for="statusSelect" class="form-label">Trạng thái</label>
                                         <select name="is_active"
-                                            class="form-select @error('is_active') is-invalid @enderror" id="statusInput"
-                                            required>
+                                            class="form-select @error('is_active') is-invalid @enderror" id="statusSelect"
+                                            required autocomplete="off">
                                             <option value="1"
                                                 {{ old('is_active', $singerUser->is_active ?? 1) == 1 ? 'selected' : '' }}>
                                                 Kích hoạt</option>
@@ -203,7 +216,8 @@
                                         <label for="addressInput" class="form-label">Địa chỉ</label>
                                         <input type="text" class="form-control @error('address') is-invalid @enderror"
                                             id="addressInput" name="address" placeholder="Nhập địa chỉ"
-                                            value="{{ old('address', $singerUser->address) }}" required>
+                                            value="{{ old('address', $singerUser->address) }}" required
+                                            autocomplete="off">
                                         <div class="invalid-feedback">
                                             @error('address')
                                                 {{ $message }}
@@ -213,7 +227,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <!-- Submit Button -->
                                 <div class="col-lg-12 text-end">
                                     <button type="submit" class="btn btn-primary">Cập nhật</button>

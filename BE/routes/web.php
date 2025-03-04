@@ -65,6 +65,59 @@ Route::prefix('admin')->group(function () {
         Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
         Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
     });
+Route::get('/', function () {
+    // return view('admins.dashboard');
+    return view('auth.login');
+});
+
+// FRONT-END
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+Auth::routes();
+
+Route::get('/email/verify', function () {
+    return view('auth.verify');
+})->middleware('auth')->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+ 
+    return redirect(RouteServiceProvider::ADMIN);
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::post('/email/verification-notification', function (Request $request) {
+    $request->user()->sendEmailVerificationNotification();
+ 
+    return back()->with('message', 'Verification link sent!');
+})->middleware(['auth', 'throttle:6,1'])->name('verification.resend');
+
+// Route login không cần middleware auth
+Route::prefix('admin')->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('admin.login');
+    Route::post('/login', [LoginController::class, 'login'])->name('admin.login');
+    Route::get('/logout', [LoginController::class, 'logout'])->name('admin.logout');
+});
+
+// Các route khác cần middleware auth
+Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
+    // Dashboard =========================================
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // User ===============================================
+    Route::resource('users', UserController::class);
+
+    // Role ===============================================
+    Route::resource('roles', RoleController::class);
+
+    // Post ===============================================
+    Route::resource('posts', PostController::class);
+
+    // Category Post ======================================
+    Route::resource('category-posts', CategoryPostController::class);
+    Route::post('upload-image', [App\Http\Controllers\ImageUploadController::class, 'upload'])->name('upload.image');
+
+    // Voucher ============================================
+    Route::resource('vouchers', VoucherController::class);
     // return view('admins.dashboard');
     // return view('admins.test');
       // phương thức thanh toán

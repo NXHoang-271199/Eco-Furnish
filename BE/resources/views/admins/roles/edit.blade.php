@@ -160,6 +160,8 @@
 
     <x-alert />
 
+<<<<<<< HEAD
+=======
     <div class="row">
         <!-- Column for the form -->
         <div class="col-lg-6">
@@ -233,4 +235,5 @@
             </div>
         </div>
     </div>
+>>>>>>> 10364d08a8bcd4f28ff782a9812e783852789c1f
 @endsection

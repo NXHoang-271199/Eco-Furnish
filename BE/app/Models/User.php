@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Post;
 use App\Models\Role;
 use Laravel\Sanctum\HasApiTokens;
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -77,6 +77,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(Post::class);
     }
+
+    public function getDisplayNameAttribute()
+    {
+        if(is_string($this->name) && is_array(json_decode($this->name, true))) {
+            $userData = json_decode($this->name, true);
+            return $userData['name'] ?? 'Admin';
+        }
+        return $this->name ?? 'Admin';
+    }
+
+    private function isJson($string) {
+        json_decode($string);
+        return json_last_error() === JSON_ERROR_NONE;
+    }    
     public function orders()
     {
         return $this->hasMany(Order::class);

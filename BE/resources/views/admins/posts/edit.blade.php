@@ -130,10 +130,32 @@
             }
 
             // Update content to hidden field when form is submitted
-            var form = document.querySelector('form');
-            form.addEventListener('submit', function() {
-                var content = quill.root.innerHTML;
-                document.getElementById('content').value = content;
+            var form = document.querySelectorAll(".needs-validation");
+
+            Array.prototype.slice.call(form).forEach(function(form) {
+                form.addEventListener("submit", function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+
+                    form.classList.add("was-validated");
+                }, false);
+            });
+
+            // Kiểm tra từng input khi nhập
+            var inputs = document.querySelectorAll(".form-control");
+
+            inputs.forEach(input => {
+                input.addEventListener("input", function() {
+                    if (input.checkValidity()) {
+                        input.classList.remove("is-invalid");
+                        input.classList.add("is-valid"); // Thêm dấu tick xanh
+                    } else {
+                        input.classList.remove("is-valid");
+                        input.classList.add("is-invalid"); // Hiển thị lỗi đỏ
+                    }
+                });
             });
         });
 
@@ -278,7 +300,7 @@
         </div>
         <div class="row">
             <form action="{{ route('posts.update', $singerPost->id) }}" method="POST" enctype="multipart/form-data"
-                class="d-flex">
+                class="d-flex needs-validation" novalidate id="postForm">
                 @csrf
                 @method('PUT')
                 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -286,14 +308,29 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="mb-3">
-                                <h1><input type="text" class="form-control" id="project-title-input"
-                                        placeholder="Nhập tiêu đề...." name="title" value="{{ $singerPost->title }}"
-                                        style="font-size: 23px;"></h1>
+                                <h1><input type="text" class="form-control @error('title') is-invalid @enderror"
+                                        id="project-title-input" placeholder="Nhập tiêu đề...." name="title"
+                                        value="{{ $singerPost->title }}" style="font-size: 23px;"></h1>
+                                <div class="invalid-feedback">
+                                    @error('title')
+                                        {{ $message }}
+                                    @else
+                                        Vui nhập tên bài viết.
+                                    @enderror
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label" for="content">Nội dung</label>
-                                <div id="editor-container" class="quill-editor"></div>
+                                <div id="editor-container" class="quill-editor @error('content') is-invalid @enderror">
+                                </div>
                                 <input type="hidden" name="content" id="content" value="{{ $singerPost->content }}">
+                                <div class="invalid-feedback">
+                                    @error('content')
+                                        {{ $message }}
+                                    @else
+                                        Vui nhập nôi dung bài viết.
+                                    @enderror
+                                </div>
                             </div>
                             <div class="text-end mb-4">
                                 <button type="submit" class="btn btn-success w-sm">Cập nhật</button>
@@ -316,7 +353,8 @@
                             <div class="mb-3">
                                 <label for="choices-categories-input" class="form-label">Chuyên mục</label>
                                 <div class="choices">
-                                    <select class="form-select" id="choices-categories-input" name="category_id">
+                                    <select class="form-select @error('category_id') is-invalid @enderror"
+                                        id="choices-categories-input" name="category_id">
                                         <option value="" selected></option>
                                         @foreach ($listCategoryPost as $category)
                                             <option value="{{ $category->id }}"
@@ -325,22 +363,14 @@
                                             </option>
                                         @endforeach
                                     </select>
+                                    <div class="invalid-feedback">
+                                        @error('category_id')
+                                            {{ $message }}
+                                        @else
+                                            Chọn chuyên mục.
+                                        @enderror
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label for="user_id" class="form-label">Chọn người dùng</label>
-                                <select class="form-select" name="user_id" id="user_id" required>
-                                    <option value="">Chọn người dùng</option>
-                                    @foreach ($users as $user)
-                                        <option value="{{ $user->id }}"
-                                            @if ($user->id == $singerPost->user_id) selected @endif>
-                                            {{ $user->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
                             </div>
                         </div>
                     </div>
@@ -352,12 +382,20 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label for="post-status" class="form-label">Trạng thái bài viết</label>
-                                <select class="form-select" name="status" id="post-status" required>
+                                <select class="form-select @error('status') is-invalid @enderror" name="status"
+                                    id="post-status" required>
                                     <option value="1" {{ $singerPost->status == '1' ? 'selected' : '' }}>Xuất bản
                                     </option>
                                     <option value="0" {{ $singerPost->status == '0' ? 'selected' : '' }}>Chưa xuất
                                         bản</option>
                                 </select>
+                                <div class="invalid-feedback">
+                                    @error('status')
+                                        {{ $message }}
+                                    @else
+                                        Vui lòng chọn trạng thái.
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                     </div>
