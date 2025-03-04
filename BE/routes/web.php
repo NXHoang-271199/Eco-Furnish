@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -9,8 +10,8 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\TrashController;
 
+use App\Http\Controllers\TrashController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VariantController;
 use App\Http\Controllers\VoucherController;
@@ -23,6 +24,8 @@ use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\OrderNotificationController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider;
 
 /*
 |--------------------------------------------------------------------------
