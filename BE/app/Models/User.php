@@ -91,7 +91,6 @@ class User extends Authenticatable implements MustVerifyEmail
         json_decode($string);
         return json_last_error() === JSON_ERROR_NONE;
     }
-
     public function orders()
     {
         return $this->hasMany(Order::class);

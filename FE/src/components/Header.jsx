@@ -6,8 +6,8 @@ import { AiOutlineUser, AiOutlineSearch, AiOutlineHeart } from "react-icons/ai";
 const Header = () => {
   return (
     <>
-      <header class="bg-white fixed top-0 left-0 w-full z-50">
-        <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
+      <header className="bg-white fixed top-0 left-0 w-full z-50">
+        <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
           {/* <!-- Logo --> */}
           <div className="text-2xl font-bold text-black">
             <div>
