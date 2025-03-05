@@ -316,7 +316,7 @@ const Payment = () => {
             <h3 class="font-semibold">Phương thức thanh toán</h3>
             <div class="mt-2 space-y-2">
               <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
-                <input type="radio" name="payment" checked />
+                <input type="radio" name="payment" />
                 <span>Thanh toán chuyển khoản qua ngân hàng</span>
               </label>
               <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
