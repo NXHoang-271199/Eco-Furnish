@@ -25,7 +25,7 @@ class UserApiController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
+            'password' => 'required|string|min:5',
         ]);
 
         if ($validator->fails()) {
@@ -87,7 +87,7 @@ class UserApiController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:255',
             'email' => 'string|email|max:255|unique:users,email,' . $id,
-            'password' => 'string|min:8',
+            'password' => 'string|min:5',
         ]);
 
         if ($validator->fails()) {
