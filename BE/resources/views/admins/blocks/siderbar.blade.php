@@ -112,58 +112,7 @@
                 </li>
                 <a class="nav-link menu-link" href="{{ route('vouchers.index') }}">
                     <i class="bx bx-gift"></i> <span data-key="t-advance-ui">Quản lý mã giảm giá</span>
-                </a>
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link" href="#sidebarUser" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarUser">
-                        <i class="ri-account-circle-line"></i> <span data-key="t-advance-ui">Quản lý tài khoản</span>
-                    </a>
-                    <div class="collapse menu-dropdown" id="sidebarUser">
-                        <ul class="nav nav-sm flex-column">
-                            <li class="nav-item">
-                                <a href="{{ route('users.index') }}" class="nav-link" data-key="t-sweet-alerts">
-                                    <i class="ri-team-line"></i>Khách hàng
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('roles.index') }}" class="nav-link" data-key="t-nestable-list">
-                                    <i class="ri-user-settings-line"></i>Vai trò
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="" class="nav-link" data-key="t-nestable-list">
-                                    <i class="ri-admin-line"></i>Phân quyền
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link menu-link" href="#sidebarArticle" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarArticle">
-                        <i class="ri-article-line"></i> <span data-key="t-advance-ui">Quản lý bài viết</span>
-                    </a>
-                    <div class="collapse menu-dropdown" id="sidebarArticle">
-                        <ul class="nav nav-sm flex-column">
-                            <li class="nav-item">
-                                <a href="{{ route('posts.index') }}" class="nav-link" data-key="t-sweet-alerts">
-                                    <i class="ri-newspaper-line"></i>Bài viết
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('category-posts.index') }}" class="nav-link"
-                                    data-key="t-nestable-list">
-                                    <i class="ri-bookmark-line"></i>Chuyên mục
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
-                <a class="nav-link menu-link" href="{{ route('vouchers.index') }}">
-                    <i class="bx bx-gift"></i> <span data-key="t-advance-ui">Quản lý mã giảm giá</span>
-                </a>
-
+                </a>     
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarSanPham" data-key="t-product-management">
