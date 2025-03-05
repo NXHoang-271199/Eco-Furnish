@@ -32,6 +32,8 @@ use App\Http\Controllers\OrderNotificationController;
 */
 
 
+
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -43,17 +45,54 @@ Route::prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Categories Management
+    // Dashboard
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Categories Management
     Route::resource('categories', CategoryController::class);
 
-    // Products Management
+    // Products routes
     Route::resource('products', ProductController::class);
     Route::post('products/generate-variants', [ProductController::class, 'generateVariants'])->name('products.generate-variants');
 
-    // Variants Management
+    // Variants routes
     Route::resource('variants', VariantController::class);
     Route::prefix('variants/{variant}')->name('variants.')->group(function () {
         Route::resource('values', VariantValueController::class);
     });
+
+    // Users Management
+    Route::resource('users', UserController::class);
+
+    // Roles Management
+    Route::resource('roles', RoleController::class);
+
+    // Posts Management
+    Route::resource('posts', PostController::class);
+    Route::resource('category-posts', CategoryPostController::class);
+    Route::post('upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
+
+    // Vouchers Management
+    Route::resource('vouchers', VoucherController::class);
+
+    // Payment Methods
+    Route::resource('payment-methods', PaymentMethodController::class);
+    Route::prefix('payment-methods')->name('payment-methods.')->group(function () {
+        Route::get('{id}/connect', [PaymentMethodController::class, 'getConnectForm'])->name('connect.form');
+        Route::post('{id}/connect', [PaymentMethodController::class, 'connect'])->name('connect');
+        Route::post('{id}/disconnect', [PaymentMethodController::class, 'disconnect'])->name('disconnect');
+    });
+
+    // Orders Management
+    Route::resource('orders', OrderController::class);
+    Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
+
+    // Order Notifications
+    Route::get('order-notifications', [OrderNotificationController::class, 'index'])->name('order.notifications');
+    Route::post('order-notifications/{id}/read', [OrderNotificationController::class, 'markAsRead'])->name('order.notification.read');
+
+    // Trash Management
 
     // Users Management
     Route::resource('users', UserController::class);
