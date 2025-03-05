@@ -69,8 +69,8 @@ class PostController extends Controller
     public function create()
     {
         $listCategoryPost = CategoryPost::all();
-        $users = User::all();
-        return view('admins.posts.create', compact('listCategoryPost', 'users'));
+        $listUsers = User::all();
+        return view('admins.posts.create', compact('listCategoryPost', 'listUsers'));
     }
 
     /**
@@ -124,7 +124,7 @@ class PostController extends Controller
             'content' => $updatedContent,
             'image_thumbnail' => $filePath,
             'category_post_id' => $validated['category_id'],
-            'user_id' => 1,
+            'user_id' => $request->input('user_id'),
             'status' => $request->input('status'),
             'slug' => $slug,
         ]);
@@ -148,22 +148,13 @@ class PostController extends Controller
     {
         $singerPost = Post::findOrFail($id);
         $listCategoryPost = CategoryPost::all();
-        $users = User::all();
-        return view('admins.posts.edit', compact('singerPost', 'listCategoryPost', 'users'));
+        $listUsers = User::all();
+        return view('admins.posts.edit', compact('singerPost', 'listCategoryPost', 'listUsers'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-
-    public function approve(Request $request, string $id)
-    {
-        $singerPost = Post::findOrFail($id);
-        $singerPost->status = '1';
-        $singerPost->save();
-
-        return redirect()->back()->with('success', 'Duyệt bài viết thanh công!');
-    }
 
     public function update(PostRequest $request, string $id)
     {
@@ -219,7 +210,7 @@ class PostController extends Controller
             'title' => $validated['title'],
             'content' => $updatedContent,
             'category_post_id' => $validated['category_id'],
-            'user_id' => 1,
+            'user_id' => $request->input('user_id'),
             'status' => $request->input('status'),
             'slug' => $slug,
         ]);

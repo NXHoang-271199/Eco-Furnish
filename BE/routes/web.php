@@ -33,8 +33,8 @@ use App\Http\Controllers\OrderNotificationController;
 
 
 Route::get('/', function () {
-    return redirect()->route('dashboard');
-})->name('home');
+    return view('welcome');
+});
 
 // Admin Routes
 Route::prefix('admin')->group(function () {
