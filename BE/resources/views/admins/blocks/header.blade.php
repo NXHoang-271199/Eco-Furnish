@@ -135,36 +135,32 @@
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <img class="rounded-circle header-profile-user"
-                                src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : 'https://www.gravatar.com/avatar/' . md5(strtolower(Auth::user()->email)) . '?s=200&d=mp' }}" 
+                                src="assets/images/users/avatar-1.jpg" 
                                 alt="Header Avatar">
                             <span class="text-start ms-xl-2">
                                 <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">
-                                    {{ Auth::user()->display_name }}
+                                    Admin
                                 </span>
                                 <span class="d-none d-xl-block ms-1 fs-12 user-name-sub-text">
-                                    {{ ucfirst(Auth::user()->role->name ?? 'admin') }}
+                                    Administrator
                                 </span>
                             </span>
                         </span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end">
                         <!-- item-->
-                        <h6 class="dropdown-header">Welcome {{ Auth::user()->name }}!</h6>
-                        <a class="dropdown-item" href="{{ route('users.show', Auth::id()) }}">
-                            <i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> 
+                        <h6 class="dropdown-header">Welcome!</h6>
+                        <a class="dropdown-item" href="#">
+                            <i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
                             <span class="align-middle">Profile</span>
                         </a>
-                        <a class="dropdown-item" href="{{ route('users.edit', Auth::id()) }}">
+                        <a class="dropdown-item" href="#">
                             <i class="mdi mdi-cog text-muted fs-16 align-middle me-1"></i> 
                             <span class="align-middle">Settings</span>
                         </a>
-                        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                            @csrf
-                        </form>
-                        <a class="dropdown-item" href="#"
-                            onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        <a class="dropdown-item" href="#">
                             <i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i>
-                            <span class="align-middle" data-key="t-logout">Logout</span>
+                            <span class="align-middle">Logout</span>
                         </a>
                     </div>
                 </div>
