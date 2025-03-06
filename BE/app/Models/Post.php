@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Post extends Model
 {
     use HasFactory, SoftDeletes;
+    
+    protected $table = 'posts';
 
     protected $fillable = [
         'title',
@@ -43,12 +45,13 @@ class Post extends Model
 
 
     protected $casts = [
+        'status' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
     public function getRouteKeyName()
-    {
+    { 
         return 'slug';
     }
 
@@ -59,6 +62,6 @@ class Post extends Model
 
     public function categoryPost()
     {
-        return $this->belongsTo(CategoryPost::class);
+        return $this->belongsTo(CategoryPost::class, 'category_post_id');
     }
 }

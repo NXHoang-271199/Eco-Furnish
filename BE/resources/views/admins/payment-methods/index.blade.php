@@ -11,7 +11,6 @@
                 <a href="{{ route('payment-methods.create') }}" class="btn btn-primary">Thêm phương thức</a>
             </div>
             <div class="card-body">
-                {{-- <x-alert /> --}}
                 <table class="table table-striped">
                     <thead>
                         <tr>
