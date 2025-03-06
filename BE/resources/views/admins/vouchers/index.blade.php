@@ -66,7 +66,6 @@
                 </div>
             </div>
 
-            <x-alert />
 
             <div class="card">
                 <div class="card-body">
