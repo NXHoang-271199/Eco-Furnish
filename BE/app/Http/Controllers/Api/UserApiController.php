@@ -25,7 +25,7 @@ class UserApiController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
+            'password' => 'required|string|min:5',
         ]);
 
         if ($validator->fails()) {
@@ -59,7 +59,7 @@ class UserApiController extends Controller
     public function show($id)
     {
         $user = User::find($id);
-        
+
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -115,4 +115,4 @@ class UserApiController extends Controller
             'data' => $user
         ]);
     }
-} 
+}

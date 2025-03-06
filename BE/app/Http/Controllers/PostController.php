@@ -77,7 +77,7 @@ class PostController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(PostRequest $request)
-    {   
+    {
         $validated = $request->validated();
         $content = $request->input('content');
 
