@@ -174,8 +174,6 @@
             </div>
         </div>
 
-        <x-alert />
-
         <div class="row">
             <div class="col-xxl-3">
                 <div class="card">
@@ -227,7 +225,7 @@
                             <p class="text-muted mb-2">Bài viết mới nhất</p>
                             <div class="list-group list-group-flush">
                                 @foreach ($featuredPosts as $post)
-                                    <a href="{{ route('posts.show', $post->slug) }}"
+                                    <a href="{{ route('posts.show', $post->id) }}"
                                         class="list-group-item text-muted py-3 px-2">
                                         <div class="d-flex align-items-center">
                                             <div class="flex-shrink-0 me-3">

@@ -258,8 +258,5 @@
                 </div>
             </div>
         </div>
-
     </div>
-
-    <x-alert />
 @endsection

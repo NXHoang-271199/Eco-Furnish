@@ -377,6 +377,34 @@
 
                     <div class="card">
                         <div class="card-header">
+                            <h5 class="card-title mb-0">Người đăng</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="user-select" class="form-label">Chọn người đăng bài</label>
+                                <select class="form-select @error('user_id') is-invalid @enderror"
+                                    id="user-select" name="user_id" required>
+                                    <option value="">Chọn người đăng</option>
+                                    @foreach ($listUsers as $user)
+                                        <option value="{{ $user->id }}"
+                                            {{ (old('user_id', $singerPost->user_id) == $user->id) ? 'selected' : '' }}>
+                                            {{ $user->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="invalid-feedback">
+                                    @error('user_id')
+                                        {{ $message }}
+                                    @else
+                                        Vui lòng chọn người đăng.
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
                             <h5 class="card-title mb-0">Trạng thái</h5>
                         </div>
                         <div class="card-body">

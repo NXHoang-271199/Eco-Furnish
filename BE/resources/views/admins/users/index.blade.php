@@ -218,34 +218,28 @@
                                                                     </td>
                                                                     <td class="text-center">
                                                                         <div class="dropdown d-inline-block">
-                                                                            <button
-                                                                                class="btn btn-soft-secondary btn-sm dropdown"
+                                                                            <button class="btn btn-soft-secondary btn-sm dropdown"
                                                                                 type="button" data-bs-toggle="dropdown"
                                                                                 aria-expanded="false">
                                                                                 <i class="ri-more-fill align-middle"></i>
                                                                             </button>
-                                                                            <ul class="dropdown-menu dropdown-menu-end"
-                                                                                style="">
+                                                                            <ul class="dropdown-menu dropdown-menu-end" style="">
                                                                                 <li>
-                                                                                    <a href="{{ route('users.show', $user->id) }}"
-                                                                                        class="dropdown-item"><i
-                                                                                            class="ri-eye-fill align-bottom me-2 text-muted"></i>
-                                                                                        View</a>
+                                                                                    <a href="{{ route('users.show', $user->id) }}" 
+                                                                                       class="dropdown-item">
+                                                                                        <i class="ri-eye-fill align-bottom me-2 text-muted"></i>
+                                                                                        Xem chi tiết
+                                                                                    </a>
                                                                                 </li>
-                                                                                <li><a class="dropdown-item edit-item-btn"
-                                                                                        href="{{ route('users.edit', $user->id) }}"><i
-                                                                                            class="ri-pencil-fill align-bottom me-2 text-muted"></i>
-                                                                                        Edit</a></li>
                                                                                 <li>
-                                                                                    <form
-                                                                                        action="{{ route('users.show', $user->id) }}"
-                                                                                        method="POST" class="d-inline">
+                                                                                    <form action="{{ route('users.toggle-status', $user->id) }}" 
+                                                                                          method="POST" class="d-inline">
                                                                                         @csrf
-                                                                                        @method('DELETE')
-                                                                                        <button
-                                                                                            class="dropdown-item edit-item-btn cursor-pointer delete-btn"><i
-                                                                                                class="ri-delete-bin-fill align-bottom me-2 text-muted"></i>
-                                                                                            Xóa</button>
+                                                                                        @method('PUT')
+                                                                                        <button type="submit" class="dropdown-item">
+                                                                                            <i class="ri-toggle-line align-bottom me-2 text-muted"></i>
+                                                                                            {{ $user->is_active ? 'Hủy kích hoạt' : 'Kích hoạt' }}
+                                                                                        </button>
                                                                                     </form>
                                                                                 </li>
                                                                             </ul>
@@ -271,6 +265,4 @@
             </div> <!-- end col -->
         </div>
     </div>
-
-    <x-alert />
 @endsection
