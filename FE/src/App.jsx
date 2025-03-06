@@ -13,7 +13,13 @@ import Blogs from "./pages/(website)/Blog/Blogs";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
 import Payment from "./pages/(website)/Payment/Payment";
-import BlogDetail from "./pages/(website)/BlogDetail/BlogDetail";
+import LayoutAccount from "./pages/(website)/UserAccount/LayoutAccount";
+import Account from "./pages/(website)/UserAccount/Account/Account";
+import Address from "./pages/(website)/UserAccount/Address/Address";
+import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
+import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
+import ChatBot from "./components/ChatBot";
+
 function App() {
   return (
     <>
@@ -34,7 +40,8 @@ function App() {
         <Route path="signup" element={<SignUp />} />
       </Routes>
 
-      {/* test sau khi xem git thầy đức */}
+      {/* ChatBot component */}
+      <ChatBot />
     </>
   );
 }
