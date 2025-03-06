@@ -72,7 +72,7 @@ class VariantController extends Controller
             DB::commit();
 
             session()->flash('success', 'Thêm biến thể thành công');
-            
+
             return response()->json([
                 'success' => true,
                 'redirect' => route('variants.index')
@@ -140,9 +140,9 @@ class VariantController extends Controller
             $variant->delete();
 
             DB::commit();
-            
+
             session()->flash('success', 'Xóa biến thể thành công');
-            
+
             return response()->json([
                 'success' => true,
                 'redirect' => route('variants.index')

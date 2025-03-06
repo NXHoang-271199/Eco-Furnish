@@ -2,6 +2,8 @@
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PostController;
@@ -55,7 +57,6 @@ Route::prefix('admin')->group(function () {
     // Products routes
     Route::resource('products', ProductController::class);
     Route::post('products/generate-variants', [ProductController::class, 'generateVariants'])->name('products.generate-variants');
-
     // Variants routes
     Route::resource('variants', VariantController::class);
     Route::prefix('variants/{variant}')->name('variants.')->group(function () {
