@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ChatController;
  use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\CategoryPostApiController;
@@ -22,6 +24,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Product routes
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
+Route::get('/products/search', [ProductController::class, 'search']);
+
+// Chat routes
+Route::post('/chat', [ChatController::class, 'chat']);
 // User routes
 Route::prefix('users')->group(function () {
     Route::get('/', [UserApiController::class, 'index']);
