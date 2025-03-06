@@ -46,7 +46,7 @@ class UserApiController extends Controller
         ->where('name', 'LIKE', $name)
         ->where('is_active', 1)
         ->first();
-        
+
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -85,7 +85,7 @@ class UserApiController extends Controller
 
         // Lấy role Client
         $clientRole = Role::where('name', 'Client')->first();
-        
+
         // Upload avatar nếu có
         $avatarPath = null;
         if ($request->hasFile('avatar')) {
@@ -116,6 +116,8 @@ class UserApiController extends Controller
     // 4. Cập nhật thông tin cá nhân
     public function updateProfile(Request $request, $id)
     {
+        $user = User::find($id);
+
         $user = User::whereHas('role', function($query) {
             $query->where('name', 'Client');
         })->find($id);
@@ -177,4 +179,4 @@ class UserApiController extends Controller
             ]
         ]);
     }
-} 
+}
