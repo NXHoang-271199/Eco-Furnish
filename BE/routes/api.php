@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
  use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\PostApiController;
+use App\Http\Controllers\Api\CategoryPostApiController;
+use App\Http\Controllers\Api\VoucherApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,13 +25,26 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // User routes
 Route::prefix('users')->group(function () {
     Route::get('/', [UserApiController::class, 'index']);
-    Route::post('/', [UserApiController::class, 'store']);
-    Route::get('/{id}', [UserApiController::class, 'show']);
-    Route::put('/{id}', [UserApiController::class, 'update']);
+    Route::get('/{slug}', [UserApiController::class, 'show']);
+    Route::post('/register', [UserApiController::class, 'register']);
+    Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
 });
 
 // Post routes
 Route::prefix('posts')->group(function () {
     Route::get('/', [PostApiController::class, 'index']);
-    Route::get('/{id}', [PostApiController::class, 'show']);
+    Route::get('/{slug}', [PostApiController::class, 'show']);
+    Route::get('/category/{categorySlug}', [PostApiController::class, 'getByCategory']);
+});
+
+// Category Post routes
+Route::prefix('category-posts')->group(function () {
+    Route::get('/', [CategoryPostApiController::class, 'index']);
+    Route::get('/{slug}', [CategoryPostApiController::class, 'show']);
+});
+
+// Voucher routes
+Route::prefix('vouchers')->group(function () {
+    Route::get('/', [VoucherApiController::class, 'index']);
+    Route::get('/{code}', [VoucherApiController::class, 'show']);
 });

@@ -64,7 +64,9 @@ Route::prefix('admin')->group(function () {
 
     // Users Management
     Route::resource('users', UserController::class);
-
+    Route::put('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])
+    ->name('users.toggle-status');
+    
     // Roles Management
     Route::resource('roles', RoleController::class);
 

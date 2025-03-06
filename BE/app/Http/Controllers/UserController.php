@@ -33,6 +33,20 @@ class UserController extends Controller
     /**
      * Show the form for creating a new resource.
      */
+    public function toggleStatus($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Đảo ngược trạng thái
+        $user->is_active = !$user->is_active;
+        $user->save();
+
+        $status = $user->is_active ? 'kích hoạt' : 'hủy kích hoạt';
+
+        return redirect()->route('users.index')
+            ->with('success', "Đã $status người dùng thành công!");
+    }
+
     public function create()
     {
         $listRoles = Role::all();
