@@ -2,6 +2,8 @@
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PostController;

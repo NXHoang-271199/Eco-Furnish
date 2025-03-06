@@ -31,6 +31,7 @@ Route::get('/products/search', [ProductController::class, 'search']);
 
 // Chat routes
 Route::post('/chat', [ChatController::class, 'chat']);
+
 // User routes
 Route::prefix('users')->group(function () {
     Route::get('/', [UserApiController::class, 'index']);
