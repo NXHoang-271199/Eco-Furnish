@@ -21,6 +21,12 @@
                     data: form.serialize(),
                     success: function(response) {
                         if (response.success) {
+                            // Nếu có redirect URL, chuyển hướng ngay lập tức
+                            if (response.redirect) {
+                                window.location.href = response.redirect;
+                                return;
+                            }
+                            
                             // Thêm danh mục mới vào bảng
                             var table = $('table tbody');
                             var newRow = $('<tr></tr>');
@@ -48,10 +54,6 @@
                             
                             // Xóa form
                             $('#categoryForm')[0].reset();
-
-                            if (response.redirect) {
-                                window.location.href = response.redirect;
-                            }
                         }
                     },
                     error: function(xhr) {

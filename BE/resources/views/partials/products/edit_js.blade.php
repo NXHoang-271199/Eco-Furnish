@@ -667,6 +667,10 @@
                 if (!priceInput.val() || priceInput.val() <= 0) {
                     priceInput.addClass('is-invalid');
                     isValid = false;
+                } else if (parseInt(priceInput.val()) > 999999999) {
+                    priceInput.addClass('is-invalid');
+                    priceInput.siblings('.invalid-feedback').text('Giá biến thể không được lớn hơn 999.999.999 VNĐ');
+                    isValid = false;
                 } else {
                     priceInput.removeClass('is-invalid').addClass('is-valid');
                 }
@@ -684,11 +688,17 @@
                 }
 
                 // Cập nhật giá trị trong mảng
-                selectedVariants[variantIndex].sku = skuInput.val().trim();
-                selectedVariants[variantIndex].price = priceInput.val();
-                selectedVariants[variantIndex].quantity = quantityInput.val();
-                
-                console.log('Đã cập nhật biến thể trong mảng:', selectedVariants[variantIndex]);
+                const variantIndexValue = parseInt(variantIndex);
+                if (!isNaN(variantIndexValue) && variantIndexValue >= 0 && variantIndexValue < selectedVariants.length) {
+                    // Cập nhật dữ liệu trong mảng
+                    selectedVariants[variantIndexValue].sku = skuInput.val().trim();
+                    selectedVariants[variantIndexValue].price = priceInput.val();
+                    selectedVariants[variantIndexValue].quantity = quantityInput.val();
+                    
+                    console.log(`Đã cập nhật biến thể #${variantIndexValue + 1}:`, selectedVariants[variantIndexValue]);
+                } else {
+                    console.error('Không tìm thấy biến thể với index:', variantIndexValue);
+                }
                 
                 // Cập nhật hiển thị
                 variantElement.find('.variant-sku-display').text(selectedVariants[variantIndex].sku || 'Chưa có');
@@ -1196,14 +1206,18 @@
                     variants.push(variant);
                 });
                 
+                // Cập nhật mảng selectedVariants với các biến thể mới
+                selectedVariants = variants;
+                console.log('Đã cập nhật mảng selectedVariants:', selectedVariants);
+                
                 // Xóa các biến thể hiện tại
                 variantsContainer.empty();
                 
                 // Thêm các biến thể mới
-                variants.forEach(variant => {
+                variants.forEach((variant, index) => {
                     // Tạo HTML hiển thị biến thể
                     let variantHtml = `
-                        <div class="variant-item p-3 bg-light rounded position-relative mb-3" data-variant-id="variant_auto_${variants.length}" data-variant-index="${variants.length}">
+                        <div class="variant-item p-3 bg-light rounded position-relative mb-3" data-variant-id="variant_auto_${index}" data-variant-index="${index}">
                             <div class="variant-header cursor-pointer" style="cursor: pointer;">
                                 <div class="d-flex align-items-center gap-2">`;
                     
@@ -1220,7 +1234,7 @@
                             <div class="d-inline-block">
                                 <span class="text-muted">${variantName}:</span>
                                 <span class="fw-medium">${valueName}</span>
-                                <input type="hidden" name="variants[][values][${variantId}]" value="${valueId}">
+                                <input type="hidden" name="variants[${index}][values][${variantId}]" value="${valueId}">
                             </div>`;
                         
                         if (index < Object.entries(variant.values).length - 1) {
@@ -1234,17 +1248,17 @@
                                     <div>
                                         <span class="text-muted">SKU:</span>
                                         <span class="fw-medium">${variant.sku || 'Chưa có'}</span>
-                                        <input type="hidden" name="variants[][sku]" value="${variant.sku || ''}">
+                                        <input type="hidden" name="variants[${index}][sku]" value="${variant.sku || ''}">
                                     </div>
                                     <div>
                                         <span class="text-muted">Giá:</span>
                                         <span class="fw-medium">${variant.price ? parseInt(variant.price).toLocaleString('vi-VN') + ' VNĐ' : 'Chưa có'}</span>
-                                        <input type="hidden" name="variants[][price]" value="${variant.price || ''}">
+                                        <input type="hidden" name="variants[${index}][price]" value="${variant.price || ''}">
                                     </div>
                                     <div>
                                         <span class="text-muted">SL:</span>
                                         <span class="fw-medium">${variant.quantity || 'Chưa có'}</span>
-                                        <input type="hidden" name="variants[][quantity]" value="${variant.quantity || ''}">
+                                        <input type="hidden" name="variants[${index}][quantity]" value="${variant.quantity || ''}">
                                     </div>
                                     <div class="ms-auto">
                                         <button type="button" class="btn btn-link text-danger remove-variant p-0 border-0" style="font-size: 18px; text-decoration: none;">
@@ -1277,7 +1291,7 @@
                                 </div>
                                 <div class="mt-3 text-end">
                                     <button type="button" class="btn btn-secondary me-2 cancel-variant-edit">Hủy</button>
-                                    <button type="button" class="btn btn-primary save-variant-edit" data-variant-id="variant_auto_${variants.length}">Lưu</button>
+                                    <button type="button" class="btn btn-primary save-variant-edit" data-variant-id="variant_auto_${index}">Lưu</button>
                                 </div>
                             </div>
                         </div>`;
@@ -1310,16 +1324,16 @@
                 $('.variant-header.cursor-pointer').off('click').on('click', function() {
                     const variantItem = $(this).closest('.variant-item');
                     const variantId = variantItem.attr('data-variant-id');
-                    console.log('Click vào header của biến thể:', variantId);
+                    const variantIndex = parseInt(variantItem.attr('data-variant-index'));
+                    console.log('Click vào header của biến thể:', variantId, 'Index:', variantIndex);
                     
-                    if (variantId) {
+                    // Đóng tất cả các form khác trước
+                    $('.variant-edit').not(variantItem.find('.variant-edit')).slideUp(300);
+                    
+                    if (variantId && !variantId.startsWith('variant_')) {
                         window.toggleVariantEdit(variantId);
                     } else {
-                        console.error('Không tìm thấy data-variant-id cho biến thể');
                         const variantForm = variantItem.find('.variant-edit');
-                        
-                        // Đóng tất cả các form khác
-                        $('.variant-edit').not(variantForm).slideUp(300);
                         
                         // Hiển thị/ẩn form hiện tại
                         variantForm.slideToggle(300);
@@ -1329,16 +1343,24 @@
                 // Thêm sự kiện click cho nút lưu thay đổi
                 $('.save-variant-edit').off('click').on('click', function() {
                     const variantItem = $(this).closest('.variant-item');
-                    const variantId = variantItem.attr('data-variant-id') || $(this).attr('data-variant-id');
-                    console.log('Click vào nút lưu của biến thể:', variantId);
+                    const variantId = variantItem.attr('data-variant-id');
+                    const variantIndex = parseInt(variantItem.attr('data-variant-index'));
+                    console.log('Click vào nút lưu của biến thể:', variantId, 'Index:', variantIndex);
+                    
+                    // Kiểm tra xem biến thể có tồn tại trong mảng selectedVariants không
+                    if (isNaN(variantIndex) || variantIndex < 0 || variantIndex >= selectedVariants.length) {
+                        console.error('Không tìm thấy biến thể với index:', variantIndex);
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: 'Không tìm thấy thông tin biến thể. Vui lòng thử lại.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
                     
                     // Gọi hàm saveVariantEdit để lưu thay đổi
-                    if (variantId) {
-                        window.saveVariantEdit(variantId);
-                    } else {
-                        console.error('Không tìm thấy variant-id cho nút lưu');
-                        
-                        // Fallback: Xử lý trực tiếp nếu không tìm thấy variant-id
+                    if (variantId && variantId.startsWith('variant_')) {
                         const variantForm = variantItem.find('.variant-edit');
                         const variantHeader = variantItem.find('.variant-header');
                         
@@ -1347,7 +1369,7 @@
                         const price = variantForm.find('.variant-price-input').val();
                         const quantity = variantForm.find('.variant-quantity-input').val();
                         
-                        console.log('Giá trị từ form:', { sku, price, quantity });
+                        console.log('Giá trị từ form:', { sku, price, quantity, variantIndex });
                         
                         // Validate
                         let isValid = true;
@@ -1361,6 +1383,9 @@
                         
                         if (!price || price <= 0) {
                             variantForm.find('.variant-price-input').addClass('is-invalid').siblings('.invalid-feedback').text('Giá phải lớn hơn 0');
+                            isValid = false;
+                        } else if (parseInt(price) > 999999999) {
+                            variantForm.find('.variant-price-input').addClass('is-invalid').siblings('.invalid-feedback').text('Giá biến thể không được lớn hơn 999.999.999 VNĐ');
                             isValid = false;
                         } else {
                             variantForm.find('.variant-price-input').removeClass('is-invalid').addClass('is-valid');
@@ -1389,32 +1414,16 @@
                         variantHeader.find('input[name$="[quantity]"]').val(quantity);
                         
                         // Cập nhật dữ liệu trong mảng selectedVariants
-                        // Lấy index của biến thể trong mảng
-                        const variantIndex = parseInt(variantItem.attr('data-variant-index'));
-                        if (!isNaN(variantIndex) && variantIndex >= 0 && variantIndex < selectedVariants.length) {
-                            // Cập nhật dữ liệu trong mảng
-                            selectedVariants[variantIndex].sku = sku;
-                            selectedVariants[variantIndex].price = price;
-                            selectedVariants[variantIndex].quantity = quantity;
-                            
-                            console.log(`Đã cập nhật biến thể #${variantIndex + 1}:`, selectedVariants[variantIndex]);
-                        } else {
-                            console.error('Không tìm thấy biến thể với index:', variantIndex);
-                        }
+                        selectedVariants[variantIndex].sku = sku;
+                        selectedVariants[variantIndex].price = price;
+                        selectedVariants[variantIndex].quantity = quantity;
+                        
+                        console.log(`Đã cập nhật biến thể #${variantIndex + 1}:`, selectedVariants[variantIndex]);
                         
                         // Đóng form
                         variantForm.slideUp(300);
-                        
-                        // Hiển thị thông báo thành công
-                        Swal.fire({
-                            title: 'Thành công!',
-                            text: 'Đã cập nhật thông tin biến thể',
-                            icon: 'success',
-                            confirmButtonText: 'OK',
-                            timer: 1500,
-                            timerProgressBar: true,
-                            showConfirmButton: false
-                        });
+                    } else {
+                        window.saveVariantEdit(variantId);
                     }
                 });
                 
