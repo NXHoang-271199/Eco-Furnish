@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Post;
 use App\Models\Role;
+use App\Models\Comment;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -91,8 +92,17 @@ class User extends Authenticatable implements MustVerifyEmail
         json_decode($string);
         return json_last_error() === JSON_ERROR_NONE;
     }
+    
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+    
+    /**
+     * Get the comments for the user.
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
     }
 }

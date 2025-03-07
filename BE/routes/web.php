@@ -9,6 +9,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TrashController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VariantController;
 use App\Http\Controllers\VoucherController;
@@ -87,6 +88,10 @@ Route::prefix('admin')->group(function () {
     // Order Notifications
     Route::get('order-notifications', [OrderNotificationController::class, 'index'])->name('order.notifications');
     Route::post('order-notifications/{id}/read', [OrderNotificationController::class, 'markAsRead'])->name('order.notification.read');
+
+    // Comments Management
+    Route::resource('comments', CommentController::class)->only(['index', 'show', 'destroy']);
+    Route::post('comments/{comment}/toggle-status', [CommentController::class, 'toggleStatus'])->name('comments.toggle-status');
 
     // Trash Management
     Route::prefix('trash')->group(function () {
