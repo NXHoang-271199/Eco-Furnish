@@ -8,11 +8,11 @@
                     close: true,
                     gravity: "top",
                     position: "right",
-                    className: "bg-primary",
+                    className: "bg-success",
                     style: {
-                        background: "var(--vz-primary)",
+                        background: "var(--vz-success)",
                         color: "#fff",
-                        boxShadow: "0 10px 20px -10px var(--vz-primary)"
+                        boxShadow: "0 10px 20px -10px var(--vz-success)"
                     }
                 }).showToast();
             @endif

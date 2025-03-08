@@ -96,19 +96,6 @@ class VariantController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Variant $variant)
-    {
-        try {
-            return view('admins.variants.edit', compact('variant'));
-        } catch (\Exception $e) {
-            Log::error('Error in variant edit: ' . $e->getMessage());
-            return back()->with('error', 'Có lỗi xảy ra khi tải trang chỉnh sửa biến thể');
-        }
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(UpdateVariantRequest $request, Variant $variant)
@@ -120,12 +107,17 @@ class VariantController extends Controller
 
             DB::commit();
 
-            return redirect()->route('variants.index')
-                ->with('success', 'Cập nhật biến thể thành công');
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật biến thể thành công'
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating variant: ' . $e->getMessage());
-            return back()->with('error', 'Có lỗi xảy ra khi cập nhật biến thể: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật biến thể: ' . $e->getMessage()
+            ], 500);
         }
     }
 

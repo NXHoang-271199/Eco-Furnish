@@ -175,14 +175,20 @@
                                 success: function(response) {
                                     if (response.success) {
                                         td.html(newName);
-                                        // Hiển thị thông báo thành công
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Thành công',
+                                        // Hiển thị thông báo thành công dạng toast
+                                        Toastify({
                                             text: response.message || 'Cập nhật danh mục thành công',
-                                            showConfirmButton: false,
-                                            timer: 1500
-                                        });
+                                            duration: 3000,
+                                            close: true,
+                                            gravity: "top",
+                                            position: "right",
+                                            className: "bg-success",
+                                            style: {
+                                                background: "var(--vz-success)",
+                                                color: "#fff",
+                                                boxShadow: "0 10px 20px -10px var(--vz-success)"
+                                            }
+                                        }).showToast();
                                     }
                                 },
                                 error: function(xhr) {
@@ -198,14 +204,20 @@
                                         errorMessage = 'Có lỗi xảy ra khi cập nhật danh mục';
                                     }
                                     
-                                    // Hiển thị thông báo lỗi
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Lỗi',
+                                    // Hiển thị thông báo lỗi dạng toast
+                                    Toastify({
                                         text: errorMessage,
-                                        showConfirmButton: false,
-                                        timer: 1500
-                                    });
+                                        duration: 3000,
+                                        close: true,
+                                        gravity: "top",
+                                        position: "right",
+                                        className: "bg-danger",
+                                        style: {
+                                            background: "var(--vz-danger)",
+                                            color: "#fff",
+                                            boxShadow: "0 10px 20px -10px var(--vz-danger)"
+                                        }
+                                    }).showToast();
                                     
                                     // Khôi phục tên cũ
                                     td.html(currentName);
