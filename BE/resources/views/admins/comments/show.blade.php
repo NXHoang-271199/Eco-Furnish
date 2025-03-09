@@ -10,7 +10,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Chi tiết bình luận #{{ $comment->id }}</h3>
                     <div class="card-tools">
-                        <a href="{{ route('comments.index') }}" class="btn btn-sm btn-default">
+                        <a href="{{ route('comments.index') }}" class="btn btn-sm btn-primary">
                             <i class="fas fa-arrow-left"></i> Quay lại
                         </a>
                     </div>

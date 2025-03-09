@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             OrderSeeder::class,
             OrderItemSeeder::class,
             OrderNotificationSeeder::class,
+            CommentSeeder::class,
         ]);
     }
 }
