@@ -80,7 +80,7 @@
                 </div>
             </div>
         </div>
-        <!-- end page title -->
+        <!-- end page title-->
 
         <div class="row">
             <div class="col">
