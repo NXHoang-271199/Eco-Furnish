@@ -2,8 +2,6 @@
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PostController;
@@ -11,6 +9,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TrashController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VariantController;
 use App\Http\Controllers\VoucherController;
@@ -42,11 +41,6 @@ Route::get('/', function () {
 
 // Admin Routes
 Route::prefix('admin')->group(function () {
-    // Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // Categories Management
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -95,37 +89,9 @@ Route::prefix('admin')->group(function () {
     Route::get('order-notifications', [OrderNotificationController::class, 'index'])->name('order.notifications');
     Route::post('order-notifications/{id}/read', [OrderNotificationController::class, 'markAsRead'])->name('order.notification.read');
 
-    // Trash Management
-
-    // Users Management
-    Route::resource('users', UserController::class);
-
-    // Roles Management
-    Route::resource('roles', RoleController::class);
-
-    // Posts Management
-    Route::resource('posts', PostController::class);
-    Route::resource('category-posts', CategoryPostController::class);
-    Route::post('upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
-
-    // Vouchers Management
-    Route::resource('vouchers', VoucherController::class);
-
-    // Payment Methods
-    Route::resource('payment-methods', PaymentMethodController::class);
-    Route::prefix('payment-methods')->name('payment-methods.')->group(function () {
-        Route::get('{id}/connect', [PaymentMethodController::class, 'getConnectForm'])->name('connect.form');
-        Route::post('{id}/connect', [PaymentMethodController::class, 'connect'])->name('connect');
-        Route::post('{id}/disconnect', [PaymentMethodController::class, 'disconnect'])->name('disconnect');
-    });
-
-    // Orders Management
-    Route::resource('orders', OrderController::class);
-    Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
-
-    // Order Notifications
-    Route::get('order-notifications', [OrderNotificationController::class, 'index'])->name('order.notifications');
-    Route::post('order-notifications/{id}/read', [OrderNotificationController::class, 'markAsRead'])->name('order.notification.read');
+    // Comments Management
+    Route::resource('comments', CommentController::class)->only(['index', 'show', 'destroy']);
+    Route::post('comments/{comment}/toggle-status', [CommentController::class, 'toggleStatus'])->name('comments.toggle-status');
 
     // Trash Management
     Route::prefix('trash')->group(function () {

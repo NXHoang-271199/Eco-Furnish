@@ -84,7 +84,7 @@
                                 @foreach($variants as $variant)
                                 <tr>
                                     <td>{{ ($variants->currentPage() - 1) * $variants->perPage() + $loop->iteration }}</td>
-                                    <td>{{ $variant->name }}</td>
+                                    <td class="edit-name" data-id="{{ $variant->id }}">{{ $variant->name }}</td>
                                     <td>
                                         @foreach($variant->values as $value)
                                             <span class="badge bg-info me-1">{{ $value->value }}</span>
@@ -95,7 +95,7 @@
                                             <a href="{{ route('variants.values.index', $variant) }}" class="btn btn-soft-info btn-sm" title="Giá trị">
                                                 <i class="ri-list-check-line align-bottom"></i> Giá trị
                                             </a>
-                                            <a href="{{ route('variants.edit', $variant) }}" class="btn btn-soft-warning btn-sm" title="Chỉnh sửa">
+                                            <a href="javascript:void(0);" class="btn btn-soft-warning btn-sm edit-trigger" data-id="{{ $variant->id }}" title="Chỉnh sửa">
                                                 <i class="ri-pencil-fill align-bottom"></i> Sửa
                                             </a>
                                             <a href="javascript:void(0);" class="btn btn-soft-danger btn-sm delete-item" data-id="{{ $variant->id }}" title="Xóa">

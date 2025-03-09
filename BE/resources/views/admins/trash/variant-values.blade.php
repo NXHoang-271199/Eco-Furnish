@@ -7,7 +7,14 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Danh sách giá trị biến thể đã xóa</h3>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title">Danh sách giá trị biến thể đã xóa</h3>
+                        <div>
+                            <a href="javascript:void(0);" onclick="goBackAndReload()" class="btn btn-primary">
+                                <i class="fas fa-arrow-left"></i> Quay lại
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -26,7 +33,13 @@
                                 <tr>
                                     <td>{{ ($items->currentPage() - 1) * $items->perPage() + $loop->iteration }}</td>
                                     <td>{{ $item->value }}</td>
-                                    <td>{{ $item->variant ? $item->variant->name : 'N/A' }}</td>
+                                    <td>
+                                        @if($item->variant)
+                                            {{ $item->variant->name }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </td>
                                     <td>{{ Carbon\Carbon::parse($item->deleted_at)->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i:s') }}</td>
                                     <td>
                                         <button type="button" class="btn btn-success btn-sm" onclick="confirmRestore({{ $item->id }})">
@@ -53,4 +66,12 @@
 
 @section('JS')
     @include('partials.trash.TrashVariantValue_js')
+    <script>
+        function goBackAndReload() {
+            // Lưu URL hiện tại vào sessionStorage
+            sessionStorage.setItem('needsReload', 'true');
+            // Quay lại trang trước đó
+            history.back();
+        }
+    </script>
 @endsection 
