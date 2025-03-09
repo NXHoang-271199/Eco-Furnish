@@ -64,7 +64,7 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th style="width: 50px">ID</th>
+                                <th style="width: 50px">STT</th>
                                 <th style="width: 150px">Người dùng</th>
                                 <th>Nội dung</th>
                                 <th style="width: 100px">Trạng thái</th>
@@ -73,9 +73,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($comments as $comment)
+                            @forelse ($comments as $key => $comment)
                             <tr>
-                                <td>{{ $comment->id }}</td>
+                                <td>{{ $comments->firstItem() + $key }}</td>
                                 <td>
                                     <a href="{{ route('comments.user-info', $comment->user_id) }}" class="user-info-link" data-toggle="tooltip" title="Xem thông tin người dùng">
                                         {{ $comment->user->name }}
@@ -120,7 +120,9 @@
                 </div>
                 <!-- /.card-body -->
                 <div class="card-footer clearfix">
-                    {{ $comments->links() }}
+                    <div class="float-right">
+                        {{ $comments->appends(request()->query())->links('pagination::bootstrap-4') }}
+                    </div>
                 </div>
             </div>
             <!-- /.card -->
@@ -128,11 +130,11 @@
     </div>
 </div>
 
-@push('scripts')
+@section('JS')
 <script>
     $(function() {
         $('[data-toggle="tooltip"]').tooltip();
     });
 </script>
-@endpush
+@endsection
 @endsection 

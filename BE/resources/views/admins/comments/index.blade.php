@@ -25,7 +25,7 @@
                     <table class="table table-hover text-nowrap">
                         <thead>
                             <tr>
-                                <th>ID</th>
+                                <th width="5%">STT</th>
                                 <th>Tên sản phẩm</th>
                                 <th>Hình ảnh</th>
                                 <th>Số lượng bình luận</th>
@@ -33,9 +33,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($products as $product)
+                            @forelse ($products as $key => $product)
                             <tr>
-                                <td>{{ $product->id }}</td>
+                                <td>{{ $products->firstItem() + $key }}</td>
                                 <td>{{ $product->name }}</td>
                                 <td>
                                     @if($product->thumbnail)
@@ -63,7 +63,9 @@
                 </div>
                 <!-- /.card-body -->
                 <div class="card-footer clearfix">
-                    {{ $products->links() }}
+                    <div class="float-right">
+                        {{ $products->appends(request()->query())->links('pagination::bootstrap-4') }}
+                    </div>
                 </div>
             </div>
             <!-- /.card -->
