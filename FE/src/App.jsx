@@ -33,7 +33,7 @@ function App() {
           <Route path="blog" element={<Blogs />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
-          <Route path="blog-detail" element={<BlogDetail />} />
+          {/* <Route path="blog-detail" element={<BlogDetail />} />  */}
         </Route>
         <Route path="signin" element={<SignIn />} />
         <Route path="changepass" element={<ForgotPasswordModal />} />
