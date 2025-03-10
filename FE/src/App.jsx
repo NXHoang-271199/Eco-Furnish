@@ -13,7 +13,6 @@ import Blogs from "./pages/(website)/Blog/Blogs";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
 import Payment from "./pages/(website)/Payment/Payment";
-<<<<<<< HEAD
 import LayoutAccount from "./pages/(website)/UserAccount/LayoutAccount";
 import Account from "./pages/(website)/UserAccount/Account/Account";
 import Address from "./pages/(website)/UserAccount/Address/Address";
@@ -21,13 +20,6 @@ import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
 import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
 import ChatBot from "./components/ChatBot";
 
-=======
-import BlogDetail from "./pages/(website)/BlogDetail/BlogDetail";
-import Account from "./pages/(website)/UserAccount/Account/Account";
-import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
-import LayoutAccount from "./pages/(website)/UserAccount/LayoutAccount";
-import Address from "./pages/(website)/UserAccount/Address/Address";
->>>>>>> 573a5a6 (user chua xong, con address va list-order)
 function App() {
   return (
     <>
