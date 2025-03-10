@@ -1,8 +1,24 @@
 import React from "react";
+import { useState, useEffect } from "react";
 import { FaUserAstronaut, FaShippingFast } from "react-icons/fa";
 import { LiaTrophySolid } from "react-icons/lia";
-
+import axios from "axios";
 const Products = () => {
+  const [products, setProducts] = useState([]);
+
+  const getListProducts = async () => {
+    try {
+      const res = await axios.get("http://localhost:8000/api/products");
+      console.log(res.data);
+
+      setProducts(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    getListProducts();
+  }, []);
   return (
     <>
       {/* banner */}
@@ -52,162 +68,31 @@ const Products = () => {
 
           <div className="">
             <div className="grid grid-cols-3 gap-6 my-4 ">
-              <div>
-                <div>
-                  <img
-                    src="https://picsum.photos/296/301"
-                    alt=""
-                    className="rounded-md"
-                  />
-                </div>
-                <div className="my-4">
-                  <a href="product">
-                    <h4 className="font-bold">Syltherine</h4>
+              {
+                /* product */ products.map((product) => (
+                  <div>
+                    <div>
+                      <img
+                        src="https://picsum.photos/296/301"
+                        alt=""
+                        className="rounded-md"
+                      />
+                    </div>
+                    <div className="my-4">
+                      <a href="product">
+                        <h4 className="font-bold">{product.name}</h4>
 
-                    <p className="text-1xl font-somibold text-red-600 pt-1">
-                      2.500.000đ
-                    </p>
-                  </a>
-                </div>
-              </div>
-              {/* end product */}
-              <div>
-                <div>
-                  <img
-                    src="https://picsum.photos/296/301"
-                    alt=""
-                    className="rounded-md"
-                  />
-                </div>
-                <div className="my-4">
-                  <h4 className="font-bold">Syltherine</h4>
+                        <p className="text-1xl font-somibold text-red-600 pt-1">
+                          {product.price}
+                        </p>
+                      </a>
+                    </div>
+                  </div>
+                ))
+              }
 
-                  <p className="text-1xl font-somibold text-red-600 pt-1">
-                    2.500.000đ
-                  </p>
-                </div>
-              </div>
-              {/* end product */}
-              <div>
-                <div>
-                  <img
-                    src="https://picsum.photos/296/301"
-                    alt=""
-                    className="rounded-md"
-                  />
-                </div>
-                <div className="my-4">
-                  <h4 className="font-bold">Syltherine</h4>
-
-                  <p className="text-1xl font-somibold text-red-600 pt-1">
-                    2.500.000đ
-                  </p>
-                </div>
-              </div>
               {/* end product */}
             </div>
-            <div className="grid grid-cols-3 gap-6 my-4">
-              <div>
-                <div>
-                  <img
-                    src="https://picsum.photos/296/301"
-                    alt=""
-                    className="rounded-md"
-                  />
-                </div>
-                <div className="my-4">
-                  <h4 className="font-bold">Syltherine</h4>
-
-                  <p className="text-1xl font-somibold text-red-600 py-2">
-                    2.500.000đ
-                  </p>
-                </div>
-              </div>
-              <div>
-                <div>
-                  <img
-                    src="https://picsum.photos/296/301"
-                    alt=""
-                    className="rounded-md"
-                  />
-                </div>
-                <div className="my-4">
-                  <h4 className="font-bold">Syltherine</h4>
-
-                  <p className="text-1xl font-somibold text-red-600 py-2">
-                    2.500.000đ
-                  </p>
-                </div>
-              </div>
-              <div>
-                <div>
-                  <img
-                    src="https://picsum.photos/296/301"
-                    alt=""
-                    className="rounded-md"
-                  />
-                </div>
-                <div className="my-4">
-                  <h4 className="font-bold">Syltherine</h4>
-
-                  <p className="text-1xl font-somibold text-red-600 py-2">
-                    2.500.000đ
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-6 my-4">
-              <div>
-                <div>
-                  <img
-                    src="https://picsum.photos/296/301"
-                    alt=""
-                    className="rounded-md"
-                  />
-                </div>
-                <div className="my-4">
-                  <h4 className="font-bold">Syltherine</h4>
-
-                  <p className="text-1xl font-somibold text-red-600 py-2">
-                    2.500.000đ
-                  </p>
-                </div>
-              </div>
-              <div>
-                <div>
-                  <img
-                    src="https://picsum.photos/296/301"
-                    alt=""
-                    className="rounded-md"
-                  />
-                </div>
-                <div className="my-4">
-                  <h4 className="font-bold">Syltherine</h4>
-
-                  <p className="text-1xl font-somibold text-red-600 py-2">
-                    2.500.000đ
-                  </p>
-                </div>
-              </div>
-              <div>
-                <div>
-                  <img
-                    src="https://picsum.photos/296/301"
-                    alt=""
-                    className="rounded-md"
-                  />
-                </div>
-                <div className="my-4">
-                  <h4 className="font-bold">Syltherine</h4>
-
-                  <p className="text-1xl font-somibold text-red-600 py-2">
-                    2.500.000đ
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* end products-list */}
 
             <div className="flex">
               <div className="border rounded-lg py-3 px-5 bg-gray-400 text-stone-50 hover:bg-orange-200 mr-4">

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import "./App.css";
 import { Route, Routes } from "react-router-dom";
 import LayoutWebsite from "./pages/(website)/layout";
@@ -33,7 +32,7 @@ function App() {
           <Route path="blog" element={<Blogs />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
-          <Route path="blog-detail" element={<BlogDetail />} />
+          <Route path="BlogDetail" element={<BlogsDetail />} />
         </Route>
         <Route path="signin" element={<SignIn />} />
         <Route path="changepass" element={<ForgotPasswordModal />} />
