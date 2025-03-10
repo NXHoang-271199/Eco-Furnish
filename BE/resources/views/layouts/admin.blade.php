@@ -39,6 +39,8 @@
     <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- Toastify CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <!-- ckeditor -->
+    <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/44.2.1/ckeditor5.css"/>
     @yield('CSS')
 </head>
 
@@ -63,6 +65,7 @@
     </div>
 
     {{-- Các đoạn script dùng chung --}}
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="{{ asset('assets/admins/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/simplebar/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/admins/libs/node-waves/waves.min.js') }}"></script>
