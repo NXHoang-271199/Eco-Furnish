@@ -65,7 +65,7 @@ Route::prefix('admin')->group(function () {
 
         // Logout route
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
-        
+
         // Dashboard
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -113,6 +113,12 @@ Route::prefix('admin')->group(function () {
         // Order Notifications
         Route::get('order-notifications', [OrderNotificationController::class, 'index'])->name('order.notifications');
         Route::post('order-notifications/{id}/read', [OrderNotificationController::class, 'markAsRead'])->name('order.notification.read');
+
+        // Comments Management
+        Route::resource('comments', CommentController::class)->only(['index', 'show', 'destroy']);
+        Route::post('comments/{comment}/toggle-status', [CommentController::class, 'toggleStatus'])->name('comments.toggle-status');
+        Route::get('products/{product}/comments', [CommentController::class, 'productComments'])->name('comments.product');
+        Route::get('users/{user}/info', [CommentController::class, 'userInfo'])->name('comments.user-info');
 
         // Trash Management
         Route::prefix('trash')->group(function () {
