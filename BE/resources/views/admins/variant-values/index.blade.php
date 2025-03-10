@@ -87,14 +87,14 @@
                                 @foreach($values as $value)
                                 <tr>
                                     <td>{{ ($values->currentPage() - 1) * $values->perPage() + $loop->iteration }}</td>
-                                    <td>{{ $value->value }}</td>
+                                    <td class="edit-value" data-id="{{ $value->id }}">{{ $value->value }}</td>
                                     <td>
                                         <div class="hstack gap-3 fs-15">
-                                            <a href="{{ route('variants.values.edit', [$variant, $value]) }}" class="link-primary">
-                                                <i class="ri-pencil-fill align-bottom me-2"></i>
+                                            <a href="javascript:void(0);" class="btn btn-soft-warning btn-sm edit-trigger" data-id="{{ $value->id }}" title="Chỉnh sửa">
+                                                <i class="ri-pencil-fill align-bottom"></i> Sửa
                                             </a>
-                                            <a href="javascript:void(0);" class="link-danger delete-item" data-id="{{ $value->id }}">
-                                                <i class="ri-delete-bin-fill align-bottom"></i>
+                                            <a href="javascript:void(0);" class="btn btn-soft-danger btn-sm delete-item" data-id="{{ $value->id }}" title="Xóa">
+                                                <i class="ri-delete-bin-fill align-bottom"></i> Xóa
                                             </a>
                                         </div>
                                     </td>

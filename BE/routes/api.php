@@ -4,10 +4,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ChatController;
- use App\Http\Controllers\Api\UserApiController;
+use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\CategoryPostApiController;
 use App\Http\Controllers\Api\VoucherApiController;
+use App\Http\Controllers\Api\CommentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,3 +60,10 @@ Route::prefix('vouchers')->group(function () {
     Route::get('/', [VoucherApiController::class, 'index']);
     Route::get('/{code}', [VoucherApiController::class, 'show']);
 });
+
+// Comment routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/comments', [CommentController::class, 'store']);
+});
+
+Route::get('/products/{product}/comments', [CommentController::class, 'getProductComments']);

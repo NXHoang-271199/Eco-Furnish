@@ -23,18 +23,18 @@ class ChatController extends Controller
         ]);
 
         $userMessage = $request->input('message');
-        
+
         try {
             // Gọi API Gemini
             $response = $this->callGeminiApi($userMessage);
-            
+
             return response()->json([
                 'success' => true,
                 'reply' => $response,
             ]);
         } catch (\Exception $e) {
             Log::error('Gemini API Error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.',
@@ -55,14 +55,14 @@ class ChatController extends Controller
         try {
             // Lấy API key từ biến môi trường
             $apiKey = env('GEMINI_API_KEY');
-            
+
             if (!$apiKey) {
                 throw new \Exception('GEMINI_API_KEY không được cấu hình trong file .env');
             }
 
             // Endpoint của Gemini API
             $endpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
-            
+
             // Prompt chuyên gia về nội thất
             $expertPrompt = "Bạn là một chuyên gia tư vấn về nội thất và thiết kế nội thất của Eco-Furnish - một cửa hàng chuyên cung cấp đồ nội thất thân thiện với môi trường, bền vững và hiện đại. Hãy trả lời các câu hỏi của khách hàng một cách chuyên nghiệp, thân thiện và hữu ích.
 
@@ -84,7 +84,7 @@ Khi trả lời:
 - Không đưa ra thông tin sai lệch về sản phẩm hoặc dịch vụ
 
 Câu hỏi của khách hàng: " . $message;
-            
+
             // Chuẩn bị dữ liệu gửi đến API
             $data = [
                 'contents' => [
@@ -106,7 +106,7 @@ Câu hỏi của khách hàng: " . $message;
 
             // Gọi API với phương thức POST và truyền API key qua query parameter
             $url = $endpoint . '?key=' . $apiKey;
-            
+
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
             ])->post($url, $data);
@@ -114,10 +114,10 @@ Câu hỏi của khách hàng: " . $message;
             // Kiểm tra và xử lý phản hồi
             if ($response->successful()) {
                 $responseData = $response->json();
-                
+
                 // Debug response
                 Log::info('Gemini API Response', ['response' => $responseData]);
-                
+
                 // Trích xuất phản hồi từ Gemini
                 if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
                     return $responseData['candidates'][0]['content']['parts'][0]['text'];
@@ -130,7 +130,7 @@ Câu hỏi của khách hàng: " . $message;
                     'status' => $response->status(),
                     'response' => $response->body(),
                 ]);
-                
+
                 // Fallback response khi API gặp lỗi
                 return "Xin chào! Tôi là trợ lý AI của Eco-Furnish. Rất vui được giúp đỡ bạn. Hiện tại tôi đang gặp một chút vấn đề kỹ thuật. Vui lòng thử lại sau hoặc liên hệ với nhân viên tư vấn của chúng tôi để được hỗ trợ tốt nhất.";
             }
@@ -139,4 +139,4 @@ Câu hỏi của khách hàng: " . $message;
             throw $e;
         }
     }
-} 
+}

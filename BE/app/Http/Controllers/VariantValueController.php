@@ -100,19 +100,6 @@ class VariantValueController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Variant $variant, VariantValue $value)
-    {
-        try {
-            return view('admins.variant-values.edit', compact('variant', 'value'));
-        } catch (\Exception $e) {
-            Log::error('Error in variant value edit: ' . $e->getMessage());
-            return back()->with('error', 'Có lỗi xảy ra khi tải trang chỉnh sửa giá trị biến thể');
-        }
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Variant $variant, VariantValue $value)
@@ -139,11 +126,9 @@ class VariantValueController extends Controller
                 'value' => $request->value
             ]);
 
-            session()->flash('success', 'Cập nhật giá trị biến thể thành công');
-
             return response()->json([
                 'success' => true,
-                'redirect' => route('variants.values.index', $variant)
+                'message' => 'Cập nhật giá trị biến thể thành công'
             ]);
         } catch (\Exception $e) {
             \Log::error('Error updating variant value: ' . $e->getMessage());

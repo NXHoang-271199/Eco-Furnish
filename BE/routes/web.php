@@ -3,8 +3,6 @@
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PostController;
@@ -12,6 +10,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TrashController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VariantController;
 use App\Http\Controllers\VoucherController;
@@ -60,7 +59,6 @@ Route::prefix('admin')->group(function () {
         Route::post('/reset-password', [AdminResetPasswordController::class, 'reset'])
             ->name('admin.password.update');
     });
-
 
     // Admin Routes
     Route::middleware(['auth', 'admin'])->group(function () {

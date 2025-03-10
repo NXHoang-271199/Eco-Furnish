@@ -145,6 +145,11 @@
                     </div>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link menu-link" href="{{ route('comments.index') }}">
+                        <i class="ri-chat-1-line"></i> <span data-key="t-advance-ui">Quản lý bình luận</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarPayment" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarPayment">
                         <i class="las la-comments-dollar"></i> <span data-key="t-advance-ui">Quản Lý Thanh Toán</span>
