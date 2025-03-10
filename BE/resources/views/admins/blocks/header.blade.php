@@ -135,33 +135,37 @@
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <img class="rounded-circle header-profile-user"
-                                src="assets/images/users/avatar-1.jpg" 
+                                src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : asset('assets/images/users/avatar-1.jpg') }}" 
                                 alt="Header Avatar">
                             <span class="text-start ms-xl-2">
                                 <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">
-                                    Admin
+                                    {{ Auth::user()->name }}
                                 </span>
                                 <span class="d-none d-xl-block ms-1 fs-12 user-name-sub-text">
-                                    Administrator
+                                    {{ Auth::user()->role->name ?? 'User' }}
                                 </span>
                             </span>
                         </span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end">
                         <!-- item-->
-                        <h6 class="dropdown-header">Welcome!</h6>
-                        <a class="dropdown-item" href="#">
+                        <h6 class="dropdown-header">Welcome {{ Auth::user()->name }}!</h6>
+                        <a class="dropdown-item" href="{{ route('users.show', Auth::id()) }}">
                             <i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
                             <span class="align-middle">Profile</span>
                         </a>
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="{{ route('users.edit', Auth::id()) }}">
                             <i class="mdi mdi-cog text-muted fs-16 align-middle me-1"></i> 
                             <span class="align-middle">Settings</span>
                         </a>
-                        <a class="dropdown-item" href="#">
-                            <i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i>
-                            <span class="align-middle">Logout</span>
-                        </a>
+                        
+                        <form method="POST" action="{{ route('admin.logout') }}" id="logout-form">
+                            @csrf
+                            <a class="dropdown-item" href="javascript:void(0);" onclick="document.getElementById('logout-form').submit();">
+                                <i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i>
+                                <span class="align-middle">Logout</span>
+                            </a>
+                        </form>
                     </div>
                 </div>
             </div>

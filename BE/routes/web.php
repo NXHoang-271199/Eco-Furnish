@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -19,7 +20,10 @@ use App\Http\Controllers\ImageUploadController;
 use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\OrderNotificationController;
+use App\Http\Controllers\Admin\AdminResetPasswordController;
+use App\Http\Controllers\Admin\AdminForgotPasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,72 +43,92 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Admin Routes
 Route::prefix('admin')->group(function () {
-    // Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Categories Management
-    Route::resource('categories', CategoryController::class);
+    Route::middleware(['guest'])->group(function () {
+        Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
+        Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
 
-    // Products routes
-    Route::resource('products', ProductController::class);
-    Route::post('products/generate-variants', [ProductController::class, 'generateVariants'])->name('products.generate-variants');
-    // Variants routes
-    Route::resource('variants', VariantController::class);
-    Route::prefix('variants/{variant}')->name('variants.')->group(function () {
-        Route::resource('values', VariantValueController::class);
+        // Forgot Password Routes
+        Route::get('/forgot-password', [AdminForgotPasswordController::class, 'showLinkRequestForm'])
+            ->name('admin.password.request');
+        Route::post('/forgot-password', [AdminForgotPasswordController::class, 'sendResetLinkEmail'])
+            ->name('admin.password.email');
+        Route::get('/reset-password/{token}', [AdminResetPasswordController::class, 'showResetForm'])
+            ->name('admin.password.reset');
+        Route::post('/reset-password', [AdminResetPasswordController::class, 'reset'])
+            ->name('admin.password.update');
     });
 
-    // Users Management
-    Route::resource('users', UserController::class);
-    Route::put('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])
-    ->name('users.toggle-status');
+    // Admin Routes
+    Route::middleware(['auth', 'admin'])->group(function () {
 
-    // Roles Management
-    Route::resource('roles', RoleController::class);
+        // Logout route
+        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
-    // Posts Management
-    Route::resource('posts', PostController::class);
-    Route::resource('category-posts', CategoryPostController::class);
-    Route::post('upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
+        // Dashboard
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Vouchers Management
-    Route::resource('vouchers', VoucherController::class);
+        // Categories Management
+        Route::resource('categories', CategoryController::class);
 
-    // Payment Methods
-    Route::resource('payment-methods', PaymentMethodController::class);
-    Route::prefix('payment-methods')->name('payment-methods.')->group(function () {
-        Route::get('{id}/connect', [PaymentMethodController::class, 'getConnectForm'])->name('connect.form');
-        Route::post('{id}/connect', [PaymentMethodController::class, 'connect'])->name('connect');
-        Route::post('{id}/disconnect', [PaymentMethodController::class, 'disconnect'])->name('disconnect');
-    });
+        // Products routes
+        Route::resource('products', ProductController::class);
+        Route::post('products/generate-variants', [ProductController::class, 'generateVariants'])->name('products.generate-variants');
+        // Variants routes
+        Route::resource('variants', VariantController::class);
+        Route::prefix('variants/{variant}')->name('variants.')->group(function () {
+            Route::resource('values', VariantValueController::class);
+        });
 
-    // Orders Management
-    Route::resource('orders', OrderController::class);
-    Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
+        // Users Management
+        Route::resource('users', UserController::class);
+        Route::put('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])
+            ->name('users.toggle-status');
 
-    // Order Notifications
-    Route::get('order-notifications', [OrderNotificationController::class, 'index'])->name('order.notifications');
-    Route::post('order-notifications/{id}/read', [OrderNotificationController::class, 'markAsRead'])->name('order.notification.read');
+        // Roles Management
+        Route::resource('roles', RoleController::class);
 
-    // Comments Management
-    Route::resource('comments', CommentController::class)->only(['index', 'show', 'destroy']);
-    Route::post('comments/{comment}/toggle-status', [CommentController::class, 'toggleStatus'])->name('comments.toggle-status');
-    Route::get('products/{product}/comments', [CommentController::class, 'productComments'])->name('comments.product');
-    Route::get('users/{user}/info', [CommentController::class, 'userInfo'])->name('comments.user-info');
+        // Posts Management
+        Route::resource('posts', PostController::class);
+        Route::resource('category-posts', CategoryPostController::class);
+        Route::post('upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
 
-    // Trash Management
-    Route::prefix('trash')->group(function () {
-        Route::resource('trash-products', TrashController::class)->only(['index', 'update', 'destroy']);
-        Route::resource('trash-categories', TrashController::class)->only(['index', 'update', 'destroy']);
-        Route::resource('trash-variants', TrashController::class)->only(['index', 'update', 'destroy']);
-        Route::resource('trash-variant-values', TrashController::class)->only(['index', 'update', 'destroy']);
-        Route::get('restore-variant/{id}', [VariantController::class, 'restore']);
-        Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
-        Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
+        // Vouchers Management
+        Route::resource('vouchers', VoucherController::class);
+
+        // Payment Methods
+        Route::resource('payment-methods', PaymentMethodController::class);
+        Route::prefix('payment-methods')->name('payment-methods.')->group(function () {
+            Route::get('{id}/connect', [PaymentMethodController::class, 'getConnectForm'])->name('connect.form');
+            Route::post('{id}/connect', [PaymentMethodController::class, 'connect'])->name('connect');
+            Route::post('{id}/disconnect', [PaymentMethodController::class, 'disconnect'])->name('disconnect');
+        });
+
+        // Orders Management
+        Route::resource('orders', OrderController::class);
+        Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
+
+        // Order Notifications
+        Route::get('order-notifications', [OrderNotificationController::class, 'index'])->name('order.notifications');
+        Route::post('order-notifications/{id}/read', [OrderNotificationController::class, 'markAsRead'])->name('order.notification.read');
+
+        // Comments Management
+        Route::resource('comments', CommentController::class)->only(['index', 'show', 'destroy']);
+        Route::post('comments/{comment}/toggle-status', [CommentController::class, 'toggleStatus'])->name('comments.toggle-status');
+        Route::get('products/{product}/comments', [CommentController::class, 'productComments'])->name('comments.product');
+        Route::get('users/{user}/info', [CommentController::class, 'userInfo'])->name('comments.user-info');
+
+        // Trash Management
+        Route::prefix('trash')->group(function () {
+            Route::resource('trash-products', TrashController::class)->only(['index', 'update', 'destroy']);
+            Route::resource('trash-categories', TrashController::class)->only(['index', 'update', 'destroy']);
+            Route::resource('trash-variants', TrashController::class)->only(['index', 'update', 'destroy']);
+            Route::resource('trash-variant-values', TrashController::class)->only(['index', 'update', 'destroy']);
+            Route::get('restore-variant/{id}', [VariantController::class, 'restore']);
+            Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
+            Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
+        });
     });
 });
-
-
