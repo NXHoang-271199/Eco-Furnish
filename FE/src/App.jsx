@@ -14,12 +14,12 @@ import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
 import Blogs from "./pages/(website)/Blog/Blogs";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
-import CursorGlow from "./CursorGlow";
+// import CursorGlow from "./CursorGlow";
 import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 
 import EmailVerification from "./pages/EmailVerification/EmailVerification";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
-import ConfirmPassword from "./pages/(website)/ConfirmPassword/ConfirmPassword";
+import ConfirmPassword from "./pages/ConfirmPassword/ConfirmPassword";
 
 // import ForgotPasswordModal from "./pages/SignIn/ForgotPasswordModal";
 function App() {
