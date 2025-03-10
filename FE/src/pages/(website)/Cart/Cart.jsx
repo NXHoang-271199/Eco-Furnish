@@ -80,7 +80,7 @@ const Cart = () => {
             </div>
 
             <div className="text-center border border-orange-400 py-2 mt-8">
-              <a href="#" className="text-orange-400 font-semibold">
+              <a href="payment" className="text-orange-400 font-semibold">
                 Checkout
               </a>
             </div>

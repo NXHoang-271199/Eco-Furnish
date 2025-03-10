@@ -1,8 +1,10 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+use App\Models\User;
+use App\Models\CategoryPost;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -15,13 +17,16 @@ return new class extends Migration
             $table->id();
             $table->string('title', 255);
             $table->text('content');
-            $table->integer('user_id');
-            $table->integer('category_post_id');
             $table->string('image_thumbnail', 255)->nullable();
             $table->string('slug', 255)->unique();
-            $table->enum('status', ['Hiển thị', 'Ẩn'])->default('Hiển thị');
+            $table->enum('status', ['0', '1'])->default(0);
             $table->timestamps();
             $table->softDeletes();
+
+            // Tạo khóa ngoại
+            $table->foreignIdFor(User::class)->constrained()->onDelete('cascade');
+            $table->foreignIdFor(CategoryPost::class)->constrained()->onDelete('cascade');
+
         });
     }
 
@@ -30,6 +35,14 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('posts', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
+        });
+
+        Schema::table('posts', function (Blueprint $table) {
+            $table->dropForeign(['category_post_id']);
+        });
+
         Schema::dropIfExists('posts');
     }
 };

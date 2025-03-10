@@ -6,68 +6,19 @@ import { AiOutlineUser, AiOutlineSearch, AiOutlineHeart } from "react-icons/ai";
 const Header = () => {
   return (
     <>
-      {/* <header>
-        <div className="max-w-6xl mx-auto relative">
-          <div className="grid grid-cols-3 gap-8 items-center py-7 ">
-            <div>
-              <img src="/logo.svg" alt="Eco-Furnish" />
-            </div>
-            <nav>
-              <ul className="flex justify-center space-x-6 ">
-                <li>
-                  <Link to="/" className="hover:text-yellow-400">
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/products" className="hover:text-yellow-400">
-                    Shop
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/about" className="hover:text-yellow-400">
-                    About
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/contact" className="hover:text-yellow-400">
-                    Contact
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/blogs" className="hover:text-yellow-400">
-                    Blog
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-            <div className="flex justify-end space-x-4">
-              <Link to="/search">
-                <AiOutlineSearch />
-              </Link>
-
-              <Link to="/cart">
-                <IoCartOutline />
-              </Link>
-              <Link to="/auth/login">
-                <AiOutlineUser />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header> */}
       <header className="bg-white fixed top-0 left-0 w-full z-50">
         <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
           {/* <!-- Logo --> */}
           <div className="text-2xl font-bold text-black">
             <div>
+
               {/* <img src="/logo.svg" alt="Eco-Furnish" /> */}
               <a href="/">
               <span className="text-yellow-300">E</span>co-
               <span className="text-yellow-300">F</span>urnish
               </a>
                 
-              
+          
             </div>
           </div>
 
@@ -79,10 +30,78 @@ const Header = () => {
                   Home
                 </Link>
               </li>
-              <li>
+              <li className="relative group">
                 <Link to="/products" className="hover:text-yellow-400">
                   Shop
                 </Link>
+                <div class="absolute hidden group-hover:flex bg-white shadow-lg rounded-lg w-[600px] p-6 md\:w-auto">
+                  <ul class="grid grid-cols-2 gap-6 w-full">
+                    <li>
+                      <a href="#" class="block font-semibold">
+                        Phòng khách
+                      </a>
+                      <p class="text-sm text-gray-500">
+                        Không gian tiếp đón khách...
+                      </p>
+                    </li>
+                    <li>
+                      <a href="#" class="block font-semibold">
+                        Phòng ngủ
+                      </a>
+                      <p class="text-sm text-gray-500">
+                        Nơi nghỉ ngơi thư giãn...
+                      </p>
+                    </li>
+                    <li>
+                      <a href="#" class="block font-semibold">
+                        Phòng bếp
+                      </a>
+                      <p class="text-sm text-gray-500">
+                        Trang bị đầy đủ tiện nghi...
+                      </p>
+                    </li>
+                    <li>
+                      <a href="#" class="block font-semibold">
+                        Phòng làm việc
+                      </a>
+                      <p class="text-sm text-gray-500">
+                        Không gian làm việc hiệu quả...
+                      </p>
+                    </li>
+                    <li>
+                      <a href="#" class="block font-semibold">
+                        Trang trí nội thất
+                      </a>
+                      <p class="text-sm text-gray-500">
+                        Thêm màu sắc phong cách...
+                      </p>
+                    </li>
+                    <li>
+                      <a href="#" class="block font-semibold">
+                        Đồ nội thất ngoài trời
+                      </a>
+                      <p class="text-sm text-gray-500">
+                        Thư giãn với bộ bàn ghế...
+                      </p>
+                    </li>
+                    <li>
+                      <a href="#" class="block font-semibold">
+                        Thảm và Rèm cửa
+                      </a>
+                      <p class="text-sm text-gray-500">
+                        Làm mới không gian sống...
+                      </p>
+                    </li>
+                    <li>
+                      <a href="#" class="block font-semibold">
+                        Phụ kiện nội thất
+                      </a>
+                      <p class="text-sm text-gray-500">
+                        Những chi tiết tinh tế...
+                      </p>
+                    </li>
+                  </ul>
+                </div>
               </li>
               <li>
                 <Link to="/about" className="hover:text-yellow-400">
