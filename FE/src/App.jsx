@@ -1,4 +1,4 @@
-import { useState } from "react";
+// import { useState } from "react";
 import "./App.css";
 import { Route, Routes } from "react-router-dom";
 import LayoutWebsite from "./pages/(website)/layout";
@@ -12,6 +12,7 @@ import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
 import Blogs from "./pages/(website)/Blog/Blogs";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
+<<<<<<< HEAD
 import Payment from "./pages/(website)/Payment/Payment";
 import LayoutAccount from "./pages/(website)/UserAccount/LayoutAccount";
 import Account from "./pages/(website)/UserAccount/Account/Account";
@@ -20,6 +21,9 @@ import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
 import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
 import ChatBot from "./components/ChatBot";
 
+=======
+// import ForgotPasswordModal from "./pages/SignIn/ForgotPasswordModal";
+>>>>>>> 4d3ef0e (ko ro conflict)
 function App() {
   return (
     <>
@@ -31,6 +35,7 @@ function App() {
           <Route path="contact" element={<Contact />} />
           <Route path="cart" element={<Cart />} />
           <Route path="blog" element={<Blogs />} />
+<<<<<<< HEAD
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
           <Route path="blog-detail" element={<BlogDetail />} />
@@ -40,6 +45,11 @@ function App() {
             <Route path="address" element={<Address />} />
             <Route path="list_order" element={<></>} />
           </Route>
+=======
+          <Route path="blogdetail" element={<BlogsDetail />} />
+          <Route path="about" element={<About />} />
+          {/* <Route path="payment" element={<Payment />} /> */}
+>>>>>>> 4d3ef0e (ko ro conflict)
         </Route>
         <Route path="signin" element={<SignIn />} />
         <Route path="changepass" element={<ForgotPasswordModal />} />
