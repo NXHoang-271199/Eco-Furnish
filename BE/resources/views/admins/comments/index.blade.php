@@ -8,10 +8,10 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Danh sách bình luận</h3>
+                    <h3 class="card-title">Danh sách sản phẩm có bình luận</h3>
                     <div class="card-tools">
                         <form action="{{ route('comments.index') }}" method="GET" class="input-group input-group-sm" style="width: 250px;">
-                            <input type="text" name="search" class="form-control float-right" placeholder="Tìm kiếm" value="{{ request('search') }}">
+                            <input type="text" name="search" class="form-control float-right" placeholder="Tìm kiếm sản phẩm" value="{{ request('search') }}">
                             <div class="input-group-append">
                                 <button type="submit" class="btn btn-default">
                                     <i class="fas fa-search"></i>
@@ -25,53 +25,37 @@
                     <table class="table table-hover text-nowrap">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Người dùng</th>
-                                <th>Sản phẩm</th>
-                                <th>Nội dung</th>
-                                <th>Trạng thái</th>
-                                <th>Ngày tạo</th>
+                                <th width="5%">STT</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Hình ảnh</th>
+                                <th>Số lượng bình luận</th>
                                 <th>Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($comments as $comment)
+                            @forelse ($products as $key => $product)
                             <tr>
-                                <td>{{ $comment->id }}</td>
-                                <td>{{ $comment->user->name }}</td>
-                                <td>{{ $comment->product->name }}</td>
-                                <td>{{ Str::limit($comment->content, 50) }}</td>
+                                <td>{{ $products->firstItem() + $key }}</td>
+                                <td>{{ $product->name }}</td>
                                 <td>
-                                    <span class="badge {{ $comment->status === 'Hiển thị' ? 'bg-success' : 'bg-danger' }}">
-                                        {{ $comment->status }}
-                                    </span>
+                                    @if($product->thumbnail)
+                                        <img src="{{ asset('storage/' . $product->thumbnail) }}" alt="{{ $product->name }}" style="max-height: 50px;">
+                                    @else
+                                        <span class="text-muted">Không có ảnh</span>
+                                    @endif
                                 </td>
-                                <td>{{ $comment->created_at->format('d/m/Y H:i') }}</td>
                                 <td>
-                                    <div class="btn-group">
-                                        <a href="{{ route('comments.show', $comment->id) }}" class="btn btn-sm btn-info">
-                                            <i class="fas fa-eye"></i> Chi tiết
-                                        </a>
-                                        <form action="{{ route('comments.toggle-status', $comment->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm {{ $comment->status === 'Hiển thị' ? 'btn-warning' : 'btn-success' }}">
-                                                <i class="fas {{ $comment->status === 'Hiển thị' ? 'fa-eye-slash' : 'fa-eye' }}"></i>
-                                                {{ $comment->status === 'Hiển thị' ? 'Ẩn' : 'Hiển thị' }}
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('comments.destroy', $comment->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bình luận này?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-trash"></i> Xóa
-                                            </button>
-                                        </form>
-                                    </div>
+                                    <span class="badge bg-primary">{{ $product->comment_count }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ route('comments.product', $product->id) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-comments"></i> Xem bình luận
+                                    </a>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center">Không có bình luận nào</td>
+                                <td colspan="5" class="text-center">Không có sản phẩm nào có bình luận</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -79,7 +63,9 @@
                 </div>
                 <!-- /.card-body -->
                 <div class="card-footer clearfix">
-                    {{ $comments->links() }}
+                    <div class="float-right">
+                        {{ $products->appends(request()->query())->links('pagination::bootstrap-4') }}
+                    </div>
                 </div>
             </div>
             <!-- /.card -->

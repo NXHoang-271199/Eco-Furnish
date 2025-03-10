@@ -3,30 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Models\Comment;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CommentController extends Controller
 {
     /**
-     * Display a listing of the comments.
+     * Display a listing of the products with comments.
      */
     public function index(Request $request)
     {
+        $products = Product::select('products.*', DB::raw('COUNT(comments.id) as comment_count'))
+            ->join('comments', 'products.id', '=', 'comments.product_id')
+            ->when($request->search, function ($query, $search) {
+                return $query->where('products.name', 'like', "%{$search}%");
+            })
+            ->groupBy('products.id')
+            ->orderBy('comment_count', 'desc')
+            ->paginate(10);
+
+        return view('admins.comments.index', compact('products'));
+    }
+
+    /**
+     * Display comments for a specific product.
+     */
+    public function productComments(Product $product, Request $request)
+    {
         $comments = Comment::with(['user', 'product'])
+            ->where('product_id', $product->id)
             ->when($request->search, function ($query, $search) {
                 return $query->where('content', 'like', "%{$search}%")
                     ->orWhereHas('user', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('product', function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
                     });
             })
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        return view('admins.comments.index', compact('comments'));
+        return view('admins.comments.product_comments', compact('product', 'comments'));
     }
 
     /**
@@ -39,6 +56,15 @@ class CommentController extends Controller
     }
 
     /**
+     * Display user information.
+     */
+    public function userInfo(User $user)
+    {
+        $commentCount = Comment::where('user_id', $user->id)->count();
+        return view('admins.comments.user_info', compact('user', 'commentCount'));
+    }
+
+    /**
      * Toggle the status of the specified comment.
      */
     public function toggleStatus(Comment $comment)
@@ -46,8 +72,7 @@ class CommentController extends Controller
         $newStatus = $comment->status === 'Hiển thị' ? 'Ẩn' : 'Hiển thị';
         $comment->update(['status' => $newStatus]);
 
-        return redirect()->route('comments.index')
-            ->with('success', 'Trạng thái bình luận đã được cập nhật thành công.');
+        return back()->with('success', 'Trạng thái bình luận đã được cập nhật thành công.');
     }
 
     /**
@@ -57,7 +82,6 @@ class CommentController extends Controller
     {
         $comment->delete();
 
-        return redirect()->route('comments.index')
-            ->with('success', 'Bình luận đã được xóa thành công.');
+        return back()->with('success', 'Bình luận đã được xóa thành công.');
     }
 } 
