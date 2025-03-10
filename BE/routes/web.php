@@ -92,6 +92,8 @@ Route::prefix('admin')->group(function () {
     // Comments Management
     Route::resource('comments', CommentController::class)->only(['index', 'show', 'destroy']);
     Route::post('comments/{comment}/toggle-status', [CommentController::class, 'toggleStatus'])->name('comments.toggle-status');
+    Route::get('products/{product}/comments', [CommentController::class, 'productComments'])->name('comments.product');
+    Route::get('users/{user}/info', [CommentController::class, 'userInfo'])->name('comments.user-info');
 
     // Trash Management
     Route::prefix('trash')->group(function () {
