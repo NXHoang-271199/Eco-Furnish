@@ -133,8 +133,16 @@ class UserApiController extends Controller
                     ->where('is_active', 1)
                     ->first();
 
-        // Kiểm tra user tồn tại và mật khẩu đúng
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        // Kiểm tra user tồn tại
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email hoặc mật khẩu không đúng'
+            ], 401);
+        }
+
+        // Kiểm tra mật khẩu đúng
+        if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Email hoặc mật khẩu không đúng'
