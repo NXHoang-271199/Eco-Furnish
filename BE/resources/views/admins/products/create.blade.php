@@ -1,4 +1,3 @@
-
 @extends('layouts.admin')
 
 @section('title', 'Tạo sản phẩm mới')
@@ -184,21 +183,19 @@
                         <!-- Form thêm biến thể -->
                         <div id="variantForm" class="border rounded p-4 mb-4 d-none" style="background: #f8f9fa;">
                             <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">SKU <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="variant-sku">
-                                </div>
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-6 mb-3">
                                     <label class="form-label">Giá <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <input type="number" class="form-control" id="variant-price" min="0">
                                         <span class="input-group-text">VNĐ</span>
                                     </div>
                                 </div>
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-6 mb-3">
                                     <label class="form-label">Số lượng <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control" id="variant-quantity" min="0">
                                 </div>
+                                <!-- Trường SKU đã bị ẩn vì sẽ được tạo tự động -->
+                                <input type="hidden" id="variant-sku">
                             </div>
                             <button type="button" class="btn btn-primary" id="add-variant-btn">
                                 <i class="fas fa-plus me-2"></i>Thêm biến thể
