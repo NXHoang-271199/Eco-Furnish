@@ -1,4 +1,3 @@
-
 import React from "react";
 
 import { motion } from "framer-motion";
@@ -65,12 +64,10 @@ const Contact = () => {
               </p>
             </div>
 
-
             {/* Số điện thoại */}
             <div className="flex flex-col items-center justify-center px-4">
               <h3 className="text-lg font-bold text-gray-900">SỐ ĐIỆN THOẠI</h3>
               <p className="text-gray-600">0901121111</p>
-
             </div>
 
             {/* Email */}
@@ -115,7 +112,6 @@ const Contact = () => {
                 ></textarea>
               </div>
               <button className="w-full md:w-auto px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700">
-
                 Gửi
               </button>
             </form>

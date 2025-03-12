@@ -14,6 +14,18 @@ use Illuminate\Http\Request;
 class VariantValueController extends Controller
 {
     /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-variant-values');
+        $this->middleware('permission:create-variant-values', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-variant-values', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-variant-values', ['only' => ['destroy']]);
+        $this->middleware('permission:restore-variant-values', ['only' => ['restore']]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Variant $variant)

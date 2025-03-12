@@ -181,7 +181,7 @@
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.src = e.target.result; // Thay đổi ảnh hiển thị ngay lập tức
+                    preview.src = e.target.result;
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -375,7 +375,7 @@
                         </div>
                     </div>
 
-                    <div class="card">
+                    {{-- <div class="card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">Người đăng</h5>
                         </div>
@@ -401,7 +401,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <div class="card">
                         <div class="card-header">

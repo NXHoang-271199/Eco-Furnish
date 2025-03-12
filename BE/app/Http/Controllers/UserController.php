@@ -13,6 +13,17 @@ use Illuminate\Support\Facades\Storage;
 class UserController extends Controller
 {
     /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-users');
+        $this->middleware('permission:create-users', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-users', ['only' => ['edit', 'update', 'toggleStatus']]);
+        $this->middleware('permission:delete-users', ['only' => ['destroy']]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)

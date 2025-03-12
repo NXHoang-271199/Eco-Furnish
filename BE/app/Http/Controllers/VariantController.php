@@ -12,6 +12,18 @@ use Illuminate\Support\Facades\Log;
 class VariantController extends Controller
 {
     /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-variants');
+        $this->middleware('permission:create-variants', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-variants', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-variants', ['only' => ['destroy']]);
+        $this->middleware('permission:restore-variants', ['only' => ['restore']]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()

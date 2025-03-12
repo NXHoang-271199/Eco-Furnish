@@ -10,6 +10,17 @@ use Illuminate\Http\Request;
 class RoleController extends Controller
 {
     /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-roles');
+        $this->middleware('permission:create-roles', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-roles', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-roles', ['only' => ['destroy']]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()

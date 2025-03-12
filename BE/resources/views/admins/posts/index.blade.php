@@ -155,20 +155,15 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-12">
-                <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-                    <h4 class="mb-sm-0">Danh sách bài viết</h4>
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Bài viết</h4>
+
                     <div class="page-title-right">
-                        <ol class="breadcrumb m-0">
-                            @foreach ($breadcrumbs as $breadcrumb)
-                                <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
-                                    @if ($breadcrumb['url'])
-                                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
-                                    @else
-                                        {{ $breadcrumb['name'] }}
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ol>
+                        @can('create-posts')
+                        <a href="{{ route('posts.create') }}" class="btn btn-success">
+                            <i class="ri-add-line align-bottom me-1"></i> Thêm bài viết
+                        </a>
+                        @endcan
                     </div>
                 </div>
             </div>
@@ -246,12 +241,6 @@
             </div>
             <div class="col-xxl-9">
                 <div class="row g-4 mb-3">
-                    <div class="col-sm-auto">
-                        <div>
-                            <a href="{{ route('posts.create') }}" class="btn btn-success"><i
-                                    class="ri-add-line align-bottom me-1"></i> Thêm mới</a>
-                        </div>
-                    </div>
                     <div class="col-sm">
                         <div class="d-flex justify-content-sm-end gap-2">
                             <form action="" method="GET" style="display: contents">
@@ -325,10 +314,13 @@
 
                                         <!-- Đưa hành động xuống dưới -->
                                         <div class="post-actions d-flex justify-content-end">
+                                            @can('update-posts', $post)
                                             <a href="{{ route('posts.edit', $post->id) }}"
                                                 class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
                                                 <i class="ri-edit-line"></i>
                                             </a>
+                                            @endcan
+                                            @can('delete-posts', $post)
                                             <form action="{{ route('posts.destroy', $post->id) }}" method="POST"
                                                 class="delete-form">
                                                 @csrf
@@ -338,6 +330,7 @@
                                                     <i class="ri-delete-bin-line"></i>
                                                 </button>
                                             </form>
+                                            @endcan
                                         </div>
 
                                     </div>
