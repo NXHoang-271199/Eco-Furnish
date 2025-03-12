@@ -23,12 +23,12 @@ const Header = () => {
             <ul className="flex justify-center space-x-6 ">
               <li>
                 <Link to="/" className="hover:text-yellow-400">
-                  Home
+                  Trang chủ
                 </Link>
               </li>
               <li className="relative group">
                 <Link to="/products" className="hover:text-yellow-400">
-                  Shop
+                  Sản phẩm
                 </Link>
                 <div class="absolute hidden group-hover:flex bg-white shadow-lg rounded-lg w-[600px] p-6 md\:w-auto">
                   <ul class="grid grid-cols-2 gap-6 w-full">
@@ -99,19 +99,17 @@ const Header = () => {
                   </ul>
                 </div>
               </li>
-              <li>
-                <Link to="/about" className="hover:text-yellow-400">
-                  About
-                </Link>
-              </li>
+              {/* <li>
+                <Link to="/about" className="hover:text-yellow-400"></Link>
+              </li> */}
               <li>
                 <Link to="/contact" className="hover:text-yellow-400">
-                  Contact
+                  Liên hệ
                 </Link>
               </li>
               <li>
                 <Link to="/blog" className="hover:text-yellow-400">
-                  Blog
+                  Bài viết
                 </Link>
               </li>
             </ul>

@@ -26,13 +26,13 @@ function App() {
         <Route path="/" element={<LayoutWebsite />}>
           <Route index element={<Homes />} />
           <Route path="products" element={<Products />} />
-          <Route path="product" element={<ProductDetail />} />
+          <Route path="product/:id" element={<ProductDetail />} />
           <Route path="contact" element={<Contact />} />
           <Route path="cart" element={<Cart />} />
           <Route path="blog" element={<Blogs />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
-          <Route path="BlogDetail" element={<BlogsDetail />} />
+          {/* <Route path="blog-detail" element={<BlogDetail />} />  */}
         </Route>
         <Route path="signin" element={<SignIn />} />
         <Route path="changepass" element={<ForgotPasswordModal />} />

@@ -1,8 +1,39 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { AiFillStar } from "react-icons/ai";
-
+import { useState, useEffect } from "react";
+import axios from "axios";
 const ProductDetail = () => {
+  const [product, setProduct] = useState({});
+  const params = useParams();
+  const productId = params.id;
+  // console.log(id);
+  useEffect(() => {
+    if (!productId) {
+      console.error("productId không hợp lệ:", productId);
+      return; // Nếu id không hợp lệ, dừng gọi API
+    }
+    axios
+      .get(`http://localhost:8000/api/products/${productId}`)
+
+      .then((response) => {
+        // Kiểm tra dữ liệu trả về
+        console.log("Dữ liệu sản phẩm chi tiết:", response.data);
+        if (
+          response.data.status === "success"
+          // &&
+          // Array.isArray(response.data.data)
+        ) {
+          setProduct(response.data); // Lấy danh sách sản phẩm từ response.data.data.data
+        } else {
+          console.log("Dữ liệu không phải là mảng hoặc API trả về lỗi");
+        }
+      })
+      .catch((error) => {
+        console.log("Lỗi khi gọi API:", error);
+      });
+  }, [productId]);
+
   return (
     <main className="max-w-6xl mx-auto mb-20 mt-32">
       {/* Product_info */}
@@ -57,7 +88,7 @@ const ProductDetail = () => {
         {/* Info */}
         <div className="bg-red">
           {/* name */}
-          <h5 className="text-[20px] font-semibold text-3xl">Asgaard sofa</h5>
+          <h5 className="text-[20px] font-semibold text-3xl">{product.name}</h5>
           {/* price */}
           <h3 className="text-[40px] font-bold mt-2 text-[#EF4444]">
             25.000.000đ

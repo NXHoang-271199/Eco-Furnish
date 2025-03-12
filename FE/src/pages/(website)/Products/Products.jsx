@@ -3,21 +3,27 @@ import { useState, useEffect } from "react";
 import { FaUserAstronaut, FaShippingFast } from "react-icons/fa";
 import { LiaTrophySolid } from "react-icons/lia";
 import axios from "axios";
+import { Link } from "react-router-dom";
 const Products = () => {
   const [products, setProducts] = useState([]);
 
-  const getListProducts = async () => {
-    try {
-      const res = await axios.get("http://localhost:8000/api/products");
-      console.log(res.data);
-
-      setProducts(res.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
   useEffect(() => {
-    getListProducts();
+    axios
+      .get("http://localhost:8000/api/products")
+      .then((response) => {
+        // Kiểm tra dữ liệu trả về
+        if (
+          response.data.status === "success" &&
+          Array.isArray(response.data.data.data)
+        ) {
+          setProducts(response.data.data.data); // Lấy danh sách sản phẩm từ response.data.data.data
+        } else {
+          console.log("Dữ liệu không phải là mảng hoặc API trả về lỗi");
+        }
+      })
+      .catch((error) => {
+        console.log("Lỗi khi gọi API:", error);
+      });
   }, []);
   return (
     <>
@@ -68,28 +74,41 @@ const Products = () => {
 
           <div className="">
             <div className="grid grid-cols-3 gap-6 my-4 ">
-              {
-                /* product */ products.map((product) => (
-                  <div>
+              {products.length > 0 ? (
+                products.map((product, index) => (
+                  <div key={index}>
                     <div>
                       <img
-                        src="https://picsum.photos/296/301"
-                        alt=""
-                        className="rounded-md"
+                        src={
+                          product.image_thumnail
+                            ? `http://localhost:8000/storage/${product.image_thumnail}`
+                            : "https://via.placeholder.com/300x200?text=No+Image"
+                        }
+                        alt={product.name}
+                        className="rounded-md w-[296] h-[301]"
+                        onError={(e) => {
+                          console.log("Lỗi tải ảnh:", product.image_thumnail);
+                          e.target.src =
+                            "https://via.placeholder.com/300x200?text=Error+Loading";
+                        }}
                       />
                     </div>
                     <div className="my-4">
-                      <a href="product">
+                      <Link to={`/product/${product.id}`}>
                         <h4 className="font-bold">{product.name}</h4>
-
-                        <p className="text-1xl font-somibold text-red-600 pt-1">
-                          {product.price}
+                        <p className="text-1xl font-semibold text-red-600 pt-1">
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(product.price)}
                         </p>
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 ))
-              }
+              ) : (
+                <p>Đang tải sản phẩm...</p>
+              )}
 
               {/* end product */}
             </div>
