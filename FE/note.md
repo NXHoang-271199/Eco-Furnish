@@ -1,7 +1,7 @@
 API
 
 http://localhost:8000/api/users -> User
-http://localhost:8000/api/login -> Login
+http://localhost:8000/api/users/login -> Login
 
 - register
 - {id}/profile
