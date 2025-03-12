@@ -17,15 +17,27 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
+    /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-products');
+        $this->middleware('permission:create-products', ['only' => ['create', 'store', 'generateVariants']]);
+        $this->middleware('permission:update-products', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-products', ['only' => ['destroy']]);
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $products = Product::with('category')->latest()->paginate(3);
+        $products = Product::with('category')->latest()->paginate(10);
         $categories = Category::all();
         return view('admins.products.index', compact('products', 'categories'));
     }
@@ -163,6 +175,9 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
+        // Kiểm tra quyền chỉnh sửa sản phẩm
+        $this->authorize('update', $product);
+
         try {
             // Load categories
             $categories = Category::all();
@@ -211,6 +226,9 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product)
     {
+        // Kiểm tra quyền chỉnh sửa sản phẩm
+        $this->authorize('update', $product);
+
         try {
             DB::beginTransaction();
 
@@ -409,6 +427,9 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
+        // Kiểm tra quyền xóa sản phẩm
+        $this->authorize('delete', $product);
+
         try {
             DB::beginTransaction();
 

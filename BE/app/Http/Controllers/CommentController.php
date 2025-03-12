@@ -11,6 +11,16 @@ use Illuminate\Support\Facades\DB;
 class CommentController extends Controller
 {
     /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-comments');
+        $this->middleware('permission:update-comments', ['only' => ['toggleStatus']]);
+        $this->middleware('permission:delete-comments', ['only' => ['destroy']]);
+    }
+
+    /**
      * Display a listing of the products with comments.
      */
     public function index(Request $request)

@@ -10,10 +10,22 @@ use App\Models\CategoryPost;
 use Illuminate\Http\Request;
 use App\Http\Requests\PostRequest;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 
 class PostController extends Controller
 {
+    /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-posts');
+        $this->middleware('permission:create-posts', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-posts', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-posts', ['only' => ['destroy']]);
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -124,7 +136,7 @@ class PostController extends Controller
             'content' => $updatedContent,
             'image_thumbnail' => $filePath,
             'category_post_id' => $validated['category_id'],
-            'user_id' => $request->input('user_id'),
+            'user_id' => Auth::user()->id,
             'status' => $request->input('status'),
             'slug' => $slug,
         ]);
@@ -210,7 +222,7 @@ class PostController extends Controller
             'title' => $validated['title'],
             'content' => $updatedContent,
             'category_post_id' => $validated['category_id'],
-            'user_id' => $request->input('user_id'),
+            'user_id' => Auth::user()->id,
             'status' => $request->input('status'),
             'slug' => $slug,
         ]);

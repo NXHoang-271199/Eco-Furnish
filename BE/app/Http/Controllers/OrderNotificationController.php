@@ -7,6 +7,15 @@ use App\Models\OrderNotification;
 
 class OrderNotificationController extends Controller
 {
+    /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-order-notifications');
+        $this->middleware('permission:update-order-notifications', ['only' => ['markAsRead']]);
+    }
+
     public function index()
     {
         $notifications = OrderNotification::with('order')
