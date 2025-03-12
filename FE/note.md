@@ -1,6 +1,7 @@
 API
 
 http://localhost:8000/api/users -> User
+http://localhost:8000/api/login -> Login
 
 - register
 - {id}/profile
@@ -61,6 +62,7 @@ if (!product) return <div>Không tìm thấy sản phẩm</div>;
 
 return (
 // Hiển thị thông tin sản phẩm
+
 <div>
 <h1>{product.name}</h1>
 <img
