@@ -1,15 +1,19 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const Blogs = () => {
   return (
     <div className="bg-gray-100 mt-10">
       <main className="max-w-6xl mx-auto px-4 py-8">
         <section className="relative">
-          <img
+          <motion.img
             src="https://storage.googleapis.com/a1aa/image/L2WwzaWj82s6j2ILIlmI8ucu4kkoaXdYw6hBRSqLzYY.jpg"
             alt="Living room with Christmas tree"
-            className="w-full h-96 object-cover rounded-lg transition-transform duration-300 hover:scale-105"
+            className="w-full h-[600px] object-cover pl-16 pr-16 pt-8 pb-8"
+            initial={{ scale: 1 }}
+            animate={{ scale: 1.11 }} // Phóng to lên 120%
+            transition={{ duration: 1.5, ease: "easeOut" }} // Chạy 1 lần
           />
           <div className="absolute top-4 left-4 bg-white p-2 rounded-full shadow">
             <i className="fas fa-bars text-gray-700"></i>
@@ -29,16 +33,16 @@ const Blogs = () => {
                 placeholder="Tìm kiếm bài viết..."
                 className="border border-gray-300 rounded-lg px-4 py-2"
               /> */}
-              <i className="fas fa-th text-gray-700"></i>
-              <i className="fas fa-list text-gray-700"></i>
+              
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* có thể thay vào đây để đưa sp ra */}
             {[...Array(12)].map((_, index) => (
               <a href="/BlogDetail">
                 <div key={index} className="bg-white rounded-lg shadow p-4">
                   <img
-                    src={`https://picsum.photos/200/300`}
+                    src={`http://localhost:5173/src/assets/img/banners/homepage01-slide2.jpg`}
                     alt="Article"
                     className="w-full h-48 object-cover  mb-4  rounded-lg transition-transform duration-300 hover:scale-105"
                   />
