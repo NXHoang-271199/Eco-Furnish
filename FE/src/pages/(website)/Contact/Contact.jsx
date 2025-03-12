@@ -1,6 +1,6 @@
 import React from "react";
-import { motion } from "framer-motion";
 
+import { motion } from "framer-motion";
 const Contact = () => {
   return (
     <div className="font-roboto">
@@ -15,7 +15,7 @@ const Contact = () => {
             Chúng tôi tin vào thiết kế nội thất bền vững và đam mê tạo ra không
             gian sống đẹp, thoải mái cho ngôi nhà của bạn.
           </h1>
-          <p className="text-gray-600 mb-8">
+          <p className="text-gray-600 mb-8 font-medium text-2xl">
             Cửa hàng của chúng tôi cung cấp các sản phẩm mới nhất mang phong
             cách cổ điển, với chất liệu tự nhiên, đường cong, góc cạnh và thiết
             kế cổ điển, có thể phù hợp với bất kỳ dự án trang trí nào.
@@ -32,12 +32,15 @@ const Contact = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Về chúng tôi
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-4 w-[65%] font-semibold">
               Nội thất River là cửa hàng quà tặng và trang trí trụ sở tại Thành
-              phố Hà Nội, Việt Nam. Thành lập từ năm 2019.
+              phố Hà Nội, Việt Nam. Thành lập từ năm 2025.
             </p>
-            <a className="text-blue-500 hover:text-blue-700" href="#">
-              Mua ngay <i className="fas fa-arrow-right"></i>
+            <a
+              className="text-black font-medium underline hover:translate-x-4 duration-700  hover:ease-in flex"
+              href="products"
+            >
+              Mua ngay <FaArrowRight className="mt-2 ml-2 size-[15px] " />
             </a>
           </div>
         </div>
@@ -73,7 +76,6 @@ const Contact = () => {
               <p className="text-gray-600">tuandnph33203@fpt.edu.vn</p>
             </div>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
             {/* Form với chiều cao linh hoạt */}
             <form className="bg-gray-100 px-6 py-8 md:px-12 md:py-12 rounded-lg flex flex-col h-full min-h-[400px] md:min-h-[600px]">
@@ -88,7 +90,7 @@ const Contact = () => {
                   type="text"
                 />
               </div>
-              <div className="mb-4">
+              <div className="my-3">
                 <label className="block text-gray-700" htmlFor="email">
                   E-mail
                 </label>
@@ -109,11 +111,9 @@ const Contact = () => {
                   placeholder="Tin nhắn..."
                 ></textarea>
               </div>
-              <div className="mt-4 flex justify-center">
-                <button className="w-full md:w-auto px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700">
-                  Gửi
-                </button>
-              </div>
+              <button className="w-full md:w-auto px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-700">
+                Gửi
+              </button>
             </form>
 
             {/* Google Maps giữ chiều cao bằng với form */}

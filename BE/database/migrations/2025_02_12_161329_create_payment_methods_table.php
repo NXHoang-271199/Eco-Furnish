@@ -12,8 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payment_methods', function (Blueprint $table) {
-            $table->id(); // Khóa chính
-            $table->string('name', 255); // Tên phương thức chuyển khoản
+            $table->id();
+            $table->string('name', 255);
+            $table->json('config')->nullable();
+            $table->boolean('is_connected')->default(false);
+            $table->string('image', 255)->nullable();
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 

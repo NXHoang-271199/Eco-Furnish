@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 const Blogs = () => {
   return (
     <div className="bg-gray-100 mt-10">
-      <main className="container mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8">
         <section className="relative">
           <motion.img
             src="https://storage.googleapis.com/a1aa/image/L2WwzaWj82s6j2ILIlmI8ucu4kkoaXdYw6hBRSqLzYY.jpg"
