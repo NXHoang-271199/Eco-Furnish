@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class UserApiController extends Controller
 {
@@ -230,6 +231,39 @@ class UserApiController extends Controller
                 'name' => $user->name,
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
             ]
+        ]);
+    }
+
+    /**
+     * API đăng xuất người dùng
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function apiLogout(Request $request)
+    {
+        // Lấy user hiện tại
+        $user = Auth::user();
+        
+        // Nếu sử dụng token authentication (Sanctum/Passport)
+        if ($request->bearerToken()) {
+            // Chỉ xóa token hiện tại
+            $request->user()->currentAccessToken()->delete();
+            // Hoặc xóa tất cả token: $user->tokens()->delete();
+        } else {
+            // Nếu sử dụng session-based authentication
+            Auth::logout();
+            
+            // Chỉ thao tác với session khi có session
+            if ($request->hasSession()) {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Đăng xuất thành công'
         ]);
     }
 }
