@@ -93,15 +93,20 @@ class UserApiController extends Controller
             $avatarPath = $request->file('avatar')->store('uploads/avatars', 'public');
         }
 
+    
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role_id' => $clientRole->id,
             'avatar' => $avatarPath,
-            'is_active' => 1
+            'is_active' => 1,
         ]);
 
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        $user->access_token = $token;
+        $user->save();
         return response()->json([
             'status' => 'success',
             'message' => 'Đăng ký tài khoản thành công',
@@ -149,10 +154,8 @@ class UserApiController extends Controller
                 'message' => 'Email hoặc mật khẩu không đúng'
             ], 401);
         }
-
-        // Tạo token đăng nhập (nếu sử dụng Sanctum hoặc Passport)
-        // $token = $user->createToken('auth_token')->plainTextToken;
-
+        
+        $token = $user->createToken('auth_token')->plainTextToken;
         return response()->json([
             'status' => 'success',
             'message' => 'Đăng nhập thành công',
@@ -162,7 +165,7 @@ class UserApiController extends Controller
                 'email' => $user->email,
                 'role' => $user->role->name,
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
-                // 'token' => $token // Nếu sử dụng Sanctum hoặc Passport
+                'access_token' => $token
             ]
         ]);
     }
