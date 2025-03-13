@@ -10,6 +10,17 @@ use Illuminate\Support\Facades\Storage;
 class VoucherController extends Controller
 {
     /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-vouchers');
+        $this->middleware('permission:create-vouchers', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-vouchers', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-vouchers', ['only' => ['destroy']]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()

@@ -12,9 +12,11 @@ class AdminMiddleware
     {
         // Nếu chưa đăng nhập hoặc không phải admin/staff
         if (!Auth::check() || !in_array(Auth::user()->role->slug, ['admin', 'staff'])) {
-            Auth::logout(); // Đảm bảo logout nếu user không có quyền
-            return redirect()->route('admin.login')
-                ->withErrors(['email' => 'Bạn không có quyền truy cập vào trang quản trị.']);
+            if (!Auth::check()) {
+                return redirect()->route('admin.login');
+            }
+            
+            abort(403, 'Bạn không có quyền truy cập vào trang này.');
         }
         return $next($request);
     }

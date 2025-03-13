@@ -1,7 +1,36 @@
 import React from "react";
 import { motion } from "framer-motion";
-
+import { useForm } from "react-hook-form";
+import { data, useNavigate } from "react-router-dom";
+import axios from "axios";
 const SignUp = () => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
+  const navigate = useNavigate();
+  const onSubmit = async (data) => {
+    console.log(data);
+    try {
+      const response = await axios.post(
+        "http://localhost:8000/api/users/register",
+        data
+      );
+      console.log("Đăng ký thành công:", response.data);
+      alert("Đăng ký thanh cong");
+      navigate("/signin");
+    } catch (error) {
+      // Hiển thị lỗi validation cụ thể nếu có
+      if (error.response && error.response.data && error.response.data.errors) {
+        console.error("Lỗi validation:", error.response.data.errors);
+        // Hiển thị lỗi cho người dùng
+      } else {
+        console.error("Lỗi đăng ký:", error);
+      }
+    }
+  };
   return (
     <div className="flex w-full bg-white shadow-lg">
       <div className="relative overflow-hidden w-1/2 hidden md:block">
@@ -22,35 +51,51 @@ const SignUp = () => {
             Đăng Nhập
           </a>
         </p>
-        <form>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <input
               type="text"
               placeholder="Tên đầy đủ của bạn"
+              name="name"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register("name", { required: "Phải có tên đăng ký" })}
             />
+            {errors?.name && <p>{errors.name.message}</p>}
           </div>
           <div className="mb-4">
             <input
               type="email"
               placeholder="Địa chỉ email của bạn"
+              name="email"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register("email", { required: "Phải có email" })}
             />
+            {errors?.email && <p>{errors.email.message}</p>}
           </div>
           <div className="mb-4 relative">
             <input
               type="password"
               placeholder="Mật khẩu"
+              name="password"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register("password", { required: "Phải có mật khẩu" })}
             />
+            {errors?.password && <p>{errors.password.message}</p>}
             <i className="fas fa-eye absolute right-3 top-3 text-gray-500 cursor-pointer"></i>
           </div>
           <div className="mb-4">
             <input
               type="password"
               placeholder="Xác nhận mật khẩu"
+              name="password_confirmation"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register("password_confirmation", {
+                required: "Phải có mật khẩu xác nhận",
+              })}
             />
+            {errors?.password_confirmation && (
+              <p>{errors.password_confirmation.message}</p>
+            )}
           </div>
           <div className="mb-4 flex items-center">
             <input type="checkbox" id="terms" className="mr-2" />

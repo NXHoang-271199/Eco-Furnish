@@ -62,20 +62,15 @@
         <!-- start page title -->
         <div class="row">
             <div class="col-12">
-                <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-                    <h4 class="mb-sm-0">Danh sách người dùng</h4>
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0">Quản lý người dùng</h4>
+
                     <div class="page-title-right">
-                        <ol class="breadcrumb m-0">
-                            @foreach ($breadcrumbs as $breadcrumb)
-                                <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
-                                    @if ($breadcrumb['url'])
-                                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
-                                    @else
-                                        {{ $breadcrumb['name'] }}
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ol>
+                        @can('create-users')
+                        <a href="{{ route('users.create') }}" class="btn btn-success">
+                            <i class="ri-add-line align-bottom me-1"></i> Thêm người dùng
+                        </a>
+                        @endcan
                     </div>
                 </div>
             </div>
@@ -99,10 +94,6 @@
                     <div class="card">
                         <div class="card-header align-items-center d-flex">
                             <h4 class="card-title mb-0 flex-grow-1">Danh sách người dùng</h4>
-                            <a href="{{ route('users.create') }}" class="btn btn-soft-success material-shadow-none">
-                                <i class="ri-add-circle-line align-middle me-1"></i>
-                                Thêm người dùng
-                            </a>
                         </div><!-- end card header -->
 
                         <div class="card-body">
