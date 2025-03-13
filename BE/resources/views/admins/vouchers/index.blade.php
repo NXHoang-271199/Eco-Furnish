@@ -72,10 +72,12 @@
                     <div class="listjs-table" id="customerList">
                         <div class="row g-4 mb-3">
                             <div class="col-sm-auto">
+                                @if(Auth::user()->hasPermission('create-vouchers'))
                                 <div>
                                     <a href="{{ route('vouchers.create') }}" class="btn btn-success add-btn"><i
                                             class="ri-add-line align-bottom me-1"></i> Thêm mới voucher</a>
                                 </div>
+                                @endif
                             </div>
                         </div>
 
@@ -106,12 +108,14 @@
                                             <td>{{ $voucher->usage_limit }}</td>
                                             <td class="d-flex">
                                                 <!-- Nút sửa -->
+                                                @if(Auth::user()->hasPermission('update-vouchers'))
                                                 <a href="{{ route('vouchers.edit', $voucher->id) }}"
                                                     class="btn btn-sm btn-outline-primary rounded-3 shadow-sm me-2 transition-all duration-300 hover:bg-primary-light">
                                                     <i class="ri-settings-4-line"></i>
                                                 </a>
-
+                                                @endif
                                                 <!-- Form xóa -->
+                                                @if(Auth::user()->hasPermission('delete-vouchers'))
                                                 <form action="{{ route('vouchers.destroy', $voucher->id) }}" method="POST"
                                                     style="display:inline-block;">
                                                     @csrf
@@ -121,6 +125,7 @@
                                                         <i class="ri-delete-bin-5-line"></i>
                                                     </button>
                                                 </form>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach

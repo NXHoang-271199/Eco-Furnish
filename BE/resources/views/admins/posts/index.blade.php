@@ -119,34 +119,28 @@
 @endsection
 
 @section('JS')
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
     <script>
-        $(document).on('click', '.delete-btn', function(e) {
-            e.preventDefault();
-
-            let form = $(this).closest("form");
-
-            console.log("Nút xóa đã được nhấn!");
-
-            Swal.fire({
-                title: "Bạn có chắc chắn muốn xóa?",
-                text: "Hành động này không thể hoàn tác!",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#dc3545",
-                cancelButtonColor: "#6c757d",
-                confirmButtonText: "Có, xóa!",
-                cancelButtonText: "Hủy"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    console.log("Đã xác nhận xóa!");
-                    form.submit();
-                } else {
-                    console.log("Hủy xóa!");
-                }
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButtons = document.querySelectorAll('.delete-btn');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const form = this.closest('form');
+                    Swal.fire({
+                        title: 'Bạn có chắc chắn?',
+                        text: "Bạn sẽ không thể khôi phục lại dữ liệu này!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Xóa',
+                        cancelButtonText: 'Hủy'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
             });
         });
     </script>
@@ -158,13 +152,13 @@
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                     <h4 class="mb-sm-0">Bài viết</h4>
 
-                    <div class="page-title-right">
-                        @can('create-posts')
+                    {{-- <div class="page-title-right">
+                        @if(Auth::user()->isAdmin() || Auth::user()->hasPermission('create-posts'))
                         <a href="{{ route('posts.create') }}" class="btn btn-success">
                             <i class="ri-add-line align-bottom me-1"></i> Thêm bài viết
                         </a>
-                        @endcan
-                    </div>
+                        @endif
+                    </div> --}}
                 </div>
             </div>
         </div>
@@ -240,16 +234,28 @@
                 </div>
             </div>
             <div class="col-xxl-9">
+             
                 <div class="row g-4 mb-3">
+                    
                     <div class="col-sm">
-                        <div class="d-flex justify-content-sm-end gap-2">
-                            <form action="" method="GET" style="display: contents">
-                                <div class="search-box ms-2">
+                        
+                     
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                @if(Auth::user()->hasPermission('create-posts'))
+                                <a href="{{ route('posts.create') }}" class="btn btn-success">
+                                    <i class="ri-add-line align-bottom me-1"></i> Thêm bài viết
+                                </a>
+                                @endif
+                            </div>
+
+                            <form action="" method="GET" class="d-flex gap-2">
+                                <div class="search-box">
                                     <input type="text" class="form-control" placeholder="Search..." name="title"
                                         value="{{ request('title') }}">
                                     <i class="ri-search-line search-icon"></i>
                                 </div>
-                                <div class="ms-2">
+                                <div>
                                     <select name="status" class="form-control">
                                         <option value="">--Tất cả trạng thái--</option>
                                         <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>Đã duyệt
@@ -258,7 +264,7 @@
                                         </option>
                                     </select>
                                 </div>
-                                <div class="d-flex justify-content-start ms-2">
+                                <div>
                                     <button type="submit" class="btn btn-success">Tìm kiếm</button>
                                 </div>
                             </form>
@@ -314,13 +320,13 @@
 
                                         <!-- Đưa hành động xuống dưới -->
                                         <div class="post-actions d-flex justify-content-end">
-                                            @can('update-posts', $post)
+                                            @if(Auth::user()->hasPermission('update-posts'))
                                             <a href="{{ route('posts.edit', $post->id) }}"
                                                 class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
                                                 <i class="ri-edit-line"></i>
                                             </a>
-                                            @endcan
-                                            @can('delete-posts', $post)
+                                            @endif
+                                            @if(Auth::user()->hasPermission('delete-posts'))
                                             <form action="{{ route('posts.destroy', $post->id) }}" method="POST"
                                                 class="delete-form">
                                                 @csrf
@@ -330,7 +336,7 @@
                                                     <i class="ri-delete-bin-line"></i>
                                                 </button>
                                             </form>
-                                            @endcan
+                                            @endif
                                         </div>
 
                                     </div>

@@ -42,12 +42,16 @@
                                     </td>
                                     <td>{{ Carbon\Carbon::parse($item->deleted_at)->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i:s') }}</td>
                                     <td>
+                                        @if(Auth::user()->hasPermission('restore-variant-values'))
                                         <button type="button" class="btn btn-success btn-sm" onclick="confirmRestore({{ $item->id }})">
                                             <i class="fas fa-trash-restore"></i> Khôi phục
                                         </button>
+                                        @endif
+                                        @if(Auth::user()->hasPermission('delete-variant-values'))
                                         <button type="button" class="btn btn-danger btn-sm" onclick="confirmForceDelete({{ $item->id }})">
                                             <i class="fas fa-trash"></i> Xóa vĩnh viễn
                                         </button>
+                                        @endif
                                     </td>
                                 </tr>
                                 @endforeach
