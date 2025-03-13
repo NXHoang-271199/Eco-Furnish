@@ -38,16 +38,20 @@
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarUser">
                         <ul class="nav nav-sm flex-column">
+                            @if(Auth::user()->hasPermission('view-users'))
                             <li class="nav-item">
                                 <a href="{{ route('users.index') }}" class="nav-link" data-key="t-sweet-alerts">
                                     <i class="ri-team-line"></i>Khách hàng
                                 </a>
                             </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('view-roles'))
                             <li class="nav-item">
                                 <a href="{{ route('roles.index') }}" class="nav-link" data-key="t-nestable-list">
                                     <i class="ri-user-settings-line"></i>Vai trò
                                 </a>
                             </li>
+                            @endif
                             @if (auth()->user()->isAdmin())
                                 <li class="nav-item">
                                     <a class="nav-link menu-link" href="#sidebarPermissions" data-bs-toggle="collapse"
@@ -63,18 +67,14 @@
                                                     <i class="ri-user-settings-line"></i> Vai trò & Quyền
                                                 </a>
                                             </li>
-                                            <li class="nav-item">
-                                                <a href="{{ route('admin.permissions.create-role') }}" class="nav-link"
-                                                    data-key="t-add-role">
-                                                    <i class="ri-user-add-line"></i> Thêm vai trò
-                                                </a>
-                                            </li>
+                                        
                                             <li class="nav-item">
                                                 <a href="{{ route('admin.permissions.create-permission') }}"
                                                     class="nav-link" data-key="t-add-permission">
                                                     <i class="ri-key-line"></i> Thêm quyền
                                                 </a>
                                             </li>
+                                          
                                         </ul>
                                     </div>
                                 </li>
@@ -119,23 +119,27 @@
                                     <i class="ri-list-check-2"></i> Danh sách sản phẩm
                                 </a>
                             </li>
+                            @if(Auth::user()->hasPermission('create-products'))
                             <li class="nav-item">
                                 <a href="{{ route('products.create') }}" class="nav-link"
                                     data-key="t-nestable-list">
                                     <i class="ri-add-circle-line"></i> Thêm sản phẩm
                                 </a>
                             </li>
+                            @endif
                             <li class="nav-item">
                                 <a href="{{ route('categories.index') }}" class="nav-link"
                                     data-key="t-nestable-list">
                                     <i class="ri-folder-2-line"></i> Danh mục sản phẩm
                                 </a>
                             </li>
+                            @if(Auth::user()->hasPermission('view-variants'))
                             <li class="nav-item">
                                 <a href="{{ route('variants.index') }}" class="nav-link" data-key="t-nestable-list">
                                     <i class="ri-layout-grid-line"></i> Quản lý biến thể
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
@@ -151,18 +155,22 @@
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarPayment">
                         <ul class="nav nav-sm flex-column">
+                            @if(Auth::user()->hasPermission('view-payment-methods'))
                             <li class="nav-item">
                                 <a href="{{ route('payment-methods.index') }}" class="nav-link"
                                     data-key="t-sweet-alerts">
                                     Danh sách
                                 </a>
                             </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('create-payment-methods'))
                             <li class="nav-item">
                                 <a href="{{ route('payment-methods.create') }}" class="nav-link"
                                     data-key="t-nestable-list">
                                     Thêm mới
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
@@ -173,15 +181,20 @@
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarOrder">
                         <ul class="nav nav-sm flex-column">
+                            @if(Auth::user()->hasPermission('view-orders'))
                             <li class="nav-item">
                                 <a href="{{ route('orders.index') }}" class="nav-link" data-key="t-sweet-alerts">
                                     Đơn hàng
                                 </a>
+                            </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('view-order-notifications'))
                                 <a href="{{ route('order.notifications') }}" class="nav-link"
                                     data-key="t-sweet-alerts">
                                     Thông báo
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
