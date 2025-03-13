@@ -27,19 +27,12 @@ const Blogs = () => {
               </button>
               <button className="text-gray-700 font-medium">Nổi bật</button>
             </div>
-            <div className="flex items-center space-x-2">
-              {/* <input
-                type="text"
-                placeholder="Tìm kiếm bài viết..."
-                className="border border-gray-300 rounded-lg px-4 py-2"
-              /> */}
-              
-            </div>
+            <div className="flex items-center space-x-2"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* có thể thay vào đây để đưa sp ra */}
             {[...Array(12)].map((_, index) => (
-              <a href="/BlogDetail">
+              <a href="blog-detail">
                 <div key={index} className="bg-white rounded-lg shadow p-4">
                   <img
                     src={`http://localhost:5173/src/assets/img/banners/homepage01-slide2.jpg`}

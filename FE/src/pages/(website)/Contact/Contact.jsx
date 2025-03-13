@@ -1,5 +1,5 @@
 import React from "react";
-
+import { FaArrowRight } from "react-icons/fa";
 import { motion } from "framer-motion";
 const Contact = () => {
   return (

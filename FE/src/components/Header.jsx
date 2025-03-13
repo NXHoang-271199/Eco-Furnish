@@ -1,9 +1,32 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { IoCartOutline } from "react-icons/io5";
 import { AiOutlineUser, AiOutlineSearch, AiOutlineHeart } from "react-icons/ai";
 
 const Header = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Kiểm tra trạng thái đăng nhập khi component được tải
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem("authToken");
+      if (token) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    };
+
+    checkLoginStatus();
+
+    // Lắng nghe sự kiện đăng nhập từ các component khác
+    window.addEventListener("user-login", checkLoginStatus);
+
+    return () => {
+      window.removeEventListener("user-login", checkLoginStatus);
+    };
+  }, []);
+
   return (
     <>
       <header class="bg-white fixed top-0 left-0 w-full z-50">
@@ -11,7 +34,6 @@ const Header = () => {
           {/* <!-- Logo --> */}
           <div class="text-2xl font-bold text-black">
             <div>
-              {/* <img src="/logo.svg" alt="Eco-Furnish" /> */}
               <a href="/">
                 <span className="text-yellow-300">E</span>co-
                 <span className="text-yellow-300">F</span>urnish
@@ -100,16 +122,14 @@ const Header = () => {
                   </ul>
                 </div>
               </li>
-              {/* <li>
-                <Link to="/about" className="hover:text-yellow-400"></Link>
-              </li> */}
+
               <li>
                 <Link to="/contact" className="hover:text-yellow-400">
                   Liên hệ
                 </Link>
               </li>
               <li>
-                <Link to="/blog" className="hover:text-yellow-400">
+                <Link to="/blogs" className="hover:text-yellow-400">
                   Bài viết
                 </Link>
               </li>
@@ -118,11 +138,6 @@ const Header = () => {
 
           {/* <!-- Icons --> */}
           <div class="flex items-center space-x-4">
-            {/* <!-- Login --> */}
-            {/* <a href="#" class="text-gray-700 hidden md:block hover:text-black">
-              Login / Register
-            </a> */}
-
             <Link to="/search">
               <AiOutlineSearch />
             </Link>
@@ -130,15 +145,24 @@ const Header = () => {
             <Link to="/cart">
               <IoCartOutline />
             </Link>
-            <Link to="/auth/login">
-              <AiOutlineUser />
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                to="/account"
+                className="text-gray-700 hidden md:block hover:text-black"
+              >
+                <AiOutlineUser className="inline mr-1" />
+              </Link>
+            ) : (
+              <Link
+                to="/signin"
+                className="text-gray-700 hidden md:block hover:text-black"
+              >
+                <AiOutlineUser className="inline mr-1" />
+              </Link>
+            )}
           </div>
         </div>
       </header>
-
-      {/* <!-- Để tránh nội dung bị che khuất do header cố định --> */}
-      {/* <div class="mt-10"></div> */}
     </>
   );
 };
