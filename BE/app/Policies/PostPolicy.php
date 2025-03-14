@@ -53,9 +53,14 @@ class PostPolicy
      */
     public function update(User $user, Post $post)
     {
-        // Người dùng có thể cập nhật bài viết nếu họ là admin hoặc là chủ sở hữu bài viết
-        return $user->isAdmin() || 
-               $user->hasPermission('update-posts') && $user->owns($post);
+        // Người dùng có thể cập nhật bài viết nếu:
+        // 1. Họ là admin, hoặc
+        // 2. Họ có quyền 'update-posts' và là chủ sở hữu bài viết
+        if ($user->isAdmin()) {
+            return true;
+        }
+        
+        return $user->hasPermission('update-posts');
     }
 
     /**
@@ -67,9 +72,14 @@ class PostPolicy
      */
     public function delete(User $user, Post $post)
     {
-        // Người dùng có thể xóa bài viết nếu họ là admin hoặc là chủ sở hữu bài viết
-        return $user->isAdmin() || 
-               $user->hasPermission('delete-posts') && $user->owns($post);
+        // Người dùng có thể xóa bài viết nếu:
+        // 1. Họ là admin, hoặc
+        // 2. Họ có quyền 'delete-posts' và là chủ sở hữu bài viết
+        if ($user->isAdmin()) {
+            return true;
+        }
+        
+        return $user->hasPermission('delete-posts');
     }
 
     /**

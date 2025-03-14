@@ -161,7 +161,7 @@ Route::prefix('admin')->group(function () {
     });
 
     // Thêm routes cho quản lý quyền
-    Route::middleware(['auth', 'admin.only'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['auth', 'admin.only'])->name('admin.')->group(function () {
         // Quản lý quyền
         Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
         

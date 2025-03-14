@@ -25,7 +25,7 @@ class CheckPermission
             : explode('|', $permission);
 
         if (!Auth::user()->hasPermission($permissions)) {
-            abort(403, 'Bạn không có quyền truy cập trang này.');
+            abort(403, 'Bạn không có quyền sử dụng chức năng này.');
         }
 
         return $next($request);
