@@ -39,6 +39,8 @@
     <link href="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- Toastify CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <!-- Choices.js CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/admins/libs/choices.js/public/assets/styles/choices.min.css') }}">
     @yield('CSS')
 </head>
 
@@ -97,6 +99,10 @@
     <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <!-- Toastify JS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <!-- Choices.js -->
+    <script src="{{ asset('assets/admins/libs/choices.js/public/assets/scripts/choices.min.js') }}"></script>
+    <!-- Flatpickr -->
+    <script src="{{ asset('assets/admins/libs/flatpickr/flatpickr.min.js') }}"></script>
     @yield('JS')
 </body>
 

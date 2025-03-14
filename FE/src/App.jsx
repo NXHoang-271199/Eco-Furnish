@@ -45,13 +45,13 @@ function App() {
           <Route path="blog" element={<Blogs />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
-          {/* <Route path="blog-detail" element={<BlogDetail />} />  */}
+          <Route path="blog-detail" element={<BlogsDetail />} />
         </Route>
         <Route path="signin" element={<SignIn />} />
         <Route path="changepass" element={<ForgotPasswordModal />} />
         <Route path="signup" element={<SignUp />} />
-        <Route path="verifyemail" element={< VerifyEmail/>} />
-        <Route path="reset" element={<ResetPassword/>} />
+        <Route path="verifyemail" element={< VerifyEmail />} />
+        <Route path="reset" element={<ResetPassword />} />
         <Route path="confirm" element={<ConfirmPassword />} />
         <Route path="emailverification" element={<EmailVerification />} />
       </Routes>
