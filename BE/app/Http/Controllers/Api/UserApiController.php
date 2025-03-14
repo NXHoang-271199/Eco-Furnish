@@ -60,6 +60,7 @@ class UserApiController extends Controller
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'email' => $user->email,
                 'slug' => Str::slug($user->name),
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
                 'joined_date' => $user->created_at->format('d/m/Y')
@@ -155,7 +156,16 @@ class UserApiController extends Controller
             ], 401);
         }
         
+        // Xóa token cũ nếu có
+        $user->tokens()->delete();
+        
+        // Tạo token mới
         $token = $user->createToken('auth_token')->plainTextToken;
+        
+        // Lưu token vào user
+        $user->access_token = $token;
+        $user->save();
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Đăng nhập thành công',
