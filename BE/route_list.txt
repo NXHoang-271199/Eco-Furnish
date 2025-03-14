@@ -1,0 +1,59 @@
+
+  GET|HEAD        / ............................................................................... 
+  POST            _ignition/execute-solution ignition.executeSolution › Spatie\LaravelIgnition › E…
+  GET|HEAD        _ignition/health-check ignition.healthCheck › Spatie\LaravelIgnition › HealthChe…
+  POST            _ignition/update-config ignition.updateConfig › Spatie\LaravelIgnition › UpdateC…
+  GET|HEAD        admin/category-posts ........ category-posts.index › CategoryPostController@index
+  POST            admin/category-posts ........ category-posts.store › CategoryPostController@store
+  GET|HEAD        admin/category-posts/create category-posts.create › CategoryPostController@create
+  GET|HEAD        admin/category-posts/{category_post} category-posts.show › CategoryPostControlle…
+  PUT|PATCH       admin/category-posts/{category_post} category-posts.update › CategoryPostControl…
+  DELETE          admin/category-posts/{category_post} category-posts.destroy › CategoryPostContro…
+  GET|HEAD        admin/category-posts/{category_post}/edit category-posts.edit › CategoryPostCont…
+  GET|HEAD        admin/dashboard ........................... dashboard › DashboardController@index
+  GET|HEAD        admin/posts .................................. posts.index › PostController@index
+  POST            admin/posts .................................. posts.store › PostController@store
+  GET|HEAD        admin/posts/create ......................... posts.create › PostController@create
+  GET|HEAD        admin/posts/{post} ............................. posts.show › PostController@show
+  PUT|PATCH       admin/posts/{post} ......................... posts.update › PostController@update
+  DELETE          admin/posts/{post} ....................... posts.destroy › PostController@destroy
+  GET|HEAD        admin/posts/{post}/edit ........................ posts.edit › PostController@edit
+  GET|HEAD        admin/roles .................................. roles.index › RoleController@index
+  POST            admin/roles .................................. roles.store › RoleController@store
+  GET|HEAD        admin/roles/create ......................... roles.create › RoleController@create
+  GET|HEAD        admin/roles/{role} ............................. roles.show › RoleController@show
+  PUT|PATCH       admin/roles/{role} ......................... roles.update › RoleController@update
+  DELETE          admin/roles/{role} ....................... roles.destroy › RoleController@destroy
+  GET|HEAD        admin/roles/{role}/edit ........................ roles.edit › RoleController@edit
+  POST            admin/upload-image .................. upload.image › ImageUploadController@upload
+  GET|HEAD        admin/users .................................. users.index › UserController@index
+  POST            admin/users .................................. users.store › UserController@store
+  GET|HEAD        admin/users/create ......................... users.create › UserController@create
+  GET|HEAD        admin/users/{user} ............................. users.show › UserController@show
+  PUT|PATCH       admin/users/{user} ......................... users.update › UserController@update
+  DELETE          admin/users/{user} ....................... users.destroy › UserController@destroy
+  GET|HEAD        admin/users/{user}/edit ........................ users.edit › UserController@edit
+  GET|HEAD        admin/vouchers ......................... vouchers.index › VoucherController@index
+  POST            admin/vouchers ......................... vouchers.store › VoucherController@store
+  GET|HEAD        admin/vouchers/create ................ vouchers.create › VoucherController@create
+  GET|HEAD        admin/vouchers/{voucher} ................. vouchers.show › VoucherController@show
+  PUT|PATCH       admin/vouchers/{voucher} ............. vouchers.update › VoucherController@update
+  DELETE          admin/vouchers/{voucher} ........... vouchers.destroy › VoucherController@destroy
+  GET|HEAD        admin/vouchers/{voucher}/edit ............ vouchers.edit › VoucherController@edit
+  GET|HEAD        api/user ........................................................................ 
+  GET|HEAD        home ................................................ home › HomeController@index
+  GET|HEAD        login ................................ login › Auth\LoginController@showLoginForm
+  POST            login ................................................ Auth\LoginController@login
+  POST            logout ..................................... logout › Auth\LoginController@logout
+  GET|HEAD        password/confirm password.confirm › Auth\ConfirmPasswordController@showConfirmFo…
+  POST            password/confirm ......................... Auth\ConfirmPasswordController@confirm
+  POST            password/email password.email › Auth\ForgotPasswordController@sendResetLinkEmail
+  GET|HEAD        password/reset password.request › Auth\ForgotPasswordController@showLinkRequestF…
+  POST            password/reset ............. password.update › Auth\ResetPasswordController@reset
+  GET|HEAD        password/reset/{token} password.reset › Auth\ResetPasswordController@showResetFo…
+  GET|HEAD        register ................ register › Auth\RegisterController@showRegistrationForm
+  POST            register ....................................... Auth\RegisterController@register
+  GET|HEAD        sanctum/csrf-cookie sanctum.csrf-cookie › Laravel\Sanctum › CsrfCookieController…
+
+                                                                                Showing [55] routes
+
