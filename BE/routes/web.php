@@ -44,6 +44,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Đặt route upload image ở ngoài middleware group để tránh lỗi CSRF
+Route::post('admin/upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
+
 Route::prefix('admin')->group(function () {
 
     Route::middleware(['guest'])->group(function () {
@@ -108,11 +111,12 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['permission:view-posts'])->group(function () {
             Route::resource('posts', PostController::class);
         });
-
+        Route::post('upload-image', [ImageUploadController::class, 'upload'])
+            ->name('upload.image')
+            ->middleware(['auth', 'admin']);
         // Category Posts Management
         Route::middleware(['permission:view-category-posts'])->group(function () {
             Route::resource('category-posts', CategoryPostController::class);
-            Route::post('upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
         });
 
         // Vouchers Management
