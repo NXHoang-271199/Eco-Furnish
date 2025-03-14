@@ -119,72 +119,137 @@ const Account = () => {
   }
 
   return (
-    <div className="account-container">
-      <h1 className="account-title">Thông tin tài khoản</h1>
+    // <main class="w-full md:w-3/4 p-6">
+    //   <h2 class="text-xl font-semibold mb-4">Chi tiết tài khoản</h2>
+    //   <form>
+    //     <div class="mb-4">
+    //       <label class="block text-gray-600">Tên</label>
+    //       <input
+    //         type="text"
+    //         value="BIN"
+    //         class="w-full border-gray-300 rounded p-2"
+    //         disabled
+    //       />
+    //     </div>
+    //     <div class="mb-4">
+    //       <label class="block text-gray-600">Email</label>
+    //       <input
+    //         type="email"
+    //         value="datdtph48034@fpt.edu.vn"
+    //         class="w-full border-gray-300 rounded p-2"
+    //         disabled
+    //       />
+    //     </div>
+    //     <div class="mb-4">
+    //       <label class="block text-gray-600">Mật khẩu</label>
+    //       <input
+    //         type="password"
+    //         value="******"
+    //         class="w-full border-gray-300 rounded p-2"
+    //         disabled
+    //       />
+    //     </div>
+    //     <div class="flex space-x-4">
+    //       <button class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-900">
+    //         Thay đổi
+    //       </button>
+    //       <button class="px-4 py-2 bg-gray-400 text-white rounded">
+    //         Lưu lại
+    //       </button>
+    //     </div>
+    //     <button class="mt-6 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700">
+    //       Xóa tài khoản
+    //     </button>
+    //   </form>
+    // </main>
+    <div className="max-w-7xl mx-auto p-6 bg-white shadow-md rounded-lg">
+      <h1 className="text-2xl font-semibold mb-6 text-gray-700">
+        Thông tin tài khoản
+      </h1>
 
       {user ? (
-        <div className="user-info">
-          <div className="user-avatar">
+        <div className="user-info flex space-x-8">
+          <div className="user-avatar flex-shrink-0">
             {user.avatar ? (
               <img
                 src={user.avatar}
                 alt="Avatar"
-                className="avatar-image"
+                className="avatar-image w-24 h-24 rounded-full object-cover shadow-lg"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = "/images/default-avatar.png"; // Hình ảnh mặc định cục bộ
                 }}
               />
             ) : (
-              <div className="default-avatar">
+              <div className="default-avatar w-24 h-24 bg-gray-200 text-white flex items-center justify-center text-xl font-semibold rounded-full shadow-lg">
                 {user.name ? user.name.charAt(0).toUpperCase() : "U"}
               </div>
             )}
           </div>
 
-          <div className="user-details">
-            <div className="info-row">
-              <span className="info-label">Họ tên:</span>
-              <span className="info-value">{user.name || "Chưa cập nhật"}</span>
+          <div className="user-details flex-1">
+            <div className="info-row mb-4 flex justify-between">
+              <span className="info-label text-gray-600 font-medium">
+                Họ tên:
+              </span>
+              <span className="info-value text-gray-800">
+                {user.name || "Chưa cập nhật"}
+              </span>
             </div>
 
-            <div className="info-row">
-              <span className="info-label">Email:</span>
-              <span className="info-value">
+            <div className="info-row mb-4 flex justify-between">
+              <span className="info-label text-gray-600 font-medium">
+                Email:
+              </span>
+              <span className="info-value text-gray-800">
                 {user.email || "Chưa cập nhật"}
               </span>
             </div>
 
             {user.joined_date && (
-              <div className="info-row">
-                <span className="info-label">Ngày tham gia:</span>
-                <span className="info-value">{user.joined_date}</span>
+              <div className="info-row mb-4 flex justify-between">
+                <span className="info-label text-gray-600 font-medium">
+                  Ngày tham gia:
+                </span>
+                <span className="info-value text-gray-800">
+                  {user.joined_date}
+                </span>
               </div>
             )}
 
             {user.phone && (
-              <div className="info-row">
-                <span className="info-label">Số điện thoại:</span>
-                <span className="info-value">{user.phone}</span>
+              <div className="info-row mb-4 flex justify-between">
+                <span className="info-label text-gray-600 font-medium">
+                  Số điện thoại:
+                </span>
+                <span className="info-value text-gray-800">{user.phone}</span>
               </div>
             )}
 
             {user.address && (
-              <div className="info-row">
-                <span className="info-label">Địa chỉ:</span>
-                <span className="info-value">{user.address}</span>
+              <div className="info-row mb-4 flex justify-between">
+                <span className="info-label text-gray-600 font-medium">
+                  Địa chỉ:
+                </span>
+                <span className="info-value text-gray-800">{user.address}</span>
               </div>
             )}
           </div>
-
-          <div className="account-actions">
-            <button className="edit-profile-btn">Chỉnh sửa thông tin</button>
-            <button className="change-password-btn">Đổi mật khẩu</button>
-          </div>
         </div>
       ) : (
-        <div className="no-user-data">Không tìm thấy thông tin người dùng</div>
+        <div className="no-user-data text-center text-gray-600">
+          Không tìm thấy thông tin người dùng
+        </div>
       )}
+
+      <div className="account-actions mt-6 flex justify-end space-x-4">
+        <button className="edit-profile-btn bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors">
+          Chỉnh sửa thông tin
+        </button>
+        <button className="change-password-btn bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 transition-colors">
+          Đổi mật khẩu
+        </button>
+      </div>
     </div>
   );
 };

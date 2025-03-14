@@ -53,7 +53,7 @@ function App() {
         <Route path="confirm" element={<ConfirmPassword />} />
         <Route path="emailverification" element={<EmailVerification />} />
         <Route path="account" element={<LayoutAccount />}>
-          <Route index element={<Account />} />
+          <Route path="account" element={<Account />} />
           <Route path="address" element={<Address />} />
           <Route path="editpass" element={<Edit_Pass />} />
         </Route>

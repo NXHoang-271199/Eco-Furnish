@@ -23,8 +23,41 @@ const SignIn = ({}) => {
         `http://localhost:8000/api/users/login`,
         data
       );
-      localStorage.setItem("authToken", response.data.accessToken);
-      localStorage.setItem("userData", JSON.stringify(response.data.user));
+
+      console.log("Response từ API đăng nhập:", response.data);
+
+      // Kiểm tra cấu trúc response và lấy token đúng cách
+      if (response.data.data && response.data.data.access_token) {
+        // Nếu token nằm trong response.data.data.access_token
+        localStorage.setItem("authToken", response.data.data.access_token);
+
+        // Tạo đối tượng userData từ data
+        const userData = {
+          id: response.data.data.id,
+          name: response.data.data.name,
+          email: response.data.data.email,
+          role: response.data.data.role,
+          avatar: response.data.data.avatar,
+          // Tạo slug từ name nếu cần
+          slug: response.data.data.name.toLowerCase().replace(/\s+/g, "-"),
+        };
+
+        localStorage.setItem("userData", JSON.stringify(userData));
+      } else if (response.data.accessToken) {
+        // Nếu token nằm trực tiếp trong response.data.accessToken
+        localStorage.setItem("authToken", response.data.accessToken);
+        localStorage.setItem("userData", JSON.stringify(response.data.user));
+      } else {
+        // Trường hợp khác, hiển thị lỗi
+        console.error("Không tìm thấy token trong response:", response.data);
+        alert("Đăng nhập không thành công: Không tìm thấy token");
+        return;
+      }
+
+      // Kiểm tra xem đã lưu token thành công chưa
+      console.log("Token đã lưu:", localStorage.getItem("authToken"));
+      console.log("User data đã lưu:", localStorage.getItem("userData"));
+
       navigate("/");
     } catch (error) {
       // Hiển thị lỗi validation cụ thể nếu có
