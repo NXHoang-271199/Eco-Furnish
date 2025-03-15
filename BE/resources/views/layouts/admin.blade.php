@@ -41,6 +41,8 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <!-- Choices.js CSS -->
     <link rel="stylesheet" href="{{ asset('assets/admins/libs/choices.js/public/assets/styles/choices.min.css') }}">
+    <!-- ckeditor -->
+    <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/44.2.1/ckeditor5.css"/>
     @yield('CSS')
 </head>
 
@@ -95,7 +97,7 @@
     <!-- App js -->
     <script src="{{ asset('assets/admins/js/app.js') }}"></script>
     <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    {{-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> --}}
     <!-- Sweet Alerts js -->
     <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <!-- Toastify JS -->
@@ -104,6 +106,133 @@
     <script src="{{ asset('assets/admins/libs/choices.js/public/assets/scripts/choices.min.js') }}"></script>
     <!-- Flatpickr -->
     <script src="{{ asset('assets/admins/libs/flatpickr/flatpickr.min.js') }}"></script>
+    <!-- CKEditor -->
+    <script type="importmap">
+        {
+            "imports": {
+                "ckeditor5": "{{ asset('assets/admins/js/ckeditor5/ckeditor5.js') }}",
+                "ckeditor5/": "{{ asset('assets/admins/js/ckeditor5/') }}"
+            }
+        }
+    </script>
+    <script type="module">
+        import {
+            ClassicEditor,
+            AccessibilityHelp,
+            Autosave,
+            Essentials,
+            Italic,
+            Mention,
+            Paragraph,
+            SelectAll,
+            Undo,
+            Font,
+            Heading,
+            Strikethrough,
+            Subscript,
+            Superscript,
+            CodeBlock,
+            Link,
+            AutoLink,
+            AutoImage,
+            Image,
+            ImageInsert,
+            BlockQuote,
+            List,
+            TodoList,
+            Indent,
+            IndentBlock,
+            SimpleUploadAdapter,
+            Alignment,
+            ImageResizeEditing,
+            ImageResizeHandles,
+            Table,
+            TableToolbar,
+            Bold,
+            SourceEditing,
+            RemoveFormat,
+            HorizontalLine,
+            SpecialCharacters,
+            SpecialCharactersEssentials
+        } from 'ckeditor5';
+
+        $('textarea').each(function (index, element) {
+            const name = $(element).attr('name');
+            ClassicEditor
+                .create( element, {
+                    plugins: [
+                        Essentials,
+                        Heading,
+                        Strikethrough,
+                        Paragraph,
+                        Bold,
+                        Italic,
+                        AccessibilityHelp,
+                        Autosave,
+                        Mention,
+                        SelectAll,
+                        Undo,
+                        Font,
+                        Subscript,
+                        Superscript,
+                        CodeBlock,
+                        Link,
+                        AutoLink,
+                        AutoImage,
+                        Image,
+                        ImageInsert,
+                        BlockQuote,
+                        List,
+                        TodoList,
+                        Indent,
+                        IndentBlock,
+                        SimpleUploadAdapter,
+                        Alignment,
+                        ImageResizeEditing,
+                        ImageResizeHandles,
+                        TableToolbar,
+                        Table,
+                        SourceEditing,
+                        RemoveFormat,
+                        HorizontalLine,
+                        SpecialCharacters,
+                        SpecialCharactersEssentials
+                    ],
+                    table: {
+                        contentToolbar: [ 'tableColumn', 'tableRow', 'mergeTableCells' ],
+                        defaultHeadings: { rows: 1, columns: 1 }
+                    },
+                    toolbar: [
+                        'undo', 'redo',
+                        '|',
+                        'heading', 'insertTable', 'sourceEditing', 'removeFormat', 'horizontalLine',
+                        '|',
+                        'fontfamily', 'fontsize', 'fontColor', 'fontBackgroundColor', 'specialCharacters',
+                        '|',
+                        'bold', 'italic', 'strikethrough', 'subscript', 'superscript', 'codeBlock',
+                        '|',
+                        'link', 'insertImage', 'blockQuote', 'codeBlock',
+                        '|',
+                        'bulletedList', 'numberedList', 'todoList', 'outdent', 'indent', 'alignment'
+                    ],
+                    {{-- simpleUpload: {
+                        uploadUrl: '{{ route('admin.ckeditor.upload') }}',
+                        withCredentials: false,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    } --}}
+                } )
+                .then( editor => {
+                    window[name] = editor;
+                } )
+                .catch( error => {
+                    console.error( error );
+                } );
+        })
+
+    </script>
+
     @yield('JS')
 </body>
 

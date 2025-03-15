@@ -108,7 +108,7 @@
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="{{ asset('assets/admins/js/pages/form-validation.init.js') }}"></script>
 
-    <script>
+    {{-- <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Khởi tạo toolbar với nút upload ảnh
             var toolbarOptions = [
@@ -127,29 +127,29 @@
                 ['link', 'image'],
                 ['clean']
             ];
-        
+
             // Khởi tạo Quill
             var quill = new Quill('#editor-container', {
                 modules: { toolbar: toolbarOptions },
                 theme: 'snow'
             });
-        
+
             var oldContent = document.getElementById('content').value;
             if (oldContent) {
                 quill.root.innerHTML = oldContent;
             }
-        
+
             // Lấy toolbar từ Quill
             var toolbar = quill.getModule('toolbar');
             toolbar.addHandler('image', imageHandler);
-        
+
             // Xử lý khi người dùng chọn tải ảnh lên
             function imageHandler() {
                 var input = document.createElement('input');
                 input.setAttribute('type', 'file');
                 input.setAttribute('accept', 'image/*');
                 input.click();
-        
+
                 input.onchange = function () {
                     var file = input.files[0];
                     if (file) {
@@ -157,17 +157,17 @@
                     }
                 };
             }
-        
+
             // Hàm upload ảnh lên server
             function uploadImage(file) {
                 var formData = new FormData();
                 formData.append('image', file);
                 formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-        
+
                 // Hiển thị placeholder cho ảnh đang upload
                 var range = quill.getSelection();
                 quill.insertEmbed(range.index, 'image', '/path/to/placeholder-image.jpg');
-        
+
                 // Gửi request lên server
                 fetch('{{ route("upload.image") }}', {  // Đổi route thành route thực tế của bạn
                         method: 'POST',
@@ -185,17 +185,17 @@
                         quill.deleteText(range.index, 1);
                     });
             }
-        
+
             // Lấy form
             var form = document.getElementById("postForm");
-        
+
             // Validate Quill Editor khi có thay đổi
             quill.on('text-change', function () {
                 var textOnly = quill.getText().trim();
                 var editorContainer = document.getElementById('editor-container');
-        
+
                 document.getElementById('content').value = quill.root.innerHTML; // Lưu nội dung vào input ẩn
-        
+
                 if (textOnly.length > 0) {
                     editorContainer.classList.remove('is-invalid');
                     editorContainer.classList.add('is-valid');
@@ -204,12 +204,12 @@
                     editorContainer.classList.add('is-invalid');
                 }
             });
-        
+
             // Validate file ảnh bìa
             var thumbnailInput = document.getElementById('project-thumbnail-img');
             thumbnailInput.addEventListener('change', function (event) {
                 previewImage(event);
-        
+
                 if (thumbnailInput.files && thumbnailInput.files.length > 0) {
                     thumbnailInput.classList.remove('is-invalid');
                     thumbnailInput.classList.add('is-valid');
@@ -218,7 +218,7 @@
                     thumbnailInput.classList.add('is-invalid');
                 }
             });
-        
+
             // Validate các trường input, select, textarea thông thường
             form.querySelectorAll('input:not([type="file"]), select, textarea').forEach(function (input) {
                 input.addEventListener('input', function () {
@@ -231,12 +231,12 @@
                     }
                 });
             });
-        
+
             // Hàm hiển thị ảnh preview
             function previewImage(event) {
                 var input = event.target;
                 var preview = document.getElementById('thumbnail-preview');
-        
+
                 if (input.files && input.files[0]) {
                     var reader = new FileReader();
                     reader.onload = function (e) {
@@ -247,7 +247,7 @@
                 }
             }
         });
-        </script>
+    </script> --}}
 @endsection
 
 @section('content')
@@ -295,9 +295,10 @@
 
                             <div class="mb-3">
                                 <label class="form-label" for="content">Nội dung</label>
-                                <div id="editor-container" class="quill-editor @error('content') is-invalid @enderror">
-                                </div>
-                                <input type="hidden" name="content" id="content" value="{{ old('content') }}" required>
+                                {{-- <div id="editor-container" class="quill-editor @error('content') is-invalid @enderror">
+                                </div> --}}
+                                <textarea class="form-control @error('content') is-invalid @enderror"
+                                    name="content" id="content">{{ old('content') }}</textarea>
                                 <div class="invalid-feedback">
                                     @error('content')
                                         {{ $message }}
@@ -341,7 +342,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     {{-- <div class="card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">Người đăng</h5>
@@ -362,7 +363,7 @@
                             </div>
                         </div>
                     </div> --}}
-            
+
 
                     <div class="card">
                         <div class="card-header">

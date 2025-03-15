@@ -234,12 +234,12 @@
                 </div>
             </div>
             <div class="col-xxl-9">
-             
+
                 <div class="row g-4 mb-3">
-                    
+
                     <div class="col-sm">
-                        
-                     
+
+
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 @if(Auth::user()->hasPermission('create-posts'))
