@@ -44,6 +44,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Đặt route upload image ở ngoài middleware group để tránh lỗi CSRF
+Route::post('admin/upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
+
 Route::prefix('admin')->group(function () {
 
     Route::middleware(['guest'])->group(function () {
@@ -68,8 +71,10 @@ Route::prefix('admin')->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
         // Dashboard
-        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::middleware(['permission:view-dashboard'])->group(function () {
+            Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        });
 
         // Categories Management
         Route::middleware(['permission:view-categories'])->group(function () {
@@ -81,7 +86,7 @@ Route::prefix('admin')->group(function () {
             Route::resource('products', ProductController::class);
             Route::post('products/generate-variants', [ProductController::class, 'generateVariants'])->name('products.generate-variants');
         });
-        
+
         // Variants routes
         Route::middleware(['permission:view-variants'])->group(function () {
             Route::resource('variants', VariantController::class);
@@ -106,11 +111,12 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['permission:view-posts'])->group(function () {
             Route::resource('posts', PostController::class);
         });
-        
+        Route::post('upload-image', [ImageUploadController::class, 'upload'])
+            ->name('upload.image')
+            ->middleware(['auth', 'admin']);
         // Category Posts Management
         Route::middleware(['permission:view-category-posts'])->group(function () {
             Route::resource('category-posts', CategoryPostController::class);
-            Route::post('upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
         });
 
         // Vouchers Management
@@ -132,13 +138,17 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['permission:view-orders'])->group(function () {
             Route::resource('orders', OrderController::class);
             Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
+            Route::get('orders/{order}/detail', [OrderController::class, 'show'])->name('orders.detail');
         });
-        
+
+
         // Order Notifications
         Route::middleware(['permission:view-order-notifications'])->group(function () {
             Route::get('order-notifications', [OrderNotificationController::class, 'index'])->name('order.notifications');
             Route::post('order-notifications/{id}/read', [OrderNotificationController::class, 'markAsRead'])->name('order.notification.read');
         });
+
+
 
         // Comments Management
         Route::middleware(['permission:view-comments'])->group(function () {
@@ -161,17 +171,17 @@ Route::prefix('admin')->group(function () {
     });
 
     // Thêm routes cho quản lý quyền
-    Route::middleware(['auth', 'admin.only'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['auth', 'admin.only'])->name('admin.')->group(function () {
         // Quản lý quyền
         Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
-        
+
         // Quản lý vai trò
         Route::get('/permissions/roles/{role}', [PermissionController::class, 'showRole'])->name('permissions.role');
         Route::put('/permissions/roles/{role}', [PermissionController::class, 'updateRolePermissions'])->name('permissions.update-role-permissions');
         Route::get('/permissions/roles/create', [PermissionController::class, 'createRole'])->name('permissions.create-role');
         Route::post('/permissions/roles', [PermissionController::class, 'storeRole'])->name('permissions.store-role');
         Route::delete('/permissions/roles/{role}', [PermissionController::class, 'destroyRole'])->name('permissions.destroy-role');
-        
+
         // Quản lý quyền
         Route::get('/permissions/create', [PermissionController::class, 'createPermission'])->name('permissions.create-permission');
         Route::post('/permissions', [PermissionController::class, 'storePermission'])->name('permissions.store-permission');

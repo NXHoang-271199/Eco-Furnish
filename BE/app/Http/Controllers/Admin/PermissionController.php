@@ -21,9 +21,9 @@ class PermissionController extends Controller
      */
     public function index()
     {
-        $roles = Role::withCount('permissions')->get();
-        $permissions = Permission::withCount('roles')->get();
-        
+        $roles = Role::withCount('permissions')->paginate(10);
+        $permissions = Permission::withCount('roles')->paginate(10);
+
         return view('admins.permissions.index', compact('roles', 'permissions'));
     }
 
@@ -34,7 +34,7 @@ class PermissionController extends Controller
     {
         $role->load('permissions');
         $allPermissions = Permission::all();
-        
+
         return view('admins.permissions.role', compact('role', 'allPermissions'));
     }
 
@@ -47,25 +47,25 @@ class PermissionController extends Controller
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
         ]);
-        
+
         DB::beginTransaction();
-        
+
         try {
             // Xóa tất cả quyền hiện tại
             $role->permissions()->detach();
-            
+
             // Gán quyền mới
             if (isset($validated['permissions'])) {
                 $role->permissions()->attach($validated['permissions']);
             }
-            
+
             DB::commit();
-            
+
             return redirect()->route('admin.permissions.role', $role)
                 ->with('success', 'Quyền của vai trò đã được cập nhật thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return redirect()->back()
                 ->with('error', 'Đã xảy ra lỗi khi cập nhật quyền: ' . $e->getMessage());
         }
@@ -88,9 +88,9 @@ class PermissionController extends Controller
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:roles,slug',
         ]);
-        
+
         $role = Role::create($validated);
-        
+
         return redirect()->route('admin.permissions.index')
             ->with('success', 'Vai trò đã được tạo thành công.');
     }
@@ -114,9 +114,9 @@ class PermissionController extends Controller
             'model' => 'nullable|string|max:255',
             'description' => 'nullable|string',
         ]);
-        
+
         $permission = Permission::create($validated);
-        
+
         return redirect()->route('admin.permissions.index')
             ->with('success', 'Quyền đã được tạo thành công.');
     }
@@ -131,9 +131,9 @@ class PermissionController extends Controller
             return redirect()->back()
                 ->with('error', 'Không thể xóa vai trò Admin.');
         }
-        
+
         $role->delete();
-        
+
         return redirect()->route('admin.permissions.index')
             ->with('success', 'Vai trò đã được xóa thành công.');
     }
@@ -145,10 +145,10 @@ class PermissionController extends Controller
     {
         // Thu hồi quyền này từ tất cả vai trò
         $permission->roles()->detach();
-        
+
         $permission->delete();
-        
+
         return redirect()->route('admin.permissions.index')
             ->with('success', 'Quyền đã được xóa thành công.');
     }
-} 
+}
