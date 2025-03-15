@@ -279,4 +279,107 @@ class UserApiController extends Controller
             'message' => 'Đăng xuất thành công'
         ]);
     }
+
+    /**
+     * Gửi email đặt lại mật khẩu
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        
+        // Tạo token reset password
+        $token = Str::random(60);
+        
+        // Lưu token vào trường remember_token của user
+        $user->remember_token = $token;
+        $user->updated_at = now(); // Cập nhật thời gian để theo dõi thời hạn token
+        $user->save();
+        
+        // Tạo URL đặt lại mật khẩu
+        $resetUrl = config('app.frontend_url', 'http://localhost:3000') . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
+        
+        // Gửi email với link reset password
+        try {
+            \Mail::send('emails.reset_password', ['resetUrl' => $resetUrl, 'user' => $user], function($message) use ($user) {
+                $message->to($user->email);
+                $message->subject('Đặt lại mật khẩu');
+            });
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Đã gửi email hướng dẫn đặt lại mật khẩu'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Không thể gửi email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Đặt lại mật khẩu
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:5',
+            'password_confirmation' => 'required|same:password',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+        
+        // Tìm user theo email
+        $user = User::where('email', $request->email)->first();
+        
+        // Kiểm tra token
+        if ($user->remember_token !== $request->token) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token không hợp lệ'
+            ], 400);
+        }
+        
+        // Kiểm tra thời gian token (hết hạn sau 60 phút)
+        if (now()->diffInMinutes($user->updated_at) > 60) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token đã hết hạn'
+            ], 400);
+        }
+        
+        // Cập nhật mật khẩu
+        $user->password = Hash::make($request->password);
+        $user->remember_token = null; // Xóa token sau khi sử dụng
+        $user->save();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Đặt lại mật khẩu thành công'
+        ]);
+    }
 }

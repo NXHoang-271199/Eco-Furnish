@@ -47,7 +47,7 @@
                                     <td>{{ $role->permissions_count }}</td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="{{ route('admin.permissions.role', $role) }}" class="btn btn-info btn-sm">
+                                            <a href="{{ route('admin.permissions.role', $role) }}" class="btn btn-info btn-sm me-2">
                                                 <i class="fas fa-eye"></i> Chi tiết
                                             </a>
                                             
@@ -70,6 +70,9 @@
                                 @endforelse
                             </tbody>
                         </table>
+                        <div class="d-flex justify-content-end">
+                            {{ $roles->links('pagination::bootstrap-4') }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -120,6 +123,9 @@
                                 @endforelse
                             </tbody>
                         </table>
+                        <div class="d-flex justify-content-end">
+                            {{ $permissions->links('pagination::bootstrap-4') }}
+                        </div>
                     </div>
                 </div>
             </div>
