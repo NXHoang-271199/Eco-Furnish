@@ -40,6 +40,9 @@ Route::prefix('users')->group(function () {
     Route::post('/register', [UserApiController::class, 'register']);
     Route::post('/login', [UserApiController::class, 'login']);
     Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
+    Route::post('/logout', [UserApiController::class, 'apiLogout']);
+    Route::post('/forgot-password', [UserApiController::class, 'forgotPassword']);
+    Route::post('/reset-password', [UserApiController::class, 'resetPassword']);
 });
 
 // Post routes

@@ -159,7 +159,7 @@
         $('textarea').each(function (index, element) {
             const name = $(element).attr('name');
             ClassicEditor
-                .create( element, {
+                .create(element, {
                     plugins: [
                         Essentials,
                         Heading,
@@ -199,7 +199,7 @@
                         SpecialCharactersEssentials
                     ],
                     table: {
-                        contentToolbar: [ 'tableColumn', 'tableRow', 'mergeTableCells' ],
+                        contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells'],
                         defaultHeadings: { rows: 1, columns: 1 }
                     },
                     toolbar: [
@@ -215,22 +215,55 @@
                         '|',
                         'bulletedList', 'numberedList', 'todoList', 'outdent', 'indent', 'alignment'
                     ],
-                    {{-- simpleUpload: {
-                        uploadUrl: '{{ route('admin.ckeditor.upload') }}',
-                        withCredentials: false,
+                    simpleUpload: {
+                        uploadUrl: '{{ route('upload.image') }}',
+                        withCredentials: true,
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         }
-                    } --}}
-                } )
-                .then( editor => {
-                    window[name] = editor;
-                } )
-                .catch( error => {
-                    console.error( error );
-                } );
-        })
+                    }
+                })
+                .then(editor => {
+                    // Xử lý sự kiện paste
+                    editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+                        return {
+                            upload: () => {
+                                return new Promise((resolve, reject) => {
+                                    const formData = new FormData();
+                                    loader.file.then(file => {
+                                        formData.append('upload', file);
 
+                                        fetch('{{ route('upload.image') }}', {
+                                            method: 'POST',
+                                            body: formData,
+                                            headers: {
+                                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                            }
+                                        })
+                                        .then(response => response.json())
+                                        .then(result => {
+                                            if (result.uploaded) {
+                                                resolve({
+                                                    default: result.url
+                                                });
+                                            } else {
+                                                reject(result.error.message);
+                                            }
+                                        })
+                                        .catch(error => reject(error));
+                                    });
+                                });
+                            },
+                            abort: () => {}
+                        };
+                    };
+
+                    window[name] = editor;
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        });
     </script>
 
     @yield('JS')

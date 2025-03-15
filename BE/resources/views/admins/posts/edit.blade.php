@@ -7,19 +7,17 @@
     <script src="{{ asset('assets/admins/js/pages/form-validation.init.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Sử dụng CKEditor được đã được tải trong layout
             ClassicEditor
                 .create(document.querySelector('#content'), {
-                    // Cấu hình đặc biệt nếu cần
-                })
+                    simpleUpload: {
+                        uploadUrl: '{{ route('upload.image') }}',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    }
+                })s
                 .then(editor => {
-                    // Lưu tham chiếu đến editor
                     window.editor = editor;
-
-                    // Đồng bộ dữ liệu khi form submit
-                    document.getElementById('postForm').addEventListener('submit', function() {
-                        // CKEditor tự động cập nhật textarea, không cần làm gì thêm
-                    });
                 })
                 .catch(error => {
                     console.error(error);
@@ -56,7 +54,6 @@
     </script>
 @endsection
 @section('CSS')
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .quill-editor {

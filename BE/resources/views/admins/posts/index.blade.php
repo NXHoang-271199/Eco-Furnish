@@ -151,14 +151,6 @@
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                     <h4 class="mb-sm-0">Bài viết</h4>
-
-                    {{-- <div class="page-title-right">
-                        @if(Auth::user()->isAdmin() || Auth::user()->hasPermission('create-posts'))
-                        <a href="{{ route('posts.create') }}" class="btn btn-success">
-                            <i class="ri-add-line align-bottom me-1"></i> Thêm bài viết
-                        </a>
-                        @endif
-                    </div> --}}
                 </div>
             </div>
         </div>
