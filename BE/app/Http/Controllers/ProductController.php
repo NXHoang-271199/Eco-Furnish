@@ -80,10 +80,10 @@ class ProductController extends Controller
                 $image = $request->file('image_thumnail');
                 $imageName = 'thumbnail.webp';
                 $imagePath = $productFolder . '/' . $imageName;
-                
+
                 // Chuyển đổi ảnh sang WebP
                 $this->convertToWebP($image, $imagePath);
-                
+
                 // Lưu đường dẫn vào cơ sở dữ liệu
                 $product->image_thumnail = $imagePath;
                 $product->save();
@@ -99,10 +99,10 @@ class ProductController extends Controller
                     // Xử lý ảnh và lưu trữ
                     $imageName = 'gallery_' . ($index + 1) . '.webp';
                     $imagePath = $galleryFolder . '/' . $imageName;
-                    
+
                     // Chuyển đổi ảnh sang WebP
                     $this->convertToWebP($image, $imagePath);
-                    
+
                     // Lưu thông tin vào cơ sở dữ liệu
                     GalleryImage::create([
                         'product_id' => $product->id,
@@ -121,12 +121,15 @@ class ProductController extends Controller
                             ->first();
 
                         if ($variantValue) {
+                            // Xử lý SKU để loại bỏ dấu
+                            $sku = $this->removeVietnameseAccents($variant['sku']);
+                            
                             // Tạo product variant
                             ProductVariant::create([
                                 'product_id' => $product->id,
                                 'variant_id' => $variantValue->variant_id,
                                 'variant_value_id' => $valueId,
-                                'sku' => $variant['sku'],
+                                'sku' => $sku,
                                 'price' => $variant['price'],
                                 'quantity' => $variant['quantity'],
                                 'status' => 1
@@ -159,7 +162,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load([
-            'gallery', 
+            'gallery',
             'category',
             'variants' => function($query) {
                 $query->whereNull('deleted_at');
@@ -195,7 +198,7 @@ class ProductController extends Controller
             $groupedVariants = $variants->groupBy(function($variant) {
                 return Str::slug($variant->name);
             });
-            
+
             // Load product with related data, excluding soft deleted variants
             $product->load([
                 'gallery',
@@ -240,7 +243,7 @@ class ProductController extends Controller
                 if ($product->image_thumnail) {
                     Storage::disk('public')->delete($product->image_thumnail);
                 }
-                
+
                 // Tạo thư mục cho sản phẩm nếu chưa tồn tại
                 $productFolder = 'products/' . $product->id;
                 Storage::disk('public')->makeDirectory($productFolder);
@@ -249,10 +252,10 @@ class ProductController extends Controller
                 $image = $request->file('image_thumnail');
                 $imageName = 'thumbnail.webp';
                 $imagePath = $productFolder . '/' . $imageName;
-                
+
                 // Chuyển đổi ảnh sang WebP
                 $this->convertToWebP($image, $imagePath);
-                
+
                 // Lưu đường dẫn vào dữ liệu
                 $data['image_thumnail'] = $imagePath;
             }
@@ -261,7 +264,7 @@ class ProductController extends Controller
             if ($request->has('removed_images')) {
                 // Chuyển chuỗi JSON thành mảng
                 $removedImages = json_decode($request->removed_images, true);
-                
+
                 // Xóa các ảnh đã được đánh dấu để xóa
                 foreach ($removedImages as $imageId) {
                     $image = GalleryImage::find($imageId);
@@ -277,7 +280,7 @@ class ProductController extends Controller
                 // Tạo thư mục gallery bên trong thư mục sản phẩm nếu chưa tồn tại
                 $galleryFolder = 'products/' . $product->id . '/gallery';
                 Storage::disk('public')->makeDirectory($galleryFolder);
-                
+
                 // Đếm số ảnh hiện có trong gallery
                 $currentGalleryCount = $product->gallery()->count();
 
@@ -285,10 +288,10 @@ class ProductController extends Controller
                     // Xử lý ảnh và lưu trữ
                     $imageName = 'gallery_' . ($currentGalleryCount + $index + 1) . '.webp';
                     $imagePath = $galleryFolder . '/' . $imageName;
-                    
+
                     // Chuyển đổi ảnh sang WebP
                     $this->convertToWebP($image, $imagePath);
-                    
+
                     // Lưu thông tin vào cơ sở dữ liệu
                     $product->gallery()->create([
                         'image_url' => $imagePath
@@ -336,10 +339,13 @@ class ProductController extends Controller
 
                     // Thu thập thông tin biến thể
                     foreach ($variant['variant_values'] as $variantId => $valueId) {
+                        // Xử lý SKU để loại bỏ dấu
+                        $sku = $this->removeVietnameseAccents($variant['sku']);
+                        
                         $requestVariantValues->push([
                             'variant_id' => $variantId,
                             'variant_value_id' => $valueId,
-                            'sku' => $variant['sku'],
+                            'sku' => $sku,
                             'price' => $variant['price'],
                             'quantity' => $variant['quantity']
                         ]);
@@ -374,14 +380,15 @@ class ProductController extends Controller
                         $existingVariant->update([
                             'sku' => $variantData['sku'],
                             'price' => $variantData['price'],
-                            'quantity' => $variantData['quantity'],
-                            'status' => 1
+                            'quantity' => $variantData['quantity']
                         ]);
+
                         // Loại bỏ ID này khỏi danh sách cần xóa
                         $existingVariantIds = array_diff($existingVariantIds, [$existingVariant->id]);
                     } else {
-                        // Tạo mới biến thể
-                        $product->variants()->create([
+                        // Tạo biến thể mới
+                        $newVariant = new ProductVariant([
+                            'product_id' => $product->id,
                             'variant_id' => $variantData['variant_id'],
                             'variant_value_id' => $variantData['variant_value_id'],
                             'sku' => $variantData['sku'],
@@ -389,6 +396,7 @@ class ProductController extends Controller
                             'quantity' => $variantData['quantity'],
                             'status' => 1
                         ]);
+                        $newVariant->save();
                     }
                 }
 
@@ -474,20 +482,20 @@ class ProductController extends Controller
         try {
             // Xử lý dữ liệu từ FormData
             $jsonData = $request->input('data');
-            
+
             // Log dữ liệu nhận được để debug
             \Log::info('Received data for variant generation:', [
                 'raw_data' => $request->all(),
                 'json_data' => $jsonData
             ]);
-            
+
             if (empty($jsonData)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không nhận được dữ liệu'
                 ], 400);
             }
-            
+
             // Parse JSON data
             $data = json_decode($jsonData, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -496,17 +504,17 @@ class ProductController extends Controller
                     'message' => 'Dữ liệu JSON không hợp lệ: ' . json_last_error_msg()
                 ], 400);
             }
-            
+
             $productId = $data['product_id'] ?? null;
             $variantAttributes = $data['variant_attributes'] ?? [];
-            
+
             if (empty($variantAttributes)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Vui lòng chọn ít nhất một thuộc tính biến thể'
                 ], 400);
             }
-            
+
             // Lấy thông tin sản phẩm nếu có
             $product = null;
             if ($productId) {
@@ -518,21 +526,21 @@ class ProductController extends Controller
                     ], 404);
                 }
             }
-            
+
             // Lấy thông tin các thuộc tính và giá trị
             $attributeValues = [];
             foreach ($variantAttributes as $variantId => $valueIds) {
                 if (empty($valueIds)) continue;
-                
+
                 $variant = Variant::find($variantId);
                 if (!$variant) continue;
-                
+
                 $values = VariantValue::whereIn('id', $valueIds)
                     ->where('variant_id', $variantId)
                     ->get();
-                
+
                 if ($values->isEmpty()) continue;
-                
+
                 $attributeValues[$variantId] = [
                     'name' => $variant->name,
                     'values' => $values->map(function($value) {
@@ -543,17 +551,17 @@ class ProductController extends Controller
                     })->toArray()
                 ];
             }
-            
+
             if (empty($attributeValues)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy giá trị thuộc tính hợp lệ'
                 ], 400);
             }
-            
+
             // Tạo tất cả các tổ hợp có thể
             $combinations = $this->generateCombinations($attributeValues);
-            
+
             // Kiểm tra các biến thể đã tồn tại nếu đang chỉnh sửa sản phẩm
             $existingVariants = [];
             if ($product) {
@@ -575,11 +583,11 @@ class ProductController extends Controller
                     })
                     ->toArray();
             }
-            
+
             // Chuẩn bị dữ liệu phản hồi
             $variants = [];
             $basePrice = $product ? $product->price : 0;
-            
+
             foreach ($combinations as $combination) {
                 $variantData = [
                     'attributes' => $combination,
@@ -588,15 +596,17 @@ class ProductController extends Controller
                     'quantity' => 0,
                     'status' => 1
                 ];
-                
+
                 // Tạo SKU dựa trên tổ hợp thuộc tính
                 foreach ($combination as $attr) {
-                    $variantData['sku'] .= strtoupper(substr($attr['value'], 0, 2));
+                    // Loại bỏ dấu trước khi lấy 2 ký tự đầu
+                    $cleanValue = $this->removeVietnameseAccents($attr['value']);
+                    $variantData['sku'] .= strtoupper(substr($cleanValue, 0, 2));
                 }
-                
+
                 $variants[] = $variantData;
             }
-            
+
             return response()->json([
                 'success' => true,
                 'variants' => $variants,
@@ -607,13 +617,13 @@ class ProductController extends Controller
                 'exception' => $e,
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             // Xử lý lỗi mã hóa UTF-8
             $errorMessage = $e->getMessage();
             if (strpos($errorMessage, 'Malformed UTF-8 characters') !== false) {
                 $errorMessage = 'Lỗi mã hóa ký tự Unicode. Vui lòng kiểm tra lại các giá trị thuộc tính có chứa ký tự đặc biệt.';
             }
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi tạo biến thể: ' . $errorMessage,
@@ -621,17 +631,17 @@ class ProductController extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * Generate all possible combinations of attribute values
      */
     private function generateCombinations($attributeValues)
     {
         $result = [[]];
-        
+
         foreach ($attributeValues as $variantId => $attribute) {
             $append = [];
-            
+
             foreach ($result as $product) {
                 foreach ($attribute['values'] as $value) {
                     $product[] = [
@@ -643,10 +653,10 @@ class ProductController extends Controller
                     $append[] = $product;
                 }
             }
-            
+
             $result = $append;
         }
-        
+
         return $result;
     }
 
@@ -655,7 +665,7 @@ class ProductController extends Controller
         // Đọc ảnh gốc
         $sourceImage = null;
         $extension = strtolower($image->getClientOriginalExtension());
-        
+
         // Tạo hình ảnh từ file dựa trên định dạng
         switch ($extension) {
             case 'jpeg':
@@ -673,23 +683,44 @@ class ProductController extends Controller
                 Storage::disk('public')->putFileAs(dirname($imagePath), $image, basename($imagePath));
                 return;
         }
-        
+
         if (!$sourceImage) {
             // Nếu không đọc được ảnh, lưu trực tiếp
             Storage::disk('public')->putFileAs(dirname($imagePath), $image, basename($imagePath));
             return;
         }
-        
+
         // Lưu ảnh dưới dạng webp
         ob_start();
         imagewebp($sourceImage, null, 80);
         $webpData = ob_get_contents();
         ob_end_clean();
-        
+
         // Giải phóng bộ nhớ
         imagedestroy($sourceImage);
-        
+
         // Lưu ảnh WebP vào storage
         Storage::disk('public')->put($imagePath, $webpData);
+    }
+
+    /**
+     * Loại bỏ dấu tiếng Việt từ chuỗi
+     */
+    private function removeVietnameseAccents($str) {
+        $str = preg_replace("/(à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ)/", 'a', $str);
+        $str = preg_replace("/(è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ)/", 'e', $str);
+        $str = preg_replace("/(ì|í|ị|ỉ|ĩ)/", 'i', $str);
+        $str = preg_replace("/(ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ)/", 'o', $str);
+        $str = preg_replace("/(ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ)/", 'u', $str);
+        $str = preg_replace("/(ỳ|ý|ỵ|ỷ|ỹ)/", 'y', $str);
+        $str = preg_replace("/(đ)/", 'd', $str);
+        $str = preg_replace("/(À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ)/", 'A', $str);
+        $str = preg_replace("/(È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ)/", 'E', $str);
+        $str = preg_replace("/(Ì|Í|Ị|Ỉ|Ĩ)/", 'I', $str);
+        $str = preg_replace("/(Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ)/", 'O', $str);
+        $str = preg_replace("/(Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ)/", 'U', $str);
+        $str = preg_replace("/(Ỳ|Ý|Ỵ|Ỷ|Ỹ)/", 'Y', $str);
+        $str = preg_replace("/(Đ)/", 'D', $str);
+        return $str;
     }
 }

@@ -15,7 +15,7 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         }
                     }
-                })
+                })s
                 .then(editor => {
                     window.editor = editor;
                 })

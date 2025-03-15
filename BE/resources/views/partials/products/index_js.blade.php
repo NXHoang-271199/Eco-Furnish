@@ -5,8 +5,6 @@
     <script src="{{ asset('assets/admins/libs/wnumb/wNumb.min.js') }}"></script>
     <!-- gridjs js -->
     <script src="{{ asset('assets/admins/libs/gridjs/gridjs.umd.js') }}"></script>
-    <!-- ecommerce product list -->
-    <script src="{{ asset('assets/admins/js/pages/ecommerce-product-list.init.js') }}"></script>
     <!-- Sweet Alerts js -->
     <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
 

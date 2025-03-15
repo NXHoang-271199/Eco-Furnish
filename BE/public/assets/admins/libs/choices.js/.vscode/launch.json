@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Launch Chrome",
+      "preLaunchTask": "buildAndWatch",
+      "url": "http://localhost:3001",
+      "webRoot": "${workspaceFolder}",
+      "sourceMapPathOverrides": {
+        "webpack://Choices/*": "${workspaceFolder}/*"
+      }
+    },
+  ]
+}
