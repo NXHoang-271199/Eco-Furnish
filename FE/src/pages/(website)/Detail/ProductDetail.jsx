@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import axios from "axios";
@@ -708,9 +709,11 @@ const ProductDetail = () => {
         {/* Info */}
         <div>
           {/* name */}
+
           <h5 className="text-[20px] font-semibold text-3xl">
             {product.name || "Tên sản phẩm"}
           </h5>
+
           {/* price */}
           <h3 className="text-[40px] font-bold mt-2 text-[#EF4444]">
             {currentDiscount

@@ -30,10 +30,7 @@ const Products = () => {
       {/* banner */}
       <section className="">
         <div className="max-w-6xl mx-auto">
-          <div
-            className="my-20
-          "
-          >
+          <div className="my-20">
             <img
               src=".\src\assets\img\banners\homepage01-slide2.jpg"
               alt=""
