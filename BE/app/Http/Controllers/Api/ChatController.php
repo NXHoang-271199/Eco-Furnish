@@ -32,8 +32,10 @@ class ChatController extends Controller
                 // Trích xuất từ khóa tìm kiếm
                 $keywords = $this->extractSearchKeywords($userMessage);
 
+                
                 // Tìm kiếm sản phẩm
                 $products = $this->searchProducts($keywords);
+                
 
                 // Gọi API Gemini để có phản hồi thông minh
                 // Truyền thêm thông tin về kết quả tìm kiếm để Gemini có thể đưa ra phản hồi phù hợp
@@ -94,9 +96,11 @@ class ChatController extends Controller
             'giá', 'mẫu', 'loại', 'hiện có', 'phòng', 'thiết kế'
         ];
 
+        
         // Các cụm từ chỉ rõ ý định tìm kiếm sản phẩm
         $searchPhrases = [
-            'có sản phẩm', 'tìm sản phẩm', 'mua sản phẩm',
+            'có sản phẩm', 'tìm sản phẩm', 'mua sản phẩm', 
+
             'giới thiệu sản phẩm', 'tư vấn sản phẩm',
             'có bán', 'mua được', 'tìm mua', 'giới thiệu cho tôi',
             'cho tôi xem', 'cần mua', 'muốn mua', 'tìm kiếm',
@@ -171,14 +175,16 @@ class ChatController extends Controller
             'kệ' => 9
         ];
 
+        
         // Các từ mô tả không gian
         $spaces = ['phòng khách', 'phòng ngủ', 'phòng ăn', 'phòng làm việc', 'văn phòng', 'nhà bếp', 'phòng tắm'];
-
+        
         // Các từ mô tả phong cách
         $styles = ['hiện đại', 'cổ điển', 'tối giản', 'scandinavian', 'vintage', 'industrial', 'bohemian', 'rustic'];
-
+        
         // Các từ mô tả chất liệu
         $materials = ['gỗ', 'kim loại', 'nhựa', 'tre', 'mây', 'vải', 'da', 'thủy tinh', 'đá'];
+        
 
         // Tìm danh mục sản phẩm trong tin nhắn
         $foundCategory = null;
@@ -216,24 +222,26 @@ class ChatController extends Controller
             }
         }
 
+        
         // Xây dựng từ khóa tìm kiếm dựa trên các thông tin tìm được
         $keywords = [];
-
+        
         if ($foundCategory) {
             $keywords[] = $foundCategory;
         }
-
+        
         if ($foundSpace) {
             $keywords[] = $foundSpace;
         }
-
+        
         if ($foundStyle) {
             $keywords[] = $foundStyle;
         }
-
+        
         if ($foundMaterial) {
             $keywords[] = $foundMaterial;
         }
+        
 
         // Nếu không tìm thấy thông tin cụ thể, sử dụng toàn bộ tin nhắn sau khi loại bỏ stopwords
         if (empty($keywords)) {
@@ -242,15 +250,19 @@ class ChatController extends Controller
                 $message = str_replace(' ' . $word . ' ', ' ', ' ' . $message . ' ');
             }
 
+            
             $message = trim($message);
+            
 
             // Nếu tin nhắn quá ngắn sau khi loại bỏ stopwords, sử dụng tin nhắn gốc
             if (mb_strlen($message) < 3) {
                 return $message;
             }
 
+            
             return $message;
         }
+        
 
         // Kết hợp các từ khóa tìm được
         return implode(' ', $keywords);
@@ -267,11 +279,13 @@ class ChatController extends Controller
         try {
             Log::info('Tìm kiếm sản phẩm với từ khóa: ' . $keywords);
 
+            
             // Tách từ khóa thành các phần riêng biệt
             $keywordParts = explode(' ', $keywords);
-
+            
             // Bắt đầu truy vấn
             $query = Product::with(['category', 'gallery']);
+            
 
             // Nếu có nhiều từ khóa, sử dụng mỗi từ khóa để tìm kiếm
             if (count($keywordParts) > 1) {
@@ -302,7 +316,9 @@ class ChatController extends Controller
                 ->limit(5)
                 ->get();
 
+            
             Log::info('Tìm thấy ' . $products->count() . ' sản phẩm');
+            
 
             // Nếu không tìm thấy sản phẩm nào, thử tìm kiếm lại với từng từ khóa riêng biệt
             if ($products->count() == 0 && count($keywordParts) > 1) {
@@ -382,13 +398,15 @@ Khi trả lời:
 - Nếu không biết câu trả lời, hãy thành thật và đề nghị khách hàng liên hệ với nhân viên tư vấn
 - Không đưa ra thông tin sai lệch về sản phẩm hoặc dịch vụ";
 
+
             // Nếu đây là yêu cầu tìm kiếm sản phẩm, thêm hướng dẫn cụ thể
             if (isset($context['is_product_search']) && $context['is_product_search']) {
                 $searchKeywords = $context['search_keywords'] ?? '';
                 $foundProducts = $context['found_products'] ?? false;
                 $productCount = $context['product_count'] ?? 0;
-
+                
                 $expertPrompt .= "\n\nĐây là yêu cầu tìm kiếm sản phẩm với từ khóa: \"$searchKeywords\".";
+                
 
                 if (!$foundProducts) {
                     $expertPrompt .= "\nKHÔNG tìm thấy sản phẩm nào phù hợp với từ khóa này trong cơ sở dữ liệu của chúng tôi.
@@ -401,8 +419,10 @@ Sau đó, bạn có thể đưa ra một số gợi ý hoặc lời khuyên liê
                 }
             }
 
-            $expertPrompt .= "\n\nCâu hỏi của khách hàng: " . $message;
 
+
+            $expertPrompt .= "\n\nCâu hỏi của khách hàng: " . $message;
+            
             // Chuẩn bị dữ liệu gửi đến API
             $data = [
                 'contents' => [
@@ -457,8 +477,6 @@ Sau đó, bạn có thể đưa ra một số gợi ý hoặc lời khuyên liê
             throw $e;
         }
     }
-<<<<<<< HEAD
+
 }
-=======
-}
->>>>>>> 0d34c3a851850ef40f935df3c9631a791cc7ce35
+
