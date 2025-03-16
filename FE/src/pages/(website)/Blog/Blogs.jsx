@@ -30,24 +30,20 @@ const Blogs = () => {
                 Nổi bật
               </button>
             </div>
-            <div className="flex items-center space-x-2 w-full sm:w-auto">
-              {/* Search functionality can be added here */}
-            </div>
+            <div className="flex items-center space-x-2"></div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[...Array(12)].map((_, index) => (
-              <Link to="/BlogDetail" key={index} className="block">
-                <div className="bg-white rounded-lg shadow p-4 h-full hover:shadow-lg transition-shadow duration-300">
-                  <div className="overflow-hidden rounded-lg mb-4">
-                    <img
-                      src={`http://localhost:5173/src/assets/img/banners/homepage01-slide2.jpg`}
-                      alt="Article"
-                      className="w-full h-48 object-cover rounded-lg transition-transform duration-300 hover:scale-105"
-                    />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-800 line-clamp-2">
-                    Article Title {index + 1}
+              <Link to="blog-detail">
+                <div key={index} className="bg-white rounded-lg shadow p-4">
+                  <img
+                    src={`http://localhost:5173/src/assets/img/banners/homepage01-slide2.jpg`}
+                    alt="Article"
+                    className="w-full h-48 object-cover  mb-4  rounded-lg transition-transform duration-300 hover:scale-105"
+                  />
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Article Title
                   </h2>
                   <p className="text-gray-600 text-sm mt-2">Thứ Ba, 10 tháng 12, 2024</p>
                 </div>

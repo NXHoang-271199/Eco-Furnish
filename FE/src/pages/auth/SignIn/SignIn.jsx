@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const SignIn = () => {
+const SignIn = ({}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const {
     register,
@@ -16,14 +16,15 @@ const SignIn = () => {
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
-    console.log(data);
+    // console.log(data);
 
     try {
       const response = await axios.post(
         `http://localhost:8000/api/users/login`,
         data
       );
-      localStorage.setItem("token", response.data.accessToken);
+      localStorage.setItem("authToken", response.data.accessToken);
+      localStorage.setItem("userData", JSON.stringify(response.data.user));
       navigate("/");
     } catch (error) {
       // Hiển thị lỗi validation cụ thể nếu có
