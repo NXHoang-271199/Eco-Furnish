@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\RoleRequest;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Http\Requests\RoleRequest;
 
 class RoleController extends Controller
 {
@@ -47,6 +48,7 @@ class RoleController extends Controller
 
         $role = Role::create([
             'name' => $validated['name'],
+            'slug' => Str::slug($validated['name']),
         ]);
 
         if ($request->ajax()) {
@@ -92,6 +94,7 @@ class RoleController extends Controller
         $role = Role::findOrFail($id);
         $role->update([
             'name' => $validated['name'],
+            'slug' => Str::slug($validated['name']),
         ]);
         return redirect()->route('roles.index')->with('success', 'Vai trò đã được cập nhật thành công!');
     }

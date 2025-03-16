@@ -26,8 +26,8 @@
                                     <div class="card permission-section">
                                         <div class="card-header d-flex align-items-center">
                                             <div class="form-check mb-0">
-                                                <input type="checkbox" 
-                                                       class="form-check-input parent-checkbox" 
+                                                <input type="checkbox"
+                                                       class="form-check-input parent-checkbox"
                                                        id="parent-{{ Str::slug($group) }}">
                                                 <label class="form-check-label" for="parent-{{ Str::slug($group) }}">
                                                     <h6 class="mb-0">{{ \App\Helpers\ModelHelper::getFriendlyModelName($group) }}</h6>
@@ -50,15 +50,15 @@
 
                                                 @if($showPermission)
                                                     <div class="form-check mb-2">
-                                                        <input class="form-check-input permission-checkbox" 
-                                                               type="checkbox" 
-                                                               name="permissions[]" 
-                                                               value="{{ $permission->id }}" 
+                                                        <input class="form-check-input permission-checkbox"
+                                                               type="checkbox"
+                                                               name="permissions[]"
+                                                               value="{{ $permission->id }}"
                                                                id="permission-{{ $permission->id }}"
                                                                data-slug="{{ $permission->slug }}"
                                                                {{ $role->permissions->contains($permission->id) ? 'checked' : '' }}>
                                                         <label class="form-check-label" for="permission-{{ $permission->id }}">
-                                                            {{ $permission->name }} 
+                                                            {{ $permission->name }}
                                                             <small class="text-muted">({{ $permission->slug }})</small>
                                                         </label>
                                                     </div>
@@ -103,7 +103,7 @@
             function updateParentState() {
                 const childCheckboxes = childrenContainer.querySelectorAll('.permission-checkbox');
                 const checkedCount = childrenContainer.querySelectorAll('.permission-checkbox:checked').length;
-                
+
                 if (checkedCount === 0) {
                     parentCheckbox.checked = false;
                     parentCheckbox.indeterminate = false;
@@ -156,12 +156,12 @@
         function updateViewPermission(group) {
             const checkboxes = group.querySelectorAll('.permission-checkbox');
             const resourceTypes = new Map();
-            
+
             // Thu thập thông tin về checkboxes
             checkboxes.forEach(checkbox => {
                 const slug = checkbox.getAttribute('data-slug');
                 const [action, type] = slug.split('-');
-                
+
                 if (type) {
                     if (!resourceTypes.has(type)) {
                         resourceTypes.set(type, {
@@ -179,11 +179,11 @@
             // Xử lý logic quyền
             resourceTypes.forEach((actions, type) => {
                 const viewCheckbox = actions.view;
-                const hasOtherPermissions = actions.create?.checked || 
-                                          actions.update?.checked || 
-                                          actions.delete?.checked || 
+                const hasOtherPermissions = actions.create?.checked ||
+                                          actions.update?.checked ||
+                                          actions.delete?.checked ||
                                           actions.restore?.checked;
-                
+
                 // Chỉ tự động check quyền xem khi có quyền khác được chọn
                 if (hasOtherPermissions && viewCheckbox && !viewCheckbox.checked) {
                     viewCheckbox.checked = true;
@@ -195,12 +195,12 @@
         // Xử lý sự kiện thay đổi cho checkbox
         permissionGroups.forEach(group => {
             const checkboxes = group.querySelectorAll('.permission-checkbox');
-            
+
             checkboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', function(e) {
                     const slug = checkbox.getAttribute('data-slug');
                     const [action, type] = slug.split('-');
-                    
+
                     // Nếu đang thay đổi một quyền không phải quyền xem
                     if (action !== 'view' && checkbox.checked) {
                         // Tìm và check quyền xem tương ứng
@@ -235,10 +235,13 @@
 </script>
 @endsection
 
-<style>
-.form-check-input:indeterminate {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
-}
-</style> 
+@section('CSS')
+<style><style>
+    .form-check-input:indeterminate {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e");
+    }
+</style>
+@endsection
+

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('variant_id')->constrained('variants')->onDelete('cascade');
             $table->foreignId('variant_value_id')->constrained('variant_values')->onDelete('cascade');
             $table->string('sku', 255);
-            $table->decimal('price', 10, 2);
+            $table->decimal('price', 12, 2);
             $table->tinyInteger('status')->default(1);
             $table->timestamps();
             $table->softDeletes();

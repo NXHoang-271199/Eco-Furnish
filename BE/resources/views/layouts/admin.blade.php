@@ -232,7 +232,7 @@
                                     const formData = new FormData();
                                     loader.file.then(file => {
                                         formData.append('upload', file);
-                                        
+
                                         fetch('{{ route('upload.image') }}', {
                                             method: 'POST',
                                             body: formData,
@@ -257,7 +257,7 @@
                             abort: () => {}
                         };
                     };
-                    
+
                     window[name] = editor;
                 })
                 .catch(error => {

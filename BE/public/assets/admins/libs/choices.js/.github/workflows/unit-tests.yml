@@ -1,0 +1,60 @@
+name: Unit tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/unit-tests.yml'
+      - 'src/scripts/**'
+      - 'src/*.ts'
+      - 'test/**'
+      - 'package-lock.json'
+      - '.browserslistrc'
+      - 'babel.config.json'
+      - 'vitest.config.ts'
+  pull_request:
+    paths:
+      - '.github/workflows/unit-tests.yml'
+      - 'src/scripts/**'
+      - 'src/*.ts'
+      - 'test/**'
+      - 'package-lock.json'
+      - '.browserslistrc'
+      - 'babel.config.json'
+      - 'vitest.config.ts'
+
+jobs:
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit
+        env:
+          HUSKY_SKIP_INSTALL: true
+
+      - run: npm run build
+
+      - run: npm run test:unit:coverage
+        env:
+          FORCE_COLOR: 2
+
+      - name: Upload coverage to Codecov
+        run: bash <(curl -s https://codecov.io/bash)
+          -f ./coverage/lcov.info
+          -B ${{ github.head_ref }}
+          -C ${{ github.sha }}
+          -Z || echo 'Codecov upload failed'
+        env:
+          CI: true
+          GITLAB_CI: true # pretend we are GitLab CI, while Codecov adding support for Github Actions
+          CODECOV_ENV: github-action
+          CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
