@@ -19,15 +19,12 @@ const Aside = () => {
       <nav class="mt-6">
         <ul>
           <li class="py-2 border-b">
-            <a href="/account" class="text-gray-700 hover:text-black">
+            <a href="account" class="text-gray-700 hover:text-black">
               Tài khoản
             </a>
           </li>
           <li class="py-2 border-b">
-            <a
-              href="/account/change_password"
-              class="text-gray-700 hover:text-black"
-            >
+            <a href="/account/editpass" class="text-gray-700 hover:text-black">
               Thay đổi mật khẩu
             </a>
           </li>

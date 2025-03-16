@@ -49,7 +49,9 @@ const Blogs = () => {
                   <h2 className="text-lg font-semibold text-gray-800 line-clamp-2">
                     Article Title {index + 1}
                   </h2>
-                  <p className="text-gray-600 text-sm mt-2">Thứ Ba, 10 tháng 12, 2024</p>
+                  <p className="text-gray-600 text-sm mt-2">
+                    Thứ Ba, 10 tháng 12, 2024
+                  </p>
                 </div>
               </Link>
             ))}
