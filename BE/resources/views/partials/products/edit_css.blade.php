@@ -281,6 +281,28 @@
             font-weight: 500;
         }
 
+        /* Back to top button - đảm bảo hiển thị đúng */
+        #back-to-top {
+            position: fixed;
+            bottom: 100px;
+            right: 28px;
+            z-index: 1000;
+            border-radius: 50% !important; /* Đảm bảo hình tròn */
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #back-to-top i {
+            font-size: 18px;
+            line-height: 1;
+            margin: 0;
+            padding: 0;
+        }
+
         .btn-primary {
             background-color: #405189;
             border-color: #405189;
@@ -319,9 +341,39 @@
         }
 
         .invalid-feedback {
+            display: none;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
             color: #dc3545;
-            font-size: 12px;
-            margin-top: 4px;
+        }
+
+        /* Đặc biệt xử lý cho variant-type-select */
+        .variant-type-select + .invalid-feedback {
+            display: block;
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* Style mặc định */
+        .is-invalid ~ .invalid-feedback {
+            display: block;
+        }
+        
+        /* Cải thiện hiển thị cho phần chọn thuộc tính */
+        .variant-type-select {
+            margin-bottom: 0.5rem !important;
+        }
+
+        /* Style cho select khi có lỗi */
+        select.is-invalid, 
+        .variant-type-select:has(select.is-invalid) {
+            border-color: #dc3545;
+        }
+        
+        select.is-invalid:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
         }
 
         /* Button container styles */

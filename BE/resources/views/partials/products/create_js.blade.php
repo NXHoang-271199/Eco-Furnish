@@ -919,10 +919,13 @@
                 const productCode = document.querySelector('input[name="product_code"]')?.value || 'SKU';
                 let sku = productCode + '-';
                 attributesForSku.forEach(attr => {
-                    // Lấy 2 ký tự đầu của mỗi giá trị thuộc tính và loại bỏ dấu
+                    // Lấy 3 ký tự đầu của mỗi giá trị thuộc tính và loại bỏ dấu
                     const valueWithoutAccent = removeVietnameseAccents(attr.value);
-                    sku += valueWithoutAccent.substring(0, 2).toUpperCase();
+                    sku += valueWithoutAccent.substring(0, 3).toUpperCase();
                 });
+                
+                // Thêm số ngẫu nhiên vào cuối SKU để đảm bảo không bị trùng lặp
+                sku += '-' + Math.floor(100 + Math.random() * 100);
                 
                 // Gán SKU tự động vào input ẩn
                 skuInput.value = sku;
@@ -1458,6 +1461,9 @@
                         const valueWithoutAccent = removeVietnameseAccents(item.value);
                         sku += valueWithoutAccent.substring(0, 2).toUpperCase();
                     });
+                    
+                    // Thêm số ngẫu nhiên vào cuối SKU để đảm bảo không bị trùng lặp
+                    sku += '-' + Math.floor(100 + Math.random() * 100);
                     
                     // Tạo biến thể
                     const variant = {

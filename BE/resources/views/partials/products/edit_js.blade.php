@@ -125,6 +125,16 @@
             let selectedVariants = []; // Thêm biến để lưu trữ các biến thể đã chọn
             let isAddingVariant = false; // Thêm biến kiểm soát việc thêm biến thể
 
+            // Thêm sự kiện change cho select thuộc tính để ẩn thông báo lỗi khi người dùng chọn thuộc tính
+            variantTypeSelect.on('change', function() {
+                const selectedValue = $(this).val();
+                if (selectedValue) {
+                    // Nếu đã chọn thuộc tính, xóa thông báo lỗi
+                    $(this).removeClass('is-invalid');
+                    $(this).parent().next('.invalid-feedback').remove();
+                }
+            });
+
             // Xử lý toggle biến thể
             variantToggle.on('change', function() {
                 if (this.checked) {
@@ -224,6 +234,10 @@
                 const selectedOption = variantTypeSelect.find('option:selected');
                 const variantId = Number(selectedOption.val());
                 const variantName = selectedOption.text();
+                
+                // Reset các thông báo lỗi trước đó
+                variantTypeSelect.removeClass('is-invalid');
+                variantTypeSelect.parent().next('.invalid-feedback').remove();
                 
                 if (!variantId) {
                     showError(variantTypeSelect, 'Vui lòng chọn thuộc tính');
@@ -933,8 +947,11 @@
                     const newFeedback = $('<div class="invalid-feedback">' + message + '</div>');
                     newFeedback.css('display', 'block');
                     
-                    // Thêm vào sau field hoặc parent nếu là input-group
+                    // Thêm vào DƯỚI field hoặc parent nếu là input-group
                     if (field.parent().hasClass('input-group')) {
+                        field.parent().after(newFeedback);
+                    } else if (field.parent().hasClass('variant-type-select')) {
+                        // Nếu là phần chọn thuộc tính biến thể, thêm vào parent
                         field.parent().after(newFeedback);
                     } else {
                         field.after(newFeedback);
@@ -1303,6 +1320,9 @@
                         const valueWithoutAccent = removeVietnameseAccents(item.value);
                         sku += valueWithoutAccent.substring(0, 2).toUpperCase();
                     });
+                    
+                    // Thêm số ngẫu nhiên vào cuối SKU để đảm bảo không bị trùng lặp
+                    sku += '-' + Math.floor(100 + Math.random() * 100);
                     
                     // Tạo biến thể
                     const variant = {
