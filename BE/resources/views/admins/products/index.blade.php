@@ -97,12 +97,16 @@
                     <div class="row g-4 align-items-center">
                         <div class="col">
                             <div class="d-flex gap-2">
+                                @if(Auth::user()->hasPermission('create-products'))
                                 <a href="{{ route('products.create') }}" class="btn btn-success">
                                     <i class="ri-add-line align-bottom me-1"></i> Thêm sản phẩm
                                 </a>
+                                @endif
+                                @if(Auth::user()->hasPermission('view-variants'))
                                 <a href="{{ route('variants.index') }}" class="btn btn-info">
                                     <i class="ri-list-check align-bottom me-1"></i> Quản lý biến thể
                                 </a>
+                                @endif
                             </div>
                         </div>
                         <div class="col-auto">
@@ -192,17 +196,21 @@
                                                                     <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Chi tiết
                                                                 </a>
                                                             </li>
+                                                            @if(Auth::user()->hasPermission('update-products'))
                                                             <li>
                                                                 <a href="{{ route('products.edit', $product->id) }}" class="dropdown-item">
                                                                     <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Sửa
                                                                 </a>
                                                             </li>
+                                                            @endif
+                                                            @if(Auth::user()->hasPermission('delete-products'))
                                                             <li class="dropdown-divider"></li>
                                                             <li>
                                                                 <button type="button" class="dropdown-item text-danger" onclick="confirmDelete({{ $product->id }})">
                                                                     <i class="ri-delete-bin-fill align-bottom me-2 text-danger"></i> Xóa
                                                                 </button>
                                                             </li>
+                                                            @endif
                                                         </ul>
                                                     </div>
                                                 </td>

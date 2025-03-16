@@ -41,12 +41,13 @@
                                 </div>
                             @enderror
                         </div>
-
+                        @if(Auth::user()->hasPermission('create-variants'))
                         <div class="text-start">
                             <button type="submit" class="btn btn-success w-sm">
                                 <i class="ri-add-line align-bottom me-1"></i> Thêm biến thể
                             </button>
                         </div>
+                        @endif
                     </form>
                 </div>
             </div>
@@ -95,12 +96,16 @@
                                             <a href="{{ route('variants.values.index', $variant) }}" class="btn btn-soft-info btn-sm" title="Giá trị">
                                                 <i class="ri-list-check-line align-bottom"></i> Giá trị
                                             </a>
+                                            @if(Auth::user()->hasPermission('update-variants'))
                                             <a href="javascript:void(0);" class="btn btn-soft-warning btn-sm edit-trigger" data-id="{{ $variant->id }}" title="Chỉnh sửa">
                                                 <i class="ri-pencil-fill align-bottom"></i> Sửa
                                             </a>
+                                            @endif
+                                            @if(Auth::user()->hasPermission('delete-variants'))
                                             <a href="javascript:void(0);" class="btn btn-soft-danger btn-sm delete-item" data-id="{{ $variant->id }}" title="Xóa">
                                                 <i class="ri-delete-bin-fill align-bottom"></i> Xóa
                                             </a>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

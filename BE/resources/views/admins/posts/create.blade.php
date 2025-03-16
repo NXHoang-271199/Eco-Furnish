@@ -5,14 +5,8 @@
 @endsection
 
 @section('CSS')
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .quill-editor {
-            height: 500px;
-            background: #fff;
-        }
-
         .file-upload-wrapper {
             position: relative;
             display: flex;
@@ -105,149 +99,86 @@
 @endsection
 
 @section('JS')
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="{{ asset('assets/admins/js/pages/form-validation.init.js') }}"></script>
-
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Khởi tạo toolbar với nút upload ảnh
-            var toolbarOptions = [
-                ['bold', 'italic', 'underline', 'strike'],
-                ['blockquote', 'code-block'],
-                [{ 'header': 1 }, { 'header': 2 }],
-                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                [{ 'script': 'sub' }, { 'script': 'super' }],
-                [{ 'indent': '-1' }, { 'indent': '+1' }],
-                [{ 'direction': 'rtl' }],
-                [{ 'size': ['small', false, 'large', 'huge'] }],
-                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                [{ 'color': [] }, { 'background': [] }],
-                [{ 'font': [] }],
-                [{ 'align': [] }],
-                ['link', 'image'],
-                ['clean']
-            ];
-        
-            // Khởi tạo Quill
-            var quill = new Quill('#editor-container', {
-                modules: { toolbar: toolbarOptions },
-                theme: 'snow'
-            });
-        
-            var oldContent = document.getElementById('content').value;
-            if (oldContent) {
-                quill.root.innerHTML = oldContent;
-            }
-        
-            // Lấy toolbar từ Quill
-            var toolbar = quill.getModule('toolbar');
-            toolbar.addHandler('image', imageHandler);
-        
-            // Xử lý khi người dùng chọn tải ảnh lên
-            function imageHandler() {
-                var input = document.createElement('input');
-                input.setAttribute('type', 'file');
-                input.setAttribute('accept', 'image/*');
-                input.click();
-        
-                input.onchange = function () {
-                    var file = input.files[0];
-                    if (file) {
-                        uploadImage(file);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sử dụng cấu hình giống như trong edit.blade.php
+            ClassicEditor
+                .create(document.querySelector('#content'), {
+                    simpleUpload: {
+                        uploadUrl: '{{ route('upload.image') }}',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    },
+                    image: {
+                        toolbar: [
+                            'imageStyle:inline',
+                            'imageStyle:block',
+                            'imageStyle:side',
+                            '|',
+                            'toggleImageCaption',
+                            'imageTextAlternative'
+                        ]
                     }
-                };
-            }
-        
-            // Hàm upload ảnh lên server
-            function uploadImage(file) {
-                var formData = new FormData();
-                formData.append('image', file);
-                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-        
-                // Hiển thị placeholder cho ảnh đang upload
-                var range = quill.getSelection();
-                quill.insertEmbed(range.index, 'image', '/path/to/placeholder-image.jpg');
-        
-                // Gửi request lên server
-                fetch('{{ route("upload.image") }}', {  // Đổi route thành route thực tế của bạn
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(result => {
-                        quill.deleteText(range.index, 1); // Xóa placeholder
-                        quill.insertEmbed(range.index, 'image', result.url);
-                        quill.setSelection(range.index + 1);
-                    })
-                    .catch(error => {
-                        console.error('Lỗi khi upload ảnh:', error);
-                        alert('Không thể tải ảnh lên. Vui lòng thử lại.');
-                        quill.deleteText(range.index, 1);
-                    });
-            }
-        
-            // Lấy form
-            var form = document.getElementById("postForm");
-        
-            // Validate Quill Editor khi có thay đổi
-            quill.on('text-change', function () {
-                var textOnly = quill.getText().trim();
-                var editorContainer = document.getElementById('editor-container');
-        
-                document.getElementById('content').value = quill.root.innerHTML; // Lưu nội dung vào input ẩn
-        
-                if (textOnly.length > 0) {
-                    editorContainer.classList.remove('is-invalid');
-                    editorContainer.classList.add('is-valid');
-                } else {
-                    editorContainer.classList.remove('is-valid');
-                    editorContainer.classList.add('is-invalid');
-                }
-            });
-        
-            // Validate file ảnh bìa
-            var thumbnailInput = document.getElementById('project-thumbnail-img');
-            thumbnailInput.addEventListener('change', function (event) {
-                previewImage(event);
-        
-                if (thumbnailInput.files && thumbnailInput.files.length > 0) {
-                    thumbnailInput.classList.remove('is-invalid');
-                    thumbnailInput.classList.add('is-valid');
-                } else {
-                    thumbnailInput.classList.remove('is-valid');
-                    thumbnailInput.classList.add('is-invalid');
-                }
-            });
-        
-            // Validate các trường input, select, textarea thông thường
-            form.querySelectorAll('input:not([type="file"]), select, textarea').forEach(function (input) {
-                input.addEventListener('input', function () {
-                    if (input.checkValidity()) {
-                        input.classList.remove('is-invalid');
-                        input.classList.add('is-valid');
-                    } else {
-                        input.classList.remove('is-valid');
-                        input.classList.add('is-invalid');
-                    }
-                });
-            });
-        
-            // Hàm hiển thị ảnh preview
-            function previewImage(event) {
-                var input = event.target;
-                var preview = document.getElementById('thumbnail-preview');
-        
-                if (input.files && input.files[0]) {
-                    var reader = new FileReader();
-                    reader.onload = function (e) {
-                        preview.src = e.target.result;
-                        preview.style.display = 'block';
+                })
+                .then(editor => {
+                    // Thêm xử lý upload adapter
+                    editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+                        return {
+                            upload: () => {
+                                return new Promise((resolve, reject) => {
+                                    const formData = new FormData();
+                                    loader.file.then(file => {
+                                        formData.append('upload', file);
+
+                                        fetch('{{ route('upload.image') }}', {
+                                            method: 'POST',
+                                            body: formData,
+                                            headers: {
+                                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                            }
+                                        })
+                                        .then(response => response.json())
+                                        .then(result => {
+                                            if (result.uploaded) {
+                                                resolve({
+                                                    default: result.url
+                                                });
+                                            } else {
+                                                reject(result.error.message);
+                                            }
+                                        })
+                                        .catch(error => reject(error));
+                                    });
+                                });
+                            },
+                            abort: () => {}
+                        };
                     };
-                    reader.readAsDataURL(input.files[0]);
-                }
-            }
+
+                    window.editor = editor;
+                })
+                .catch(error => {
+                    console.error(error);
+                });
         });
-        </script>
+
+        // Hàm preview ảnh thumbnail
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('thumbnail-preview');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
 @endsection
 
 @section('content')
@@ -295,9 +226,10 @@
 
                             <div class="mb-3">
                                 <label class="form-label" for="content">Nội dung</label>
-                                <div id="editor-container" class="quill-editor @error('content') is-invalid @enderror">
-                                </div>
-                                <input type="hidden" name="content" id="content" value="{{ old('content') }}" required>
+                                {{-- <div id="editor-container" class="quill-editor @error('content') is-invalid @enderror">
+                                </div> --}}
+                                <textarea class="form-control @error('content') is-invalid @enderror"
+                                    name="content" id="content">{{ old('content') }}</textarea>
                                 <div class="invalid-feedback">
                                     @error('content')
                                         {{ $message }}
@@ -341,8 +273,8 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="card">
+
+                    {{-- <div class="card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">Người đăng</h5>
                         </div>
@@ -361,8 +293,8 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
-            
+                    </div> --}}
+
 
                     <div class="card">
                         <div class="card-header">

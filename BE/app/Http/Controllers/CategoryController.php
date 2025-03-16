@@ -13,6 +13,18 @@ use Illuminate\Support\Facades\Log;
 
 class CategoryController extends Controller
 {
+    /**
+     * Constructor để kiểm tra quyền
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:view-categories');
+        $this->middleware('permission:create-categories', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-categories', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-categories', ['only' => ['destroy']]);
+        $this->middleware('permission:restore-categories', ['only' => ['restore']]);
+    }
+
     public function index()
     {
         $categories = Category::latest()->paginate(10);
