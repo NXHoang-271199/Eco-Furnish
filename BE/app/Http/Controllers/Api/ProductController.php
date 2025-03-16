@@ -37,8 +37,18 @@ class ProductController extends Controller
     public function show($id)
     {
         try {
-            $product = Product::with(['category', 'gallery', 'variants.variantValue'])
+            $product = Product::with(['category', 'gallery', 'variants.variant', 'variants.variantValue'])
                 ->findOrFail($id);
+
+            // Xử lý dữ liệu biến thể để thêm thông tin chi tiết
+            $product->variants->each(function ($variant) {
+                // Thêm thông tin tên biến thể và giá trị biến thể
+                $variant->variant_name = $variant->variant ? $variant->variant->name : 'Không xác định';
+                $variant->variant_value_name = $variant->variantValue ? $variant->variantValue->value : 'Không xác định';
+                
+                // Tạo mô tả đầy đủ cho biến thể
+                $variant->full_description = $variant->variant_name . ': ' . $variant->variant_value_name;
+            });
 
             return response()->json([
                 'status' => 'success',

@@ -1,7 +1,9 @@
 API
 
 http://localhost:8000/api/users -> User
+
 http://localhost:8000/api/users/login -> Login
+
 
 - register
 - {id}/profile
@@ -15,6 +17,8 @@ http://localhost:8000/api/users/login -> Login
   http://localhost:8000/api/category-posts/ -> CategoryPost
 - /{slug}
   http://localhost:8000/api/vouchers/ -> Vouchers
+
+
 - /{code}
 
 // Kiểm tra cách lấy ID từ URL
@@ -79,3 +83,4 @@ currency: 'VND'
 };
 
 export default Detail;
+

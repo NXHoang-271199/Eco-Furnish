@@ -1,6 +1,7 @@
 import React from "react";
 import { FaArrowRight } from "react-icons/fa";
 import { motion } from "framer-motion";
+import { FaArrowRight } from "react-icons/fa";
 const Contact = () => {
   return (
     <div className="font-roboto">
@@ -37,8 +38,8 @@ const Contact = () => {
               phố Hà Nội, Việt Nam. Thành lập từ năm 2025.
             </p>
             <a
+              href="/products"
               className="text-black font-medium underline hover:translate-x-4 duration-700  hover:ease-in flex"
-              href="products"
             >
               Mua ngay <FaArrowRight className="mt-2 ml-2 size-[15px] " />
             </a>
