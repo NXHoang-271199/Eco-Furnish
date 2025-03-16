@@ -48,7 +48,7 @@ function App() {
         <Route path="signin" element={<SignIn />} />
         <Route path="changepass" element={<ForgotPasswordModal />} />
         <Route path="signup" element={<SignUp />} />
-        <Route path="verifyemail" element={<VerifyEmail />} />
+        <Route path="verifyemail" element={< VerifyEmail />} />
         <Route path="reset" element={<ResetPassword />} />
         <Route path="confirm" element={<ConfirmPassword />} />
         <Route path="emailverification" element={<EmailVerification />} />
