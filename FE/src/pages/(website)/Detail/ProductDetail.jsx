@@ -648,7 +648,6 @@ const ProductDetail = () => {
     }
   };
 
-
   return (
     <main className="max-w-6xl mx-auto mb-20 mt-32">
       {/* Product_info */}

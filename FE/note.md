@@ -1,4 +1,4 @@
-API
+# API
 
 http://localhost:8000/api/users -> User
 
@@ -21,6 +21,8 @@ http://localhost:8000/api/users/login -> Login
 
 - /{code}
 
+<<<<<<< HEAD
+=======
 // Kiểm tra cách lấy ID từ URL
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -84,3 +86,4 @@ currency: 'VND'
 
 export default Detail;
 
+>>>>>>> 0a71bd2189ca03c881776f32c61949510b02ca73
