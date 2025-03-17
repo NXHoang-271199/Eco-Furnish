@@ -81,12 +81,16 @@ const ChatBot = () => {
             });
 
             console.log('API response:', response.data);
+            // Debug thêm thông tin danh mục
+            console.log('Categories from API:', response.data.categories);
+            console.log('Products from API:', response.data.products);
 
             // Kiểm tra dữ liệu trả về để tránh lỗi null
             let botReply = 'Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn.';
             let products = [];
             let searchKeywords = '';
             let isProductSearch = false;
+            let categories = [];
 
             if (response.data && typeof response.data.reply === 'string') {
                 botReply = response.data.reply;
@@ -104,6 +108,11 @@ const ChatBot = () => {
                 if (response.data.has_products && Array.isArray(response.data.products)) {
                     products = response.data.products;
                 }
+
+                // Lấy danh mục từ phản hồi API
+                if (response.data.hasOwnProperty('categories') && Array.isArray(response.data.categories)) {
+                    categories = response.data.categories;
+                }
             }
 
             const botMessage = {
@@ -112,7 +121,8 @@ const ChatBot = () => {
                 timestamp: new Date().toISOString(),
                 products: products,
                 isProductSearch: isProductSearch,
-                searchKeywords: searchKeywords
+                searchKeywords: searchKeywords,
+                categories: categories
             };
 
             setMessages(prevMessages => [...prevMessages, botMessage]);
@@ -273,11 +283,38 @@ const ChatBot = () => {
                                         {msg.products && msg.products.length > 0 && (
                                             <div className="mt-3 pt-3 border-t border-gray-300">
                                                 <p className="text-xs font-medium mb-2">Sản phẩm gợi ý cho bạn:</p>
-                                                <div className="space-y-2">
-                                                    {msg.products.map((product) => (
-                                                        <ProductCard key={product.id} product={product} />
-                                                    ))}
-                                                </div>
+
+                                                {/* Nếu có thông tin danh mục, hiển thị theo từng danh mục */}
+                                                {msg.categories && msg.categories.length > 0 ? (
+                                                    msg.categories.map((category) => {
+                                                        // Lọc sản phẩm theo danh mục hiện tại
+                                                        const categoryProducts = msg.products.filter(
+                                                            (product) => product.category === category
+                                                        );
+
+                                                        if (categoryProducts.length === 0) return null;
+
+                                                        return (
+                                                            <div key={category} className="mb-3">
+                                                                <h4 className="text-xs font-medium text-gray-700 bg-gray-100 p-1 rounded mb-2">
+                                                                    {category}
+                                                                </h4>
+                                                                <div className="space-y-2">
+                                                                    {categoryProducts.map((product) => (
+                                                                        <ProductCard key={product.id} product={product} />
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    // Nếu không có thông tin danh mục, hiển thị tất cả sản phẩm
+                                                    <div className="space-y-2">
+                                                        {msg.products.map((product) => (
+                                                            <ProductCard key={product.id} product={product} />
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 

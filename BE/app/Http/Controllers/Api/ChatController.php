@@ -30,10 +30,15 @@ class ChatController extends Controller
             // Kiểm tra xem người dùng có đang tìm kiếm sản phẩm không
             if ($this->detectProductSearchIntent($userMessage)) {
                 // Trích xuất từ khóa tìm kiếm
-                $keywords = $this->extractSearchKeywords($userMessage);
+                $searchInfo = $this->extractSearchKeywords($userMessage);
+                $keywords = $searchInfo['keywords'];
+                $priceInfo = $searchInfo['price_info'];
                 
                 // Tìm kiếm sản phẩm
-                $products = $this->searchProducts($keywords);
+                $searchResults = $this->searchProducts($keywords, $priceInfo);
+                $products = $searchResults['products'];
+                $categories = $searchResults['categories'];
+                $hasProductsInPriceRange = $searchResults['has_products_in_price_range'];
                 
                 // Gọi API Gemini để có phản hồi thông minh
                 // Truyền thêm thông tin về kết quả tìm kiếm để Gemini có thể đưa ra phản hồi phù hợp
@@ -41,7 +46,10 @@ class ChatController extends Controller
                     'is_product_search' => true,
                     'search_keywords' => $keywords,
                     'found_products' => count($products) > 0,
-                    'product_count' => count($products)
+                    'product_count' => count($products),
+                    'categories_found' => $categories,
+                    'price_info' => $priceInfo,
+                    'has_products_in_price_range' => $hasProductsInPriceRange
                 ]);
                 
                 // Trả về cả phản hồi AI và sản phẩm
@@ -50,7 +58,10 @@ class ChatController extends Controller
                     'reply' => $aiResponse,
                     'has_products' => count($products) > 0,
                     'products' => $products,
-                    'search_keywords' => $keywords
+                    'categories' => $categories,
+                    'search_keywords' => $keywords,
+                    'price_info' => $priceInfo,
+                    'has_products_in_price_range' => $hasProductsInPriceRange
                 ]);
             }
             
@@ -160,7 +171,7 @@ class ChatController extends Controller
      * Trích xuất từ khóa tìm kiếm từ tin nhắn
      *
      * @param  string  $message
-     * @return string
+     * @return array
      */
     private function extractSearchKeywords($message)
     {
@@ -198,12 +209,14 @@ class ChatController extends Controller
         // Các từ mô tả chất liệu
         $materials = ['gỗ', 'kim loại', 'nhựa', 'tre', 'mây', 'vải', 'da', 'thủy tinh', 'đá'];
         
-        // Tìm danh mục sản phẩm trong tin nhắn
-        $foundCategory = null;
+        // Phát hiện giá từ tin nhắn
+        $priceInfo = $this->extractPriceInfo($message);
+        
+        // Tìm tất cả danh mục sản phẩm trong tin nhắn
+        $foundCategories = [];
         foreach ($categories as $category => $id) {
             if (mb_strpos($message, $category) !== false) {
-                $foundCategory = $category;
-                break;
+                $foundCategories[] = $category;
             }
         }
         
@@ -237,8 +250,8 @@ class ChatController extends Controller
         // Xây dựng từ khóa tìm kiếm dựa trên các thông tin tìm được
         $keywords = [];
         
-        if ($foundCategory) {
-            $keywords[] = $foundCategory;
+        if (!empty($foundCategories)) {
+            $keywords = array_merge($keywords, $foundCategories);
         }
         
         if ($foundSpace) {
@@ -264,26 +277,163 @@ class ChatController extends Controller
             
             // Nếu tin nhắn quá ngắn sau khi loại bỏ stopwords, sử dụng tin nhắn gốc
             if (mb_strlen($message) < 3) {
-                return $message;
+                return [
+                    'keywords' => $message,
+                    'price_info' => $priceInfo
+                ];
             }
             
-            return $message;
+            return [
+                'keywords' => $message,
+                'price_info' => $priceInfo
+            ];
         }
         
         // Kết hợp các từ khóa tìm được
-        return implode(' ', $keywords);
+        return [
+            'keywords' => implode(' ', $keywords),
+            'price_info' => $priceInfo
+        ];
+    }
+
+    /**
+     * Trích xuất thông tin giá từ tin nhắn
+     * 
+     * @param string $message
+     * @return array
+     */
+    private function extractPriceInfo($message)
+    {
+        $priceInfo = [
+            'has_price' => false,
+            'min_price' => null,
+            'max_price' => null,
+            'exact_price' => null,
+            'price_type' => null // 'exact', 'range', 'min', 'max'
+        ];
+        
+        // Tìm phạm vi giá "từ X đến Y" (kiểm tra trước để ưu tiên hơn các mẫu khác)
+        // Mẫu: "từ 20k đến 30k" hoặc "từ 20.000 đến 30.000" hoặc "20k-30k"
+        $rangePattern = '/(?:từ\s+)?(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)(?:\s*(?:-|đến)\s*)(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu';
+        if (preg_match($rangePattern, $message, $matches)) {
+            $priceInfo['has_price'] = true;
+            $priceInfo['price_type'] = 'range';
+            
+            $minPriceText = $matches[1];
+            $maxPriceText = $matches[2];
+            
+            Log::info("Phát hiện phạm vi giá: {$minPriceText} đến {$maxPriceText}");
+            
+            $priceInfo['min_price'] = $this->convertPriceTextToNumber($minPriceText);
+            $priceInfo['max_price'] = $this->convertPriceTextToNumber($maxPriceText);
+            
+            // Mở rộng phạm vi giá thêm ±10% để tăng khả năng khớp
+            $priceInfo['min_price'] = $priceInfo['min_price'] * 0.9;
+            $priceInfo['max_price'] = $priceInfo['max_price'] * 1.1;
+            
+            Log::info("Sau khi chuyển đổi: {$priceInfo['min_price']} đến {$priceInfo['max_price']}");
+            
+            return $priceInfo;
+        }
+        
+        // Tìm mức giá chính xác
+        // Mẫu: "giá 100.000" hoặc "100.000 đồng" hoặc "100.000đ" hoặc "100.000 VND"
+        $exactPricePattern = '/(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu';
+        if (preg_match_all($exactPricePattern, $message, $matches)) {
+            $priceInfo['has_price'] = true;
+            
+            // Lấy giá từ kết quả match
+            $priceText = $matches[0][0];
+            $price = $this->convertPriceTextToNumber($priceText);
+            
+            $priceInfo['exact_price'] = $price;
+            $priceInfo['price_type'] = 'exact';
+            
+            // Nếu có từ "khoảng" trước giá, xác định một phạm vi giá
+            if (mb_strpos($message, 'khoảng') !== false) {
+                $priceInfo['min_price'] = $price * 0.8; // Giảm 20%
+                $priceInfo['max_price'] = $price * 1.2; // Tăng 20%
+                $priceInfo['price_type'] = 'range';
+            }
+        }
+        
+        // Tìm giá tối đa
+        // Mẫu: "dưới 200.000" hoặc "không quá 200.000" hoặc "tối đa 200.000"
+        $maxPricePattern = '/(dưới|không quá|tối đa|<=|<)(\s)*(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu';
+        if (preg_match($maxPricePattern, $message, $matches)) {
+            $priceInfo['has_price'] = true;
+            $priceInfo['price_type'] = 'max';
+            
+            // Lấy phần giá
+            $priceText = preg_replace('/(dưới|không quá|tối đa|<=|<)(\s)*/', '', $matches[0]);
+            $priceInfo['max_price'] = $this->convertPriceTextToNumber($priceText);
+        }
+        
+        // Tìm giá tối thiểu
+        // Mẫu: "trên 100.000" hoặc "từ 100.000" hoặc "tối thiểu 100.000"
+        $minPricePattern = '/(trên|từ|tối thiểu|>=|>)(\s)*(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu';
+        if (preg_match($minPricePattern, $message, $matches) && $priceInfo['price_type'] !== 'range') {
+            $priceInfo['has_price'] = true;
+            $priceInfo['price_type'] = 'min';
+            
+            // Lấy phần giá
+            $priceText = preg_replace('/(trên|từ|tối thiểu|>=|>)(\s)*/', '', $matches[0]);
+            $priceInfo['min_price'] = $this->convertPriceTextToNumber($priceText);
+        }
+        
+        return $priceInfo;
+    }
+    
+    /**
+     * Chuyển đổi chuỗi giá thành số
+     * 
+     * @param string $priceText
+     * @return float
+     */
+    private function convertPriceTextToNumber($priceText)
+    {
+        // Loại bỏ dấu chấm ngăn cách hàng nghìn và khoảng trắng
+        $priceText = trim($priceText);
+        
+        // Kiểm tra và xử lý đơn vị "nghìn" hoặc "k"
+        if (preg_match('/(nghìn|ngàn|k)/iu', $priceText)) {
+            $priceText = preg_replace('/(nghìn|ngàn|k)/iu', '', $priceText);
+            $price = (float) preg_replace('/[^\d]/', '', $priceText);
+            return $price * 1000;
+        }
+        
+        // Kiểm tra và xử lý đơn vị "triệu" hoặc "tr"
+        if (preg_match('/(triệu|tr)/iu', $priceText)) {
+            $priceText = preg_replace('/(triệu|tr)/iu', '', $priceText);
+            $price = (float) preg_replace('/[^\d]/', '', $priceText);
+            return $price * 1000000;
+        }
+        
+        // Nếu số đã có "k" ở cuối (ví dụ: 20k)
+        if (preg_match('/(\d+)k$/iu', $priceText, $matches)) {
+            return (float)$matches[1] * 1000;
+        }
+        
+        // Loại bỏ tất cả ký tự không phải số
+        $price = (float) preg_replace('/[^\d]/', '', $priceText);
+        
+        return $price;
     }
 
     /**
      * Tìm kiếm sản phẩm dựa trên từ khóa
      *
      * @param  string  $keywords
+     * @param  array   $priceInfo
      * @return array
      */
-    private function searchProducts($keywords)
+    private function searchProducts($keywords, $priceInfo = null)
     {
         try {
             Log::info('Tìm kiếm sản phẩm với từ khóa: ' . $keywords);
+            if ($priceInfo && $priceInfo['has_price']) {
+                Log::info('Thông tin giá: ', $priceInfo);
+            }
             
             // Tách từ khóa thành các phần riêng biệt
             $keywordParts = explode(' ', $keywords);
@@ -304,34 +454,31 @@ class ChatController extends Controller
                 'kệ' => ['kệ', 'shelf', 'shelve', 'rack']
             ];
             
-            $specificCategory = null;
+            $specificCategories = [];
             
-            // Tìm xem có từ khóa nào là danh mục sản phẩm cụ thể không
+            // Tìm tất cả danh mục sản phẩm trong từ khóa
             foreach ($productCategories as $category => $terms) {
                 foreach ($terms as $term) {
                     if (mb_strpos(mb_strtolower($keywords, 'UTF-8'), $term) !== false) {
-                        $specificCategory = $category;
-                        break 2;
+                        if (!in_array($category, $specificCategories)) {
+                            $specificCategories[] = $category;
+                        }
                     }
                 }
             }
             
-            // Nếu tìm thấy danh mục cụ thể, lọc sản phẩm theo danh mục đó
-            if ($specificCategory) {
-                $query->whereHas('category', function($q) use ($specificCategory, $productCategories) {
-                    $categoryTerms = $productCategories[$specificCategory];
-                    $q->where(function($subQ) use ($categoryTerms) {
-                        foreach ($categoryTerms as $term) {
-                            $subQ->orWhere('name', 'like', '%' . $term . '%');
-                        }
-                    });
-                });
-                
-                // Thêm điều kiện tên sản phẩm cũng phải chứa tên danh mục
-                $query->where(function($q) use ($specificCategory, $productCategories) {
-                    $categoryTerms = $productCategories[$specificCategory];
-                    foreach ($categoryTerms as $term) {
-                        $q->orWhere('name', 'like', '%' . $term . '%');
+            // Nếu tìm thấy danh mục cụ thể, lọc sản phẩm theo các danh mục đó
+            if (!empty($specificCategories)) {
+                $query->where(function($mainQuery) use ($specificCategories, $productCategories) {
+                    foreach ($specificCategories as $category) {
+                        $mainQuery->orWhereHas('category', function($q) use ($category, $productCategories) {
+                            $categoryTerms = $productCategories[$category];
+                            $q->where(function($subQ) use ($categoryTerms) {
+                                foreach ($categoryTerms as $term) {
+                                    $subQ->orWhere('name', 'like', '%' . $term . '%');
+                                }
+                            });
+                        });
                     }
                 });
             } else {
@@ -360,15 +507,96 @@ class ChatController extends Controller
                 }
             }
             
+            // Nếu có thông tin giá, áp dụng bộ lọc giá
+            if ($priceInfo && $priceInfo['has_price']) {
+                // Xử lý giá chính xác
+                if ($priceInfo['price_type'] === 'exact' && $priceInfo['exact_price'] !== null) {
+                    // Tìm sản phẩm có giá xấp xỉ (sai số 15%)
+                    $exactPrice = $priceInfo['exact_price'];
+                    $minPrice = $exactPrice * 0.85; // Giảm 15%
+                    $maxPrice = $exactPrice * 1.15; // Tăng 15%
+                    
+                    Log::info("Tìm sản phẩm với giá chính xác: {$exactPrice}, phạm vi [{$minPrice} - {$maxPrice}]");
+                    
+                    $query->where(function($q) use ($minPrice, $maxPrice) {
+                        $q->where(function($subQ) use ($minPrice, $maxPrice) {
+                            $subQ->whereBetween('price', [$minPrice, $maxPrice]);
+                        })->orWhere(function($subQ) use ($minPrice, $maxPrice) {
+                            $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                 ->whereNotNull('discount_price');
+                        });
+                    });
+                }
+                
+                // Xử lý phạm vi giá
+                if ($priceInfo['price_type'] === 'range') {
+                    if ($priceInfo['min_price'] !== null && $priceInfo['max_price'] !== null) {
+                        $minPrice = $priceInfo['min_price'];
+                        $maxPrice = $priceInfo['max_price'];
+                        
+                        Log::info("Tìm sản phẩm với phạm vi giá: [{$minPrice} - {$maxPrice}]");
+                        
+                        $query->where(function($q) use ($minPrice, $maxPrice) {
+                            // Kiểm tra giá gốc trong khoảng
+                            $q->where(function($subQ) use ($minPrice, $maxPrice) {
+                                $subQ->whereBetween('price', [$minPrice, $maxPrice]);
+                            })
+                            // HOẶC giá khuyến mãi trong khoảng
+                            ->orWhere(function($subQ) use ($minPrice, $maxPrice) {
+                                $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                     ->whereNotNull('discount_price');
+                            });
+                        });
+                    }
+                }
+                
+                // Xử lý giá tối đa
+                if ($priceInfo['price_type'] === 'max' && $priceInfo['max_price'] !== null) {
+                    $maxPrice = $priceInfo['max_price'];
+                    Log::info("Tìm sản phẩm với giá tối đa: {$maxPrice}");
+                    
+                    $query->where(function($q) use ($maxPrice) {
+                        $q->where(function($subQ) use ($maxPrice) {
+                            $subQ->where('price', '<=', $maxPrice);
+                        })->orWhere(function($subQ) use ($maxPrice) {
+                            $subQ->where('discount_price', '<=', $maxPrice)
+                                 ->whereNotNull('discount_price');
+                        });
+                    });
+                }
+                
+                // Xử lý giá tối thiểu
+                if ($priceInfo['price_type'] === 'min' && $priceInfo['min_price'] !== null) {
+                    $minPrice = $priceInfo['min_price'];
+                    Log::info("Tìm sản phẩm với giá tối thiểu: {$minPrice}");
+                    
+                    $query->where(function($q) use ($minPrice) {
+                        // Nếu có giá khuyến mãi, dùng giá khuyến mãi để so sánh
+                        $q->where(function($subQ) use ($minPrice) {
+                            $subQ->where('price', '>=', $minPrice);
+                        })->orWhere(function($subQ) use ($minPrice) {
+                            $subQ->where('discount_price', '>=', $minPrice)
+                                 ->whereNotNull('discount_price');
+                        });
+                    });
+                }
+            }
+            
             // Lấy kết quả
             $products = $query->orderBy('created_at', 'desc')
-                ->limit(5)
+                ->limit(15) // Tăng giới hạn để hiển thị nhiều sản phẩm hơn khi tìm nhiều danh mục
                 ->get();
             
             Log::info('Tìm thấy ' . $products->count() . ' sản phẩm');
             
+            // Phân loại sản phẩm theo danh mục
+            $categorizedProducts = [];
+            $foundCategories = [];
+            $inPriceRange = false; // Biến kiểm tra có sản phẩm nào trong khoảng giá không
+            $productsInPriceRange = []; // Mảng lưu các sản phẩm trong khoảng giá
+            
             // Định dạng lại dữ liệu sản phẩm để hiển thị trong chat
-            return $products->map(function ($product) {
+            $formattedProducts = $products->map(function ($product) use (&$categorizedProducts, &$foundCategories, &$inPriceRange, &$productsInPriceRange, $priceInfo) {
                 // Đảm bảo có đường dẫn hình ảnh đúng
                 $imagePath = null;
                 
@@ -376,19 +604,133 @@ class ChatController extends Controller
                     $imagePath = $product->image_thumnail;
                 }
                 
-                return [
+                $categoryName = $product->category ? $product->category->name : 'N/A';
+                
+                // Thêm thông tin phân loại
+                if (!in_array($categoryName, $foundCategories)) {
+                    $foundCategories[] = $categoryName;
+                }
+                
+                // Lấy giá hiển thị (ưu tiên giá khuyến mãi nếu có)
+                $displayPrice = ($product->discount_price && $product->discount_price > 0) ? $product->discount_price : $product->price;
+                
+                // Kiểm tra xem sản phẩm có trong khoảng giá không (nếu có yêu cầu giá)
+                $productInPriceRange = false;
+                
+                if ($priceInfo && $priceInfo['has_price']) {
+                    if ($priceInfo['price_type'] === 'exact') {
+                        $exactPrice = $priceInfo['exact_price'];
+                        $minPrice = $exactPrice * 0.85;
+                        $maxPrice = $exactPrice * 1.15;
+                        $productInPriceRange = ($displayPrice >= $minPrice && $displayPrice <= $maxPrice);
+                    } elseif ($priceInfo['price_type'] === 'range') {
+                        $minPrice = $priceInfo['min_price'];
+                        $maxPrice = $priceInfo['max_price'];
+                        $productInPriceRange = ($displayPrice >= $minPrice && $displayPrice <= $maxPrice);
+                    } elseif ($priceInfo['price_type'] === 'min') {
+                        $minPrice = $priceInfo['min_price'];
+                        $productInPriceRange = ($displayPrice >= $minPrice);
+                    } elseif ($priceInfo['price_type'] === 'max') {
+                        $maxPrice = $priceInfo['max_price'];
+                        $productInPriceRange = ($displayPrice <= $maxPrice);
+                    }
+                    
+                    if ($productInPriceRange) {
+                        $inPriceRange = true;
+                    }
+                } else {
+                    // Nếu không có yêu cầu giá, coi như sản phẩm phù hợp
+                    $productInPriceRange = true;
+                }
+                
+                // Đưa danh mục vào metadata sản phẩm
+                $formattedProduct = [
                     'id' => $product->id,
                     'name' => $product->name,
                     'price' => $product->price,
                     'discount_price' => $product->discount_price,
                     'image' => $imagePath,
-                    'category' => $product->category ? $product->category->name : 'N/A',
-                    'description' => Str::limit($product->description, 100)
+                    'category' => $categoryName,
+                    'category_group' => $categoryName,
+                    'description' => Str::limit($product->description, 100),
+                    'in_price_range' => $productInPriceRange,
+                    'display_price' => $displayPrice // Thêm giá hiển thị để dễ dàng sắp xếp
                 ];
-            });
+                
+                // Chỉ lưu sản phẩm vào mảng kết quả nếu phù hợp với yêu cầu giá
+                // hoặc nếu không có yêu cầu về giá
+                if ($productInPriceRange) {
+                    // Phân loại sản phẩm vào nhóm danh mục
+                    if (!isset($categorizedProducts[$categoryName])) {
+                        $categorizedProducts[$categoryName] = [];
+                    }
+                    
+                    $categorizedProducts[$categoryName][] = $formattedProduct;
+                    
+                    // Thêm vào mảng sản phẩm phù hợp giá
+                    $productsInPriceRange[] = $formattedProduct;
+                    
+                    return $formattedProduct;
+                }
+                
+                // Nếu không đáp ứng yêu cầu giá, trả về null
+                return null;
+            })
+            ->filter(function ($product) {
+                // Lọc bỏ các giá trị null (sản phẩm không đáp ứng yêu cầu giá)
+                return $product !== null;
+            })
+            ->values(); // Chuẩn hóa lại index của mảng
+            
+            // Sắp xếp sản phẩm dựa vào yêu cầu giá
+            $sortedProducts = $formattedProducts;
+            
+            if ($priceInfo && $priceInfo['has_price']) {
+                // Nếu tìm với giá tối thiểu (min), sắp xếp từ cao đến thấp
+                if ($priceInfo['price_type'] === 'min') {
+                    // Sắp xếp sản phẩm từ giá cao nhất đến thấp nhất
+                    usort($productsInPriceRange, function($a, $b) {
+                        return $b['display_price'] - $a['display_price'];
+                    });
+                } 
+                // Nếu tìm với giá tối đa (max), sắp xếp từ thấp đến cao
+                else if ($priceInfo['price_type'] === 'max') {
+                    // Sắp xếp sản phẩm từ giá thấp nhất đến cao nhất
+                    usort($productsInPriceRange, function($a, $b) {
+                        return $a['display_price'] - $b['display_price'];
+                    });
+                }
+                
+                $sortedProducts = $productsInPriceRange;
+            }
+            
+            // Ghi log số lượng sản phẩm sau khi lọc giá
+            Log::info('Số sản phẩm phù hợp với yêu cầu giá: ' . count($sortedProducts));
+            
+            // Nhóm lại sản phẩm theo danh mục sau khi đã sắp xếp
+            $sortedCategorizedProducts = [];
+            foreach ($sortedProducts as $product) {
+                $catName = $product['category'];
+                if (!isset($sortedCategorizedProducts[$catName])) {
+                    $sortedCategorizedProducts[$catName] = [];
+                }
+                $sortedCategorizedProducts[$catName][] = $product;
+            }
+            
+            return [
+                'products' => $sortedProducts, // Trả về danh sách đã sắp xếp
+                'categories' => $foundCategories,
+                'categorized_products' => $sortedCategorizedProducts, // Trả về danh sách đã nhóm và sắp xếp
+                'has_products_in_price_range' => $inPriceRange
+            ];
         } catch (\Exception $e) {
             Log::error('Error searching products: ' . $e->getMessage());
-            return [];
+            return [
+                'products' => [],
+                'categories' => [],
+                'categorized_products' => [],
+                'has_products_in_price_range' => false
+            ];
         }
     }
 
@@ -440,17 +782,50 @@ Khi trả lời:
                 $searchKeywords = $context['search_keywords'] ?? '';
                 $foundProducts = $context['found_products'] ?? false;
                 $productCount = $context['product_count'] ?? 0;
+                $categoriesFound = $context['categories_found'] ?? [];
+                $priceInfo = $context['price_info'] ?? null;
+                $hasProductsInPriceRange = isset($context['has_products_in_price_range']) ? $context['has_products_in_price_range'] : false;
                 
                 $expertPrompt .= "\n\nĐây là yêu cầu tìm kiếm sản phẩm với từ khóa: \"$searchKeywords\".";
+                
+                // Thêm thông tin về giá nếu có
+                if ($priceInfo && $priceInfo['has_price']) {
+                    $priceType = $priceInfo['price_type'];
+                    $priceDetail = '';
+                    
+                    if ($priceType === 'exact') {
+                        $priceDetail = "giá khoảng " . number_format($priceInfo['exact_price']) . "đ";
+                    } elseif ($priceType === 'range') {
+                        $priceDetail = "giá từ " . number_format($priceInfo['min_price']) . "đ đến " . number_format($priceInfo['max_price']) . "đ";
+                    } elseif ($priceType === 'min') {
+                        $priceDetail = "giá từ " . number_format($priceInfo['min_price']) . "đ trở lên";
+                    } elseif ($priceType === 'max') {
+                        $priceDetail = "giá dưới " . number_format($priceInfo['max_price']) . "đ";
+                    }
+                    
+                    $expertPrompt .= " Khách hàng đang tìm sản phẩm với $priceDetail.";
+                }
                 
                 if (!$foundProducts) {
                     $expertPrompt .= "\nKHÔNG tìm thấy sản phẩm nào phù hợp với từ khóa này trong cơ sở dữ liệu của chúng tôi.
 Hãy bắt đầu câu trả lời của bạn bằng: \"Xin lỗi, hiện tại chúng tôi không có sản phẩm nào phù hợp với yêu cầu tìm kiếm của bạn.\"
 Sau đó, bạn có thể đề xuất một số sản phẩm tương tự hoặc gợi ý khách hàng thử tìm kiếm với từ khóa khác.";
                 } else {
-                    $expertPrompt .= "\nĐã tìm thấy $productCount sản phẩm phù hợp với từ khóa này.
-Hãy bắt đầu câu trả lời của bạn bằng: \"Tôi đã tìm thấy một số sản phẩm phù hợp với yêu cầu của bạn. Bạn có thể xem các sản phẩm bên dưới.\"
-Trả lời NGẮN GỌN và TRỰC TIẾP. KHÔNG đưa ra giải thích dài dòng về sản phẩm.
+                    $expertPrompt .= "\nĐã tìm thấy $productCount sản phẩm thuộc " . count($categoriesFound) . " danh mục: " . implode(', ', $categoriesFound) . ".";
+                    
+                    if ($priceInfo && $priceInfo['has_price']) {
+                        if ($hasProductsInPriceRange) {
+                            $expertPrompt .= "\nCó sản phẩm phù hợp với mức giá yêu cầu.";
+                            $expertPrompt .= "\nHãy trả lời: \"Tôi đã tìm thấy một số sản phẩm phù hợp với yêu cầu của bạn. Bạn có thể xem các sản phẩm bên dưới.\"";
+                        } else {
+                            $expertPrompt .= "\nKHÔNG có sản phẩm nào trong khoảng giá yêu cầu.";
+                            $expertPrompt .= "\nHãy trả lời: \"Tôi đã tìm thấy một số sản phẩm " . $searchKeywords . " nhưng không có sản phẩm nào đúng với mức giá bạn yêu cầu. Bạn có thể xem các sản phẩm dưới đây và cân nhắc mức giá khác.\"";
+                        }
+                    } else {
+                        $expertPrompt .= "\nHãy trả lời: \"Tôi đã tìm thấy một số sản phẩm phù hợp với yêu cầu của bạn. Bạn có thể xem các sản phẩm bên dưới.\"";
+                    }
+                    
+                    $expertPrompt .= "\n\nTrả lời NGẮN GỌN và TRỰC TIẾP. KHÔNG đưa ra giải thích dài dòng về sản phẩm.
 KHÔNG đề xuất các sản phẩm ngoài danh sách kết quả tìm kiếm.
 Câu trả lời của bạn KHÔNG nên dài quá 1-2 câu.";
                 }
