@@ -85,6 +85,24 @@ class ChatController extends Controller
     {
         $message = mb_strtolower($message, 'UTF-8');
         
+        // Kiểm tra nếu tin nhắn chỉ là lời chào đơn giản
+        $greetings = [
+            'chào', 'hello', 'hi', 'xin chào', 'chào bạn', 
+            'chào trợ lý', 'hey', 'alo', 'hola'
+        ];
+        
+        // Nếu tin nhắn chỉ chứa lời chào và ít hơn 15 ký tự, không coi là tìm kiếm sản phẩm
+        if (mb_strlen($message) < 15) {
+            foreach ($greetings as $greeting) {
+                if (mb_strpos($message, $greeting) !== false) {
+                    // Kiểm tra xem lời chào có chiếm hầu hết tin nhắn không
+                    if (mb_strlen($greeting) > mb_strlen($message) * 0.5) {
+                        return false;
+                    }
+                }
+            }
+        }
+        
         // Các từ khóa liên quan đến tìm kiếm sản phẩm
         $searchKeywords = [
             'tìm', 'kiếm', 'mua', 'sản phẩm', 'đồ', 'nội thất',
@@ -273,28 +291,73 @@ class ChatController extends Controller
             // Bắt đầu truy vấn
             $query = Product::with(['category', 'gallery']);
             
-            // Nếu có nhiều từ khóa, sử dụng mỗi từ khóa để tìm kiếm
-            if (count($keywordParts) > 1) {
-                $query->where(function($q) use ($keywordParts) {
-                    foreach ($keywordParts as $part) {
-                        if (mb_strlen($part) >= 2) { // Chỉ tìm kiếm với từ khóa có ít nhất 2 ký tự
-                            $q->orWhere('name', 'like', '%' . $part . '%')
-                              ->orWhere('description', 'like', '%' . $part . '%')
-                              ->orWhereHas('category', function($categoryQuery) use ($part) {
-                                  $categoryQuery->where('name', 'like', '%' . $part . '%');
-                              });
+            // Kiểm tra xem có từ khóa là danh mục sản phẩm cụ thể không
+            $productCategories = [
+                'bàn' => ['bàn', 'table', 'desk'],
+                'ghế' => ['ghế', 'chair', 'stool'],
+                'sofa' => ['sofa', 'ghế sofa', 'couch'],
+                'giường' => ['giường', 'bed', 'mattress'],
+                'tủ' => ['tủ', 'cabinet', 'wardrobe', 'closet'],
+                'đèn' => ['đèn', 'lamp', 'light'],
+                'gương' => ['gương', 'mirror'],
+                'thảm' => ['thảm', 'carpet', 'rug'],
+                'kệ' => ['kệ', 'shelf', 'shelve', 'rack']
+            ];
+            
+            $specificCategory = null;
+            
+            // Tìm xem có từ khóa nào là danh mục sản phẩm cụ thể không
+            foreach ($productCategories as $category => $terms) {
+                foreach ($terms as $term) {
+                    if (mb_strpos(mb_strtolower($keywords, 'UTF-8'), $term) !== false) {
+                        $specificCategory = $category;
+                        break 2;
+                    }
+                }
+            }
+            
+            // Nếu tìm thấy danh mục cụ thể, lọc sản phẩm theo danh mục đó
+            if ($specificCategory) {
+                $query->whereHas('category', function($q) use ($specificCategory, $productCategories) {
+                    $categoryTerms = $productCategories[$specificCategory];
+                    $q->where(function($subQ) use ($categoryTerms) {
+                        foreach ($categoryTerms as $term) {
+                            $subQ->orWhere('name', 'like', '%' . $term . '%');
                         }
+                    });
+                });
+                
+                // Thêm điều kiện tên sản phẩm cũng phải chứa tên danh mục
+                $query->where(function($q) use ($specificCategory, $productCategories) {
+                    $categoryTerms = $productCategories[$specificCategory];
+                    foreach ($categoryTerms as $term) {
+                        $q->orWhere('name', 'like', '%' . $term . '%');
                     }
                 });
             } else {
-                // Nếu chỉ có một từ khóa, tìm kiếm trực tiếp
-                $query->where(function($q) use ($keywords) {
-                    $q->where('name', 'like', '%' . $keywords . '%')
-                      ->orWhere('description', 'like', '%' . $keywords . '%')
-                      ->orWhereHas('category', function($categoryQuery) use ($keywords) {
-                          $categoryQuery->where('name', 'like', '%' . $keywords . '%');
-                      });
-                });
+                // Nếu có nhiều từ khóa, sử dụng mỗi từ khóa để tìm kiếm
+                if (count($keywordParts) > 1) {
+                    $query->where(function($q) use ($keywordParts) {
+                        foreach ($keywordParts as $part) {
+                            if (mb_strlen($part) >= 2) { // Chỉ tìm kiếm với từ khóa có ít nhất 2 ký tự
+                                $q->orWhere('name', 'like', '%' . $part . '%')
+                                  ->orWhere('description', 'like', '%' . $part . '%')
+                                  ->orWhereHas('category', function($categoryQuery) use ($part) {
+                                      $categoryQuery->where('name', 'like', '%' . $part . '%');
+                                  });
+                            }
+                        }
+                    });
+                } else {
+                    // Nếu chỉ có một từ khóa, tìm kiếm trực tiếp
+                    $query->where(function($q) use ($keywords) {
+                        $q->where('name', 'like', '%' . $keywords . '%')
+                          ->orWhere('description', 'like', '%' . $keywords . '%')
+                          ->orWhereHas('category', function($categoryQuery) use ($keywords) {
+                              $categoryQuery->where('name', 'like', '%' . $keywords . '%');
+                          });
+                    });
+                }
             }
             
             // Lấy kết quả
@@ -304,34 +367,21 @@ class ChatController extends Controller
             
             Log::info('Tìm thấy ' . $products->count() . ' sản phẩm');
             
-            // Nếu không tìm thấy sản phẩm nào, thử tìm kiếm lại với từng từ khóa riêng biệt
-            if ($products->count() == 0 && count($keywordParts) > 1) {
-                foreach ($keywordParts as $part) {
-                    if (mb_strlen($part) >= 2) { // Chỉ tìm kiếm với từ khóa có ít nhất 2 ký tự
-                        $partQuery = Product::with(['category', 'gallery'])
-                            ->where('name', 'like', '%' . $part . '%')
-                            ->orWhere('description', 'like', '%' . $part . '%')
-                            ->orderBy('created_at', 'desc')
-                            ->limit(5)
-                            ->get();
-                        
-                        if ($partQuery->count() > 0) {
-                            $products = $partQuery;
-                            Log::info('Tìm thấy ' . $products->count() . ' sản phẩm với từ khóa: ' . $part);
-                            break;
-                        }
-                    }
-                }
-            }
-            
             // Định dạng lại dữ liệu sản phẩm để hiển thị trong chat
             return $products->map(function ($product) {
+                // Đảm bảo có đường dẫn hình ảnh đúng
+                $imagePath = null;
+                
+                if (!empty($product->image_thumnail)) {
+                    $imagePath = $product->image_thumnail;
+                }
+                
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'price' => $product->price,
                     'discount_price' => $product->discount_price,
-                    'image' => $product->image_thumnail,
+                    'image' => $imagePath,
                     'category' => $product->category ? $product->category->name : 'N/A',
                     'description' => Str::limit($product->description, 100)
                 ];
@@ -377,7 +427,10 @@ Kiến thức chuyên môn của bạn bao gồm:
 Khi trả lời:
 - Luôn giới thiệu bản thân là trợ lý AI của Eco-Furnish
 - Sử dụng ngôn ngữ thân thiện, chuyên nghiệp và dễ hiểu
-- Không trả lời quá dài dòng
+- PHẢI trả lời NGẮN GỌN và TRỰC TIẾP, tối đa 1-2 câu
+- TUYỆT ĐỐI KHÔNG trả lời dài dòng, kể cả khi đưa ra lời khuyên
+- KHÔNG đưa ra quá nhiều chi tiết không cần thiết
+- KHÔNG đưa ra giải thích dài dòng về sản phẩm hoặc dịch vụ
 - Đưa ra lời khuyên cụ thể và thực tế
 - Nếu không biết câu trả lời, hãy thành thật và đề nghị khách hàng liên hệ với nhân viên tư vấn
 - Không đưa ra thông tin sai lệch về sản phẩm hoặc dịch vụ";
@@ -397,7 +450,9 @@ Sau đó, bạn có thể đề xuất một số sản phẩm tương tự ho�
                 } else {
                     $expertPrompt .= "\nĐã tìm thấy $productCount sản phẩm phù hợp với từ khóa này.
 Hãy bắt đầu câu trả lời của bạn bằng: \"Tôi đã tìm thấy một số sản phẩm phù hợp với yêu cầu của bạn. Bạn có thể xem các sản phẩm bên dưới.\"
-Sau đó, bạn có thể đưa ra một số gợi ý hoặc lời khuyên liên quan đến loại sản phẩm này.";
+Trả lời NGẮN GỌN và TRỰC TIẾP. KHÔNG đưa ra giải thích dài dòng về sản phẩm.
+KHÔNG đề xuất các sản phẩm ngoài danh sách kết quả tìm kiếm.
+Câu trả lời của bạn KHÔNG nên dài quá 1-2 câu.";
                 }
             }
 
@@ -418,7 +473,7 @@ Sau đó, bạn có thể đưa ra một số gợi ý hoặc lời khuyên liê
                     'temperature' => 0.7,
                     'topK' => 40,
                     'topP' => 0.95,
-                    'maxOutputTokens' => 1000,
+                    'maxOutputTokens' => 250, // Giảm số lượng token tối đa để phản hồi ngắn gọn hơn
                 ]
             ];
 
