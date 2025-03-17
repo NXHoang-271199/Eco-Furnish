@@ -187,6 +187,11 @@
                         </ul>
                     </div>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="{{ route('banners.index') }}">
+                        <i class="ri-image-line"></i> <span data-key="t-advance-ui">Quản lý banner</span>
+                    </a>
+                </li>
 
                 <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
 

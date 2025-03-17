@@ -20,6 +20,7 @@ use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\OrderNotificationController;
+use App\Http\Controllers\BannerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,6 +106,10 @@ Route::prefix('admin')->group(function () {
         Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
         Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
     });
+
+    // Banners Management
+    Route::resource('banners', BannerController::class);
+    Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
 });
 
 

@@ -1,16 +1,11 @@
 import React from "react";
 import { FaArrowRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import Banner from "../../../components/Banner";
 const Homes = () => {
   return (
     <>
-      <div>
-        <img
-          src=".\src\assets\img\slider-banner\homepage01-slide1.jpg"
-          alt=""
-          className="w-full"
-        />
-      </div>
+      <Banner />
 
       <section>
         <div className="max-w-6xl mx-auto mt-20 my-5">

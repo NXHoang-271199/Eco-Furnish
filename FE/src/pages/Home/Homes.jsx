@@ -1,15 +1,12 @@
 import React from "react";
 import { FaArrowRight } from "react-icons/fa";
+import Banner from "../../components/Banner";
 
 const Homes = () => {
   return (
     <>
       <div>
-        <img
-          src=".\src\assets\img\slider-banner\homepage01-slide1.jpg"
-          alt=""
-          className="w-full"
-        />
+        <Banner />
       </div>
 
       <section>
