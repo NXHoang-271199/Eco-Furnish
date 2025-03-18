@@ -32,7 +32,8 @@
             </div>
         </div>
         <div class="profile-foreground position-relative mx-n4 mt-n4">
-            <div class="profile-wid-bg"></div>
+            <div class="profile-wid-bg">
+            </div>
         </div>
         <div class="pt-4 mb-4 mb-lg-3 pb-lg-4 profile-wrapper">
             <div class="row g-4">
@@ -62,22 +63,6 @@
         <div class="row">
             <div class="col-lg-12">
                 <div>
-                    <div class="d-flex profile-wrapper">
-                        <!-- Nav tabs -->
-                        {{-- <ul class="nav nav-pills animation-nav profile-nav gap-2 gap-lg-3 flex-grow-1" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link fs-14 active" data-bs-toggle="tab" href="#overview-tab" role="tab"
-                                    aria-selected="true">
-                                    <i class="ri-airplay-fill d-inline-block d-md-none"></i> <span
-                                        class="d-none d-md-inline-block">Thông tin</span>
-                                </a>
-                            </li>
-                        </ul> --}}
-                        <div class="flex-shrink-0">
-                            <a href="{{ route('users.edit', $singerUser->id) }}" class="btn btn-success"><i
-                                    class="ri-edit-box-line align-bottom"></i> Cập nhật</a>
-                        </div>
-                    </div>
                     <!-- Tab panes -->
                     <div class="tab-content pt-4 text-muted">
                         <div class="tab-pane active show" id="overview-tab" role="tabpanel">
@@ -1513,4 +1498,16 @@
         <!--end row-->
 
     </div>
+
+    <style>
+    .profile-wid-bg::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        background: linear-gradient(to right, rgb(28 36 77 / 93%), rgb(9 5 22 / 62%))!important;
+    }
+    </style>
 @endsection
