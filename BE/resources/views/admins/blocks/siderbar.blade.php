@@ -231,7 +231,7 @@
                 @endif
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="">
+                    <a class="nav-link menu-link" href="{{ route('settings') }}">
                         <i class="ri-settings-4-line"></i> <span data-key="t-advance-ui">Cài đặt</span>
                     </a>
                 </li>
