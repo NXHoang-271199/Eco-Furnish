@@ -284,28 +284,25 @@ class UserApiController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function apiLogout(Request $request)
-    {
-        $user = Auth::user();
-
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Người dùng chưa đăng nhập'
-            ], 401);
-        }
-
-        // Xóa tokens
-        $user->tokens()->delete();
-
-        // Xóa remember_token nếu có
-        $user->remember_token = null;
-        $user->save();
-
+{
+    // Sử dụng sanctum thay vì api guard
+    $user = $request->user();
+    
+    if (!$user) {
         return response()->json([
-            'success' => true,
-            'message' => 'Đăng xuất thành công'
-        ]);
+            'success' => false,
+            'message' => 'Người dùng chưa đăng nhập'
+        ], 401);
     }
+    
+    // Xóa token hiện tại
+    $request->user()->currentAccessToken()->delete();
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Đăng xuất thành công'
+    ]);
+}
 
     /**
      * Gửi email đặt lại mật khẩu
