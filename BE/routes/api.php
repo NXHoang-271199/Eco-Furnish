@@ -43,6 +43,7 @@ Route::prefix('users')->group(function () {
     Route::post('/logout', [UserApiController::class, 'apiLogout']);
     Route::post('/forgot-password', [UserApiController::class, 'forgotPassword']);
     Route::post('/reset-password', [UserApiController::class, 'resetPassword']);
+    Route::post('/refresh-token', [UserApiController::class, 'refreshToken']);
 });
 
 // Post routes
@@ -70,3 +71,5 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/products/{product}/comments', [CommentController::class, 'getProductComments']);
+
+
