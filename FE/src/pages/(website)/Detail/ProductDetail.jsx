@@ -288,38 +288,6 @@ const ProductDetail = () => {
     setError(""); // Xóa thông báo lỗi khi người dùng chọn biến thể
   };
 
-  // Hàm tìm biến thể phù hợp với lựa chọn của người dùng
-  const findSelectedVariantCombination = (selectedVars) => {
-    if (!product.variants || product.variants.length === 0) return null;
-
-    // Tìm biến thể phù hợp nhất với các lựa chọn hiện tại
-    const selectedVariantTypes = Object.keys(selectedVars).map(Number);
-
-    // Đầu tiên tìm biến thể khớp với tất cả các lựa chọn
-    const matchingVariants = product.variants.filter((variant) => {
-      return selectedVariantTypes.every(
-        (typeId) =>
-          variant.variant_id === typeId &&
-          variant.variant_value_id === selectedVars[typeId]
-      );
-    });
-
-    // Nếu có nhiều biến thể khớp, ưu tiên biến thể có số lượng > 0
-    const inStockVariant = matchingVariants.find((v) => v.quantity > 0);
-    if (inStockVariant) return inStockVariant;
-
-    // Nếu không có biến thể nào còn hàng, trả về biến thể đầu tiên
-    if (matchingVariants.length > 0) return matchingVariants[0];
-
-    // Nếu không tìm thấy biến thể khớp với tất cả các lựa chọn,
-    // trả về biến thể đầu tiên có số lượng > 0
-    return (
-      product.variants.find((v) => v.quantity > 0) ||
-      product.variants[0] ||
-      null
-    );
-  };
-
   // Kiểm tra xem biến thể có còn hàng không
   const isVariantInStock = (variant) => {
     if (!variant) return false;
@@ -486,48 +454,20 @@ const ProductDetail = () => {
     product.is_sample === true ||
     product.status === "sample";
 
-  // Kiểm tra xem biến thể có khả dụng không dựa trên các lựa chọn hiện tại
+  // Kiểm tra xem biến thể có khả dụng không
   const isVariantAvailable = (variant, currentSelections) => {
-    // Tạm thời trả về true để hiển thị tất cả các biến thể
-    return true;
+    if (!variant || !currentSelections) return true;
 
-    // Nếu không có lựa chọn nào, tất cả các biến thể đều khả dụng
-    if (Object.keys(currentSelections).length === 0) return true;
+    // Kiểm tra số lượng tồn kho
+    if (variant.quantity <= 0) return false;
 
-    // Nếu đang xét biến thể của loại đã được chọn, chỉ hiển thị biến thể được chọn
-    if (currentSelections[variant.variant_id] !== undefined) {
-      return currentSelections[variant.variant_id] === variant.variant_value_id;
-    }
-
-    // Đối với các loại biến thể khác, kiểm tra xem có tồn tại tổ hợp hợp lệ không
-    const selectedVariantTypes = Object.keys(currentSelections).map(Number);
-
-    // Tìm tất cả các biến thể có cùng loại và giá trị với biến thể đang xét
-    const variantsWithSameValue = product.variants.filter(
-      (v) =>
-        v.variant_id === variant.variant_id &&
-        v.variant_value_id === variant.variant_value_id
-    );
-
-    // Kiểm tra xem có biến thể nào trong số này tương thích với các lựa chọn hiện tại không
-    return variantsWithSameValue.some((v) => {
-      // Kiểm tra xem biến thể này có tương thích với tất cả các lựa chọn hiện tại không
-      return selectedVariantTypes.every((typeId) => {
-        // Tìm biến thể có cùng product_id và cùng giá trị biến thể đã chọn
-        return product.variants.some(
-          (otherV) =>
-            otherV.product_id === v.product_id &&
-            otherV.variant_id === typeId &&
-            otherV.variant_value_id === currentSelections[typeId] &&
-            // Kiểm tra xem có tồn tại tổ hợp với biến thể đang xét không
-            product.variants.some(
-              (combinedV) =>
-                combinedV.variant_id === variant.variant_id &&
-                combinedV.variant_value_id === variant.variant_value_id &&
-                combinedV.product_id === v.product_id
-            )
-        );
-      });
+    // Kiểm tra xem biến thể có phù hợp với các lựa chọn hiện tại không
+    const selectedTypes = Object.keys(currentSelections);
+    return selectedTypes.every((typeId) => {
+      if (variant.variant_id === Number(typeId)) {
+        return variant.variant_value_id === currentSelections[typeId];
+      }
+      return true;
     });
   };
 
@@ -708,9 +648,7 @@ const ProductDetail = () => {
         {/* Info */}
         <div>
           {/* name */}
-          <h5 className="text-[20px] font-semibold text-3xl">
-            {product.name || "Tên sản phẩm"}
-          </h5>
+          <h5 className="text-[20px] font-semibold text-3xl">{product.name}</h5>
           {/* price */}
           <h3 className="text-[40px] font-bold mt-2 text-[#EF4444]">
             {currentDiscount
@@ -761,12 +699,11 @@ const ProductDetail = () => {
                       selectedVariants[variantTypeId] ===
                       variant.variant_value_id;
                     const inStock = isVariantInStock(variant);
-
-                    // Kiểm tra xem biến thể có khả dụng không dựa trên các lựa chọn hiện tại
-                    const isAvailable = isVariantAvailable(
+                    const available = isVariantAvailable(
                       variant,
                       selectedVariants
                     );
+                    const isDisabled = !inStock || !available;
 
                     // Xử lý hiển thị màu sắc đặc biệt
                     if (variantTypeId === 1) {
@@ -802,12 +739,14 @@ const ProductDetail = () => {
                             isSelected
                               ? "ring-2 ring-offset-2 ring-blue-500"
                               : "border"
-                          } ${!inStock ? "opacity-50 cursor-not-allowed" : ""}`}
+                          } ${
+                            isDisabled ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                           title={`${variantValue || "Không xác định"} ${
-                            !inStock ? "(Hết hàng)" : ""
+                            isDisabled ? "(Không khả dụng)" : ""
                           }`}
                           onClick={() => {
-                            if (inStock) {
+                            if (!isDisabled) {
                               handleVariantSelect(
                                 variantTypeId,
                                 variant.variant_value_id,

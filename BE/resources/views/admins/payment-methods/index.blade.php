@@ -8,7 +8,9 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Danh sách phương thức thanh toán</h5>
+                @if(Auth::user()->hasPermission('create-payment-methods'))
                 <a href="{{ route('payment-methods.create') }}" class="btn btn-primary">Thêm phương thức</a>
+                @endif
             </div>
             <div class="card-body">
                 <table class="table table-striped">
@@ -36,14 +38,18 @@
                                     @endif
                                 </td>
                                 <td>
+                                    @if(Auth::user()->hasPermission('update-payment-methods'))
                                     <a href="{{ route('payment-methods.edit', $method->id) }}"
                                         class="btn btn-warning btn-sm">Sửa</a>
+                                    @endif
+                                    @if(Auth::user()->hasPermission('delete-payment-methods'))
                                     <form action="{{ route('payment-methods.destroy', $method->id) }}" method="POST"
                                         class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
                                     </form>
+                                    @endif
                                     @if ($method->name !== 'Tiền mặt')
                                         @if (!$method->is_connected)
                                             <button class="btn btn-info btn-sm"

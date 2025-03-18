@@ -31,10 +31,10 @@ class ChatController extends Controller
             if ($this->detectProductSearchIntent($userMessage)) {
                 // Trích xuất từ khóa tìm kiếm
                 $keywords = $this->extractSearchKeywords($userMessage);
-                
+
                 // Tìm kiếm sản phẩm
                 $products = $this->searchProducts($keywords);
-                
+
                 // Gọi API Gemini để có phản hồi thông minh
                 // Truyền thêm thông tin về kết quả tìm kiếm để Gemini có thể đưa ra phản hồi phù hợp
                 $aiResponse = $this->callGeminiApi($userMessage, [
@@ -43,7 +43,7 @@ class ChatController extends Controller
                     'found_products' => count($products) > 0,
                     'product_count' => count($products)
                 ]);
-                
+
                 // Trả về cả phản hồi AI và sản phẩm
                 return response()->json([
                     'success' => true,
@@ -53,7 +53,7 @@ class ChatController extends Controller
                     'search_keywords' => $keywords
                 ]);
             }
-            
+
             // Nếu không phải tìm kiếm sản phẩm, chỉ gọi API Gemini
             $response = $this->callGeminiApi($userMessage);
 
@@ -84,7 +84,7 @@ class ChatController extends Controller
     private function detectProductSearchIntent($message)
     {
         $message = mb_strtolower($message, 'UTF-8');
-        
+
         // Các từ khóa liên quan đến tìm kiếm sản phẩm
         $searchKeywords = [
             'tìm', 'kiếm', 'mua', 'sản phẩm', 'đồ', 'nội thất',
@@ -93,31 +93,31 @@ class ChatController extends Controller
             'gợi ý', 'cần', 'muốn', 'tư vấn', 'gương', 'sofa',
             'giá', 'mẫu', 'loại', 'hiện có', 'phòng', 'thiết kế'
         ];
-        
+
         // Các cụm từ chỉ rõ ý định tìm kiếm sản phẩm
         $searchPhrases = [
-            'có sản phẩm', 'tìm sản phẩm', 'mua sản phẩm', 
+            'có sản phẩm', 'tìm sản phẩm', 'mua sản phẩm',
             'giới thiệu sản phẩm', 'tư vấn sản phẩm',
             'có bán', 'mua được', 'tìm mua', 'giới thiệu cho tôi',
             'cho tôi xem', 'cần mua', 'muốn mua', 'tìm kiếm',
             'có mẫu', 'có loại', 'có đồ', 'có nội thất',
             'trang trí', 'thiết kế', 'nội thất cho', 'đồ cho'
         ];
-        
+
         // Kiểm tra các cụm từ trước
         foreach ($searchPhrases as $phrase) {
             if (mb_strpos($message, $phrase) !== false) {
                 return true;
             }
         }
-        
+
         // Kiểm tra xem tin nhắn có chứa từ khóa tìm kiếm không
         foreach ($searchKeywords as $keyword) {
             if (mb_strpos($message, $keyword) !== false) {
                 return true;
             }
         }
-        
+
         // Kiểm tra các mẫu câu hỏi thường gặp về sản phẩm
         $questionPatterns = [
             '/có.*(bàn|ghế|tủ|giường|kệ|đèn|thảm|gương|sofa).*không/i',
@@ -128,13 +128,13 @@ class ChatController extends Controller
             '/phòng.*(khách|ngủ|làm việc|ăn)/i',
             '/(khách|ngủ|làm việc|ăn).*phòng/i',
         ];
-        
+
         foreach ($questionPatterns as $pattern) {
             if (preg_match($pattern, $message)) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -147,7 +147,7 @@ class ChatController extends Controller
     private function extractSearchKeywords($message)
     {
         $message = mb_strtolower($message, 'UTF-8');
-        
+
         // Loại bỏ các từ không cần thiết
         $stopWords = [
             'hãy', 'vui lòng', 'làm ơn', 'giúp', 'tôi', 'mình', 'bạn', 'cho', 'tìm', 'kiếm',
@@ -157,7 +157,7 @@ class ChatController extends Controller
             'thì', 'mà', 'để', 'còn', 'đang', 'sẽ', 'đã', 'rồi', 'nên', 'cần', 'phải',
             'như', 'trên', 'dưới', 'trong', 'ngoài', 'giữa', 'quanh', 'chung', 'riêng'
         ];
-        
+
         // Các danh mục sản phẩm cần tìm
         $categories = [
             'bàn' => 1,
@@ -170,16 +170,16 @@ class ChatController extends Controller
             'thảm' => 8,
             'kệ' => 9
         ];
-        
+
         // Các từ mô tả không gian
         $spaces = ['phòng khách', 'phòng ngủ', 'phòng ăn', 'phòng làm việc', 'văn phòng', 'nhà bếp', 'phòng tắm'];
-        
+
         // Các từ mô tả phong cách
         $styles = ['hiện đại', 'cổ điển', 'tối giản', 'scandinavian', 'vintage', 'industrial', 'bohemian', 'rustic'];
-        
+
         // Các từ mô tả chất liệu
         $materials = ['gỗ', 'kim loại', 'nhựa', 'tre', 'mây', 'vải', 'da', 'thủy tinh', 'đá'];
-        
+
         // Tìm danh mục sản phẩm trong tin nhắn
         $foundCategory = null;
         foreach ($categories as $category => $id) {
@@ -188,7 +188,7 @@ class ChatController extends Controller
                 break;
             }
         }
-        
+
         // Tìm không gian trong tin nhắn
         $foundSpace = null;
         foreach ($spaces as $space) {
@@ -197,7 +197,7 @@ class ChatController extends Controller
                 break;
             }
         }
-        
+
         // Tìm phong cách trong tin nhắn
         $foundStyle = null;
         foreach ($styles as $style) {
@@ -206,7 +206,7 @@ class ChatController extends Controller
                 break;
             }
         }
-        
+
         // Tìm chất liệu trong tin nhắn
         $foundMaterial = null;
         foreach ($materials as $material) {
@@ -215,43 +215,43 @@ class ChatController extends Controller
                 break;
             }
         }
-        
+
         // Xây dựng từ khóa tìm kiếm dựa trên các thông tin tìm được
         $keywords = [];
-        
+
         if ($foundCategory) {
             $keywords[] = $foundCategory;
         }
-        
+
         if ($foundSpace) {
             $keywords[] = $foundSpace;
         }
-        
+
         if ($foundStyle) {
             $keywords[] = $foundStyle;
         }
-        
+
         if ($foundMaterial) {
             $keywords[] = $foundMaterial;
         }
-        
+
         // Nếu không tìm thấy thông tin cụ thể, sử dụng toàn bộ tin nhắn sau khi loại bỏ stopwords
         if (empty($keywords)) {
             // Loại bỏ các stopwords
             foreach ($stopWords as $word) {
                 $message = str_replace(' ' . $word . ' ', ' ', ' ' . $message . ' ');
             }
-            
+
             $message = trim($message);
-            
+
             // Nếu tin nhắn quá ngắn sau khi loại bỏ stopwords, sử dụng tin nhắn gốc
             if (mb_strlen($message) < 3) {
                 return $message;
             }
-            
+
             return $message;
         }
-        
+
         // Kết hợp các từ khóa tìm được
         return implode(' ', $keywords);
     }
@@ -266,13 +266,13 @@ class ChatController extends Controller
     {
         try {
             Log::info('Tìm kiếm sản phẩm với từ khóa: ' . $keywords);
-            
+
             // Tách từ khóa thành các phần riêng biệt
             $keywordParts = explode(' ', $keywords);
-            
+
             // Bắt đầu truy vấn
             $query = Product::with(['category', 'gallery']);
-            
+
             // Nếu có nhiều từ khóa, sử dụng mỗi từ khóa để tìm kiếm
             if (count($keywordParts) > 1) {
                 $query->where(function($q) use ($keywordParts) {
@@ -296,14 +296,14 @@ class ChatController extends Controller
                       });
                 });
             }
-            
+
             // Lấy kết quả
             $products = $query->orderBy('created_at', 'desc')
                 ->limit(5)
                 ->get();
-            
+
             Log::info('Tìm thấy ' . $products->count() . ' sản phẩm');
-            
+
             // Nếu không tìm thấy sản phẩm nào, thử tìm kiếm lại với từng từ khóa riêng biệt
             if ($products->count() == 0 && count($keywordParts) > 1) {
                 foreach ($keywordParts as $part) {
@@ -314,7 +314,7 @@ class ChatController extends Controller
                             ->orderBy('created_at', 'desc')
                             ->limit(5)
                             ->get();
-                        
+
                         if ($partQuery->count() > 0) {
                             $products = $partQuery;
                             Log::info('Tìm thấy ' . $products->count() . ' sản phẩm với từ khóa: ' . $part);
@@ -323,7 +323,7 @@ class ChatController extends Controller
                     }
                 }
             }
-            
+
             // Định dạng lại dữ liệu sản phẩm để hiển thị trong chat
             return $products->map(function ($product) {
                 return [
@@ -387,9 +387,9 @@ Khi trả lời:
                 $searchKeywords = $context['search_keywords'] ?? '';
                 $foundProducts = $context['found_products'] ?? false;
                 $productCount = $context['product_count'] ?? 0;
-                
+
                 $expertPrompt .= "\n\nĐây là yêu cầu tìm kiếm sản phẩm với từ khóa: \"$searchKeywords\".";
-                
+
                 if (!$foundProducts) {
                     $expertPrompt .= "\nKHÔNG tìm thấy sản phẩm nào phù hợp với từ khóa này trong cơ sở dữ liệu của chúng tôi.
 Hãy bắt đầu câu trả lời của bạn bằng: \"Xin lỗi, hiện tại chúng tôi không có sản phẩm nào phù hợp với yêu cầu tìm kiếm của bạn.\"
@@ -402,7 +402,6 @@ Sau đó, bạn có thể đưa ra một số gợi ý hoặc lời khuyên liê
             }
 
             $expertPrompt .= "\n\nCâu hỏi của khách hàng: " . $message;
-            
             // Chuẩn bị dữ liệu gửi đến API
             $data = [
                 'contents' => [
@@ -457,4 +456,5 @@ Sau đó, bạn có thể đưa ra một số gợi ý hoặc lời khuyên liê
             throw $e;
         }
     }
+
 }
