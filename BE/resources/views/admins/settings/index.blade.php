@@ -92,8 +92,75 @@
                         </form>
                     </div>
                     <div class="tab-pane active" id="website-info" role="tabpanel">
-                        <h5 class="card-title mb-4">Thông tin Website</h5>
-                        <p>Nội dung thông tin website sẽ được hiển thị ở đây.</p>
+                        <form action="{{ url('/admin/settings/website/update') }}" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            <div class="row mb-3">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="website_name" class="form-label">Tên Website</label>
+                                        <input type="text" class="form-control" id="website_name" name="website_name" 
+                                               value="{{ config('app.name') }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="website_description" class="form-label">Mô tả Website</label>
+                                        <textarea class="form-control" id="website_description" name="website_description" 
+                                                  rows="3">{{ config('app.description') }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="website_address" class="form-label">Địa chỉ</label>
+                                        <input type="text" class="form-control" id="website_address" name="website_address" 
+                                               value="{{ config('app.address') }}">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="website_phone" class="form-label">Số điện thoại</label>
+                                        <input type="text" class="form-control" id="website_phone" name="website_phone" 
+                                               value="{{ config('app.phone') }}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="website_email" class="form-label">Email liên hệ</label>
+                                        <input type="email" class="form-control" id="website_email" name="website_email" 
+                                               value="{{ config('app.email') }}">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="website_logo" class="form-label">Logo Website</label>
+                                        <input type="file" class="form-control" id="website_logo" name="website_logo" 
+                                               accept="image/*">
+                                        @if(config('app.logo'))
+                                            <div class="mt-2">
+                                                <img src="{{ asset(config('app.logo')) }}" alt="Current Logo" 
+                                                     style="max-height: 50px;">
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-lg-12">
+                                    <div class="mb-3">
+                                        <label for="website_footer" class="form-label">Footer Content</label>
+                                        <textarea class="form-control" id="website_footer" name="website_footer" 
+                                                  rows="3">{{ config('app.footer') }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Lưu thông tin</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>

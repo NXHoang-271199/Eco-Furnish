@@ -41,13 +41,12 @@ class UserApiController extends Controller
     }
 
     // 2. Xem chi tiết user theo slug
-    public function show($slug)
+    public function show($email)
     {
-        $name = str_replace('-', ' ', $slug);
         $user = User::whereHas('role', function($query) {
             $query->where('name', 'Client');
         })
-        ->where('name', 'LIKE', $name)
+        ->where('email', 'LIKE', $email)
         ->where('is_active', 1)
         ->first();
 
