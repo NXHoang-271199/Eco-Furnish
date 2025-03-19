@@ -58,7 +58,7 @@ const SignIn = () => {
         <h2 className="text-2xl font-bold mb-2">Đăng Nhập</h2>
         <p className="mb-4">
           Chưa có tài khoản?{" "}
-          <a href="/signup" className="text-green-500">
+          <a href="/auth/register" className="text-green-500">
             Đăng Ký
           </a>
         </p>

@@ -45,13 +45,17 @@ function App() {
           <Route path="payment" element={<Payment />} />
           <Route path="blog-detail" element={<BlogsDetail />} />
         </Route>
-        <Route path="signin" element={<SignIn />} />
-        <Route path="changepass" element={<ForgotPasswordModal />} />
-        <Route path="signup" element={<SignUp />} />
-        <Route path="verifyemail" element={<VerifyEmail />} />
-        <Route path="reset" element={<ResetPassword />} />
-        <Route path="confirm" element={<ConfirmPassword />} />
-        <Route path="emailverification" element={<EmailVerification />} />
+
+        {/* Auth routes */}
+        <Route path="auth">
+          <Route path="login" element={<SignIn />} />
+          <Route path="register" element={<SignUp />} />
+          <Route path="forgot-password" element={<ForgotPasswordModal />} />
+          <Route path="verify-email" element={<VerifyEmail />} />
+          <Route path="reset-password" element={<ResetPassword />} />
+          <Route path="confirm-password" element={<ConfirmPassword />} />
+          <Route path="email-verification" element={<EmailVerification />} />
+        </Route>
       </Routes>
     </>
   );
