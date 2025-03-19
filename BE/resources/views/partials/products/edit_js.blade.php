@@ -137,16 +137,30 @@
 
             // Xử lý toggle biến thể
             variantToggle.on('change', function() {
+                // Ẩn/hiện trường số lượng
+                const quantitySection = $('#quantitySection');
+                
                 if (this.checked) {
                     // Hiển thị phần biến thể
                     variantSection.slideDown(300);
                     hasVariantsInput.val('1');
                     isAddingVariant = true;
+                    
+                    // Ẩn trường số lượng khi bật biến thể
+                    quantitySection.hide();
+                    
+                    // Ẩn thông báo lỗi của trường số lượng và reset validation state
+                    clearValidation($('#quantity'));
+                    $('#quantity-error').hide();
+                    $('#quantity').val(''); // Xóa giá trị số lượng
                 } else {
                     // Ẩn phần biến thể
                     variantSection.slideUp(300);
                     hasVariantsInput.val('0');
                     isAddingVariant = false;
+                    
+                    // Hiển thị trường số lượng khi không có biến thể
+                    quantitySection.show();
                     
                     // Hiển thị thông báo xác nhận nếu đã có biến thể
                     if (selectedTypes.length > 0 || selectedVariants.length > 0) {
@@ -168,6 +182,9 @@
                                 variantSection.slideDown(300);
                                 hasVariantsInput.val('1');
                                 isAddingVariant = true;
+                                
+                                // Ẩn lại trường số lượng
+                                quantitySection.hide();
                             }
                         });
                     }
@@ -200,10 +217,16 @@
                 variantSection.hide();
                 hasVariantsInput.val('0');
                 isAddingVariant = false;
+                
+                // Hiển thị trường số lượng khi không có biến thể
+                $('#quantitySection').show();
             } else {
                 variantSection.show();
                 hasVariantsInput.val('1');
                 isAddingVariant = true;
+                
+                // Ẩn trường số lượng khi có biến thể
+                $('#quantitySection').hide();
             }
 
             // Load biến thể hiện có
@@ -779,6 +802,36 @@
                     showSuccess(quantityInput);
                 }
                 
+                // Validate giá khuyến mãi nếu có
+                const discountPriceInput = $('#discount_price');
+                if (discountPriceInput.val() && parseInt(discountPriceInput.val()) >= parseInt(priceInput.val())) {
+                    showError('discount_price', 'Giá khuyến mãi phải nhỏ hơn giá cơ bản');
+                    isValid = false;
+                } else if (discountPriceInput.val()) {
+                    showSuccess(discountPriceInput);
+                }
+
+                // Validate số lượng cho sản phẩm thường (không có biến thể)
+                if (!variantToggle.is(':checked')) {
+                    const quantityInput = $('#quantity');
+                    if (quantityInput.val() === '' || quantityInput.val() === null || isNaN(parseInt(quantityInput.val()))) {
+                        showError('quantity', 'Số lượng không được để trống');
+                        $('#quantity-error').text('Số lượng không được để trống').show();
+                        isValid = false;
+                    } else if (parseInt(quantityInput.val()) < 0) {
+                        showError('quantity', 'Số lượng phải lớn hơn hoặc bằng 0');
+                        $('#quantity-error').text('Số lượng phải lớn hơn hoặc bằng 0').show();
+                        isValid = false;
+                    } else {
+                        showSuccess(quantityInput);
+                        $('#quantity-error').hide();
+                    }
+                } else {
+                    // Nếu đang ở chế độ biến thể, ẩn thông báo lỗi số lượng nếu có
+                    $('#quantity-error').hide();
+                    clearValidation($('#quantity'));
+                }
+
                 if (!isValid) {
                     console.error('Dữ liệu không hợp lệ');
                     return;
@@ -893,6 +946,25 @@
                         }
                         break;
                         
+                    case 'quantity':
+                        // Nếu đang ở chế độ biến thể, không validate số lượng
+                        if (variantToggle.is(':checked')) {
+                            return true;
+                        }
+                        
+                        if (value === '' || value === null || isNaN(parseInt(value))) {
+                            showError(field, 'Số lượng không được để trống');
+                            $('#quantity-error').text('Số lượng không được để trống').show();
+                            return false;
+                        } else if (parseInt(value) < 0) {
+                            showError(field, 'Số lượng phải lớn hơn hoặc bằng 0');
+                            $('#quantity-error').text('Số lượng phải lớn hơn hoặc bằng 0').show();
+                            return false;
+                        } else {
+                            $('#quantity-error').hide();
+                        }
+                        break;
+                        
                     case 'variant-sku':
                         if (!value && isAddingVariant) {
                             showError(field, 'Vui lòng nhập SKU');
@@ -929,6 +1001,11 @@
             }
 
             function showError(field, message) {
+                // Xử lý trường hợp nếu field là chuỗi (id)
+                if (typeof field === 'string') {
+                    field = $('#' + field);
+                }
+                
                 field.removeClass('is-valid').addClass('is-invalid');
                 
                 // Tìm phần tử feedback
@@ -956,6 +1033,11 @@
                     } else {
                         field.after(newFeedback);
                     }
+                }
+
+                // Khi hiển thị lỗi từ JS, ẩn lỗi từ Laravel
+                if (field.attr('id') === 'quantity') {
+                    field.closest('.form-group').find('.invalid-feedback').hide();
                 }
             }
             
@@ -985,12 +1067,19 @@
                 if (feedbackElement.length > 0) {
                     feedbackElement.css('display', 'none');
                 }
+                
+                // Đảm bảo ẩn cả hai loại thông báo lỗi
+                if (field.attr('id') === 'quantity') {
+                    $('#quantity-error').hide();
+                    field.closest('.form-group').find('.invalid-feedback').hide();
+                }
             }
 
             // Cập nhật hàm resetValidationState
             function resetValidationState() {
                 $('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
                 $('.invalid-feedback').text('');
+                $('#quantity-error').hide();
                 window.hasScrolledToError = false;
             }
 
@@ -1005,7 +1094,7 @@
                 // Validate tên sản phẩm
                 const nameInput = $('#name');
                 if (!nameInput.val().trim()) {
-                    showError('name', 'Vui lòng nhập tên sản phẩm');
+                    showError(nameInput, 'Vui lòng nhập tên sản phẩm');
                     isValid = false;
                 } else {
                     showSuccess(nameInput);
@@ -1014,7 +1103,7 @@
                 // Validate danh mục
                 const categorySelect = $('#category_id');
                 if (!categorySelect.val()) {
-                    showError('category_id', 'Vui lòng chọn danh mục');
+                    showError(categorySelect, 'Vui lòng chọn danh mục');
                     isValid = false;
                 } else {
                     showSuccess(categorySelect);
@@ -1023,7 +1112,7 @@
                 // Validate giá cơ bản
                 const priceInput = $('#price');
                 if (!priceInput.val() || priceInput.val() <= 0) {
-                    showError('price', 'Giá cơ bản phải lớn hơn 0');
+                    showError(priceInput, 'Giá cơ bản phải lớn hơn 0');
                     isValid = false;
                 } else {
                     showSuccess(priceInput);
@@ -1033,7 +1122,7 @@
                 const imageInput = $('#image_thumnail');
                 const thumbnailPreview = $('#thumbnailPreview');
                 if (!imageInput.val() && !thumbnailPreview.find('img').attr('src')) {
-                    showError('image_thumnail', 'Vui lòng chọn ảnh đại diện');
+                    showError(imageInput, 'Vui lòng chọn ảnh đại diện');
                     isValid = false;
                 } else {
                     showSuccess(imageInput);
@@ -1042,10 +1131,31 @@
                 // Validate giá khuyến mãi nếu có
                 const discountPriceInput = $('#discount_price');
                 if (discountPriceInput.val() && parseInt(discountPriceInput.val()) >= parseInt(priceInput.val())) {
-                    showError('discount_price', 'Giá khuyến mãi phải nhỏ hơn giá cơ bản');
+                    showError(discountPriceInput, 'Giá khuyến mãi phải nhỏ hơn giá cơ bản');
                     isValid = false;
                 } else if (discountPriceInput.val()) {
                     showSuccess(discountPriceInput);
+                }
+
+                // Validate số lượng cho sản phẩm thường (không có biến thể)
+                if (!variantToggle.is(':checked')) {
+                    const quantityInput = $('#quantity');
+                    if (quantityInput.val() === '' || quantityInput.val() === null || isNaN(parseInt(quantityInput.val()))) {
+                        showError(quantityInput, 'Số lượng không được để trống');
+                        $('#quantity-error').text('Số lượng không được để trống').show();
+                        isValid = false;
+                    } else if (parseInt(quantityInput.val()) < 0) {
+                        showError(quantityInput, 'Số lượng phải lớn hơn hoặc bằng 0');
+                        $('#quantity-error').text('Số lượng phải lớn hơn hoặc bằng 0').show();
+                        isValid = false;
+                    } else {
+                        showSuccess(quantityInput);
+                        $('#quantity-error').hide();
+                    }
+                } else {
+                    // Nếu đang ở chế độ biến thể, ẩn thông báo lỗi số lượng nếu có
+                    $('#quantity-error').hide();
+                    clearValidation($('#quantity'));
                 }
 
                 if (!isValid) {
@@ -1547,6 +1657,34 @@
 
             // Thêm hàm tạo biến thể tự động
             $('#generate-variants-btn').on('click', handleGenerateVariants);
+
+            // Thêm sự kiện input validate cho trường số lượng
+            $('#quantity').on('input', function() {
+                // Nếu đang ở chế độ biến thể, không cần validate trường số lượng
+                if (variantToggle.is(':checked')) {
+                    // Ẩn tất cả thông báo lỗi liên quan đến số lượng
+                    clearValidation($(this));
+                    $('#quantity-error').hide();
+                    return;
+                }
+                
+                // Xóa thông báo lỗi cũ
+                clearValidation($(this));
+                
+                if ($(this).val() === '' || $(this).val() === null) {
+                    showError($(this), 'Số lượng không được để trống');
+                    $('#quantity-error').text('Số lượng không được để trống').show();
+                } else if (isNaN(parseInt($(this).val()))) {
+                    showError($(this), 'Số lượng phải là số');
+                    $('#quantity-error').text('Số lượng phải là số').show();
+                } else if (parseInt($(this).val()) < 0) {
+                    showError($(this), 'Số lượng phải lớn hơn hoặc bằng 0');
+                    $('#quantity-error').text('Số lượng phải lớn hơn hoặc bằng 0').show();
+                } else {
+                    showSuccess($(this));
+                    $('#quantity-error').hide();
+                }
+            });
 
             // Hàm loại bỏ dấu tiếng Việt
             function removeVietnameseAccents(str) {

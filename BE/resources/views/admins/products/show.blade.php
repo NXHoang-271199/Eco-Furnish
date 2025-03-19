@@ -133,6 +133,12 @@
                                                                 @endif
                                                             </td>
                                                         </tr>
+                                                        @if($product->variants->isEmpty())
+                                                        <tr>
+                                                            <th scope="row">Số lượng sản phẩm</th>
+                                                            <td>{{ number_format($product->quantity) }}</td>
+                                                        </tr>
+                                                        @endif
                                                         <tr>
                                                             <th scope="row">Số lượng biến thể</th>
                                                             <td>{{ $product->variants->groupBy('sku')->count() }}</td>

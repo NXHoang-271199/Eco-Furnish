@@ -95,6 +95,8 @@
             galleryInput.files = galleryFiles.files;
         }
 
+        // ... existing code ...
+
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('productForm');
             const variantToggle = document.getElementById('variantToggle');
@@ -138,6 +140,26 @@
                             hasVariantsInput.value = this.checked ? '1' : '0';
                         }
 
+                        // Ẩn/hiện trường số lượng trong phần basicPriceSection
+                        const quantitySection = document.getElementById('quantitySection');
+                        if (quantitySection) {
+                            if (this.checked) {
+                                // Khi bật biến thể, ẩn trường số lượng
+                                quantitySection.style.display = 'none';
+                                
+                                // Xóa giá trị và ẩn thông báo lỗi chỉ cho trường số lượng
+                                const quantityInput = document.getElementById('quantity');
+                                if (quantityInput) {
+                                    quantityInput.value = '';
+                                    clearValidation(quantityInput);
+                                }
+                                // Không xóa validation cho trường giá gốc
+                            } else {
+                                // Khi tắt biến thể, hiện trường số lượng
+                                quantitySection.style.display = 'block';
+                            }
+                        }
+
                         // Reset form biến thể khi toggle
                         if (!this.checked) {
                             resetVariantForm();
@@ -164,58 +186,93 @@
 
                 // Xử lý submit form
                 form.addEventListener('submit', handleFormSubmit);
+
+                // Khởi tạo trạng thái hiển thị của trường số lượng dựa vào toggle
+                const quantitySection = document.getElementById('quantitySection');
+                if (quantitySection) {
+                    if (variantToggle && variantToggle.checked) {
+                        // Nếu biến thể được bật, ẩn trường số lượng
+                        quantitySection.style.display = 'none';
+                    } else {
+                        // Nếu biến thể tắt, hiện trường số lượng
+                        quantitySection.style.display = 'block';
+                    }
+                }
             }
 
             // Xử lý submit form
             function handleFormSubmit(e) {
                 e.preventDefault();
-
-                // Reset validation states
-                clearAllValidation();
-
-                // Validate các trường bắt buộc
+                
                 let isValid = true;
                 let firstErrorElement = null;
-
-                // Validate tên sản phẩm
+                
+                // Validate các trường cơ bản
+                // Tên sản phẩm
                 if (!nameInput.value.trim()) {
                     showError(nameInput, 'Tên sản phẩm là bắt buộc');
                     isValid = false;
-                    if (!firstErrorElement) firstErrorElement = nameInput;
+                    firstErrorElement = firstErrorElement || nameInput;
                 } else {
                     showSuccess(nameInput);
                 }
-
-                // Validate danh mục
+                
+                // Danh mục
                 if (!categorySelect.value) {
                     showError(categorySelect, 'Vui lòng chọn danh mục');
                     isValid = false;
-                    if (!firstErrorElement) firstErrorElement = categorySelect;
+                    firstErrorElement = firstErrorElement || categorySelect;
                 } else {
                     showSuccess(categorySelect);
                 }
-
-                // Validate ảnh đại diện
-                if (!imageInput.files[0]) {
-                    showError(imageInput, 'Ảnh đại diện là bắt buộc');
+                
+                // Ảnh đại diện
+                if (!imageInput.files || imageInput.files.length === 0) {
+                    showError(imageInput, 'Vui lòng chọn ảnh đại diện');
                     isValid = false;
-                    if (!firstErrorElement) firstErrorElement = imageInput;
+                    firstErrorElement = firstErrorElement || imageInput;
                 } else {
                     showSuccess(imageInput);
                 }
-
-                // Validate giá gốc
-                if (!priceInput.value || priceInput.value <= 0) {
+                
+                // Chế độ biến thể
+                const hasVariants = variantToggle && variantToggle.checked;
+                
+                // Giá gốc - luôn kiểm tra và hiển thị lỗi
+                const price = parseFloat(priceInput.value);
+                if (!priceInput.value || isNaN(price) || price <= 0) {
                     showError(priceInput, 'Giá gốc phải lớn hơn 0');
-                    isValid = false;
-                    if (!firstErrorElement) firstErrorElement = priceInput;
-                } else if (parseFloat(priceInput.value) > 999999999) {
+                    // Chỉ tính là không hợp lệ khi không có biến thể
+                    if (!hasVariants) {
+                        isValid = false;
+                        firstErrorElement = firstErrorElement || priceInput;
+                    }
+                } else if (price > 999999999) {
                     showError(priceInput, 'Giá gốc không được lớn hơn 999.999.999 VNĐ');
-                    isValid = false;
-                    if (!firstErrorElement) firstErrorElement = priceInput;
+                    // Chỉ tính là không hợp lệ khi không có biến thể
+                    if (!hasVariants) {
+                        isValid = false;
+                        firstErrorElement = firstErrorElement || priceInput;
+                    }
                 } else {
                     showSuccess(priceInput);
                 }
+                
+                // Số lượng - chỉ bắt buộc khi không có biến thể
+                if (!hasVariants && quantityInput) {
+                    if (quantityInput.value === '' || quantityInput.value === null || isNaN(parseInt(quantityInput.value))) {
+                        showError(quantityInput, 'Số lượng không được để trống');
+                        isValid = false;
+                        firstErrorElement = firstErrorElement || quantityInput;
+                    } else if (parseInt(quantityInput.value) < 0) {
+                        showError(quantityInput, 'Số lượng phải lớn hơn hoặc bằng 0');
+                        isValid = false;
+                        firstErrorElement = firstErrorElement || quantityInput;
+                    } else {
+                        showSuccess(quantityInput);
+                    }
+                }
+                // Không cần xóa validation của giá gốc nếu có biến thể
 
                 // Validate giá khuyến mãi nếu có
                 if (discountPriceInput.value) {
@@ -229,7 +286,7 @@
                 }
 
                 // Validate biến thể nếu được bật
-                if (variantToggle.checked) {
+                if (hasVariants) {
                     // Kiểm tra xem có biến thể nào được thêm chưa
                     if (selectedTypes.size === 0) {
                         showError(variantTypeSelect, 'Vui lòng thêm ít nhất một thuộc tính biến thể');
@@ -324,7 +381,7 @@
                 console.log('Dữ liệu biến thể gửi đi:', selectedVariants);
 
                 // Đảm bảo dữ liệu biến thể được gửi đúng cách
-                if (variantToggle.checked && selectedVariants.length > 0) {
+                if (hasVariants && selectedVariants.length > 0) {
                     // Xóa tất cả các input hidden biến thể cũ (nếu có)
                     const oldVariantInputs = form.querySelectorAll('input[name^="variants["]');
                     oldVariantInputs.forEach(input => input.remove());
@@ -376,7 +433,7 @@
                             console.error(`Biến thể #${index + 1} không có giá trị thuộc tính:`, variant);
                         }
                     });
-                } else if (variantToggle.checked) {
+                } else if (hasVariants) {
                     // Nếu toggle biến thể được bật nhưng không có biến thể nào, gửi một mảng rỗng
                     const variantsInput = document.createElement('input');
                     variantsInput.type = 'hidden';
@@ -730,84 +787,87 @@
             }
 
             // Hàm xóa thông báo lỗi
-            function clearValidation(input) {
-                input.classList.remove('is-invalid', 'is-valid');
-
-                // Xác định parent element để xóa thông báo
-                let parent = input.parentElement;
-
-                // Kiểm tra nếu input nằm trong input-group
-                if (parent.classList.contains('input-group')) {
-                    // Xóa tất cả các thông báo lỗi và thành công trong input-group parent
-                    const errorDivs = parent.parentElement.querySelectorAll('.invalid-feedback, .valid-feedback');
-                    errorDivs.forEach(div => div.remove());
-                } else {
-                    // Xóa tất cả các thông báo lỗi và thành công
-                    const feedbackDivs = parent.querySelectorAll('.invalid-feedback, .valid-feedback');
-                    feedbackDivs.forEach(div => div.remove());
+            function clearValidation(field) {
+                if (!field) return;
+                
+                field.classList.remove('is-invalid', 'is-valid');
+                
+                // Ẩn thông báo lỗi
+                const feedback = field.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                    feedback.style.display = 'none';
+                }
+                
+                // Ẩn thông báo lỗi trong input-group
+                const parent = field.parentElement;
+                if (parent && parent.classList.contains('input-group')) {
+                    const groupFeedback = parent.nextElementSibling;
+                    if (groupFeedback && groupFeedback.classList.contains('invalid-feedback')) {
+                        groupFeedback.style.display = 'none';
+                    }
+                }
+                
+                // Ẩn thông báo lỗi custom cho trường số lượng
+                if (field.id === 'quantity') {
+                    const quantityError = document.getElementById('quantity-error');
+                    if (quantityError) {
+                        quantityError.style.display = 'none';
+                    }
+                }
+                
+                // Xóa các thông báo lỗi trùng lặp nếu có
+                const parentNode = field.parentElement.parentElement;
+                if (parentNode) {
+                    const duplicateErrors = parentNode.querySelectorAll('.invalid-feedback');
+                    if (duplicateErrors.length > 1) {
+                        // Giữ lại error đầu tiên, xóa các error trùng lặp
+                        for (let i = 1; i < duplicateErrors.length; i++) {
+                            duplicateErrors[i].remove();
+                        }
+                    }
                 }
             }
 
             // Hàm hiển thị thông báo lỗi
-            function showError(input, message) {
-                clearValidation(input);
-                input.classList.add('is-invalid');
-                input.classList.remove('is-valid');
-
-                // Xử lý đặc biệt cho form biến thể
-                if (input === variantForm) {
-                    // Xóa thông báo lỗi cũ nếu có
-                    const oldError = input.querySelector('.variant-form-error');
-                    if (oldError) {
-                        oldError.remove();
-                    }
-
-                    // Tạo thông báo lỗi mới
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'alert alert-danger variant-form-error mt-2';
-                    errorDiv.textContent = message;
-                    input.insertBefore(errorDiv, input.firstChild);
-                    return;
-                }
-
-                // Xác định parent element để thêm thông báo lỗi
-                let parent = input.parentElement;
-
-                // Kiểm tra nếu input nằm trong input-group
-                if (parent.classList.contains('input-group')) {
-                    // Xóa tất cả các thông báo lỗi cũ trong input-group
-                    const oldErrorDivs = parent.querySelectorAll('.invalid-feedback');
-                    oldErrorDivs.forEach(div => {
-                        div.textContent = message;
-                        div.style.display = 'block';
-                    });
-
-                    // Nếu không tìm thấy thông báo lỗi, tạo mới
-                    if (oldErrorDivs.length === 0) {
-                        // Tạo div thông báo lỗi mới
-                        const errorDiv = document.createElement('div');
-                        errorDiv.className = 'invalid-feedback';
-                        errorDiv.textContent = message;
-                        errorDiv.style.display = 'block';
-
-                        // Thêm vào sau input-group
-                        parent.parentElement.appendChild(errorDiv);
+            function showError(field, message) {
+                if (!field) return;
+                
+                // Xóa thông báo lỗi cũ trước khi thêm thông báo mới
+                clearValidation(field);
+                
+                field.classList.remove('is-valid');
+                field.classList.add('is-invalid');
+                
+                // Tìm phần tử feedback
+                let feedbackElement = null;
+                
+                // Kiểm tra nếu field là một thẻ input trong input-group
+                const parent = field.parentElement;
+                if (parent && parent.classList.contains('input-group')) {
+                    // Tìm phần tử feedback sau input-group
+                    feedbackElement = parent.nextElementSibling;
+                    if (!feedbackElement || !feedbackElement.classList.contains('invalid-feedback')) {
+                        // Nếu không tìm thấy, tạo mới
+                        feedbackElement = document.createElement('div');
+                        feedbackElement.className = 'invalid-feedback';
+                        feedbackElement.style.display = 'block';
+                        parent.after(feedbackElement);
                     }
                 } else {
-                    // Xử lý cho input thông thường
-                    const errorDiv = parent.querySelector('.invalid-feedback');
-                    if (errorDiv) {
-                        errorDiv.textContent = message;
-                        errorDiv.style.display = 'block';
-                    } else {
-                        // Tạo div thông báo lỗi mới
-                        const newErrorDiv = document.createElement('div');
-                        newErrorDiv.className = 'invalid-feedback';
-                        newErrorDiv.textContent = message;
-                        newErrorDiv.style.display = 'block';
-                        parent.appendChild(newErrorDiv);
+                    // Tìm phần tử feedback ngay sau field
+                    feedbackElement = field.nextElementSibling;
+                    if (!feedbackElement || !feedbackElement.classList.contains('invalid-feedback')) {
+                        // Nếu không tìm thấy, tạo mới
+                        feedbackElement = document.createElement('div');
+                        feedbackElement.className = 'invalid-feedback';
+                        feedbackElement.style.display = 'block';
+                        field.after(feedbackElement);
                     }
                 }
+                
+                // Cập nhật nội dung
+                feedbackElement.textContent = message;
+                feedbackElement.style.display = 'block';
             }
 
             // Hàm hiển thị thành công
@@ -1561,6 +1621,7 @@
                         if (discountPriceInput.value) {
                             const discountValue = parseFloat(discountPriceInput.value);
                             if (discountValue >= value) {
+                                clearValidation(discountPriceInput);
                                 showError(discountPriceInput, 'Giá khuyến mãi phải nhỏ hơn giá gốc');
                             } else {
                                 showSuccess(discountPriceInput);
@@ -1573,8 +1634,10 @@
             });
 
             discountPriceInput.addEventListener('input', function() {
+                // Xóa thông báo lỗi cũ trước khi validate
+                clearValidation(this);
+                
                 if (!this.value) {
-                    clearValidation(this);
                     return;
                 }
 
@@ -1592,6 +1655,28 @@
                     showSuccess(this);
                 }
             });
+
+            // Thêm validate cho trường số lượng
+            const quantityInput = document.getElementById('quantity');
+            if (quantityInput) {
+                quantityInput.addEventListener('input', function() {
+                    // Nếu đang ở chế độ biến thể, không cần validate
+                    if (variantToggle && variantToggle.checked) {
+                        clearValidation(this);
+                        return;
+                    }
+                    
+                    if (this.value === '' || this.value === null) {
+                        showError(this, 'Số lượng không được để trống');
+                    } else if (isNaN(parseInt(this.value))) {
+                        showError(this, 'Số lượng phải là số');
+                    } else if (parseInt(this.value) < 0) {
+                        showError(this, 'Số lượng phải lớn hơn hoặc bằng 0');
+                    } else {
+                        showSuccess(this);
+                    }
+                });
+            }
 
             imageInput.addEventListener('change', function() {
                 if (this.files && this.files[0]) {
