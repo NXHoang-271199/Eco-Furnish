@@ -98,7 +98,8 @@ class UserController extends Controller
     {
         $singerUser = User::findOrFail($id);
         $listRoles = Role::all();
-        return view('admins.users.show', compact('singerUser', 'listRoles'));
+        $comments = $singerUser->comments()->paginate(7);
+        return view('admins.users.show', compact('singerUser', 'listRoles', 'comments'));
     }
     /**
      * Show the form for editing the specified resource.
