@@ -92,6 +92,18 @@
                                             @enderror
                                         </div>
                                     </div>
+                                    
+                                    <div class="form-group mb-3" id="quantitySection">
+                                        <label for="quantity" class="form-label">Số lượng <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control @error('quantity') is-invalid @enderror"
+                                                id="quantity" name="quantity" value="{{ old('quantity') }}" min="0">
+                                            <span class="input-group-text">Cái</span>
+                                            @error('quantity')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

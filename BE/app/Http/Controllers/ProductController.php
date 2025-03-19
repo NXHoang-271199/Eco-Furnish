@@ -599,11 +599,14 @@ class ProductController extends Controller
 
                 // Tạo SKU dựa trên tổ hợp thuộc tính
                 foreach ($combination as $attr) {
-                    // Loại bỏ dấu trước khi lấy 2 ký tự đầu
+                    // Loại bỏ dấu trước khi lấy 3 ký tự đầu
                     $cleanValue = $this->removeVietnameseAccents($attr['value']);
                     $variantData['sku'] .= strtoupper(substr($cleanValue, 0, 2));
                 }
-
+                
+                // Thêm một số ngẫu nhiên vào cuối SKU để đảm bảo không bị trùng lặp
+                $variantData['sku'] .= '-' . rand(1, 100);
+                
                 $variants[] = $variantData;
             }
 

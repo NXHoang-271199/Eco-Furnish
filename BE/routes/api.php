@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\CategoryPostApiController;
 use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\BannerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,4 +76,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/products/{product}/comments', [CommentController::class, 'getProductComments']);
 
-
+// Banner routes
+Route::get('/banners', [BannerController::class, 'index']);
