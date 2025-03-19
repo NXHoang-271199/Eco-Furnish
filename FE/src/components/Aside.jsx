@@ -1,57 +1,50 @@
 import React from "react";
 import { FaCamera } from "react-icons/fa";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
 
 const Aside = () => {
-  const navigate = useNavigate();
-
   const handleLogout = async (e) => {
     if (e) e.preventDefault();
 
     try {
       // Lấy token từ localStorage
       const token = localStorage.getItem("authToken");
-      // console.log("Token trước khi đăng xuất:", token);
+      console.log("Token trước khi đăng xuất:", token);
 
-      if (token) {
-        // Log headers để debug
-        // const headers = {
-        //   Authorization: `Bearer ${token}`,
-        //   "Content-Type": "application/json",
-        //   Accept: "application/json",
-        // };
-        // console.log("Headers gửi đi:", headers);
+      if (!token) {
+        console.log("Không tìm thấy token");
+        localStorage.clear();
+        window.location.href = "/signin";
+        return;
+      }
 
-        // Gọi API đăng xuất với headers giống Postman
+      try {
+        // Gọi API đăng xuất
         const response = await axios.post(
           "http://localhost:8000/api/users/logout",
-          {}, // empty body
+          null, // Thay {} bằng null
           {
-            Headers: {
-              Authorization: `Bearer ${token}`,
+            headers: {
+              Authorization: `Bearer ${token}`, // Thêm dấu nháy đơn
               "Content-Type": "application/json",
               Accept: "application/json",
             },
           }
         );
-
         console.log("API Response:", response.data);
+      } catch (apiError) {
+        console.error("Lỗi API:", apiError.response?.data);
       }
 
-      // Luôn xóa dữ liệu khỏi localStorage
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("userData");
-
-      // Chuyển hướng về trang chủ
-      navigate("/");
+      // Luôn xóa dữ liệu và chuyển hướng, bất kể API thành công hay thất bại
+      localStorage.clear(); // Thay vì removeItem
+      window.location.href = "/"; // Chuyển về trang đăng nhập thay vì trang chủ
     } catch (error) {
-      console.error("Lỗi đăng xuất chi tiết:", error);
-
-      // Vẫn đăng xuất client-side
-      // localStorage.removeItem("authToken");
-      // localStorage.removeItem("userData");
-      // window.location.href = "/";
+      console.error("Lỗi tổng thể:", error);
+      // Đảm bảo vẫn đăng xuất được
+      // localStorage.clear();
+      // window.location.href = "/signin";
     }
   };
 

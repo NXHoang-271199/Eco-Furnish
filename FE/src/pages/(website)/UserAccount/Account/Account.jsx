@@ -36,19 +36,19 @@ const Account = () => {
         const userData = JSON.parse(userDataStr);
 
         // Kiểm tra xem có slug không
-        if (!userData.slug) {
+        if (!userData.email) {
           console.error(
-            "Không tìm thấy slug trong dữ liệu người dùng:",
+            "Không tìm thấy email trong dữ liệu người dùng:",
             userData
           );
           throw new Error("Không thể xác định ID người dùng");
         }
 
-        console.log("Slug người dùng:", userData.slug);
+        console.log("Slug người dùng:", userData.email);
 
         // Gọi API để lấy thông tin chi tiết của người dùng
         const response = await axios.get(
-          `http://localhost:8000/api/users/${userData.slug}`,
+          `http://localhost:8000/api/users/${userData.email}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
