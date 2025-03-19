@@ -195,6 +195,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\BreadcrumbServiceProvider::class,
+        App\Providers\HelperServiceProvider::class,
 
     ],
 

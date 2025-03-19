@@ -1,7 +1,7 @@
 @extends('layouts.auth')
 
 @section('title')
-    Đăng nhập
+    Đăng nhập Admin
 @endsection
 
 @section('content')
@@ -15,8 +15,8 @@
                                 <div class="bg-overlay"></div>
                                 <div class="position-relative h-100 d-flex flex-column">
                                     <div class="mb-4">
-                                        <a href="index.html" class="d-block">
-                                            <img src="assets/images/logo-light.png" alt="" height="18">
+                                        <a href="/" class="d-block">
+                                            <img src="{{ asset('assets/images/logo-light.png') }}" alt="" height="18">
                                         </a>
                                     </div>
                                     <div class="mt-auto">
@@ -60,66 +60,50 @@
                             <div class="p-lg-5 p-4">
                                 <div>
                                     <h5 class="text-primary">Xin chào !</h5>
-                                    <p class="text-muted">Đăng nhập với Eco Furnish</p>
+                                    <p class="text-muted">Đăng nhập vào trang quản trị Eco Furnish</p>
                                 </div>
 
-                                <div class="mt-4">
-                                    <form action="index.html">
+                                @if ($errors->any())
+                                    <div class="alert alert-danger">
+                                        @foreach ($errors->all() as $error)
+                                            <div>{{ $error }}</div>
+                                        @endforeach
+                                    </div>
+                                @endif
 
+                                <div class="mt-4">
+                                    <form action="{{ route('admin.login.post') }}" method="POST">
+                                        @csrf
                                         <div class="mb-3">
                                             <label for="email" class="form-label">Email</label>
-                                            <input type="email" class="form-control" id="email"
-                                                placeholder="Nhập email..." name="email">
+                                            <input type="email" class="form-control" id="email" name="email"
+                                                placeholder="Nhập email..." value="{{ old('email') }}" required>
                                         </div>
 
                                         <div class="mb-3">
                                             <label class="form-label" for="password-input">Mật khẩu</label>
                                             <div class="position-relative auth-pass-inputgroup mb-3">
-                                                <input type="password" class="form-control pe-5 password-input"
-                                                    placeholder="Nhập mật khẩu..." id="password-input">
-                                                <button
-                                                    class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon material-shadow-none"
-                                                    type="button" id="password-addon"><i
-                                                        class="ri-eye-fill align-middle"></i></button>
+                                                <input type="password" class="form-control pe-5 password-input" name="password"
+                                                    placeholder="Nhập mật khẩu..." id="password-input" required>
+                                                <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon"
+                                                    type="button" id="password-addon"><i class="ri-eye-fill align-middle"></i></button>
                                             </div>
                                         </div>
+
                                         <div class="float-end">
-                                            <a href="auth-pass-reset-cover.html" class="text-muted">Quên mật khẩu?</a>
+                                            <a href="{{ route('admin.password.request') }}" class="text-muted">Quên mật khẩu?</a>
                                         </div>
+
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value=""
+                                            <input class="form-check-input" type="checkbox" name="remember" value="1"
                                                 id="auth-remember-check">
-                                            <label class="form-check-label" for="auth-remember-check">Nhớ tài khoản</label>
+                                            <label class="form-check-label" for="auth-remember-check">Nhớ đăng nhập</label>
                                         </div>
 
                                         <div class="mt-4">
                                             <button class="btn btn-success w-100" type="submit">Đăng nhập</button>
                                         </div>
-
-                                        <div class="mt-4 text-center">
-                                            <div class="signin-other-title">
-                                                <h5 class="fs-13 mb-4 title">Đăng nhập với</h5>
-                                            </div>
-
-                                            <div>
-                                                <button type="button"
-                                                    class="btn btn-primary btn-icon waves-effect waves-light"><i
-                                                        class="ri-facebook-fill fs-16"></i></button>
-                                                <button type="button"
-                                                    class="btn btn-danger btn-icon waves-effect waves-light"><i
-                                                        class="ri-google-fill fs-16"></i></button>
-                                                <button type="button"
-                                                    class="btn btn-info btn-icon waves-effect waves-light"><i
-                                                        class="ri-twitter-fill fs-16"></i></button>
-                                            </div>
-                                        </div>
-
                                     </form>
-                                </div>
-
-                                <div class="mt-5 text-center">
-                                    <p class="mb-0">Bạn không có tài khoản ? <a href="{{ route('register') }}"
-                                            class="fw-semibold text-primary text-decoration-underline"> Đăng kí</a> </p>
                                 </div>
                             </div>
                         </div>
@@ -135,3 +119,19 @@
         <!-- end row -->
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Password show & hide
+    $("#password-addon").on('click', function() {
+        var $input = $(".password-input");
+        if ($input.attr('type') === "password") {
+            $input.attr('type', 'text');
+            $(this).find('i').removeClass('ri-eye-fill').addClass('ri-eye-off-fill');
+        } else {
+            $input.attr('type', 'password');
+            $(this).find('i').removeClass('ri-eye-off-fill').addClass('ri-eye-fill');
+        }
+    });
+</script>
+@endpush

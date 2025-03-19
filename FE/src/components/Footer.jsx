@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -22,22 +23,30 @@ const Footer = () => {
           <div>
             <div className="font-semibold">Site Map</div>
             <ul className="leading-10">
-              <li>Home</li>
-              <li>Shop</li>
-              <li>About</li>
-              <li>Contact</li>
+              <li>
+                <Link to="/">Trang chủ</Link>
+              </li>
+              <li>
+                <Link to="/products">Sản phẩm</Link>
+              </li>
+              <li>
+                <Link to="/about">Về chúng tôi</Link>
+              </li>
+              <li>
+                <Link to="/contact">Liên hệ</Link>
+              </li>
             </ul>
           </div>
           <div>
-            <div className="font-semibold">Help</div>
+            <div className="font-semibold">Hỗ trợ</div>
             <ul className="leading-10">
-              <li>Payment Options</li>
-              <li>Returns</li>
-              <li>Privacy Policies</li>
+              <li>Phương thức thanh toán</li>
+              <li>Hoàn tiền</li>
+              <li>Chính sách và điều khoản</li>
             </ul>
           </div>
           <div>
-            <div className="font-semibold">Location</div>
+            <div className="font-semibold">Vị trí </div>
             <ul className="leading-10">
               <li>support@euphoria.in</li>
               <li>Ahmedabad Main Road</li>
@@ -48,7 +57,7 @@ const Footer = () => {
         <hr className="leading-7" />
         <div className="">
           <p className="text-center py-8">
-            Copyright © 2025 Eco-Furnish. All rights reserved.
+            Bản quyền © 2025 Nội thất Eco Furnish. Bảo lưu mọi quyền
           </p>
         </div>
       </div>

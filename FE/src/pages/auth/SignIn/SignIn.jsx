@@ -1,95 +1,119 @@
-// import React from "react";
-
-// const SignIn = () => {
-//   return (
-//     <div className="flex w-full bg-white shadow-lg">
-//       <div className="w-1/2 hidden md:block">
-//         <img
-//           src="https://storage.googleapis.com/a1aa/image/b4hLqB1dzafXLGnsjIoUS_dRgsM8O7qFGuuhpONmhSE.jpg"
-//           width="100"
-//           alt="A close-up of a flower in a glass with other glasses in the background"
-//           class="object-cover w-full h-full"
-//         />
-//       </div>
-//       <div className="w-full md:w-1/2 p-8">
-//         <div className="flex justify-end mb-4">
-//           <img src="https://placehold.co/100x50" alt="Logo" className="h-8" />
-//         </div>
-//         <h2 className="text-2xl font-bold mb-2">Đăng Nhập</h2>
-//         <p className="mb-4">
-//           Chưa có tài khoản?
-//           <a href="#" className="text-green-500">
-//             Đăng Ký
-//           </a>
-//         </p>
-//         <form>
-//           <div className="mb-4">
-//             <input
-//               type="email"
-//               placeholder="Địa chỉ email của bạn"
-//               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-//             />
-//           </div>
-//           <div className="mb-4 relative">
-//             <input
-//               type="password"
-//               placeholder="Mật khẩu"
-//               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-//             />
-//             <i className="fas fa-eye absolute right-3 top-3 text-gray-500 cursor-pointer"></i>
-//           </div>
-//           <div className="flex items-center mb-4">
-//             <input type="checkbox" id="remember" className="mr-2" />
-//             <label for="remember" className="text-sm">
-//               Ghi nhớ
-//             </label>
-//           </div>
-//           <div className="flex justify-between items-center mb-4">
-//             <button className="w-full bg-blue-900 text-white py-2 rounded-md">
-//               Đăng Nhập
-//             </button>
-//           </div>
-//           <div className="text-center mb-4">
-//             <a href="./ChangePass" class="text-blue-500">
-//               Bạn quên mật khẩu ?
-//             </a>
-//           </div>
-//           <div className="flex items-center mb-4">
-//             <div className="flex-grow border-t border-gray-300"></div>
-//             <span className="mx-4 text-gray-500">HOẶC</span>
-//             <div className="flex-grow border-t border-gray-300"></div>
-//           </div>
-//           <div className="flex flex-col space-y-2">
-//             <button className="flex items-center justify-center w-full py-2 border border-gray-300 rounded-md">
-//               <img
-//                 src="https://img.icons8.com/?size=48&id=17949&format=png"
-//                 alt="Google logo"
-//                 className="mr-2"
-//               />
-//               Đăng nhập với Google
-//             </button>
-//             <button className="flex items-center justify-center w-full py-2 border border-gray-300 rounded-md">
-//               <img
-//                 src="https://img.icons8.com/?size=48&id=uLWV5A9vXIPu&format=png"
-//                 alt="Facebook logo"
-//                 className="mr-2"
-//               />
-//               Đăng nhập với Facebook
-//             </button>
-//           </div>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default SignIn;
-import React, { useState } from "react";
+import { useState } from "react";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { motion } from "framer-motion"; // npm install framer-motion để chạy hiệu ứng
+import { useForm } from "react-hook-form";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 
 const SignIn = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const onSubmit = async (data) => {
+    // console.log(data);
+
+    try {
+      const response = await axios.post(
+        `http://localhost:8000/api/users/login`,
+        data
+      );
+
+      console.log("Response từ API đăng nhập:", response.data);
+
+      // Kiểm tra cấu trúc response và lấy token đúng cách
+      let token = null;
+      let userData = null;
+
+      if (response.data.data && response.data.data.access_token) {
+        // Nếu token nằm trong response.data.data.access_token
+        token = response.data.data.access_token;
+
+        // Tạo đối tượng userData từ data
+        userData = {
+          id: response.data.data.id,
+          name: response.data.data.name,
+          email: response.data.data.email,
+          role: response.data.data.role,
+          avatar: response.data.data.avatar,
+          // Tạo slug từ name nếu cần
+          slug:
+            response.data.data.name?.toLowerCase().replace(/\s+/g, "-") || "",
+        };
+      } else if (response.data.accessToken) {
+        // Nếu token nằm trực tiếp trong response.data.accessToken
+        token = response.data.accessToken;
+        userData = response.data.user;
+      } else {
+        // Trường hợp khác, hiển thị lỗi
+        console.error("Không tìm thấy token trong response:", response.data);
+        alert("Đăng nhập không thành công: Không tìm thấy token");
+        return;
+      }
+
+      // Lưu token và userData vào localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("userData", JSON.stringify(userData));
+
+      // Kiểm tra xem đã lưu token thành công chưa
+      console.log("Token đã lưu:", localStorage.getItem("token"));
+      console.log("User data đã lưu:", localStorage.getItem("userData"));
+
+      // Phát sự kiện để thông báo đăng nhập thành công cho các tab khác
+      const authChangeEvent = new Event("auth-change");
+      window.dispatchEvent(authChangeEvent);
+
+      // Phát sự kiện storage để cập nhật các tab khác
+      try {
+        const storageEvent = new StorageEvent("storage", {
+          key: "token",
+          newValue: token,
+        });
+        window.dispatchEvent(storageEvent);
+
+        // Thêm sự kiện cho userData
+        const userDataEvent = new StorageEvent("storage", {
+          key: "userData",
+          newValue: JSON.stringify(userData),
+        });
+        window.dispatchEvent(userDataEvent);
+      } catch (error) {
+        console.error("Lỗi khi phát sự kiện storage:", error);
+      }
+
+      // Kiểm tra xem có returnUrl trong state không
+      const returnUrl = location.state?.returnUrl || "/";
+
+      // Thêm dữ liệu để chuyển về trang chi tiết
+      if (location.state?.returnUrl) {
+        localStorage.setItem("returnPath", location.state.returnUrl);
+      }
+
+      navigate(returnUrl, { replace: true });
+    } catch (error) {
+      // Hiển thị lỗi validation cụ thể nếu có
+      if (error.response && error.response.data && error.response.data.errors) {
+        console.error("Lỗi validation:", error.response.data.errors);
+        // Hiển thị lỗi cho người dùng
+        alert(
+          "Đăng nhập không thành công: " +
+            Object.values(error.response.data.errors).flat().join(", ")
+        );
+      } else {
+        console.error("Lỗi đăng nhập:", error);
+        alert(
+          "Đăng nhập không thành công: " +
+            (error.response?.data?.message || "Lỗi kết nối")
+        );
+      }
+    }
+  };
 
   return (
     <div className="flex w-full bg-white shadow-lg">
@@ -101,10 +125,15 @@ const SignIn = () => {
           className="object-cover w-full h-[800px]"
           initial={{ x: "100%" }}
           animate={{ x: "0%" }}
-          transition={{ duration: 1.5, ease: "easeInOut" }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
         />
       </div>
-      <div className="w-full md:w-1/2 p-32">
+      <motion.div
+        className="w-full md:w-1/2 p-16  rounded-lg"
+        initial={{ x: "-8%" }} // Bắt đầu ngoài màn hình (bên phải)
+        animate={{ x: "0%" }} // Trượt vào màn hình
+        transition={{ duration: 1.5, ease: "easeOut" }} // Hiệu ứng mượt hơn
+      >
         <h2 className="text-2xl font-bold mb-2">Đăng Nhập</h2>
         <p className="mb-4">
           Chưa có tài khoản?{" "}
@@ -112,20 +141,34 @@ const SignIn = () => {
             Đăng Ký
           </a>
         </p>
-        <form>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <input
               type="email"
               placeholder="Địa chỉ email của bạn"
+              name="email"
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register("email", {
+                required: "email is required",
+              })}
             />
+            {errors?.email && (
+              <p className="text-red-400">{errors?.email?.message}</p>
+            )}
           </div>
           <div className="mb-4 relative">
             <input
               type="password"
               placeholder="Mật khẩu"
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              name="password"
+              {...register("password", {
+                required: "password is required",
+              })}
             />
+            {errors?.password && (
+              <p className="text-red-400">{errors?.password?.message}</p>
+            )}
             <i className="fas fa-eye absolute right-3 top-3 text-gray-500 cursor-pointer"></i>
           </div>
           <div className="flex items-center mb-4">
@@ -135,7 +178,7 @@ const SignIn = () => {
             </label>
           </div>
           <div className="flex justify-between items-center mb-4">
-            <button className="w-full bg-blue-900 text-white py-2 rounded-md">
+            <button className="w-full bg-blue-900 text-white py-2 rounded-md hover:bg-blue-800">
               Đăng Nhập
             </button>
           </div>
@@ -144,7 +187,7 @@ const SignIn = () => {
               className="text-blue-500 cursor-pointer"
               onClick={() => setIsModalOpen(true)}
             >
-              Bạn quên mật khẩu ?
+              Bạn quên mật khẩu?
             </p>
           </div>
           <div className="flex items-center mb-4">
@@ -175,7 +218,7 @@ const SignIn = () => {
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
 
       {/* Popup Quên Mật Khẩu */}
       <ForgotPasswordModal

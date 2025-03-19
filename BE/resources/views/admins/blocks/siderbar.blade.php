@@ -19,51 +19,22 @@
                 <img src="{{ asset('assets/admins/images/logo-light.png') }}" alt="" height="17">
             </span>
         </a>
-        <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
-            id="vertical-hover">
-            <i class="ri-record-circle-line"></i>
-        </button>
-    </div>
-    <div class="dropdown sidebar-user m-1 rounded">
-        <button type="button" class="btn material-shadow-none" id="page-header-user-dropdown" data-bs-toggle="dropdown"
-            aria-haspopup="true" aria-expanded="false">
-            <span class="d-flex align-items-center gap-2">
-                <img class="rounded header-profile-user" src="{{ asset('assets/admins/images/users/avatar-1.jpg') }}"
-                    alt="Header Avatar">
-                <img class="rounded header-profile-user" src="{{ asset('assets/admins/images/users/avatar-1.jpg') }}"
-                    alt="Header Avatar">
-                <span class="text-start">
-                    <span class="d-block fw-medium sidebar-user-name-text">Anna Adame</span>
-                    <span class="d-block fs-14 sidebar-user-name-sub-text"><i
-                            class="ri ri-circle-fill fs-10 text-success align-baseline"></i> <span
-                            class="align-middle">Online</span></span>
-                </span>
-            </span>
-        </button>
-        <div class="dropdown-menu dropdown-menu-end">
-            <!-- item-->
-            <h6 class="dropdown-header">Welcome Anna!</h6>
-            <a class="dropdown-item" href="pages-profile.html"><i
-                    class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span
-                    class="align-middle">Profile</span></a>
-            <a class="dropdown-item" href="auth-logout-basic.html"><i
-                    class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle"
-                    data-key="t-logout">Logout</span></a>
-        </div>
     </div>
     <div id="scrollbar">
         <div class="container-fluid">
-
-
             <div id="two-column-menu">
             </div>
             <ul class="navbar-nav" id="navbar-nav">
                 <li class="menu-title"><span data-key="t-menu">Quản lý</span></li>
+                @if(Auth::user()->hasPermission('view-dashboard'))
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="{{ route('dashboard') }}" data-key="t-dashboard">
                         <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboard</span>
                     </a>
                 </li>
+                @endif
+            
+                @if(Auth::user()->hasPermission('view-users') || Auth::user()->hasPermission('view-roles') || auth()->user()->isAdmin())
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarUser" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarUser">
@@ -71,24 +42,48 @@
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarUser">
                         <ul class="nav nav-sm flex-column">
+                            @if(Auth::user()->hasPermission('view-users'))
                             <li class="nav-item">
                                 <a href="{{ route('users.index') }}" class="nav-link" data-key="t-sweet-alerts">
                                     <i class="ri-team-line"></i>Khách hàng
                                 </a>
                             </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('view-roles'))
                             <li class="nav-item">
                                 <a href="{{ route('roles.index') }}" class="nav-link" data-key="t-nestable-list">
                                     <i class="ri-user-settings-line"></i>Vai trò
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a href="" class="nav-link" data-key="t-nestable-list">
-                                    <i class="ri-admin-line"></i>Phân quyền
-                                </a>
-                            </li>
+                            @endif
+                            @if (auth()->user()->isAdmin())
+                                <li class="nav-item">
+                                    <a class="nav-link menu-link" href="#sidebarPermissions" data-bs-toggle="collapse"
+                                        role="button" aria-expanded="false" aria-controls="sidebarPermissions">
+                                        <i class="ri-shield-keyhole-line"></i> <span data-key="t-permissions">Phân quyền</span>
+                                    </a>
+                                    <div class="collapse menu-dropdown" id="sidebarPermissions">
+                                        <ul class="nav nav-sm flex-column">
+                                            <li class="nav-item">
+                                                <a href="{{ route('admin.permissions.index') }}" class="nav-link">
+                                                    <i class="ri-user-settings-line"></i> Vai trò & Quyền
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a href="{{ route('admin.permissions.create-permission') }}" class="nav-link">
+                                                    <i class="ri-key-line"></i> Thêm quyền
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
+                @endif
+            
+                @if(Auth::user()->hasPermission('view-posts') || Auth::user()->hasPermission('view-category-posts'))
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarArticle" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarArticle">
@@ -96,24 +91,35 @@
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarArticle">
                         <ul class="nav nav-sm flex-column">
+                            @if(Auth::user()->hasPermission('view-posts'))
                             <li class="nav-item">
-                                <a href="{{ route('posts.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                <a href="{{ route('posts.index') }}" class="nav-link">
                                     <i class="ri-newspaper-line"></i>Bài viết
                                 </a>
                             </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('view-category-posts'))
                             <li class="nav-item">
-                                <a href="{{ route('category-posts.index') }}" class="nav-link"
-                                    data-key="t-nestable-list">
+                                <a href="{{ route('category-posts.index') }}" class="nav-link">
                                     <i class="ri-bookmark-line"></i>Chuyên mục
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
-                <a class="nav-link menu-link" href="{{ route('vouchers.index') }}">
-                    <i class="bx bx-gift"></i> <span data-key="t-advance-ui">Quản lý mã giảm giá</span>
-                </a>
-
+                @endif
+            
+                @if(Auth::user()->hasPermission('view-vouchers'))
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="{{ route('vouchers.index') }}">
+                        <i class="bx bx-gift"></i> <span data-key="t-advance-ui">Quản lý mã giảm giá</span>
+                    </a>
+                </li>
+                @endif
+            
+                @if(Auth::user()->hasPermission('view-products') || Auth::user()->hasPermission('create-products') || 
+                    Auth::user()->hasPermission('view-categories') || Auth::user()->hasPermission('view-variants'))
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarSanPham">
@@ -121,34 +127,48 @@
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarSanPham">
                         <ul class="nav nav-sm flex-column">
+                            @if(Auth::user()->hasPermission('view-products'))
                             <li class="nav-item">
-                                <a href="{{ route('products.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                <a href="{{ route('products.index') }}" class="nav-link">
                                     <i class="ri-list-check-2"></i> Danh sách sản phẩm
                                 </a>
                             </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('create-products'))
                             <li class="nav-item">
-                                <a href="{{ route('products.create') }}" class="nav-link" data-key="t-nestable-list">
+                                <a href="{{ route('products.create') }}" class="nav-link">
                                     <i class="ri-add-circle-line"></i> Thêm sản phẩm
                                 </a>
                             </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('view-categories'))
                             <li class="nav-item">
-                                <a href="{{ route('categories.index') }}" class="nav-link" data-key="t-nestable-list">
+                                <a href="{{ route('categories.index') }}" class="nav-link">
                                     <i class="ri-folder-2-line"></i> Danh mục sản phẩm
                                 </a>
                             </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('view-variants'))
                             <li class="nav-item">
-                                <a href="{{ route('variants.index') }}" class="nav-link" data-key="t-nestable-list">
+                                <a href="{{ route('variants.index') }}" class="nav-link">
                                     <i class="ri-layout-grid-line"></i> Quản lý biến thể
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
+                @endif
+            
+                @if(Auth::user()->hasPermission('view-comments'))
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="{{ route('comments.index') }}">
                         <i class="ri-chat-1-line"></i> <span data-key="t-advance-ui">Quản lý bình luận</span>
                     </a>
                 </li>
+                @endif
+            
+                @if(Auth::user()->hasPermission('view-payment-methods') || Auth::user()->hasPermission('create-payment-methods'))
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarPayment" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarPayment">
@@ -156,19 +176,26 @@
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarPayment">
                         <ul class="nav nav-sm flex-column">
+                            @if(Auth::user()->hasPermission('view-payment-methods'))
                             <li class="nav-item">
-                                <a href="{{ route('payment-methods.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                <a href="{{ route('payment-methods.index') }}" class="nav-link">
                                     Danh sách
                                 </a>
                             </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('create-payment-methods'))
                             <li class="nav-item">
-                                <a href="{{ route('payment-methods.create') }}" class="nav-link" data-key="t-nestable-list">
+                                <a href="{{ route('payment-methods.create') }}" class="nav-link">
                                     Thêm mới
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
+                @endif
+            
+                @if(Auth::user()->hasPermission('view-orders') || Auth::user()->hasPermission('view-order-notifications'))
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarOrder" data-bs-toggle="collapse" role="button"
                         aria-expanded="false" aria-controls="sidebarOrder">
@@ -176,14 +203,20 @@
                     </a>
                     <div class="collapse menu-dropdown" id="sidebarOrder">
                         <ul class="nav nav-sm flex-column">
+                            @if(Auth::user()->hasPermission('view-orders'))
                             <li class="nav-item">
-                                <a href="{{ route('orders.index') }}" class="nav-link" data-key="t-sweet-alerts">
+                                <a href="{{ route('orders.index') }}" class="nav-link">
                                     Đơn hàng
                                 </a>
-                                <a href="{{ route('order.notifications') }}" class="nav-link" data-key="t-sweet-alerts">
+                            </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('view-order-notifications'))
+                            <li class="nav-item">
+                                <a href="{{ route('order.notifications') }}" class="nav-link">
                                     Thông báo
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </div>
                 </li>
@@ -195,6 +228,15 @@
 
                 <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
 
+                @endif
+            
+                @if(Auth::user()->hasPermission('view-settings'))
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="">
+                        <i class="ri-settings-4-line"></i> <span data-key="t-advance-ui">Cài đặt</span>
+                    </a>
+                </li>
+                @endif
             </ul>
         </div>
         <!-- Sidebar -->

@@ -1,34 +1,57 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { IoCartOutline } from "react-icons/io5";
 import { AiOutlineUser, AiOutlineSearch, AiOutlineHeart } from "react-icons/ai";
 
 const Header = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Kiểm tra trạng thái đăng nhập khi component được tải
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem("authToken");
+      if (token) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    };
+
+    checkLoginStatus();
+
+    // Lắng nghe sự kiện đăng nhập từ các component khác
+    window.addEventListener("user-login", checkLoginStatus);
+
+    return () => {
+      window.removeEventListener("user-login", checkLoginStatus);
+    };
+  }, []);
+
   return (
     <>
-      <header className="bg-white fixed top-0 left-0 w-full z-50">
-        <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
+      <header class="bg-white fixed top-0 left-0 w-full z-50">
+        <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
           {/* <!-- Logo --> */}
-          <div className="text-2xl font-bold text-black">
+          <div class="text-2xl font-bold text-black">
             <div>
-              <p>
+              <a href="/">
                 <span className="text-yellow-300">E</span>co-
                 <span className="text-yellow-300">F</span>urnish
-              </p>
+              </a>
             </div>
           </div>
 
           {/* <!-- Navigation --> */}
-          <nav className="hidden md:flex space-x-6">
+          <nav class="hidden md:flex space-x-6">
             <ul className="flex justify-center space-x-6 ">
               <li>
                 <Link to="/" className="hover:text-yellow-400">
-                  Home
+                  Trang chủ
                 </Link>
               </li>
               <li className="relative group">
                 <Link to="/products" className="hover:text-yellow-400">
-                  Shop
+                  Sản phẩm
                 </Link>
                 <div class="absolute hidden group-hover:flex bg-white shadow-lg rounded-lg w-[600px] p-6 md\:w-auto">
                   <ul class="grid grid-cols-2 gap-6 w-full">
@@ -99,31 +122,22 @@ const Header = () => {
                   </ul>
                 </div>
               </li>
-              <li>
-                <Link to="/about" className="hover:text-yellow-400">
-                  About
-                </Link>
-              </li>
+
               <li>
                 <Link to="/contact" className="hover:text-yellow-400">
-                  Contact
+                  Liên hệ
                 </Link>
               </li>
               <li>
-                <Link to="/blog" className="hover:text-yellow-400">
-                  Blog
+                <Link to="/blogs" className="hover:text-yellow-400">
+                  Bài viết
                 </Link>
               </li>
             </ul>
           </nav>
 
           {/* <!-- Icons --> */}
-          <div className="flex items-center space-x-4">
-            {/* <!-- Login --> */}
-            {/* <a href="#" class="text-gray-700 hidden md:block hover:text-black">
-              Login / Register
-            </a> */}
-
+          <div class="flex items-center space-x-4">
             <Link to="/search">
               <AiOutlineSearch />
             </Link>
@@ -131,15 +145,24 @@ const Header = () => {
             <Link to="/cart">
               <IoCartOutline />
             </Link>
-            <Link to="/signin">
-              <AiOutlineUser />
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                to="/account"
+                className="text-gray-700 hidden md:block hover:text-black"
+              >
+                <AiOutlineUser className="inline mr-1" />
+              </Link>
+            ) : (
+              <Link
+                to="/signin"
+                className="text-gray-700 hidden md:block hover:text-black"
+              >
+                <AiOutlineUser className="inline mr-1" />
+              </Link>
+            )}
           </div>
         </div>
       </header>
-
-      {/* <!-- Để tránh nội dung bị che khuất do header cố định --> */}
-      {/* <div class="mt-10"></div> */}
     </>
   );
 };
