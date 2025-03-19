@@ -65,6 +65,7 @@ class UserApiController extends Controller
                 'email' => $user->email,
                 'slug' => Str::slug($user->name),
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'password' => $user->password,
                 'joined_date' => $user->created_at->format('d/m/Y'),
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
