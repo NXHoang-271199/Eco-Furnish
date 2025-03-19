@@ -441,6 +441,45 @@ class ChatController extends Controller
             // Bắt đầu truy vấn
             $query = Product::with(['category', 'gallery']);
             
+            // Ánh xạ giữa không gian và các loại sản phẩm phù hợp
+            $spaceToProductMapping = [
+                'phòng khách' => ['sofa', 'ghế sofa', 'bàn trà', 'bàn cafe', 'kệ tivi', 'kệ trang trí', 'đèn', 'thảm', 'gối trang trí', 'bàn bên', 'ghế đôn'],
+                'phòng ngủ' => ['giường', 'tủ quần áo', 'tủ đầu giường', 'đèn ngủ', 'gương', 'ghế trang điểm', 'bàn trang điểm', 'tủ trang điểm'],
+                'phòng ăn' => ['bàn ăn', 'ghế ăn', 'tủ bếp', 'đèn bàn ăn', 'kệ bếp', 'tủ ly', 'bàn đảo bếp'],
+                'phòng làm việc' => ['bàn làm việc', 'ghế văn phòng', 'kệ sách', 'đèn bàn', 'tủ tài liệu', 'bàn máy tính'],
+                'ban công' => ['ghế ngoài trời', 'bàn ngoài trời', 'ghế thư giãn', 'đèn ngoài trời'],
+                'phòng tắm' => ['kệ phòng tắm', 'gương phòng tắm', 'tủ lavabo', 'giá treo khăn']
+            ];
+            
+            // Ánh xạ từ khóa không gian vào tiếng Anh để tìm kiếm rộng hơn
+            $spaceMapping = [
+                'phòng khách' => ['living room', 'lounge'],
+                'phòng ngủ' => ['bedroom', 'sleeping room'],
+                'phòng ăn' => ['dining room', 'kitchen'],
+                'phòng làm việc' => ['office', 'workspace', 'study room', 'working room'],
+                'ban công' => ['balcony', 'terrace', 'patio'],
+                'phòng tắm' => ['bathroom', 'restroom']
+            ];
+            
+            // Kiểm tra xem từ khóa có chứa không gian không
+            $detectedSpaces = [];
+            foreach ($spaceToProductMapping as $space => $products) {
+                if (mb_strpos(mb_strtolower($keywords, 'UTF-8'), $space) !== false) {
+                    $detectedSpaces[] = $space;
+                }
+            }
+            
+            // Các từ khóa thể hiện tìm kiếm theo không gian
+            $spaceSearchTerms = ['phòng', 'không gian', 'khu vực', 'nơi'];
+            $isSpaceSearch = false;
+            
+            foreach ($spaceSearchTerms as $term) {
+                if (mb_strpos(mb_strtolower($keywords, 'UTF-8'), $term) !== false) {
+                    $isSpaceSearch = true;
+                    break;
+                }
+            }
+            
             // Kiểm tra xem có từ khóa là danh mục sản phẩm cụ thể không
             $productCategories = [
                 'bàn' => ['bàn', 'table', 'desk'],
@@ -455,8 +494,86 @@ class ChatController extends Controller
             ];
             
             $specificCategories = [];
+            $relatedProductTerms = [];
             
-            // Tìm tất cả danh mục sản phẩm trong từ khóa
+            // Nếu tìm thấy từ khóa không gian, thêm các sản phẩm liên quan
+            if (!empty($detectedSpaces) || $isSpaceSearch) {
+                Log::info('Phát hiện tìm kiếm theo không gian: ' . implode(', ', $detectedSpaces));
+                
+                // Thêm tất cả các sản phẩm liên quan đến không gian đã phát hiện
+                foreach ($detectedSpaces as $space) {
+                    if (isset($spaceToProductMapping[$space])) {
+                        $relatedProductTerms = array_merge($relatedProductTerms, $spaceToProductMapping[$space]);
+                        
+                        // Thêm từ khóa không gian tiếng Anh để tìm kiếm rộng hơn
+                        if (isset($spaceMapping[$space])) {
+                            $keywordParts = array_merge($keywordParts, $spaceMapping[$space]);
+                        }
+                    }
+                }
+                
+                // Nếu không tìm thấy không gian cụ thể nhưng từ khóa chứa 'phòng',
+                // thử tìm kiếm thông qua các từ khóa đi kèm
+                if (empty($detectedSpaces) && $isSpaceSearch) {
+                    // Thử tìm các từ gợi ý không gian khác
+                    $possibleSpaceHints = [];
+                    
+                    // Các từ khóa phụ thường đi kèm với các loại phòng
+                    $spaceHints = [
+                        'khách' => 'phòng khách',
+                        'ngủ' => 'phòng ngủ',
+                        'ăn' => 'phòng ăn',
+                        'làm việc' => 'phòng làm việc',
+                        'tắm' => 'phòng tắm',
+                        'bếp' => 'phòng ăn',
+                        'nấu ăn' => 'phòng ăn',
+                        'tiếp khách' => 'phòng khách'
+                    ];
+                    
+                    foreach ($spaceHints as $hint => $space) {
+                        if (mb_strpos(mb_strtolower($keywords, 'UTF-8'), $hint) !== false) {
+                            $possibleSpaceHints[] = $space;
+                        }
+                    }
+                    
+                    // Thêm các sản phẩm liên quan nếu tìm thấy gợi ý không gian
+                    foreach ($possibleSpaceHints as $space) {
+                        if (isset($spaceToProductMapping[$space])) {
+                            $relatedProductTerms = array_merge($relatedProductTerms, $spaceToProductMapping[$space]);
+                            
+                            // Thêm từ khóa không gian tiếng Anh để tìm kiếm rộng hơn
+                            if (isset($spaceMapping[$space])) {
+                                $keywordParts = array_merge($keywordParts, $spaceMapping[$space]);
+                            }
+                        }
+                    }
+                    
+                    // Nếu vẫn không tìm thấy, mặc định là phòng khách
+                    if (empty($possibleSpaceHints) && mb_strpos(mb_strtolower($keywords, 'UTF-8'), 'phòng') !== false) {
+                        Log::info('Không xác định được loại phòng, mặc định là phòng khách');
+                        $relatedProductTerms = array_merge($relatedProductTerms, $spaceToProductMapping['phòng khách']);
+                        $keywordParts = array_merge($keywordParts, $spaceMapping['phòng khách']);
+                    }
+                }
+                
+                Log::info('Mở rộng tìm kiếm sang các sản phẩm liên quan: ' . implode(', ', $relatedProductTerms));
+                
+                // Thêm các sản phẩm liên quan vào danh sách tìm kiếm
+                foreach ($relatedProductTerms as $term) {
+                    foreach ($productCategories as $category => $terms) {
+                        if (in_array($term, $terms) || mb_strpos($term, $category) !== false) {
+                            if (!in_array($category, $specificCategories)) {
+                                $specificCategories[] = $category;
+                            }
+                        }
+                    }
+                    
+                    // Nếu không khớp với bất kỳ danh mục nào, thêm trực tiếp vào từ khóa tìm kiếm
+                    $keywordParts[] = $term;
+                }
+            }
+            
+            // Tìm tất cả danh mục sản phẩm trong từ khóa ban đầu
             foreach ($productCategories as $category => $terms) {
                 foreach ($terms as $term) {
                     if (mb_strpos(mb_strtolower($keywords, 'UTF-8'), $term) !== false) {
