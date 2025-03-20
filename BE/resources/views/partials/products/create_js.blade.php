@@ -1,15 +1,7 @@
    <!-- Sweet Alerts js -->
    <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
-    <!-- CKEditor -->
-    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
-
     <script>
-        // Initialize CKEditor
-        ClassicEditor
-            .create(document.querySelector('#description'))
-            .catch(error => {
-                console.error(error);
-            });
+      
 
         // Preview thumbnail image
         document.getElementById('image_thumnail').addEventListener('change', function(e) {
