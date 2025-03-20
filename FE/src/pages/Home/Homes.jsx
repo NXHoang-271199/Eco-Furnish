@@ -1,11 +1,13 @@
 import React from "react";
 import { FaArrowRight } from "react-icons/fa";
-import { Link } from "react-router-dom";
-import Banner from "../../../components/Banner";
+import Banner from "../../components/Banner";
+
 const Homes = () => {
   return (
     <>
-      <Banner />
+      <div>
+        <Banner />
+      </div>
 
       <section>
         <div className="max-w-6xl mx-auto mt-20 my-5">
@@ -59,7 +61,7 @@ const Homes = () => {
       <section>
         <div className="max-w-6xl mx-auto mt-20 my-5">
           <div>
-            <div>
+            <div className="">
               <div className="text-center m-auto">
                 <h2 className="mb-6 text-4xl font-semibold">New Product</h2>
                 <p className="w-[65%] m-auto">
@@ -69,9 +71,9 @@ const Homes = () => {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-4 grid-rows-1 gap-4 my-12 ">
-              <div>
-                <Link to={"product"}>
+            <div className="grid grid-cols-4 grid-rows-1 gap-4 my-12">
+              <div className="cursor-pointer">
+                <a href="">
                   <div className="mb-2">
                     <img
                       src="https://picsum.photos/291/301"
@@ -83,10 +85,11 @@ const Homes = () => {
                     <h3 className="mb-2 font-semibold ">Name Product</h3>
                     <p className="font-medium">1.000.000</p>
                   </div>
-                </Link>
+                </a>
               </div>
-              <div>
-                <Link to={"product"}>
+
+              <div className="cursor-pointer">
+                <a href="">
                   <div className="mb-2">
                     <img
                       src="https://picsum.photos/291/301"
@@ -98,10 +101,10 @@ const Homes = () => {
                     <h3 className="mb-2 font-semibold ">Name Product</h3>
                     <p className="font-medium">1.000.000</p>
                   </div>
-                </Link>
+                </a>
               </div>
-              <div>
-                <Link to={"product"}>
+              <div className="cursor-pointer">
+                <a href="">
                   <div className="mb-2">
                     <img
                       src="https://picsum.photos/291/301"
@@ -113,10 +116,10 @@ const Homes = () => {
                     <h3 className="mb-2 font-semibold ">Name Product</h3>
                     <p className="font-medium">1.000.000</p>
                   </div>
-                </Link>
+                </a>
               </div>
-              <div>
-                <Link to={"product"}>
+              <div className="cursor-pointer">
+                <a href="">
                   <div className="mb-2">
                     <img
                       src="https://picsum.photos/291/301"
@@ -128,7 +131,7 @@ const Homes = () => {
                     <h3 className="mb-2 font-semibold ">Name Product</h3>
                     <p className="font-medium">1.000.000</p>
                   </div>
-                </Link>
+                </a>
               </div>
             </div>
           </div>

@@ -81,12 +81,16 @@ const ChatBot = () => {
             });
 
             console.log('API response:', response.data);
+            // Debug thêm thông tin danh mục
+            console.log('Categories from API:', response.data.categories);
+            console.log('Products from API:', response.data.products);
 
             // Kiểm tra dữ liệu trả về để tránh lỗi null
             let botReply = 'Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn.';
             let products = [];
             let searchKeywords = '';
             let isProductSearch = false;
+            let categories = [];
 
             if (response.data && typeof response.data.reply === 'string') {
                 botReply = response.data.reply;
@@ -94,16 +98,20 @@ const ChatBot = () => {
 
             // Kiểm tra xem có phải là tìm kiếm sản phẩm không
             if (response.data && response.data.hasOwnProperty('has_products')) {
-                isProductSearch = true;
-
-                // Lấy từ khóa tìm kiếm nếu có
-                if (response.data.hasOwnProperty('search_keywords')) {
+                // Chỉ đánh dấu là tìm kiếm sản phẩm nếu có từ khóa tìm kiếm
+                if (response.data.hasOwnProperty('search_keywords') && response.data.search_keywords.trim() !== '') {
+                    isProductSearch = true;
                     searchKeywords = response.data.search_keywords;
                 }
 
                 // Kiểm tra xem có sản phẩm được trả về không
                 if (response.data.has_products && Array.isArray(response.data.products)) {
                     products = response.data.products;
+                }
+
+                // Lấy danh mục từ phản hồi API
+                if (response.data.hasOwnProperty('categories') && Array.isArray(response.data.categories)) {
+                    categories = response.data.categories;
                 }
             }
 
@@ -113,7 +121,8 @@ const ChatBot = () => {
                 timestamp: new Date().toISOString(),
                 products: products,
                 isProductSearch: isProductSearch,
-                searchKeywords: searchKeywords
+                searchKeywords: searchKeywords,
+                categories: categories
             };
 
             setMessages(prevMessages => [...prevMessages, botMessage]);
@@ -150,16 +159,27 @@ const ChatBot = () => {
         return (
             <div className="border rounded-lg overflow-hidden mb-2 bg-white shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex">
-                    <div className="w-20 h-20 flex-shrink-0">
-                        <img
-                            src={`/storage/${product.image}`}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = '/images/placeholder.png';
-                            }}
-                        />
+                    <div className="w-20 h-20 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+                        {product.image ? (
+                            <img
+                                src={`/storage/${product.image}`}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    console.log("Lỗi tải ảnh:", e.target.src);
+                                    e.target.onerror = null;
+                                    // Sử dụng Bootstrap icons
+                                    e.target.parentNode.innerHTML = '<div class="flex items-center justify-center w-full h-full text-gray-400"><svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/></svg></div>';
+                                }}
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center w-full h-full text-gray-400">
+                                <svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                                    <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
+                                </svg>
+                            </div>
+                        )}
                     </div>
                     <div className="p-2 flex-1">
                         <h4 className="font-medium text-sm text-gray-800 line-clamp-1">{product.name}</h4>
@@ -263,11 +283,38 @@ const ChatBot = () => {
                                         {msg.products && msg.products.length > 0 && (
                                             <div className="mt-3 pt-3 border-t border-gray-300">
                                                 <p className="text-xs font-medium mb-2">Sản phẩm gợi ý cho bạn:</p>
-                                                <div className="space-y-2">
-                                                    {msg.products.map((product) => (
-                                                        <ProductCard key={product.id} product={product} />
-                                                    ))}
-                                                </div>
+
+                                                {/* Nếu có thông tin danh mục, hiển thị theo từng danh mục */}
+                                                {msg.categories && msg.categories.length > 0 ? (
+                                                    msg.categories.map((category) => {
+                                                        // Lọc sản phẩm theo danh mục hiện tại
+                                                        const categoryProducts = msg.products.filter(
+                                                            (product) => product.category === category
+                                                        );
+
+                                                        if (categoryProducts.length === 0) return null;
+
+                                                        return (
+                                                            <div key={category} className="mb-3">
+                                                                <h4 className="text-xs font-medium text-gray-700 bg-gray-100 p-1 rounded mb-2">
+                                                                    {category}
+                                                                </h4>
+                                                                <div className="space-y-2">
+                                                                    {categoryProducts.map((product) => (
+                                                                        <ProductCard key={product.id} product={product} />
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    // Nếu không có thông tin danh mục, hiển thị tất cả sản phẩm
+                                                    <div className="space-y-2">
+                                                        {msg.products.map((product) => (
+                                                            <ProductCard key={product.id} product={product} />
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
