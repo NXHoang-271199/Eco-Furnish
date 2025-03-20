@@ -202,7 +202,6 @@
                         </div>
                     </li>
                 @endif
-<<<<<<<<< Temporary merge branch 1
 
                 @if(Auth::user()->hasPermission('view-orders') || Auth::user()->hasPermission('view-order-notifications'))
                 <li class="nav-item">
