@@ -1,52 +1,84 @@
-
 import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [commentInput, setCommentInput] = useState(""); // State cho input bình luận
-  const [selectedImage, setSelectedImage] = useState(null); // State cho ảnh được chọn
-  const [selectedVariants, setSelectedVariants] = useState({}); // State cho biến thể được chọn
-  const [quantity, setQuantity] = useState(1); // State cho số lượng sản phẩm
-  const [error, setError] = useState(""); // State cho thông báo lỗi
-  const [currentPrice, setCurrentPrice] = useState(null); // State cho giá hiện tại dựa trên biến thể
-  const [currentDiscount, setCurrentDiscount] = useState(null); // State cho giá khuyến mãi hiện tại
+  const [commentInput, setCommentInput] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedVariants, setSelectedVariants] = useState({});
+  const [quantity, setQuantity] = useState(1);
+  const [error, setError] = useState("");
+  const [currentPrice, setCurrentPrice] = useState(null);
+  const [currentDiscount, setCurrentDiscount] = useState(null);
   const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  console.log("ID from useParams:", id); // Debug ID
+  console.log("ID from useParams:", id);
+
+  // Hàm kiểm tra xác thực và lấy thông tin người dùng
+  const checkAuthentication = async () => {
+    // Thêm độ trễ nhỏ để đảm bảo token đã được lưu trữ
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const token = localStorage.getItem("token");
+    console.log("Current token:", token);
+
+    // Tạm thời lấy thông tin từ userData trong localStorage nếu có
+    const userDataStr = localStorage.getItem("userData");
+    if (userDataStr) {
+      try {
+        const userData = JSON.parse(userDataStr);
+        console.log("Loaded user data from localStorage:", userData);
+
+        // Cập nhật trạng thái người dùng từ localStorage
+        setCurrentUser(userData);
+        setIsLoggedIn(true);
+      } catch (error) {
+        console.error("Error parsing userData from localStorage:", error);
+      }
+    }
+
+    // Vẫn gọi API để cập nhật thông tin mới nhất
+    if (token) {
+      const success = await fetchCurrentUser(token);
+      if (!success) {
+        console.log("Xác thực thất bại, xóa dữ liệu người dùng...");
+        localStorage.removeItem("userData");
+      }
+    } else {
+      setIsLoggedIn(false);
+      setCurrentUser(null);
+    }
+  };
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        // Thêm timestamp để tránh cache
         const timestamp = new Date().getTime();
-        // Lấy thông tin sản phẩm
         const response = await axios.get(
           `http://localhost:8000/api/products/${id}?_=${timestamp}`
         );
-        console.log("API Response:", response.data); // Debug response
+        console.log("API Response:", response.data);
         let productData = response.data.data;
 
-        // Xử lý dữ liệu biến thể trực tiếp từ response sản phẩm
         if (productData.variants && Array.isArray(productData.variants)) {
           console.log("Variants từ API:", productData.variants);
 
-          // Xóa cache cũ
           setSelectedVariants({});
           setCurrentPrice(productData.price);
           setCurrentDiscount(productData.discount_price);
 
-          // Map để xem cấu trúc dữ liệu biến thể
           productData.variants.forEach((variant) => {
             console.log("Biến thể:", variant);
           });
 
-          // Chuẩn bị dữ liệu biến thể
           const variantsWithValues = productData.variants.map((variant) => {
-            // Đảm bảo variant có đủ thông tin cần thiết
             return {
               ...variant,
               variant_value: {
@@ -60,7 +92,6 @@ const ProductDetail = () => {
             };
           });
 
-          // Tự động chọn biến thể đầu tiên của mỗi loại nếu có
           const defaultVariants = {};
           const variantTypes = [
             ...new Set(variantsWithValues.map((v) => v.variant_id)),
@@ -76,12 +107,9 @@ const ProductDetail = () => {
             }
           });
 
-          // Thiết lập giá ban đầu dựa trên biến thể mặc định
           if (Object.keys(defaultVariants).length > 0) {
-            // Tìm SKU phù hợp với các biến thể mặc định
             const skuCandidates = new Set();
 
-            // Tìm tất cả các biến thể khớp với mỗi lựa chọn mặc định
             Object.entries(defaultVariants).forEach(([typeId, valueId]) => {
               const matches = variantsWithValues.filter(
                 (v) =>
@@ -89,15 +117,12 @@ const ProductDetail = () => {
                   v.variant_value_id === valueId
               );
 
-              // Thêm SKU của các biến thể khớp vào danh sách ứng viên
               matches.forEach((v) => skuCandidates.add(v.sku));
             });
 
-            // Tìm SKU phù hợp nhất (xuất hiện trong tất cả các lựa chọn)
             let bestSku = null;
 
             for (const sku of skuCandidates) {
-              // Kiểm tra xem SKU này có khớp với tất cả các lựa chọn không
               const isMatch = Object.entries(defaultVariants).every(
                 ([typeId, valueId]) => {
                   return variantsWithValues.some(
@@ -115,7 +140,6 @@ const ProductDetail = () => {
               }
             }
 
-            // Nếu tìm thấy SKU phù hợp, cập nhật giá dựa trên biến thể đó
             if (bestSku) {
               const bestVariant = variantsWithValues.find(
                 (v) => v.sku === bestSku
@@ -138,7 +162,6 @@ const ProductDetail = () => {
           setProduct(productData);
         }
 
-        // Lấy danh sách bình luận
         const commentsResponse = await axios.get(
           `http://localhost:8000/api/products/${id}/comments?_=${timestamp}`
         );
@@ -151,14 +174,30 @@ const ProductDetail = () => {
       }
     };
     fetchProduct();
-  }, [id]);
 
-  // Tự động làm mới dữ liệu khi component được mount
+    // Kiểm tra xác thực khi component mount
+    checkAuthentication();
+
+    // Kiểm tra nếu người dùng vừa đăng nhập và quay lại trang này
+    const returnPath = localStorage.getItem("returnPath");
+    if (returnPath && returnPath === location.pathname) {
+      console.log("Người dùng vừa đăng nhập và quay lại trang:", returnPath);
+      // Gọi làm mới dữ liệu người dùng sau khi đã đăng nhập
+      setTimeout(() => {
+        checkAuthentication();
+        // Làm mới danh sách bình luận
+        refreshProductComments();
+        // Xóa returnPath để không kiểm tra lại
+        localStorage.removeItem("returnPath");
+      }, 500);
+    }
+  }, [id, location.pathname]);
+
   useEffect(() => {
-    // Thêm sự kiện visibilitychange để làm mới dữ liệu khi tab được kích hoạt lại
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         refreshProductData();
+        checkAuthentication();
       }
     };
 
@@ -167,7 +206,84 @@ const ProductDetail = () => {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // Theo dõi thay đổi của location
+  useEffect(() => {
+    checkAuthentication();
+  }, [location]);
+
+  // Theo dõi thay đổi của localStorage để cập nhật trạng thái đăng nhập
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      console.log("Storage changed:", e);
+      if (e.key === "token" || e.key === "userData") {
+        console.log("Token or userData changed, checking authentication");
+        setTimeout(() => {
+          checkAuthentication();
+        }, 200); // Thêm độ trễ để đảm bảo localStorage đã được cập nhật
+      }
+
+      // Kiểm tra khi quay lại từ trang đăng nhập
+      if (e.key === "returnPath" && e.newValue === location.pathname) {
+        console.log("Quay lại từ trang đăng nhập:", e.newValue);
+        setTimeout(() => {
+          checkAuthentication();
+          localStorage.removeItem("returnPath");
+        }, 200);
+      }
+    };
+
+    // Theo dõi sự kiện storage
+    window.addEventListener("storage", handleStorageChange);
+
+    // Sự kiện tùy chỉnh cho cùng cửa sổ/tab
+    window.addEventListener("auth-change", checkAuthentication);
+
+    // Kiểm tra khi component được mount
+    setTimeout(checkAuthentication, 300);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth-change", checkAuthentication);
+    };
+  }, []);
+
+  const fetchCurrentUser = async (token) => {
+    try {
+      console.log("Fetching user with token:", token);
+      const response = await axios.get("http://localhost:8000/api/user", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("User profile response:", response.data);
+      if (response.data && response.data.data) {
+        setCurrentUser(response.data.data);
+        setIsLoggedIn(true);
+        console.log("User logged in successfully:", response.data.data.name);
+        return true;
+      } else if (response.data) {
+        setCurrentUser(response.data);
+        setIsLoggedIn(true);
+        console.log("User logged in successfully:", response.data.name);
+        return true;
+      } else {
+        console.log("No user data in response");
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+        localStorage.removeItem("token");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error.response || error);
+      if (error.response?.status === 401 || error.response?.status === 404) {
+        console.log("Token không hợp lệ hoặc API không tồn tại, đăng xuất...");
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+        localStorage.removeItem("token");
+      }
+      return false;
+    }
+  };
 
   if (loading) {
     return <div className="text-center mt-32">Đang tải...</div>;
@@ -177,9 +293,8 @@ const ProductDetail = () => {
     return <div className="text-center mt-32">Không tìm thấy sản phẩm</div>;
   }
 
-  console.log("Product state:", product); // Debug product state
+  console.log("Product state:", product);
 
-  // Hàm định dạng giá tiền
   const formatPrice = (price) => {
     const numericPrice = price ? parseFloat(price) : null;
     return numericPrice && !isNaN(numericPrice)
@@ -189,7 +304,6 @@ const ProductDetail = () => {
 
   const baseURL = "http://localhost:8000/";
 
-  // Sửa cách xử lý URL ảnh chính
   const mainImageUrl =
     selectedImage ||
     (product.image_thumnail
@@ -200,7 +314,6 @@ const ProductDetail = () => {
 
   console.log("Main Image URL:", mainImageUrl);
 
-  // Debug URL ảnh thư viện
   if (product.gallery) {
     product.gallery.forEach((item, index) => {
       const galleryImageUrl = item.image_url
@@ -213,14 +326,11 @@ const ProductDetail = () => {
     });
   }
 
-  // Hàm xử lý khi click vào ảnh trong thư viện
   const handleGalleryImageClick = (imageUrl) => {
     setSelectedImage(imageUrl);
   };
 
-  // Hàm xử lý khi chọn biến thể
   const handleVariantSelect = (variantId, variantValueId, variant) => {
-    // Cập nhật lựa chọn biến thể
     const newSelectedVariants = {
       ...selectedVariants,
       [variantId]: variantValueId,
@@ -230,28 +340,23 @@ const ProductDetail = () => {
     console.log(`Đã chọn biến thể:`, variant);
     console.log(`Lựa chọn biến thể hiện tại:`, newSelectedVariants);
 
-    // Tìm tất cả các SKU có thể có dựa trên lựa chọn hiện tại
     const selectedVariantTypes = Object.keys(newSelectedVariants).map(Number);
     const skuCandidates = new Set();
 
-    // Tìm tất cả các biến thể khớp với mỗi lựa chọn
     selectedVariantTypes.forEach((typeId) => {
       const valueId = newSelectedVariants[typeId];
       const matches = product.variants.filter(
         (v) => v.variant_id === typeId && v.variant_value_id === valueId
       );
 
-      // Thêm SKU của các biến thể khớp vào danh sách ứng viên
       matches.forEach((v) => skuCandidates.add(v.sku));
     });
 
     console.log("Các SKU ứng viên:", [...skuCandidates]);
 
-    // Tìm SKU phù hợp nhất (xuất hiện trong tất cả các lựa chọn)
     let bestSku = null;
 
     for (const sku of skuCandidates) {
-      // Kiểm tra xem SKU này có khớp với tất cả các lựa chọn không
       const isMatch = selectedVariantTypes.every((typeId) => {
         const valueId = newSelectedVariants[typeId];
         return product.variants.some(
@@ -270,7 +375,6 @@ const ProductDetail = () => {
 
     console.log("SKU phù hợp nhất:", bestSku);
 
-    // Nếu tìm thấy SKU phù hợp, cập nhật giá dựa trên biến thể đó
     if (bestSku) {
       const bestVariant = product.variants.find((v) => v.sku === bestSku);
       if (bestVariant && bestVariant.price) {
@@ -280,142 +384,90 @@ const ProductDetail = () => {
         console.log(`Cập nhật giá theo biến thể: ${bestVariant.price}`);
       }
     } else if (variant && variant.price) {
-      // Fallback: Nếu không tìm thấy SKU phù hợp, sử dụng giá của biến thể được chọn
       setCurrentPrice(variant.price);
       setCurrentDiscount(variant.discount_price || variant.price);
       console.log(`Cập nhật giá theo biến thể được chọn: ${variant.price}`);
     }
 
-    setError(""); // Xóa thông báo lỗi khi người dùng chọn biến thể
+    setError("");
   };
 
-  // Hàm tìm biến thể phù hợp với lựa chọn của người dùng
-  const findSelectedVariantCombination = (selectedVars) => {
-    if (!product.variants || product.variants.length === 0) return null;
-
-    // Tìm biến thể phù hợp nhất với các lựa chọn hiện tại
-    const selectedVariantTypes = Object.keys(selectedVars).map(Number);
-
-    // Đầu tiên tìm biến thể khớp với tất cả các lựa chọn
-    const matchingVariants = product.variants.filter((variant) => {
-      return selectedVariantTypes.every(
-        (typeId) =>
-          variant.variant_id === typeId &&
-          variant.variant_value_id === selectedVars[typeId]
-      );
-    });
-
-    // Nếu có nhiều biến thể khớp, ưu tiên biến thể có số lượng > 0
-    const inStockVariant = matchingVariants.find((v) => v.quantity > 0);
-    if (inStockVariant) return inStockVariant;
-
-    // Nếu không có biến thể nào còn hàng, trả về biến thể đầu tiên
-    if (matchingVariants.length > 0) return matchingVariants[0];
-
-    // Nếu không tìm thấy biến thể khớp với tất cả các lựa chọn,
-    // trả về biến thể đầu tiên có số lượng > 0
-    return (
-      product.variants.find((v) => v.quantity > 0) ||
-      product.variants[0] ||
-      null
-    );
-  };
-
-  // Kiểm tra xem biến thể có còn hàng không
   const isVariantInStock = (variant) => {
     if (!variant) return false;
     return variant.quantity > 0;
   };
 
-  // Kiểm tra xem đã chọn đủ biến thể chưa
   const hasSelectedAllRequiredVariants = () => {
     if (!product.variants || product.variants.length === 0) return true;
 
-    // Lấy danh sách các loại biến thể có sẵn
     const availableVariantTypes = [
       ...new Set(product.variants.map((v) => v.variant_id)),
     ];
 
-    // Kiểm tra xem đã chọn đủ các loại biến thể chưa
     return availableVariantTypes.every((type) => selectedVariants[type]);
   };
 
-  // Hàm xử lý khi thêm vào giỏ hàng
   const handleAddToCart = () => {
     if (!hasSelectedAllRequiredVariants()) {
       setError("Vui lòng chọn đầy đủ biến thể sản phẩm");
       return;
     }
 
-    // Thêm vào giỏ hàng (có thể thay bằng API call thực tế)
     console.log("Thêm vào giỏ hàng:", {
       product_id: product.id,
       variants: selectedVariants,
       quantity: quantity,
     });
 
-    // Hiển thị thông báo thành công
     alert("Đã thêm sản phẩm vào giỏ hàng!");
   };
 
-  // Hàm xử lý khi thêm vào danh sách yêu thích
   const handleAddToWishlist = () => {
     if (!hasSelectedAllRequiredVariants()) {
       setError("Vui lòng chọn đầy đủ biến thể sản phẩm");
       return;
     }
 
-    // Thêm vào danh sách yêu thích (có thể thay bằng API call thực tế)
     console.log("Thêm vào danh sách yêu thích:", {
       product_id: product.id,
       variants: selectedVariants,
     });
 
-    // Hiển thị thông báo thành công
     alert("Đã thêm sản phẩm vào danh sách yêu thích!");
   };
 
-  // Hàm xử lý khi mua ngay
   const handleBuyNow = () => {
     if (!hasSelectedAllRequiredVariants()) {
       setError("Vui lòng chọn đầy đủ biến thể sản phẩm");
       return;
     }
 
-    // Xử lý mua ngay (có thể thay bằng chuyển hướng đến trang thanh toán)
     console.log("Mua ngay:", {
       product_id: product.id,
       variants: selectedVariants,
       quantity: quantity,
     });
 
-    // Chuyển hướng đến trang thanh toán (giả lập)
     alert("Đang chuyển đến trang thanh toán...");
   };
 
-  // Hàm tăng số lượng
   const increaseQuantity = () => {
     setQuantity((prev) => prev + 1);
   };
 
-  // Hàm giảm số lượng
   const decreaseQuantity = () => {
     if (quantity > 1) {
       setQuantity((prev) => prev - 1);
     }
   };
 
-  // Lấy danh sách biến thể theo loại
   const getVariantsByType = (variantId) => {
-    // Lọc ra các biến thể của loại cụ thể
     const typeVariants =
       product.variants?.filter((variant) => variant.variant_id === variantId) ||
       [];
 
-    // Tạo Map để lưu trữ biến thể mới nhất cho mỗi variant_value_id
     const latestVariants = new Map();
 
-    // Lặp qua các biến thể để lấy biến thể mới nhất
     typeVariants.forEach((variant) => {
       const key = `${variant.variant_id}_${variant.variant_value_id}`;
 
@@ -430,10 +482,8 @@ const ProductDetail = () => {
       }
     });
 
-    // Chuyển Map thành mảng các biến thể duy nhất và mới nhất
     const uniqueVariants = Array.from(latestVariants.values());
 
-    // Sắp xếp biến thể theo variant_value_id để đảm bảo thứ tự hiển thị nhất quán
     uniqueVariants.sort((a, b) => a.variant_value_id - b.variant_value_id);
 
     console.log(
@@ -444,15 +494,12 @@ const ProductDetail = () => {
     return uniqueVariants;
   };
 
-  // Lấy tên của loại biến thể
   const getVariantTypeName = (variantId) => {
-    // Tìm biến thể đầu tiên có variant_id tương ứng để lấy tên
     const variant = product.variants?.find((v) => v.variant_id === variantId);
     if (variant && variant.variant_info && variant.variant_info.name) {
       return variant.variant_info.name;
     }
 
-    // Fallback nếu không tìm thấy
     const variantTypes = {
       1: "Màu sắc",
       2: "Kích thước",
@@ -462,77 +509,108 @@ const ProductDetail = () => {
     return variantTypes[variantId] || "Biến thể";
   };
 
-  // Hàm gửi bình luận
   const handleCommentSubmit = async () => {
-    if (!commentInput.trim()) return;
+    // Kiểm tra trạng thái đăng nhập trước khi gửi bình luận
+    await checkAuthentication();
+
+    if (!isLoggedIn || !currentUser) {
+      navigate("/signin", { state: { returnUrl: location.pathname } });
+      return;
+    }
+
+    if (!commentInput.trim()) {
+      return;
+    }
+
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+        navigate("/signin", { state: { returnUrl: location.pathname } });
+        return;
+      }
+
+      // Lấy userData từ localStorage
+      let userData = null;
+      try {
+        userData = JSON.parse(localStorage.getItem("userData") || "{}");
+        console.log("Gửi bình luận với userData:", userData);
+      } catch (e) {
+        console.error("Lỗi parse userData:", e);
+      }
+
+      console.log("Gửi bình luận với token:", token);
+
+      // API endpoint cho comments từ routes/api.php
       const response = await axios.post(
-        `http://localhost:8000/api/products/${id}/comments`,
+        `http://localhost:8000/api/comments`,
         {
           product_id: id,
-          user_id: 1, // Giả định user_id (cần thay bằng ID người dùng đã đăng nhập)
           content: commentInput,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setComments([...comments, response.data.data]);
-      setCommentInput("");
+
+      console.log("Phản hồi từ API bình luận:", response.data);
+
+      if (response.data && response.data.data) {
+        // Thêm comment mới vào danh sách
+        const newComment = {
+          ...response.data.data,
+          user: currentUser,
+        };
+        setComments([...comments, newComment]);
+        setCommentInput("");
+
+        // Refresh comments sau khi thêm
+        setTimeout(() => {
+          refreshProductComments();
+        }, 500);
+      }
     } catch (error) {
-      console.error("Error submitting comment:", error);
+      console.error("Error submitting comment:", error.response || error);
+      // Hiển thị thông báo lỗi cho người dùng
+      alert(
+        "Không thể gửi bình luận: " +
+          (error.response?.data?.message || "Lỗi kết nối")
+      );
+
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+        navigate("/signin", { state: { returnUrl: location.pathname } });
+      }
     }
   };
 
-  // Xác định sản phẩm mẫu từ dữ liệu BE
+  // Hàm chỉ refresh comments, không load lại toàn bộ sản phẩm
+  const refreshProductComments = async () => {
+    try {
+      const timestamp = new Date().getTime();
+      const commentsResponse = await axios.get(
+        `http://localhost:8000/api/products/${id}/comments?_=${timestamp}`
+      );
+      setComments(commentsResponse.data.data || []);
+    } catch (error) {
+      console.error("Lỗi khi làm mới comments:", error);
+    }
+  };
+
   const isSampleProduct =
     product.is_sample === 1 ||
     product.is_sample === true ||
     product.status === "sample";
 
-  // Kiểm tra xem biến thể có khả dụng không dựa trên các lựa chọn hiện tại
-  const isVariantAvailable = (variant, currentSelections) => {
-    // Tạm thời trả về true để hiển thị tất cả các biến thể
+  const isVariantAvailable = () => {
+    // Hiện tại luôn trả về true để đơn giản hóa logic,
+    // có thể mở rộng trong tương lai khi cần kiểm tra tính khả dụng phức tạp hơn
     return true;
-
-    // Nếu không có lựa chọn nào, tất cả các biến thể đều khả dụng
-    if (Object.keys(currentSelections).length === 0) return true;
-
-    // Nếu đang xét biến thể của loại đã được chọn, chỉ hiển thị biến thể được chọn
-    if (currentSelections[variant.variant_id] !== undefined) {
-      return currentSelections[variant.variant_id] === variant.variant_value_id;
-    }
-
-    // Đối với các loại biến thể khác, kiểm tra xem có tồn tại tổ hợp hợp lệ không
-    const selectedVariantTypes = Object.keys(currentSelections).map(Number);
-
-    // Tìm tất cả các biến thể có cùng loại và giá trị với biến thể đang xét
-    const variantsWithSameValue = product.variants.filter(
-      (v) =>
-        v.variant_id === variant.variant_id &&
-        v.variant_value_id === variant.variant_value_id
-    );
-
-    // Kiểm tra xem có biến thể nào trong số này tương thích với các lựa chọn hiện tại không
-    return variantsWithSameValue.some((v) => {
-      // Kiểm tra xem biến thể này có tương thích với tất cả các lựa chọn hiện tại không
-      return selectedVariantTypes.every((typeId) => {
-        // Tìm biến thể có cùng product_id và cùng giá trị biến thể đã chọn
-        return product.variants.some(
-          (otherV) =>
-            otherV.product_id === v.product_id &&
-            otherV.variant_id === typeId &&
-            otherV.variant_value_id === currentSelections[typeId] &&
-            // Kiểm tra xem có tồn tại tổ hợp với biến thể đang xét không
-            product.variants.some(
-              (combinedV) =>
-                combinedV.variant_id === variant.variant_id &&
-                combinedV.variant_value_id === variant.variant_value_id &&
-                combinedV.product_id === v.product_id
-            )
-        );
-      });
-    });
   };
 
-  // Hàm làm mới dữ liệu sản phẩm
   const refreshProductData = async () => {
     setLoading(true);
     try {
@@ -543,12 +621,10 @@ const ProductDetail = () => {
       console.log("Refreshed API Response:", response.data);
       let productData = response.data.data;
 
-      // Xóa cache cũ
       setSelectedVariants({});
       setCurrentPrice(productData.price);
       setCurrentDiscount(productData.discount_price);
 
-      // Xử lý dữ liệu biến thể
       if (productData.variants && Array.isArray(productData.variants)) {
         const variantsWithValues = productData.variants.map((variant) => {
           return {
@@ -564,7 +640,6 @@ const ProductDetail = () => {
           };
         });
 
-        // Tự động chọn biến thể đầu tiên của mỗi loại
         const defaultVariants = {};
         const variantTypes = [
           ...new Set(variantsWithValues.map((v) => v.variant_id)),
@@ -580,7 +655,6 @@ const ProductDetail = () => {
           }
         });
 
-        // Cập nhật giá ban đầu
         if (Object.keys(defaultVariants).length > 0) {
           const skuCandidates = new Set();
 
@@ -636,7 +710,6 @@ const ProductDetail = () => {
         setProduct(productData);
       }
 
-      // Cập nhật bình luận
       const commentsResponse = await axios.get(
         `http://localhost:8000/api/products/${id}/comments?_=${timestamp}`
       );
@@ -650,9 +723,48 @@ const ProductDetail = () => {
 
   return (
     <main className="max-w-6xl mx-auto mb-20 mt-32">
-      {/* Product_info */}
+      <div className="flex justify-between items-center mb-8">
+        <Link
+          to="/"
+          className="text-blue-500 hover:underline flex items-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-1"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Quay lại trang chủ
+        </Link>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Tìm kiếm sản phẩm..."
+            className="px-4 py-2 border rounded-full w-64"
+          />
+          <button className="absolute right-2 top-2 text-gray-500">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
       <div className="grid grid-cols-2 gap-8 my-16">
-        {/* IMAGE */}
         <div className="grid grid-cols-1">
           <div className="col-span-5">
             <img
@@ -706,15 +818,11 @@ const ProductDetail = () => {
             )}
           </div>
         </div>
-        {/* Info */}
         <div>
-          {/* name */}
-
           <h5 className="text-[20px] font-semibold text-3xl">
             {product.name || "Tên sản phẩm"}
           </h5>
 
-          {/* price */}
           <h3 className="text-[40px] font-bold mt-2 text-[#EF4444]">
             {currentDiscount
               ? formatPrice(currentDiscount)
@@ -730,19 +838,16 @@ const ProductDetail = () => {
               </p>
             )}
 
-          {/* Hiển thị thông báo nếu là sản phẩm mẫu */}
           {isSampleProduct && (
             <p className="mt-3 text-[16px] font-medium">
               Đây là sản phẩm mẫu không bán
             </p>
           )}
 
-          {/* short description */}
           <p className="mt-3 text-[16px] font-medium">
             {product.short_description || "Không có mô tả"}
           </p>
 
-          {/* Hiển thị các biến thể */}
           {[1, 2, 3, 4].map((variantTypeId) => {
             const variants = getVariantsByType(variantTypeId);
             if (variants.length === 0) return null;
@@ -754,7 +859,6 @@ const ProductDetail = () => {
                 </p>
                 <div className="flex flex-wrap gap-4 mt-1">
                   {variants.map((variant) => {
-                    // Kiểm tra variant hợp lệ
                     if (!variant) {
                       console.log(`Bỏ qua variant không hợp lệ:`, variant);
                       return null;
@@ -765,17 +869,10 @@ const ProductDetail = () => {
                       variant.variant_value_id;
                     const inStock = isVariantInStock(variant);
 
-                    // Kiểm tra xem biến thể có khả dụng không dựa trên các lựa chọn hiện tại
-                    const isAvailable = isVariantAvailable(
-                      variant,
-                      selectedVariants
-                    );
+                    const isAvailable = isVariantAvailable();
 
-                    // Xử lý hiển thị màu sắc đặc biệt
                     if (variantTypeId === 1) {
-                      // Màu sắc
                       let bgColor = "gray";
-                      // Lấy giá trị màu sắc từ nhiều nguồn có thể có
                       const variantValue =
                         variant.variant_value?.value ||
                         variant.variant_value_name ||
@@ -826,8 +923,6 @@ const ProductDetail = () => {
                         />
                       );
                     } else if (variantTypeId === 2) {
-                      // Kích thước - Hiển thị đặc biệt
-                      // Lấy giá trị từ nhiều nguồn có thể có
                       const sizeValue =
                         variant.variant_value?.value ||
                         variant.variant_value_name ||
@@ -866,7 +961,6 @@ const ProductDetail = () => {
                         </div>
                       );
                     } else {
-                      // Các loại biến thể khác
                       const otherValue =
                         variant.variant_value?.value ||
                         variant.variant_value_name ||
@@ -909,10 +1003,8 @@ const ProductDetail = () => {
             );
           })}
 
-          {/* Hiển thị thông báo lỗi nếu có */}
           {error && <div className="mt-2 text-red-500 text-sm">{error}</div>}
 
-          {/* Button quantity/buy/compare */}
           <div className="mt-8 flex pb-8">
             <div className="grid grid-cols-3 w-[123px] h-[44px] border border-[#A3A3A3] rounded-[5px]">
               <button
@@ -954,7 +1046,6 @@ const ProductDetail = () => {
               Buy now
             </button>
           </div>
-          {/* inf_end */}
           <div className="mt-3">
             <div className="text-[#A3A3A3] text-[16px] mb-3">
               Danh mục:{" "}
@@ -971,19 +1062,12 @@ const ProductDetail = () => {
                     (sum, v) => sum + (v.quantity || 0),
                     0
                   )
-                : 0}
+                : product.quantity || 0}
             </div>
-            {/* <div className="text-[#A3A3A3] text-[16px] mb-3">
-              Thẻ:{" "}
-              {product.tags && Array.isArray(product.tags)
-                ? product.tags.join(", ")
-                : "Sofa, Chair, Home, Shop"}
-            </div> */}
           </div>
         </div>
       </div>
 
-      {/* product_description / comment */}
       <div className="mt-4">
         <ul className="flex gap-x-16 mb-4">
           <li className="text-[20px] font-semibold text-[#000000]">
@@ -998,48 +1082,89 @@ const ProductDetail = () => {
             <Link to="/">Description</Link>
           </li>
         </ul>
-        {/* <div className="mt-4">
-          <h3 className="font-semibold text-xl mb-2">Mô tả sản phẩm</h3>
-          <div
-            className="text-gray-600"
-            dangerouslySetInnerHTML={{
-              __html: product.description || "Không có mô tả chi tiết",
-            }}
-          />
-        </div> */}
 
-        {/* Form bình luận */}
-        <div className="flex justify-between items-center border p-2 rounded-md mt-4">
-          <input
-            type="text"
-            className="w-3/4 p-2 outline-none"
-            placeholder="Nhập đánh giá của bạn ở đây"
-            value={commentInput}
-            onChange={(e) => setCommentInput(e.target.value)}
-          />
-          <button
-            className="ml-4 border p-2 rounded-md bg-blue-500 text-white"
-            onClick={handleCommentSubmit}
-          >
-            Gửi đánh giá
-          </button>
-        </div>
-        {/* Danh sách bình luận */}
         <div className="mt-4">
-          <h3 className="font-semibold text-xl mb-2">Bình luận</h3>
-          {comments.length > 0 ? (
-            comments.map((comment) => (
-              <div key={comment.id} className="border-b py-2">
-                <p>{comment.content}</p>
-                <small className="text-gray-500">
-                  {`Người dùng ID: ${comment.user_id}`}{" "}
-                  {/* Có thể thay bằng tên nếu có API user */}
-                </small>
+          <h3 className="font-semibold text-xl mb-4">Bình luận</h3>
+
+          {isLoggedIn && currentUser ? (
+            <div className="flex justify-between items-center border p-4 rounded-md mb-6">
+              <div className="flex items-center gap-4 w-full">
+                {/* <img
+                  src={currentUser?.avatar || "https://via.placeholder.com/40"}
+                  alt="User avatar"
+                  className="w-10 h-10 rounded-full object-cover"
+                /> */}
+                <input
+                  type="text"
+                  className="flex-1 p-2 border rounded-md outline-none"
+                  placeholder="Nhập đánh giá của bạn ở đây"
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  onFocus={() => checkAuthentication()}
+                />
+                <button
+                  className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  onClick={handleCommentSubmit}
+                >
+                  Gửi
+                </button>
               </div>
-            ))
+            </div>
           ) : (
-            <p>Chưa có bình luận nào.</p>
+            <div className="text-center p-4 bg-gray-50 rounded-md mb-6">
+              <p>
+                Vui lòng{" "}
+                <Link
+                  to="/signin"
+                  state={{ returnUrl: location.pathname }}
+                  className="text-blue-500 hover:underline"
+                  onClick={() => {
+                    // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
+                    localStorage.setItem("returnPath", location.pathname);
+                  }}
+                >
+                  đăng nhập
+                </Link>{" "}
+                để bình luận
+              </p>
+            </div>
           )}
+
+          <div className="space-y-4">
+            {comments.length > 0 ? (
+              comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="flex gap-4 p-4 border rounded-md"
+                >
+                  <img
+                    src={
+                      comment.user?.avatar || "https://via.placeholder.com/40"
+                    }
+                    alt="User avatar"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">
+                        {comment.user?.name || "Người dùng ẩn danh"}
+                      </h4>
+                      <span className="text-gray-500 text-sm">
+                        {new Date(comment.created_at).toLocaleDateString(
+                          "vi-VN"
+                        )}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-gray-700">{comment.content}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500">
+                Chưa có bình luận nào.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </main>
