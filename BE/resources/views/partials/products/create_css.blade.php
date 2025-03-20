@@ -598,4 +598,26 @@
         .btn-remove-variant i {
             font-size: 14px;
         }
+
+        /* Back to top button - đảm bảo hiển thị đúng */
+        #back-to-top {
+            position: fixed;
+            bottom: 100px;
+            right: 28px;
+            z-index: 1000;
+            border-radius: 50% !important; /* Đảm bảo hình tròn */
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #back-to-top i {
+            font-size: 18px;
+            line-height: 1;
+            margin: 0;
+            padding: 0;
+        }
     </style>
