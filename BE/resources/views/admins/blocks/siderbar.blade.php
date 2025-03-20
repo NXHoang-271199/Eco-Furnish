@@ -203,7 +203,6 @@
                     </li>
                 @endif
 
-            
                 @if(Auth::user()->hasPermission('view-orders') || Auth::user()->hasPermission('view-order-notifications'))
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="#sidebarOrder" data-bs-toggle="collapse" role="button"
