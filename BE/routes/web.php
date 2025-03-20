@@ -190,6 +190,11 @@ Route::prefix('admin')->group(function () {
         Route::delete('/permissions/{permission}', [PermissionController::class, 'destroyPermission'])->name('permissions.destroy-permission');
     });
 
+
+    // Banners Management
+    Route::resource('banners', BannerController::class);
+    Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
+
     Route::get('/settings', [SettingController::class, 'index'])->name('settings');
     Route::get('/settings/smtp', [SettingController::class, 'smtp'])->name('settings.smtp');
     Route::get('/settings/website', [SettingController::class, 'website'])->name('settings.website');

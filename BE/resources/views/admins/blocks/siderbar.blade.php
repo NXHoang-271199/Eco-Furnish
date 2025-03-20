@@ -202,6 +202,7 @@
                         </div>
                     </li>
                 @endif
+<<<<<<<<< Temporary merge branch 1
 
                 @if(Auth::user()->hasPermission('view-orders') || Auth::user()->hasPermission('view-order-notifications'))
                 <li class="nav-item">
@@ -235,7 +236,6 @@
                 </li>
 
                 <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
-
                 @endif
 
                 <li class="nav-item">
