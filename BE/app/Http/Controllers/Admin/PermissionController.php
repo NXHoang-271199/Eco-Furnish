@@ -21,8 +21,11 @@ class PermissionController extends Controller
      */
     public function index()
     {
-        $roles = Role::withCount('permissions')->paginate(10);
-        $permissions = Permission::withCount('roles')->paginate(10);
+        $roles = Role::withCount('permissions')
+            ->paginate(10, ['*'], 'roles_page');
+        
+        $permissions = Permission::withCount('roles')
+            ->paginate(10, ['*'], 'permissions_page');
 
         return view('admins.permissions.index', compact('roles', 'permissions'));
     }

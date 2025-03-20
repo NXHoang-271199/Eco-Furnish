@@ -11,25 +11,28 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\TokenHandler;
 
 class UserApiController extends Controller
 {
+    use TokenHandler;
+
     // 1. Lấy danh sách user (chỉ client)
     public function index()
     {
-        $users = User::whereHas('role', function($query) {
+        $users = User::whereHas('role', function ($query) {
             $query->where('name', 'Client');
         })
-        ->where('is_active', 1) // Chỉ lấy user đang active
-        ->get()
-        ->map(function ($user) {
-            return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'slug' => Str::slug($user->name),
-                'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
-            ];
-        });
+            ->where('is_active', 1) // Chỉ lấy user đang active
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'slug' => Str::slug($user->name),
+                    'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
+                ];
+            });
 
         return response()->json([
             'status' => 'success',
@@ -38,15 +41,14 @@ class UserApiController extends Controller
     }
 
     // 2. Xem chi tiết user theo slug
-    public function show($slug)
+    public function show($email)
     {
-        $name = str_replace('-', ' ', $slug);
-        $user = User::whereHas('role', function($query) {
+        $user = User::whereHas('role', function ($query) {
             $query->where('name', 'Client');
         })
-        ->where('name', 'LIKE', $name)
-        ->where('is_active', 1)
-        ->first();
+            ->where('email', 'LIKE', $email)
+            ->where('is_active', 1)
+            ->first();
 
         if (!$user) {
             return response()->json([
@@ -54,7 +56,7 @@ class UserApiController extends Controller
                 'message' => 'Không tìm thấy người dùng'
             ], 404);
         }
-
+        $tokens = $this->generateTokens($user);
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -63,7 +65,12 @@ class UserApiController extends Controller
                 'email' => $user->email,
                 'slug' => Str::slug($user->name),
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
-                'joined_date' => $user->created_at->format('d/m/Y')
+                'password' => $user->password,
+                'joined_date' => $user->created_at->format('d/m/Y'),
+                'access_token' => $tokens['access_token'],
+                'refresh_token' => $tokens['refresh_token'],
+                'access_token_expires_at' => $tokens['access_token_expires_at'],
+                'refresh_token_expires_at' => $tokens['refresh_token_expires_at']
             ]
         ]);
     }
@@ -94,7 +101,7 @@ class UserApiController extends Controller
             $avatarPath = $request->file('avatar')->store('uploads/avatars', 'public');
         }
 
-    
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -126,6 +133,7 @@ class UserApiController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
+            'remember_me' => 'nullable|boolean'  // Sửa thành nullable|boolean
         ]);
 
         if ($validator->fails()) {
@@ -137,35 +145,20 @@ class UserApiController extends Controller
 
         // Tìm user theo email
         $user = User::where('email', $request->email)
-                    ->where('is_active', 1)
-                    ->first();
+            ->where('is_active', 1)
+            ->first();
 
-        // Kiểm tra user tồn tại
-        if (!$user) {
+        // Kiểm tra user và password
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Email hoặc mật khẩu không đúng'
             ], 401);
         }
 
-        // Kiểm tra mật khẩu đúng
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Email hoặc mật khẩu không đúng'
-            ], 401);
-        }
-        
-        // Xóa token cũ nếu có
-        $user->tokens()->delete();
-        
-        // Tạo token mới
-        $token = $user->createToken('auth_token')->plainTextToken;
-        
-        // Lưu token vào user
-        $user->access_token = $token;
-        $user->save();
-        
+        // Tạo token bình thường
+        $tokens = $this->generateTokens($user);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Đăng nhập thành công',
@@ -175,7 +168,45 @@ class UserApiController extends Controller
                 'email' => $user->email,
                 'role' => $user->role->name,
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
-                'access_token' => $token
+                'access_token' => $tokens['access_token'],
+                'refresh_token' => $tokens['refresh_token'],
+            ]
+        ]);
+    }
+
+    // Thêm method mới để refresh token
+    public function refreshToken(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'refresh_token' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $this->validateRefreshToken($request->refresh_token);
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Refresh token không hợp lệ hoặc đã hết hạn'
+            ], 401);
+        }
+
+        $tokens = $this->generateTokens($user);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Refresh token thành công',
+            'data' => [
+                'access_token' => $tokens['access_token'],
+                'refresh_token' => $tokens['refresh_token'],
+                'access_token_expires_at' => $tokens['access_token_expires_at'],
+                'refresh_token_expires_at' => $tokens['refresh_token_expires_at']
             ]
         ]);
     }
@@ -185,7 +216,7 @@ class UserApiController extends Controller
     {
         $user = User::find($id);
 
-        $user = User::whereHas('role', function($query) {
+        $user = User::whereHas('role', function ($query) {
             $query->where('name', 'Client');
         })->find($id);
 
@@ -254,31 +285,25 @@ class UserApiController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function apiLogout(Request $request)
-    {
-        // Lấy user hiện tại
-        $user = Auth::user();
-        
-        // Nếu sử dụng token authentication (Sanctum/Passport)
-        if ($request->bearerToken()) {
-            // Chỉ xóa token hiện tại
-            $request->user()->currentAccessToken()->delete();
-            // Hoặc xóa tất cả token: $user->tokens()->delete();
-        } else {
-            // Nếu sử dụng session-based authentication
-            Auth::logout();
-            
-            // Chỉ thao tác với session khi có session
-            if ($request->hasSession()) {
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-            }
-        }
-        
+{
+    // Sử dụng sanctum thay vì api guard
+    $user = $request->user();
+    
+    if (!$user) {
         return response()->json([
-            'success' => true,
-            'message' => 'Đăng xuất thành công'
-        ]);
+            'success' => false,
+            'message' => 'Người dùng chưa đăng nhập'
+        ], 401);
     }
+    
+    // Xóa token hiện tại
+    $request->user()->currentAccessToken()->delete();
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Đăng xuất thành công'
+    ]);
+}
 
     /**
      * Gửi email đặt lại mật khẩu
@@ -300,25 +325,25 @@ class UserApiController extends Controller
         }
 
         $user = User::where('email', $request->email)->first();
-        
+
         // Tạo token reset password
         $token = Str::random(60);
-        
+
         // Lưu token vào trường remember_token của user
         $user->remember_token = $token;
         $user->updated_at = now(); // Cập nhật thời gian để theo dõi thời hạn token
         $user->save();
-        
+
         // Tạo URL đặt lại mật khẩu
         $resetUrl = config('app.frontend_url', 'http://localhost:3000') . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
-        
+
         // Gửi email với link reset password
         try {
-            \Mail::send('emails.reset_password', ['resetUrl' => $resetUrl, 'user' => $user], function($message) use ($user) {
+            \Mail::send('emails.reset_password', ['resetUrl' => $resetUrl, 'user' => $user], function ($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Đặt lại mật khẩu');
             });
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Đã gửi email hướng dẫn đặt lại mật khẩu'
@@ -330,7 +355,7 @@ class UserApiController extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * Đặt lại mật khẩu
      *
@@ -352,10 +377,10 @@ class UserApiController extends Controller
                 'message' => $validator->errors()
             ], 422);
         }
-        
+
         // Tìm user theo email
         $user = User::where('email', $request->email)->first();
-        
+
         // Kiểm tra token
         if ($user->remember_token !== $request->token) {
             return response()->json([
@@ -363,7 +388,7 @@ class UserApiController extends Controller
                 'message' => 'Token không hợp lệ'
             ], 400);
         }
-        
+
         // Kiểm tra thời gian token (hết hạn sau 60 phút)
         if (now()->diffInMinutes($user->updated_at) > 60) {
             return response()->json([
@@ -371,12 +396,12 @@ class UserApiController extends Controller
                 'message' => 'Token đã hết hạn'
             ], 400);
         }
-        
+
         // Cập nhật mật khẩu
         $user->password = Hash::make($request->password);
         $user->remember_token = null; // Xóa token sau khi sử dụng
         $user->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Đặt lại mật khẩu thành công'
