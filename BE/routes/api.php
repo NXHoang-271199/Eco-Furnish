@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\CategoryPostApiController;
 use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\BannerController;
+use App\Http\Controllers\Api\CategoryApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +31,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/search', [ProductController::class, 'search']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
+
+// Category routes
+Route::get('/categories', [CategoryApiController::class, 'index']);
+Route::get('/categories/{slug}', [CategoryApiController::class, 'show']);
 
 // Chat routes
 Route::post('/chat', [ChatController::class, 'chat']);
