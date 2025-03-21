@@ -22,9 +22,11 @@ use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\OrderNotificationController;
+use App\Http\Controllers\BannerController;
 use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\SettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -187,4 +189,18 @@ Route::prefix('admin')->group(function () {
         Route::post('/permissions', [PermissionController::class, 'storePermission'])->name('permissions.store-permission');
         Route::delete('/permissions/{permission}', [PermissionController::class, 'destroyPermission'])->name('permissions.destroy-permission');
     });
+
+
+    // Banners Management
+    Route::resource('banners', BannerController::class);
+    Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
+
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings');
+    Route::get('/settings/smtp', [SettingController::class, 'smtp'])->name('settings.smtp');
+    Route::get('/settings/website', [SettingController::class, 'website'])->name('settings.website');
+    Route::post('/settings/smtp/update', [SettingController::class, 'updateSmtp'])->name('settings.smtp.update');
+    Route::post('/settings/website/update', [SettingController::class, 'updateWebsite'])->name('settings.website.update');
+    // Banners Management
+    Route::resource('banners', BannerController::class);
+    Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
 });
