@@ -42,13 +42,17 @@ Route::post('/chat', [ChatController::class, 'chat']);
 // User routes
 Route::prefix('users')->group(function () {
     Route::get('/', [UserApiController::class, 'index']);
-    Route::get('/{slug}', [UserApiController::class, 'show']);
+    Route::get('/{email}', [UserApiController::class, 'show']);
     Route::post('/register', [UserApiController::class, 'register']);
     Route::post('/login', [UserApiController::class, 'login']);
-    Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
-    Route::post('/logout', [UserApiController::class, 'apiLogout']);
     Route::post('/forgot-password', [UserApiController::class, 'forgotPassword']);
     Route::post('/reset-password', [UserApiController::class, 'resetPassword']);
+    Route::post('/refresh-token', [UserApiController::class, 'refreshToken']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
+        Route::post('/logout', [UserApiController::class, 'apiLogout']);
+    });
 });
 
 // Post routes
