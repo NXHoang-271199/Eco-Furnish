@@ -25,7 +25,7 @@ class UpdateProductRequest extends FormRequest
                 Rule::unique('products')->ignore($this->product)
             ],
             'category_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric|min:0|max:999999999',
+            'price' => $hasVariants ? 'nullable|numeric|min:0|max:999999999' : 'required|numeric|min:0|max:999999999',
             'discount_price' => 'nullable|numeric|min:0|max:999999999',
             'quantity' => $hasVariants ? 'nullable|numeric|min:0|max:999999999' : 'required|numeric|min:0|max:999999999',
             'description' => 'nullable|string',
@@ -34,9 +34,10 @@ class UpdateProductRequest extends FormRequest
             'variants' => 'array|nullable',
             'variants.*.sku' => 'required_with:variants|string|max:50|distinct',
             'variants.*.price' => 'required_with:variants|numeric|min:0|max:999999999',
+            'variants.*.discount_price' => 'nullable|numeric|min:0|max:999999999',
             'variants.*.quantity' => 'required_with:variants|numeric|min:0|max:999999999',
-            'variants.*.variant_values' => 'required_with:variants|array',
-            'variants.*.variant_values.*' => 'exists:variant_values,id'
+            'variants.*.values' => 'required_with:variants|array',
+            'variants.*.values.*' => 'exists:variant_values,id'
         ];
     }
 
@@ -72,12 +73,15 @@ class UpdateProductRequest extends FormRequest
             'variants.*.price.numeric' => 'Giá biến thể phải là số',
             'variants.*.price.min' => 'Giá biến thể phải lớn hơn 0',
             'variants.*.price.max' => 'Giá biến thể không được vượt quá 999,999,999 VNĐ',
+            'variants.*.discount_price.numeric' => 'Giá khuyến mãi của biến thể phải là số',
+            'variants.*.discount_price.min' => 'Giá khuyến mãi của biến thể phải lớn hơn 0',
+            'variants.*.discount_price.max' => 'Giá khuyến mãi của biến thể không được vượt quá 999,999,999 VNĐ',
             'variants.*.quantity.required_with' => 'Số lượng là bắt buộc cho mỗi biến thể',
             'variants.*.quantity.numeric' => 'Số lượng biến thể phải là số',
             'variants.*.quantity.min' => 'Số lượng biến thể phải lớn hơn 0',
             'variants.*.quantity.max' => 'Số lượng biến thể không được vượt quá 999,999,999',
-            'variants.*.variant_values.required_with' => 'Giá trị biến thể là bắt buộc khi thêm biến thể mới',
-            'variants.*.variant_values.*.exists' => 'Giá trị biến thể không tồn tại'
+            'variants.*.values.required_with' => 'Giá trị biến thể là bắt buộc khi thêm biến thể mới',
+            'variants.*.values.*.exists' => 'Giá trị biến thể không tồn tại'
         ];
     }
 } 
