@@ -10,8 +10,11 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TrashController;
+use App\Http\Controllers\BannerController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\VariantController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\CategoryController;
@@ -21,12 +24,10 @@ use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\OrderNotificationController;
-use App\Http\Controllers\BannerController;
 use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
-use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\SettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -203,4 +204,9 @@ Route::prefix('admin')->group(function () {
     // Banners Management
     Route::resource('banners', BannerController::class);
     Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
+
+    Route::get('/messages', [MessageController::class, 'index'])->name('admin.messages.index');
+    Route::post('/messages/send', [MessageController::class, 'send'])->name('admin.messages.send');
+    Route::post('/admin/messages/send', [MessageController::class, 'sendByAdmin'])->name('admin.messages.send');
+
 });

@@ -1,16 +1,17 @@
 <?php
 
+use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\ChatController;
-use App\Http\Controllers\Api\UserApiController;
-use App\Http\Controllers\Api\PostApiController;
-use App\Http\Controllers\Api\CategoryPostApiController;
-use App\Http\Controllers\Api\VoucherApiController;
-use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\BannerController;
-
+use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\PostApiController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\UserApiController;
+use App\Http\Controllers\Api\VoucherApiController;
+use App\Http\Controllers\Api\CategoryPostApiController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -78,3 +79,17 @@ Route::get('/products/{product}/comments', [CommentController::class, 'getProduc
 
 // Banner routes
 Route::get('/banners', [BannerController::class, 'index']);
+
+Route::post('/send-message', function (Request $request) {
+    $message = $request->input('message');
+    event(new MessageSent($message));
+    return response()->json(['status' => 'Message sent']);
+});
+
+Route::prefix('messages')->group(function () {
+    Route::post('/', [MessageController::class, 'store']); // Lưu tin nhắn
+    Route::get('/user/{userId}', [MessageController::class, 'getUserMessages']); // Lấy tin nhắn theo user
+    Route::get('/unread', [MessageController::class, 'getUnreadMessages']); // Lấy tin chưa đọc
+    Route::patch('/read/{messageId}', [MessageController::class, 'markAsRead']); // Đánh dấu đã đọc
+    Route::post('/admin/send', [MessageController::class, 'sendByAdmin']); // Admin gửi tin nhắn
+});

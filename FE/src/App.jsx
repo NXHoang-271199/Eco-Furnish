@@ -28,6 +28,7 @@ import Address from "./pages/(website)/UserAccount/Address/Address";
 import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
 import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
 import ChatBot from "./components/ChatBot";
+import Chat from "./components/ChatRealTime";
 
 function App() {
   return (
@@ -63,6 +64,7 @@ function App() {
         </Route>
       </Routes>
       <ChatBot />
+      <Chat />
     </>
   );
 }
