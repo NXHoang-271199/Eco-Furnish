@@ -105,30 +105,25 @@ class CartController extends Controller
      */
     public function updateQuantity(Request $request, $id)
     {
-        $cartItem = CartItem::find($id);
-        if (!$cartItem) {
-            return response()->json(['message' => 'Sản phẩm không có trong giỏ hàng'], 404);
-        }
-        // Lấy số lượng tồn kho từ biến thể hoặc sản phẩm
+        $cartItem = CartItem::findOrFail($id);
+
+        // Lấy số lượng tồn kho
         $maxQuantity = $cartItem->product_variant_id
-            ? ProductVariant::find($cartItem->product_variant_id)?->quantity
-            : Product::find($cartItem->product_id)?->quantity;
+            ? $cartItem->productVariant->quantity
+            : $cartItem->product->quantity;
 
-        if ($maxQuantity === null) {
-            return response()->json(['message' => 'Không tìm thấy sản phẩm hoặc biến thể'], 404);
-        }
+        // Lấy số lượng mới từ request
+        $newQuantity = (int) $request->quantity;
 
-        // Lấy số lượng hiện tại và tính số lượng mới
-        $currentQuantity = $cartItem->quantity;
-        $newQuantity = $currentQuantity + $request->quantity;
-        if ($newQuantity < 1 || $newQuantity > ($maxQuantity ?? 0)) {
+        if ($newQuantity < 1 || $newQuantity > $maxQuantity) {
             return response()->json([
                 'message' => $newQuantity < 1
                     ? 'Số lượng tối thiểu là 1'
                     : 'Không thể vượt quá số lượng tồn kho'
             ], 400);
         }
-        // Thực hiện cập nhật số lượng
+
+        // Cập nhật số lượng
         $cartItem->update(["quantity" => $newQuantity]);
 
         return response()->json(['message' => 'Cập nhật số lượng thành công', 'cartItem' => $cartItem], 200);
