@@ -2,14 +2,16 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\ChatController;
-use App\Http\Controllers\Api\UserApiController;
-use App\Http\Controllers\Api\PostApiController;
-use App\Http\Controllers\Api\CategoryPostApiController;
-use App\Http\Controllers\Api\VoucherApiController;
-use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\BannerController;
+use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\PostApiController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\UserApiController;
+use App\Http\Controllers\Api\VoucherApiController;
+use App\Http\Controllers\Api\PaymentMethodController;
+use App\Http\Controllers\Api\CategoryPostApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -78,3 +80,14 @@ Route::get('/products/{product}/comments', [CommentController::class, 'getProduc
 
 // Banner routes
 Route::get('/banners', [BannerController::class, 'index']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/cart', [CartController::class, 'index']); // Lấy giỏ hàng
+    Route::post('/cart/add', [CartController::class, 'addToCart']); // Thêm vào giỏ hàng
+    Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
+    Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
+    Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
+});
+
+// Payment Method routes
+Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
