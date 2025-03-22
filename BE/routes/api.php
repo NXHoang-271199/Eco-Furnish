@@ -12,7 +12,8 @@ use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
-use App\Http\Controllers\Api\CategoryPostApiController;/*
+use App\Http\Controllers\Api\CategoryPostApiController;
+/*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
@@ -84,6 +85,7 @@ Route::get('/products/{product}/comments', [CommentController::class, 'getProduc
 // Banner routes
 Route::get('/banners', [BannerController::class, 'index']);
 
+// Cart Routers
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cart', [CartController::class, 'index']); // Lấy giỏ hàng
     Route::post('/cart/add', [CartController::class, 'addToCart']); // Thêm vào giỏ hàng
