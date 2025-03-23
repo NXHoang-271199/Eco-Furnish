@@ -42,6 +42,8 @@ Route::prefix('users')->group(function () {
     Route::post('/forgot-password', [UserApiController::class, 'forgotPassword']);
     Route::post('/reset-password', [UserApiController::class, 'resetPassword']);
     Route::post('/refresh-token', [UserApiController::class, 'refreshToken']);
+    Route::post('/verify-email', [UserApiController::class, 'verifyEmail']);
+    Route::post('/resend-verification', [UserApiController::class, 'resendVerification']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
