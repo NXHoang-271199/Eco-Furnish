@@ -222,18 +222,22 @@
                                                                                         Xem chi tiết
                                                                                     </a>
                                                                                 </li>
-                                                                                <li>
-                                                                                    <form action="{{ route('users.toggle-status', $user->id) }}" 
-                                                                                          method="POST" class="d-inline">
-                                                                                        @csrf
-                                                                                        @method('PUT')
-                                                                                        <button type="submit" class="dropdown-item">
-                                                                                            <i class="ri-toggle-line align-bottom me-2 text-muted"></i>
-                                                                                            {{ $user->is_active ? 'Hủy kích hoạt' : 'Kích hoạt' }}
-                                                                                        </button>
-                                                                                    </form>
-                                                                                </li>
-                                                                            </ul>
+                                                                                
+                                                                        {{-- Chỉ hiện nút toggle status với non-admin users --}}
+                                                                        @if($user->role->slug !== 'admin')
+                                                                            <li>
+                                                                                <form action="{{ route('users.toggle-status', $user->id) }}" 
+                                                                                      method="POST" class="d-inline">
+                                                                                    @csrf
+                                                                                    @method('PUT')
+                                                                                    <button type="submit" class="dropdown-item">
+                                                                                        <i class="ri-toggle-line align-bottom me-2 text-muted"></i>
+                                                                                        {{ $user->is_active ? 'Hủy kích hoạt' : 'Kích hoạt' }}
+                                                                                    </button>
+                                                                                </form>
+                                                                            </li>
+                                                                        @endif
+                                                                    </ul>
                                                                         </div>
                                                                     </td>
                                                                 </tr>
