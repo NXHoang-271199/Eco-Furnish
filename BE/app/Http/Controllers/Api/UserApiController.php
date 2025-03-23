@@ -6,13 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Str;
 use App\Traits\TokenHandler;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 
 class UserApiController extends Controller
 {
@@ -22,7 +16,7 @@ class UserApiController extends Controller
     public function index()
     {
         $users = User::whereHas('role', function ($query) {
-            $query->where('name', 'Client');
+            $query->where('slug', 'client');
         })
             ->where('is_active', 1) // Chỉ lấy user đang active
             ->get()
@@ -41,13 +35,13 @@ class UserApiController extends Controller
         ]);
     }
 
-    // 2. Xem chi tiết user theo slug
-    public function show($email)
+    // 2. Xem chi tiết user theo email
+    public function show($id)
     {
         $user = User::whereHas('role', function ($query) {
-            $query->where('name', 'Client');
+            $query->where('slug', 'client');
         })
-            ->where('email', 'LIKE', $email)
+            ->where('id', $id)
             ->where('is_active', 1)
             ->first();
 
@@ -66,7 +60,6 @@ class UserApiController extends Controller
                 'email' => $user->email,
                 'slug' => Str::slug($user->name),
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
-                'password' => $user->password,
                 'joined_date' => $user->created_at->format('d/m/Y'),
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
@@ -93,15 +86,15 @@ class UserApiController extends Controller
             ], 422);
         }
 
-        // Lấy role Client
-        $clientRole = Role::where('name', 'Client')->first();
+        $clientRole = Role::where('slug', 'client')->first();
 
-        // Upload avatar nếu có
         $avatarPath = null;
         if ($request->hasFile('avatar')) {
             $avatarPath = $request->file('avatar')->store('uploads/avatars', 'public');
         }
 
+        // Tạo verification token
+        $verificationToken = Str::random(60);
 
         $user = User::create([
             'name' => $request->name,
@@ -109,21 +102,32 @@ class UserApiController extends Controller
             'password' => Hash::make($request->password),
             'role_id' => $clientRole->id,
             'avatar' => $avatarPath,
-            'is_active' => 1,
+            'is_active' => 0,  // Chưa active cho đến khi xác thực email
+            'email_verification_token' => $verificationToken,
+            'email_verified_at' => null
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // Gửi email xác thực
+        try {
+            Mail::send('emails.verify_email', [
+                'user' => $user,
+                'verificationUrl' => config('app.frontend_url') . '/auth/verify-email?token=' . $verificationToken . '&email=' . urlencode($user->email)
+            ], function($message) use ($user) {
+                $message->to($user->email);
+                $message->subject('Xác thực tài khoản');
+            });
+        } catch (\Exception $e) {
+            \Log::error('Email error: ' . $e->getMessage());
+        }
 
-        $user->access_token = $token;
-        $user->save();
+        // Không trả về access_token ngay, phải xác thực email trước
         return response()->json([
             'status' => 'success',
-            'message' => 'Đăng ký tài khoản thành công',
+            'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.',
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
-                'email' => $user->email,
-                'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
+                'email' => $user->email
             ]
         ], 201);
     }
@@ -134,7 +138,7 @@ class UserApiController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
-            'remember_me' => 'nullable|boolean'  // Sửa thành nullable|boolean
+            'remember_me' => 'nullable|in:true,false,0,1'
         ]);
 
         if ($validator->fails()) {
@@ -149,6 +153,15 @@ class UserApiController extends Controller
             ->where('is_active', 1)
             ->first();
 
+        // Kiểm tra email đã xác thực chưa
+        if (!$user->email_verified_at) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Vui lòng xác thực email trước khi đăng nhập',
+                'verification_required' => true
+            ], 403);
+        }
+
         // Kiểm tra user và password
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
@@ -157,8 +170,21 @@ class UserApiController extends Controller
             ], 401);
         }
 
-        // Tạo token bình thường
-        $tokens = $this->generateTokens($user);
+        // Chuyển đổi giá trị remember_me thành boolean
+        $rememberMe = filter_var($request->remember_me, FILTER_VALIDATE_BOOLEAN);
+
+        // Xử lý remember me
+        if ($rememberMe) {
+            $user->remember_me = true;
+            $user->remember_me_expires_at = now()->addDays(30); // Lưu 30 ngày
+        } else {
+            $user->remember_me = false;
+            $user->remember_me_expires_at = null;
+        }
+        $user->save();
+
+        // Tạo token với thời hạn tương ứng
+        $tokens = $this->generateTokens($user, $rememberMe);
 
         return response()->json([
             'status' => 'success',
@@ -171,6 +197,8 @@ class UserApiController extends Controller
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
+                'remember_me' => $user->remember_me,
+                'remember_me_expires_at' => $user->remember_me ? $user->remember_me_expires_at : null
             ]
         ]);
     }
@@ -198,7 +226,15 @@ class UserApiController extends Controller
             ], 401);
         }
 
-        $tokens = $this->generateTokens($user);
+        // Kiểm tra xem remember_me có còn hiệu lực không
+        if ($user->remember_me && $user->remember_me_expires_at && now()->gt($user->remember_me_expires_at)) {
+            $user->remember_me = false;
+            $user->remember_me_expires_at = null;
+            $user->save();
+        }
+
+        // Tạo token mới với thời hạn tương ứng
+        $tokens = $this->generateTokens($user, $user->remember_me);
 
         return response()->json([
             'status' => 'success',
@@ -207,7 +243,9 @@ class UserApiController extends Controller
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
                 'access_token_expires_at' => $tokens['access_token_expires_at'],
-                'refresh_token_expires_at' => $tokens['refresh_token_expires_at']
+                'refresh_token_expires_at' => $tokens['refresh_token_expires_at'],
+                'remember_me' => $user->remember_me,
+                'remember_me_expires_at' => $user->remember_me ? $user->remember_me_expires_at : null
             ]
         ]);
     }
@@ -215,10 +253,8 @@ class UserApiController extends Controller
     // 4. Cập nhật thông tin cá nhân
     public function updateProfile(Request $request, $id)
     {
-        $user = User::find($id);
-
         $user = User::whereHas('role', function ($query) {
-            $query->where('name', 'Client');
+            $query->where('slug', 'client');
         })->find($id);
 
         if (!$user) {
@@ -286,25 +322,27 @@ class UserApiController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function apiLogout(Request $request)
-{
-    // Sử dụng sanctum thay vì api guard
-    $user = $request->user();
-
-    if (!$user) {
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Người dùng chưa đăng nhập'
+            ], 401);
+        }
+        
+        // Xóa token và remember_me
+        $request->user()->currentAccessToken()->delete();
+        $user->remember_me = false;
+        $user->remember_me_expires_at = null;
+        $user->save();
+        
         return response()->json([
-            'success' => false,
-            'message' => 'Người dùng chưa đăng nhập'
-        ], 401);
+            'success' => true,
+            'message' => 'Đăng xuất thành công'
+        ]);
     }
-
-    // Xóa token hiện tại
-    $request->user()->currentAccessToken()->delete();
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Đăng xuất thành công'
-    ]);
-}
 
     /**
      * Gửi email đặt lại mật khẩu
@@ -367,7 +405,7 @@ class UserApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
-            'token' => 'required|string',
+            'remember_token' => 'required|string',
             'password' => 'required|string|min:5',
             'password_confirmation' => 'required|same:password',
         ]);
@@ -407,5 +445,116 @@ class UserApiController extends Controller
             'status' => 'success',
             'message' => 'Đặt lại mật khẩu thành công'
         ]);
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'verify_token' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)
+                    ->where('email_verification_token', $request->verify_token)
+                    ->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token xác thực không hợp lệ hoặc đã hết hạn'
+            ], 400);
+        }
+
+        // Thêm kiểm tra thời gian hết hạn (24 giờ)
+        if (now()->diffInHours($user->created_at) > 24) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Link xác thực đã hết hạn. Vui lòng yêu cầu gửi lại email xác thực.',
+                'expired' => true
+            ], 400);
+        }
+
+        try {
+            $user->email_verified_at = now();
+            $user->email_verification_token = null;
+            $user->is_active = 1;
+            $user->save();
+
+            // Tạo token sau khi xác thực thành công
+            $tokens = $this->generateTokens($user);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Xác thực email thành công',
+                'data' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'access_token' => $tokens['access_token'],
+                    'refresh_token' => $tokens['refresh_token']
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Email verification error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Có lỗi xảy ra khi xác thực email'
+            ], 500);
+        }
+    }
+
+    public function resendVerification(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if ($user->email_verified_at) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email này đã được xác thực'
+            ], 400);
+        }
+
+        // Tạo token mới
+        $verificationToken = Str::random(60);
+        $user->email_verification_token = $verificationToken;
+        $user->save();
+
+        try {
+            Mail::send('emails.verify_email', [
+                'user' => $user,
+                'verificationUrl' => config('app.frontend_url') . '/auth/verify-email?token=' . $verificationToken . '&email=' . urlencode($user->email)
+            ], function($message) use ($user) {
+                $message->to($user->email);
+                $message->subject('Xác thực tài khoản');
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Đã gửi lại email xác thực'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Không thể gửi email: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
