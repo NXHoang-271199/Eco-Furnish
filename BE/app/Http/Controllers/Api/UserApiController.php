@@ -144,7 +144,7 @@ class UserApiController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
-            'remember_me' => 'nullable|boolean'  // Sửa thành nullable|boolean
+            'remember_me' => 'nullable|in:true,false,0,1'
         ]);
 
         if ($validator->fails()) {
@@ -176,8 +176,21 @@ class UserApiController extends Controller
             ], 401);
         }
 
-        // Tạo token bình thường
-        $tokens = $this->generateTokens($user);
+        // Chuyển đổi giá trị remember_me thành boolean
+        $rememberMe = filter_var($request->remember_me, FILTER_VALIDATE_BOOLEAN);
+
+        // Xử lý remember me
+        if ($rememberMe) {
+            $user->remember_me = true;
+            $user->remember_me_expires_at = now()->addDays(30); // Lưu 30 ngày
+        } else {
+            $user->remember_me = false;
+            $user->remember_me_expires_at = null;
+        }
+        $user->save();
+
+        // Tạo token với thời hạn tương ứng
+        $tokens = $this->generateTokens($user, $rememberMe);
 
         return response()->json([
             'status' => 'success',
@@ -190,6 +203,8 @@ class UserApiController extends Controller
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
+                'remember_me' => $user->remember_me,
+                'remember_me_expires_at' => $user->remember_me ? $user->remember_me_expires_at : null
             ]
         ]);
     }
@@ -217,7 +232,15 @@ class UserApiController extends Controller
             ], 401);
         }
 
-        $tokens = $this->generateTokens($user);
+        // Kiểm tra xem remember_me có còn hiệu lực không
+        if ($user->remember_me && $user->remember_me_expires_at && now()->gt($user->remember_me_expires_at)) {
+            $user->remember_me = false;
+            $user->remember_me_expires_at = null;
+            $user->save();
+        }
+
+        // Tạo token mới với thời hạn tương ứng
+        $tokens = $this->generateTokens($user, $user->remember_me);
 
         return response()->json([
             'status' => 'success',
@@ -226,7 +249,9 @@ class UserApiController extends Controller
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
                 'access_token_expires_at' => $tokens['access_token_expires_at'],
-                'refresh_token_expires_at' => $tokens['refresh_token_expires_at']
+                'refresh_token_expires_at' => $tokens['refresh_token_expires_at'],
+                'remember_me' => $user->remember_me,
+                'remember_me_expires_at' => $user->remember_me ? $user->remember_me_expires_at : null
             ]
         ]);
     }
@@ -304,7 +329,6 @@ class UserApiController extends Controller
      */
     public function apiLogout(Request $request)
     {
-        // Sử dụng sanctum thay vì api guard
         $user = $request->user();
         
         if (!$user) {
@@ -314,8 +338,11 @@ class UserApiController extends Controller
             ], 401);
         }
         
-        // Xóa token hiện tại
+        // Xóa token và remember_me
         $request->user()->currentAccessToken()->delete();
+        $user->remember_me = false;
+        $user->remember_me_expires_at = null;
+        $user->save();
         
         return response()->json([
             'success' => true,
@@ -384,7 +411,7 @@ class UserApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
-            'token' => 'required|string',
+            'remember_token' => 'required|string',
             'password' => 'required|string|min:5',
             'password_confirmation' => 'required|same:password',
         ]);
@@ -448,6 +475,15 @@ class UserApiController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Token xác thực không hợp lệ hoặc đã hết hạn'
+            ], 400);
+        }
+
+        // Thêm kiểm tra thời gian hết hạn (24 giờ)
+        if (now()->diffInHours($user->created_at) > 24) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Link xác thực đã hết hạn. Vui lòng yêu cầu gửi lại email xác thực.',
+                'expired' => true
             ], 400);
         }
 

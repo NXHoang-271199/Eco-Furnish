@@ -36,7 +36,7 @@ Route::post('/chat', [ChatController::class, 'chat']);
 // User routes
 Route::prefix('users')->group(function () {
     Route::get('/', [UserApiController::class, 'index']);
-    Route::get('/{email}', [UserApiController::class, 'show']);
+    Route::get('/{id}', [UserApiController::class, 'show']);
     Route::post('/register', [UserApiController::class, 'register']);
     Route::post('/login', [UserApiController::class, 'login']);
     Route::post('/forgot-password', [UserApiController::class, 'forgotPassword']);
