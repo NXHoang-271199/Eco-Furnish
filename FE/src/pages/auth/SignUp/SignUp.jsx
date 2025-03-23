@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
 const SignUp = () => {
   const {
     register,
@@ -14,26 +13,23 @@ const SignUp = () => {
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
-    try {
-      console.log("Dữ liệu gửi đi:", data);
+    console.log(data);
 
+    try {
       const response = await axios.post(
         "http://localhost:8000/api/users/register",
         data
       );
-
-      if (response.data.status === "success") {
-        alert("Đăng ký thành công!");
-        navigate("/signin");
-      }
+      console.log("Đăng ký thành công:", response.data);
+      alert("Đăng ký thanh cong");
+      navigate("/signin");
     } catch (error) {
-      console.error("Chi tiết lỗi:", error.response?.data);
-
-      if (error.response?.data?.errors) {
-        const errorMessages = Object.values(error.response.data.errors).flat();
-        alert(`Lỗi: ${errorMessages.join(", ")}`);
+      // Hiển thị lỗi validation cụ thể nếu có
+      if (error.response && error.response.data && error.response.data.errors) {
+        console.error("Lỗi validation:", error.response.data.errors);
+        // Hiển thị lỗi cho người dùng
       } else {
-        alert("Đăng ký không thành công. Vui lòng thử lại!");
+        console.error("Lỗi đăng ký:", error);
       }
     }
   };
