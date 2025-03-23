@@ -1,12 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import Banner from "../../../components/Banner";
 
 const Blogs = () => {
   return (
     <div className="bg-gray-100 mt-10">
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <section className="relative">
+        {/* <section className="relative">
           <motion.img
             src="https://storage.googleapis.com/a1aa/image/L2WwzaWj82s6j2ILIlmI8ucu4kkoaXdYw6hBRSqLzYY.jpg"
             alt="Living room with Christmas tree"
@@ -18,8 +19,8 @@ const Blogs = () => {
           <div className="absolute top-6 left-6 bg-white p-2 rounded-full shadow">
             <i className="fas fa-bars text-gray-700"></i>
           </div>
-        </section>
-
+        </section> */}
+        <Banner />
         <section className="mt-8">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
             <div className="flex space-x-4 mb-4 sm:mb-0">

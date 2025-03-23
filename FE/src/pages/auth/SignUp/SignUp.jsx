@@ -1,8 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
-import { data, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
 const SignUp = () => {
   const {
     register,
@@ -11,26 +12,32 @@ const SignUp = () => {
   } = useForm();
 
   const navigate = useNavigate();
+
   const onSubmit = async (data) => {
-    console.log(data);
     try {
+      console.log("Dữ liệu gửi đi:", data);
+
       const response = await axios.post(
         "http://localhost:8000/api/users/register",
         data
       );
-      console.log("Đăng ký thành công:", response.data);
-      alert("Đăng ký thanh cong");
-      navigate("/signin");
+
+      if (response.data.status === "success") {
+        alert("Đăng ký thành công!");
+        navigate("/signin");
+      }
     } catch (error) {
-      // Hiển thị lỗi validation cụ thể nếu có
-      if (error.response && error.response.data && error.response.data.errors) {
-        console.error("Lỗi validation:", error.response.data.errors);
-        // Hiển thị lỗi cho người dùng
+      console.error("Chi tiết lỗi:", error.response?.data);
+
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.values(error.response.data.errors).flat();
+        alert(`Lỗi: ${errorMessages.join(", ")}`);
       } else {
-        console.error("Lỗi đăng ký:", error);
+        alert("Đăng ký không thành công. Vui lòng thử lại!");
       }
     }
   };
+
   return (
     <div className="flex w-full bg-white shadow-lg">
       <div className="relative overflow-hidden w-1/2 hidden md:block">

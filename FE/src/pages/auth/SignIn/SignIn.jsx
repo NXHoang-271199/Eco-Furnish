@@ -58,11 +58,11 @@ const SignIn = () => {
       }
 
       // Lưu token và userData vào localStorage
-      localStorage.setItem("token", token);
+      localStorage.setItem("authToken", token);
       localStorage.setItem("userData", JSON.stringify(userData));
 
       // Kiểm tra xem đã lưu token thành công chưa
-      console.log("Token đã lưu:", localStorage.getItem("token"));
+      console.log("Token đã lưu:", localStorage.getItem("authToken"));
       console.log("User data đã lưu:", localStorage.getItem("userData"));
 
       // Phát sự kiện để thông báo đăng nhập thành công cho các tab khác
@@ -72,7 +72,7 @@ const SignIn = () => {
       // Phát sự kiện storage để cập nhật các tab khác
       try {
         const storageEvent = new StorageEvent("storage", {
-          key: "token",
+          key: "authToken",
           newValue: token,
         });
         window.dispatchEvent(storageEvent);
