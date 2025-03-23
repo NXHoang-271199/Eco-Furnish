@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 use App\Traits\TokenHandler;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class UserApiController extends Controller
 {
@@ -288,17 +289,17 @@ class UserApiController extends Controller
 {
     // Sử dụng sanctum thay vì api guard
     $user = $request->user();
-    
+
     if (!$user) {
         return response()->json([
             'success' => false,
             'message' => 'Người dùng chưa đăng nhập'
         ], 401);
     }
-    
+
     // Xóa token hiện tại
     $request->user()->currentAccessToken()->delete();
-    
+
     return response()->json([
         'success' => true,
         'message' => 'Đăng xuất thành công'
@@ -339,7 +340,7 @@ class UserApiController extends Controller
 
         // Gửi email với link reset password
         try {
-            \Mail::send('emails.reset_password', ['resetUrl' => $resetUrl, 'user' => $user], function ($message) use ($user) {
+            Mail::send('emails.reset_password', ['resetUrl' => $resetUrl, 'user' => $user], function ($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Đặt lại mật khẩu');
             });
