@@ -131,6 +131,7 @@ class ProductController extends Controller
                                 'variant_value_id' => $valueId,
                                 'sku' => $sku,
                                 'price' => $variant['price'],
+                                'discount_price' => isset($variant['discount_price']) ? $variant['discount_price'] : null,
                                 'quantity' => $variant['quantity'],
                                 'status' => 1
                             ]);
@@ -203,7 +204,7 @@ class ProductController extends Controller
             $product->load([
                 'gallery',
                 'variants' => function($query) {
-                    $query->select('id', 'product_id', 'variant_id', 'variant_value_id', 'sku', 'price', 'quantity')
+                    $query->select('id', 'product_id', 'variant_id', 'variant_value_id', 'sku', 'price', 'discount_price', 'quantity')
                         ->whereNull('deleted_at');
                 },
                 'variants.variant:id,name',
@@ -310,7 +311,7 @@ class ProductController extends Controller
                 foreach ($request->variants as $variant) {
                     // Tạo một key duy nhất cho mỗi tổ hợp biến thể
                     $variantKey = [];
-                    foreach ($variant['variant_values'] as $variantId => $valueId) {
+                    foreach ($variant['values'] as $variantId => $valueId) {
                         $variantKey[] = $variantId . '-' . $valueId;
                     }
                     sort($variantKey);
@@ -321,7 +322,7 @@ class ProductController extends Controller
                         $duplicateFound = true;
                         // Lấy thông tin biến thể bị trùng để hiển thị trong thông báo lỗi
                         $variantInfo = [];
-                        foreach ($variant['variant_values'] as $variantId => $valueId) {
+                        foreach ($variant['values'] as $variantId => $valueId) {
                             $variantValue = DB::table('variant_values')
                                 ->join('variants', 'variants.id', '=', 'variant_values.variant_id')
                                 ->where('variant_values.id', $valueId)
@@ -338,7 +339,7 @@ class ProductController extends Controller
                     $usedCombinations[] = $combinationKey;
 
                     // Thu thập thông tin biến thể
-                    foreach ($variant['variant_values'] as $variantId => $valueId) {
+                    foreach ($variant['values'] as $variantId => $valueId) {
                         // Xử lý SKU để loại bỏ dấu
                         $sku = $this->removeVietnameseAccents($variant['sku']);
                         
@@ -347,6 +348,7 @@ class ProductController extends Controller
                             'variant_value_id' => $valueId,
                             'sku' => $sku,
                             'price' => $variant['price'],
+                            'discount_price' => isset($variant['discount_price']) ? $variant['discount_price'] : null,
                             'quantity' => $variant['quantity']
                         ]);
                     }
@@ -380,6 +382,7 @@ class ProductController extends Controller
                         $existingVariant->update([
                             'sku' => $variantData['sku'],
                             'price' => $variantData['price'],
+                            'discount_price' => $variantData['discount_price'],
                             'quantity' => $variantData['quantity']
                         ]);
 
@@ -393,6 +396,7 @@ class ProductController extends Controller
                             'variant_value_id' => $variantData['variant_value_id'],
                             'sku' => $variantData['sku'],
                             'price' => $variantData['price'],
+                            'discount_price' => $variantData['discount_price'],
                             'quantity' => $variantData['quantity'],
                             'status' => 1
                         ]);

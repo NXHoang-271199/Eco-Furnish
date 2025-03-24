@@ -110,48 +110,47 @@
                                                             <th scope="row">Giá bán</th>
                                                             <td>
                                                                 @if($product->variants->isEmpty())
-                                                                    <div>
-                                                                        <strong>Giá gốc:</strong> {{ number_format($product->price) }} VNĐ
-                                                                    </div>
-                                                                    @if($product->discount_price)
-                                                                        <div class="mt-2">
-                                                                            <strong>Giá khuyến mãi:</strong> {{ number_format($product->discount_price) }} VNĐ
-                                                                        </div>
-                                                                    @endif
+                                                                <div>
+                                                                    <strong>Giá gốc:</strong> {{ number_format($product->price) }} VNĐ
+                                                                </div>
+                                                                @if($product->discount_price)
+                                                                <div class="mt-2">
+                                                                    <strong>Giá khuyến mãi:</strong> {{ number_format($product->discount_price) }} VNĐ
+                                                                </div>
+                                                                @endif
                                                                 @else
-                                                                    <div class="mt-2">
-                                                                        <strong>Giá biến thể:</strong>
-                                                                        @php
-                                                                            $minPrice = $product->variants->min('price');
-                                                                            $maxPrice = $product->variants->max('price');
-                                                                            $minDiscountPrice = $product->variants->min('discount_price');
-                                                                            $maxDiscountPrice = $product->variants->max('discount_price');
-                                                                            $hasDiscount = $product->variants->whereNotNull('discount_price')->count() > 0;
-                                                                        @endphp
-                                                                        @if($minPrice === $maxPrice)
-                                                                            {{ number_format($minPrice) }} VNĐ
-                                                                        @else
-                                                                            {{ number_format($minPrice) }} - {{ number_format($maxPrice) }} VNĐ
-                                                                        @endif
-                                                                    </div>
-                                                                    @if($hasDiscount)
-                                                                        <div class="mt-2">
-                                                                            <strong>Giá khuyến mãi biến thể:</strong>
-                                                                            @if($minDiscountPrice === $maxDiscountPrice)
-                                                                                <span class="text-danger">{{ number_format($minDiscountPrice) }} VNĐ</span>
-                                                                            @else
-                                                                                <span class="text-danger">{{ number_format($minDiscountPrice) }} - {{ number_format($maxDiscountPrice) }} VNĐ</span>
-                                                                            @endif
-                                                                        </div>
+                                                                <div class="mt-2">
+                                                                    <strong>Giá biến thể:</strong>
+                                                                    @php
+                                                                        $minPrice = $product->variants->min('price');
+                                                                        $maxPrice = $product->variants->max('price');
+                                                                        $minDiscountPrice = $product->variants->min('discount_price');
+                                                                        $maxDiscountPrice = $product->variants->max('discount_price');
+                                                                        $hasDiscount = $product->variants->whereNotNull('discount_price')->count() > 0;
+                                                                    @endphp
+                                                                    @if($minPrice === $maxPrice)
+                                                                        {{ number_format($minPrice) }} VNĐ
+                                                                    @else
+                                                                        {{ number_format($minPrice) }} - {{ number_format($maxPrice) }} VNĐ
                                                                     @endif
+                                                                </div>
+                                                                @if($hasDiscount)
+                                                                <div class="mt-2">
+                                                                    <strong>Giá khuyến mãi biến thể:</strong>
+                                                                    @if($minDiscountPrice === $maxDiscountPrice)
+                                                                        <span class="text-danger">{{ number_format($minDiscountPrice) }} VNĐ</span>
+                                                                    @else
+                                                                        <span class="text-danger">{{ number_format($minDiscountPrice) }} - {{ number_format($maxDiscountPrice) }} VNĐ</span>
+                                                                    @endif
+                                                                </div>
                                                                 @endif
                                                             </td>
                                                         </tr>
                                                         @if($product->variants->isEmpty())
-                                                            <tr>
-                                                                <th scope="row">Số lượng sản phẩm</th>
-                                                                <td>{{ number_format($product->quantity) }}</td>
-                                                            </tr>
+                                                        <tr>
+                                                            <th scope="row">Số lượng sản phẩm</th>
+                                                            <td>{{ number_format($product->quantity) }}</td>
+                                                        </tr>
                                                         @endif
                                                         <tr>
                                                             <th scope="row">Số lượng biến thể</th>
@@ -220,12 +219,12 @@
                                 </div>
 
                                 @if($product->description)
-                                    <div class="mt-4">
-                                        <h5 class="fs-14 mb-3">Mô tả sản phẩm :</h5>
-                                        <div class="text-muted">
-                                            {!! $product->description !!}
-                                        </div>
+                                <div class="mt-4">
+                                    <h5 class="fs-14 mb-3">Mô tả sản phẩm :</h5>
+                                    <div class="text-muted">
+                                        {!! $product->description !!}
                                     </div>
+                                </div>
                                 @endif
                             </div>
                         </div>
