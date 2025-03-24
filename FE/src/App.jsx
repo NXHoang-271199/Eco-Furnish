@@ -14,7 +14,6 @@ import SignUp from "./pages/auth/SignUp/SignUp";
 
 // import CursorGlow from "./CursorGlow";
 import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
-
 import EmailVerification from "./pages/EmailVerification/EmailVerification";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import ConfirmPassword from "./pages/ConfirmPassword/ConfirmPassword";
@@ -54,7 +53,7 @@ function App() {
 
         <Route path="reset" element={<ResetPassword />} />
         <Route path="confirm" element={<ConfirmPassword />} />
-        <Route path="emailverification" element={<EmailVerification />} />
+        <Route path="/auth/verify-email" element={<EmailVerification />} />
 
         <Route path="account" element={<LayoutAccount />}>
           <Route index element={<Account />} />

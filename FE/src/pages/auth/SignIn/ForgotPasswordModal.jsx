@@ -6,7 +6,9 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Quên mật khẩu</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Quên mật khẩu
+        </h2>
         <p className="text-gray-600 text-sm mb-4">
           Nhập email của bạn và chúng tôi sẽ gửi liên kết đặt lại mật khẩu.
         </p>

@@ -36,19 +36,19 @@ const Account = () => {
         const userData = JSON.parse(userDataStr);
 
         // Kiểm tra xem có email không
-        if (!userData.email) {
-          console.error(
-            "Không tìm thấy email trong dữ liệu người dùng:",
-            userData
-          );
-          throw new Error("Không thể xác định ID người dùng");
-        }
+        // if (!userData.email) {
+        //   console.error(
+        //     "Không tìm thấy email trong dữ liệu người dùng:",
+        //     userData
+        //   );
+        //   throw new Error("Không thể xác định ID người dùng");
+        // }
 
         console.log("Email người dùng:", userData.email);
 
         // Gọi API để lấy thông tin chi tiết của người dùng
         const response = await axios.get(
-          `http://localhost:8000/api/users/${userData.email}`,
+          `http://127.0.0.1:8000/api/users/${userData.id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
