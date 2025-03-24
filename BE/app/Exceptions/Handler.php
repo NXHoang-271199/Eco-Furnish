@@ -46,8 +46,4 @@ class Handler extends ExceptionHandler
             //
         });
     }
-    public function unauthenticated($request, AuthenticationException $exception)
-    {
-        return response()->json(['message' => 'Vui lòng đăng nhập để tiếp tục'], 401);
-    }
 }
