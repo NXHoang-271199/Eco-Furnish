@@ -71,6 +71,12 @@
                                     </div>
                                 @endif
 
+                                @if(session('error'))
+                                    <div class="alert alert-danger" role="alert">
+                                        {{ session('error') }}
+                                    </div>
+                                @endif
+
                                 <div class="mt-4">
                                     <form action="{{ route('admin.login.post') }}" method="POST">
                                         @csrf

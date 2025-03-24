@@ -105,10 +105,15 @@ Route::post('/send-message', function (Request $request) {
     return response()->json(['status' => 'Message sent']);
 });
 
+// Message routes
 Route::prefix('messages')->group(function () {
-    Route::post('/', [MessageController::class, 'store']); // Lưu tin nhắn
-    Route::get('/user/{userId}', [MessageController::class, 'getUserMessages']); // Lấy tin nhắn theo user
-    Route::get('/unread', [MessageController::class, 'getUnreadMessages']); // Lấy tin chưa đọc
-    Route::patch('/read/{messageId}', [MessageController::class, 'markAsRead']); // Đánh dấu đã đọc
-    Route::post('/admin/send', [MessageController::class, 'sendByAdmin']); // Admin gửi tin nhắn
+    Route::post('/', [MessageController::class, 'store']); // Lưu tin nhắn từ socket.io
+
+    // Routes yêu cầu xác thực
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/user/{userId}', [MessageController::class, 'getUserMessages']); // Lấy tin nhắn theo user
+        Route::get('/unread', [MessageController::class, 'getUnreadMessages']); // Lấy tin chưa đọc
+        Route::patch('/read/{messageId}', [MessageController::class, 'markAsRead']); // Đánh dấu đã đọc
+        Route::post('/admin/send', [MessageController::class, 'sendByAdmin']); // Admin gửi tin nhắn
+    });
 });
