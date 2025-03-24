@@ -46,4 +46,15 @@ class Handler extends ExceptionHandler
             //
         });
     }
+    protected function unauthenticated($request, AuthenticationException $exception)
+{
+    // Nếu request là API (có prefix /api hoặc client yêu cầu JSON)
+    if ($request->expectsJson() || $request->is('api/*')) {
+        return response()->json(['message' => 'Vui lòng đăng nhập để tiếp tục'], 401);
+    }
+
+    // Nếu là admin, chuyển hướng về trang đăng nhập admin
+    return redirect()->guest(route('admin.login'));
+}
+
 }

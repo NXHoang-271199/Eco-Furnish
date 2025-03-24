@@ -66,6 +66,5 @@ class Kernel extends HttpKernel
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'admin.only' => \App\Http\Middleware\AdminOnlyMiddleware::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
-        'auth.message' => \App\Http\Middleware\AuthenticateWithMessage::class,
     ];
 }

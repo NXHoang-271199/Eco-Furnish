@@ -88,7 +88,7 @@ Route::get('/products/{product}/comments', [CommentController::class, 'getProduc
 Route::get('/banners', [BannerController::class, 'index']);
 
 // Cart Routers
-Route::middleware('auth.message')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cart', [CartController::class, 'index']); // Lấy giỏ hàng
     Route::post('/cart/add', [CartController::class, 'addToCart']); // Thêm vào giỏ hàng
     Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
