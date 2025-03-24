@@ -124,9 +124,9 @@ class BreadcrumbServiceProvider extends ServiceProvider
     //     return $breadcrumbMap[$routeName] ?? $this->generateBreadcrumbsFromUrl();
     // }
 
-    // /**
-    //  * Generate breadcrumbs dynamically from the URL segments.
-    //  */
+    /**
+     * Generate breadcrumbs dynamically from the URL segments.
+     */
     // private function generateBreadcrumbsFromUrl()
     // {
     //     $segments = request()->segments();

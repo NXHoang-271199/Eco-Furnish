@@ -123,7 +123,7 @@ class ProductController extends Controller
                         if ($variantValue) {
                             // Xử lý SKU để loại bỏ dấu
                             $sku = $this->removeVietnameseAccents($variant['sku']);
-                            
+
                             // Tạo product variant
                             ProductVariant::create([
                                 'product_id' => $product->id,
@@ -131,6 +131,7 @@ class ProductController extends Controller
                                 'variant_value_id' => $valueId,
                                 'sku' => $sku,
                                 'price' => $variant['price'],
+                                'discount_price' => isset($variant['discount_price']) ? $variant['discount_price'] : null,
                                 'quantity' => $variant['quantity'],
                                 'status' => 1
                             ]);
@@ -148,7 +149,7 @@ class ProductController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error creating product: ' . $e->getMessage());
+            // \Log::error('Error creating product: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi thêm sản phẩm: ' . $e->getMessage()
@@ -203,18 +204,18 @@ class ProductController extends Controller
             $product->load([
                 'gallery',
                 'variants' => function($query) {
-                    $query->select('id', 'product_id', 'variant_id', 'variant_value_id', 'sku', 'price', 'quantity')
+                    $query->select('id', 'product_id', 'variant_id', 'variant_value_id', 'sku', 'price', 'discount_price', 'quantity')
                         ->whereNull('deleted_at');
                 },
                 'variants.variant:id,name',
                 'variants.variantValue:id,value'
             ]);
 
-            // Log data for debugging
-            \Log::info('Product data:', [
-                'product' => $product->toArray(),
-                'variants' => $groupedVariants->toArray()
-            ]);
+            // // Log data for debugging
+            // \Log::info('Product data:', [
+            //     'product' => $product->toArray(),
+            //     'variants' => $groupedVariants->toArray()
+            // ]);
 
             return view('admins.products.edit', compact('product', 'categories', 'variants', 'groupedVariants'));
         } catch (\Exception $e) {
@@ -310,7 +311,7 @@ class ProductController extends Controller
                 foreach ($request->variants as $variant) {
                     // Tạo một key duy nhất cho mỗi tổ hợp biến thể
                     $variantKey = [];
-                    foreach ($variant['variant_values'] as $variantId => $valueId) {
+                    foreach ($variant['values'] as $variantId => $valueId) {
                         $variantKey[] = $variantId . '-' . $valueId;
                     }
                     sort($variantKey);
@@ -321,7 +322,7 @@ class ProductController extends Controller
                         $duplicateFound = true;
                         // Lấy thông tin biến thể bị trùng để hiển thị trong thông báo lỗi
                         $variantInfo = [];
-                        foreach ($variant['variant_values'] as $variantId => $valueId) {
+                        foreach ($variant['values'] as $variantId => $valueId) {
                             $variantValue = DB::table('variant_values')
                                 ->join('variants', 'variants.id', '=', 'variant_values.variant_id')
                                 ->where('variant_values.id', $valueId)
@@ -338,15 +339,16 @@ class ProductController extends Controller
                     $usedCombinations[] = $combinationKey;
 
                     // Thu thập thông tin biến thể
-                    foreach ($variant['variant_values'] as $variantId => $valueId) {
+                    foreach ($variant['values'] as $variantId => $valueId) {
                         // Xử lý SKU để loại bỏ dấu
                         $sku = $this->removeVietnameseAccents($variant['sku']);
-                        
+
                         $requestVariantValues->push([
                             'variant_id' => $variantId,
                             'variant_value_id' => $valueId,
                             'sku' => $sku,
                             'price' => $variant['price'],
+                            'discount_price' => isset($variant['discount_price']) ? $variant['discount_price'] : null,
                             'quantity' => $variant['quantity']
                         ]);
                     }
@@ -380,6 +382,7 @@ class ProductController extends Controller
                         $existingVariant->update([
                             'sku' => $variantData['sku'],
                             'price' => $variantData['price'],
+                            'discount_price' => $variantData['discount_price'],
                             'quantity' => $variantData['quantity']
                         ]);
 
@@ -393,6 +396,7 @@ class ProductController extends Controller
                             'variant_value_id' => $variantData['variant_value_id'],
                             'sku' => $variantData['sku'],
                             'price' => $variantData['price'],
+                            'discount_price' => $variantData['discount_price'],
                             'quantity' => $variantData['quantity'],
                             'status' => 1
                         ]);
@@ -422,7 +426,7 @@ class ProductController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error updating product: ' . $e->getMessage());
+            // \Log::error('Error updating product: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi cập nhật sản phẩm: ' . $e->getMessage()
@@ -484,10 +488,10 @@ class ProductController extends Controller
             $jsonData = $request->input('data');
 
             // Log dữ liệu nhận được để debug
-            \Log::info('Received data for variant generation:', [
-                'raw_data' => $request->all(),
-                'json_data' => $jsonData
-            ]);
+            // \Log::info('Received data for variant generation:', [
+            //     'raw_data' => $request->all(),
+            //     'json_data' => $jsonData
+            // ]);
 
             if (empty($jsonData)) {
                 return response()->json([
@@ -603,10 +607,10 @@ class ProductController extends Controller
                     $cleanValue = $this->removeVietnameseAccents($attr['value']);
                     $variantData['sku'] .= strtoupper(substr($cleanValue, 0, 2));
                 }
-                
+
                 // Thêm một số ngẫu nhiên vào cuối SKU để đảm bảo không bị trùng lặp
                 $variantData['sku'] .= '-' . rand(1, 100);
-                
+
                 $variants[] = $variantData;
             }
 
@@ -616,10 +620,10 @@ class ProductController extends Controller
                 'existing_variants' => $existingVariants
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error generating variants: ' . $e->getMessage(), [
-                'exception' => $e,
-                'trace' => $e->getTraceAsString()
-            ]);
+            // \Log::error('Error generating variants: ' . $e->getMessage(), [
+            //     'exception' => $e,
+            //     'trace' => $e->getTraceAsString()
+            // ]);
 
             // Xử lý lỗi mã hóa UTF-8
             $errorMessage = $e->getMessage();

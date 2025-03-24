@@ -46,16 +46,34 @@ class UserController extends Controller
      */
     public function toggleStatus($id)
     {
+        // Kiểm tra user hiện tại có phải admin không
+        if (!auth()->user()->role->slug === 'admin') {
+            return redirect()->route('users.index')
+                ->with('error', 'Bạn không có quyền thực hiện hành động này!');
+        }
+
         $user = User::findOrFail($id);
 
-        // Đảo ngược trạng thái
-        $user->is_active = !$user->is_active;
-        $user->save();
+        // Không cho phép thay đổi trạng thái của admin
+        if ($user->role->slug === 'admin') {
+            return redirect()->route('users.index')
+                ->with('error', 'Không thể thay đổi trạng thái của tài khoản Admin!');
+        }
 
-        $status = $user->is_active ? 'kích hoạt' : 'hủy kích hoạt';
+        // Chỉ cho phép thay đổi trạng thái của client
+        if ($user->role->slug === 'client') {
+            // Đảo ngược trạng thái
+            $user->is_active = !$user->is_active;
+            $user->save();
+
+            $status = $user->is_active ? 'kích hoạt' : 'hủy kích hoạt';
+
+            return redirect()->route('users.index')
+                ->with('success', "Đã $status người dùng thành công!");
+        }
 
         return redirect()->route('users.index')
-            ->with('success', "Đã $status người dùng thành công!");
+            ->with('error', 'Không thể thực hiện hành động này!');
     }
 
     public function create()
