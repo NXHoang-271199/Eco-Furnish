@@ -112,6 +112,37 @@ class BreadcrumbServiceProvider extends ServiceProvider
     //             ['name' => 'Vouchers', 'url' => route('vouchers.index')],
     //             ['name' => 'Chỉnh Sửa', 'url' => '']
     //         ],
+    //         // Category Post Routes
+    //         'category-posts.index' => [
+    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
+    //             ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')]
+    //         ],
+    //         'category-posts.create' => [
+    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
+    //             ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')],
+    //             ['name' => 'Thêm Mới', 'url' => '']
+    //         ],
+    //         'category-posts.edit' => [
+    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
+    //             ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')],
+    //             ['name' => 'Chỉnh Sửa', 'url' => '']
+    //         ],
+
+    //         // Voucher Routes
+    //         'vouchers.index' => [
+    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
+    //             ['name' => 'Vouchers', 'url' => route('vouchers.index')]
+    //         ],
+    //         'vouchers.create' => [
+    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
+    //             ['name' => 'Vouchers', 'url' => route('vouchers.index')],
+    //             ['name' => 'Thêm Mới', 'url' => '']
+    //         ],
+    //         'vouchers.edit' => [
+    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
+    //             ['name' => 'Vouchers', 'url' => route('vouchers.index')],
+    //             ['name' => 'Chỉnh Sửa', 'url' => '']
+    //         ],
 
     //         // Upload Image
     //         'upload.image' => [
@@ -144,6 +175,41 @@ class BreadcrumbServiceProvider extends ServiceProvider
     //         'upload-image' => 'Tải ảnh lên',
     //     ];
 
+    //     foreach ($segments as $segment) {
+    //         $url .= '/' . $segment;
+    //         $name = $translations[$segment] ?? ucfirst(str_replace('-', ' ', $segment)); // Dịch nếu có
+
+    //         // Nếu segment là số (ID), kiểm tra và lấy tiêu đề bài viết
+    //         if (is_numeric($segment) && request()->is('admin/posts/*')) {
+    //             $post = \App\Models\Post::find($segment);
+    //             if ($post) {
+    //                 $name = $post->title; // Lấy tiêu đề bài viết
+    //             }
+    //         }
+    //         if (is_numeric($segment) && request()->is('admin/users/*')) {
+    //             $user = \App\Models\User::find($segment);
+    //             if ($user) {
+    //                 $name = $user->name; // Lấy tên người dùng
+    //             }
+    //         }
+    //         if (is_numeric($segment) && request()->is('admin/vouchers/*')) {
+    //             $voucher = \App\Models\Voucher::find($segment);
+    //             if ($voucher) {
+    //                 $name = $voucher->code; // Lấy mã voucher
+    //             }
+    //         }
+    //         if (is_numeric($segment) && request()->is('admin/roles/*')) {
+    //             $role = \App\Models\Role::find($segment);
+    //             if ($role) {
+    //                 $name = $role->name; // Lấy mã role
+    //             }
+    //         }
+
+    //         $breadcrumbs[] = [
+    //             'name' => $name,
+    //             'url' => url($url),
+    //         ];
+    //     }
     //     foreach ($segments as $segment) {
     //         $url .= '/' . $segment;
     //         $name = $translations[$segment] ?? ucfirst(str_replace('-', ' ', $segment)); // Dịch nếu có

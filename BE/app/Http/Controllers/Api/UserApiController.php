@@ -349,6 +349,27 @@ class UserApiController extends Controller
             'message' => 'Đăng xuất thành công'
         ]);
     }
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Người dùng chưa đăng nhập'
+            ], 401);
+        }
+
+        // Xóa token và remember_me
+        $request->user()->currentAccessToken()->delete();
+        $user->remember_me = false;
+        $user->remember_me_expires_at = null;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đăng xuất thành công'
+        ]);
+    }
 
     /**
      * Gửi email đặt lại mật khẩu
