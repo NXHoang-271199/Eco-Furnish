@@ -110,7 +110,14 @@ class CartController extends Controller
             ]);
         }
 
-        return response()->json(['message' => 'Thêm vào giỏ hàng thành công', 'cartItem' => $cartItem], 201);
+        $price = $cartItem->product_variant_id
+            ? ($cartItem->productVariant->discount_price ?? $cartItem->productVariant->price)
+            : ($cartItem->product->discount_price ?? $cartItem->product->price);
+
+        return response()->json([
+            'message' => 'Thêm vào giỏ hàng thành công',
+            'cartItem' => $cartItem->toArray() + ['total_price' => $price * $cartItem->quantity]
+        ], 201);
     }
 
     /**
@@ -119,6 +126,7 @@ class CartController extends Controller
     public function updateQuantity(Request $request, $id)
     {
         $cartItem = CartItem::findOrFail($id);
+
         // Lấy số lượng tồn kho
         $maxQuantity = $cartItem->product_variant_id
             ? $cartItem->productVariant->quantity
@@ -127,19 +135,30 @@ class CartController extends Controller
         // Lấy số lượng mới từ request
         $newQuantity = (int) $request->quantity;
 
-        if ($newQuantity < 1 || $newQuantity > $maxQuantity) {
+        if ($newQuantity < 1) {
+            return response()->json(['message' => 'Số lượng tối thiểu là 1'], 400);
+        }
+
+        if ($newQuantity > $maxQuantity) {
             return response()->json([
-                'message' => $newQuantity < 1
-                    ? 'Số lượng tối thiểu là 1'
-                    : 'Không thể vượt quá số lượng tồn kho'
+                'message' => "Số lượng tối đa có thể thêm là $maxQuantity sản phẩm."
             ], 400);
         }
 
         // Cập nhật số lượng
-        $cartItem->update(["quantity" => $newQuantity]);
+        $cartItem->update(['quantity' => $newQuantity]);
 
-        return response()->json(['message' => 'Cập nhật số lượng thành công', 'cartItem' => $cartItem], 200);
+        // Tính giá
+        $price = $cartItem->product_variant_id
+            ? ($cartItem->productVariant->discount_price ?? $cartItem->productVariant->price)
+            : ($cartItem->product->discount_price ?? $cartItem->product->price);
+
+        return response()->json([
+            'message' => 'Cập nhật số lượng thành công',
+            'cartItem' => $cartItem->toArray() + ['total_price' => $price * $cartItem->quantity]
+        ], 200);
     }
+
 
 
     /**
