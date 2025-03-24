@@ -58,4 +58,4 @@ VD:
 # Tìm hiểu factory
 
 # Câu lệnh git
-git reset --hard HEAD~1
+git reset --hard HEAD~1 => reset code đến lần commit gần nhất
