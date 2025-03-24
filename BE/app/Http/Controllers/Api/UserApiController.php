@@ -123,7 +123,7 @@ class UserApiController extends Controller
                 $message->subject('Xác thực tài khoản');
             });
         } catch (\Exception $e) {
-            // \Log::error('Email error: ' . $e->getMessage());
+            \Log::error('Email error: ' . $e->getMessage());
         }
 
         // Không trả về access_token ngay, phải xác thực email trước
@@ -384,7 +384,7 @@ class UserApiController extends Controller
 
         // Gửi email với link reset password
         try {
-            Mail::send('emails.reset_password', ['resetUrl' => $resetUrl, 'user' => $user], function ($message) use ($user) {
+            \Mail::send('emails.reset_password', ['resetUrl' => $resetUrl, 'user' => $user], function ($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Đặt lại mật khẩu');
             });
@@ -508,7 +508,7 @@ class UserApiController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            // \Log::error('Email verification error: ' . $e->getMessage());
+            \Log::error('Email verification error: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Có lỗi xảy ra khi xác thực email'
