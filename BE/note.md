@@ -58,3 +58,4 @@ VD:
 # Tìm hiểu factory
 
 # Câu lệnh git
+git reset --hard HEAD~1

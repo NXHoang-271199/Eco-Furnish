@@ -36,7 +36,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+        </div>
         </div>
     </div>
 </div>
@@ -330,6 +330,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Kết nối đến socket khi trang load xong
     connectToSocket();
-});
+    });
 </script>
 @endsection

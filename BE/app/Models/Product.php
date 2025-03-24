@@ -19,7 +19,6 @@ class Product extends Model
         'description',
         'price',
         'discount_price',
-        'quantity',
         'status'
     ];
 
@@ -54,21 +53,25 @@ class Product extends Model
     {
         return $this->hasMany(GalleryImage::class);
     }
-    
+
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
     }
-    
+
     public function productVariant(){
         return $this->hasMany(ProductVariant::class);
     }
-    
+
     /**
      * Get the comments for the product.
      */
     public function comments()
     {
         return $this->hasMany(Comment::class);
+    }
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
     }
 }
