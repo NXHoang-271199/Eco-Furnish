@@ -188,10 +188,4 @@ Route::prefix('admin')->group(function () {
         Route::post('/permissions', [PermissionController::class, 'storePermission'])->name('permissions.store-permission');
         Route::delete('/permissions/{permission}', [PermissionController::class, 'destroyPermission'])->name('permissions.destroy-permission');
     });
-
-    Route::get('/settings', [SettingController::class, 'index'])->name('settings');
-    Route::get('/settings/smtp', [SettingController::class, 'smtp'])->name('settings.smtp');
-    Route::get('/settings/website', [SettingController::class, 'website'])->name('settings.website');
-    Route::post('/settings/smtp/update', [SettingController::class, 'updateSmtp'])->name('settings.smtp.update');
-    Route::post('/settings/website/update', [SettingController::class, 'updateWebsite'])->name('settings.website.update');
 });
