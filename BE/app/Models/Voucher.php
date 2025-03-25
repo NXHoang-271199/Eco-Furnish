@@ -26,4 +26,8 @@ class Voucher extends Model
     {
         return $this->hasMany(Order::class);
     }
+    public function usages()
+    {
+        return $this->hasMany(VoucherUsage::class);
+    }
 }
