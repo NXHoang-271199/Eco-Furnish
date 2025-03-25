@@ -36,6 +36,12 @@
 
                                 <div class="gallery-section">
                                     <h5>Ảnh phụ sản phẩm</h5>
+                                    <button class="gallery-nav-button prev" onclick="scrollGallery('prev')">
+                                        <i class="ri-arrow-left-s-line"></i>
+                                    </button>
+                                    <button class="gallery-nav-button next" onclick="scrollGallery('next')">
+                                        <i class="ri-arrow-right-s-line"></i>
+                                    </button>
                                     <div class="gallery-container">
                                         <div class="thumbnail-wrapper active" onclick="changeMainImage('{{ asset('storage/' . $product->image_thumnail) }}')">
                                             <img src="{{ asset('storage/' . $product->image_thumnail) }}"
