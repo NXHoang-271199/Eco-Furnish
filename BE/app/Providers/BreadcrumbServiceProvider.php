@@ -96,7 +96,7 @@ class BreadcrumbServiceProvider extends ServiceProvider
     //             ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')],
     //             ['name' => 'Chỉnh Sửa', 'url' => '']
     //         ],
-            
+
     //         // Voucher Routes
     //         'vouchers.index' => [
     //             ['name' => 'Dashboard', 'url' => route('dashboard')],
@@ -147,7 +147,7 @@ class BreadcrumbServiceProvider extends ServiceProvider
     //     foreach ($segments as $segment) {
     //         $url .= '/' . $segment;
     //         $name = $translations[$segment] ?? ucfirst(str_replace('-', ' ', $segment)); // Dịch nếu có
-    
+
     //         // Nếu segment là số (ID), kiểm tra và lấy tiêu đề bài viết
     //         if (is_numeric($segment) && request()->is('admin/posts/*')) {
     //             $post = \App\Models\Post::find($segment);
@@ -173,7 +173,7 @@ class BreadcrumbServiceProvider extends ServiceProvider
     //                 $name = $role->name; // Lấy mã role
     //             }
     //         }
-    
+
     //         $breadcrumbs[] = [
     //             'name' => $name,
     //             'url' => url($url),
