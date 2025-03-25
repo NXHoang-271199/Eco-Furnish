@@ -473,6 +473,8 @@
                 cancelButtonText: 'Hủy',
                 confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
+                showLoaderOnConfirm: true,
+                allowOutsideClick: false,
                 customClass: {
                     popup: 'animated fadeInDown faster',
                     confirmButton: 'btn btn-danger',
@@ -483,61 +485,61 @@
                 },
                 hideClass: {
                     popup: 'animated fadeOutUp faster'
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `/admin/products/${id}`,
-                        type: 'DELETE',
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire({
-                                    title: 'Thành công!',
-                                    text: response.message,
-                                    icon: 'success',
-                                    confirmButtonText: 'OK',
-                                    customClass: {
-                                        popup: 'animated fadeInDown faster'
-                                    }
-                                }).then(() => {
-                                    // Animation xóa dòng sản phẩm trước khi reload
+                },
+                preConfirm: () => {
+                    return new Promise((resolve, reject) => {
+                        $.ajax({
+                            url: `/admin/products/${id}`,
+                            type: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    // Animation xóa dòng sản phẩm
                                     const row = document.querySelector(`#orderTable tbody tr td button[onclick="confirmDelete(${id})"]`).closest('tr');
                                     row.style.transition = 'all 0.5s ease';
                                     row.style.opacity = '0';
                                     row.style.transform = 'translateX(20px)';
                                     
                                     setTimeout(() => {
-                                        window.location.reload();
+                                        resolve(response);
                                     }, 500);
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Lỗi!',
-                                    text: response.message,
-                                    icon: 'error',
-                                    confirmButtonText: 'OK',
-                                    customClass: {
-                                        popup: 'animated fadeInDown faster'
-                                    }
-                                });
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.fire({
-                                title: 'Lỗi!',
-                                text: 'Có lỗi xảy ra khi xóa sản phẩm',
-                                icon: 'error',
-                                confirmButtonText: 'OK',
-                                customClass: {
-                                    popup: 'animated fadeInDown faster'
+                                } else {
+                                    reject(new Error(response.message || 'Có lỗi xảy ra khi xóa sản phẩm'));
                                 }
-                            });
-                        }
+                            },
+                            error: function(xhr) {
+                                reject(new Error('Có lỗi xảy ra khi xóa sản phẩm'));
+                            }
+                        });
                     });
                 }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Thành công!',
+                        text: result.value.message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        customClass: {
+                            popup: 'animated fadeInDown faster'
+                        }
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                }
+            }).catch((error) => {
+                Swal.fire({
+                    title: 'Lỗi!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    customClass: {
+                        popup: 'animated fadeInDown faster'
+                    }
+                });
             });
         }
 
