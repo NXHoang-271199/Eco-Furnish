@@ -41,8 +41,11 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <!-- Choices.js CSS -->
     <link rel="stylesheet" href="{{ asset('assets/admins/libs/choices.js/public/assets/styles/choices.min.css') }}">
+
+
     <!-- ckeditor -->
     <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/44.2.1/ckeditor5.css"/>
+
     @yield('CSS')
 </head>
 
@@ -106,6 +109,7 @@
     <script src="{{ asset('assets/admins/libs/choices.js/public/assets/scripts/choices.min.js') }}"></script>
     <!-- Flatpickr -->
     <script src="{{ asset('assets/admins/libs/flatpickr/flatpickr.min.js') }}"></script>
+
     <!-- CKEditor -->
     <script type="importmap">
         {
@@ -232,7 +236,7 @@
                                     const formData = new FormData();
                                     loader.file.then(file => {
                                         formData.append('upload', file);
-                                        
+
                                         fetch('{{ route('upload.image') }}', {
                                             method: 'POST',
                                             body: formData,
@@ -257,7 +261,7 @@
                             abort: () => {}
                         };
                     };
-                    
+
                     window[name] = editor;
                 })
                 .catch(error => {
@@ -265,6 +269,7 @@
                 });
         });
     </script>
+
 
     @yield('JS')
 </body>

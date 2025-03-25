@@ -77,7 +77,7 @@
                                 </div>
 
                                 <div id="basicPriceSection">
-                                    <div class="form-group mb-3">
+                                    <div class="form-group mb-3" id="priceSection">
                                         <label for="price" class="form-label">Giá gốc <span class="text-danger">*</span></label>
                                         <div class="input-group">
                                             <input type="number" class="form-control @error('price') is-invalid @enderror"
@@ -99,6 +99,19 @@
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
+                                    </div>
+                                    
+                                    <div class="form-group mb-3" id="quantitySection">
+                                        <label for="quantity" class="form-label">Số lượng <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control @error('quantity') is-invalid @enderror"
+                                                id="quantity" name="quantity" value="{{ old('quantity', $product->quantity) }}" min="0">
+                                            <span class="input-group-text">Cái</span>
+                                            @error('quantity')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div id="quantity-error" class="text-danger mt-1" style="display: none;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -208,18 +221,25 @@
                         <!-- Form thêm biến thể -->
                         <div id="variantForm" class="border rounded p-4 mb-4 d-none" style="background: #f8f9fa;">
                             <div class="row">
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 mb-3">
                                     <label class="form-label">SKU <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="variant-sku">
                                 </div>
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 mb-3">
                                     <label class="form-label">Giá <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <input type="number" class="form-control" id="variant-price" min="0">
                                         <span class="input-group-text">VNĐ</span>
                                     </div>
                                 </div>
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Giá khuyến mãi</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="variant-discount-price" min="0">
+                                        <span class="input-group-text">VNĐ</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
                                     <label class="form-label">Số lượng <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control" id="variant-quantity" min="0">
                                 </div>

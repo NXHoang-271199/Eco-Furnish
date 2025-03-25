@@ -203,38 +203,39 @@
                     </li>
                 @endif
 
-                @if (Auth::user()->hasPermission('view-orders') || Auth::user()->hasPermission('view-order-notifications'))
-                    <li class="nav-item">
-                        <a class="nav-link menu-link" href="#sidebarOrder" data-bs-toggle="collapse" role="button"
-                            aria-expanded="false" aria-controls="sidebarOrder">
-                            <i class="ri-rocket-line"></i> <span data-key="t-advance-ui">Quản Lý Đơn Hàng</span>
-                        </a>
-                        <div class="collapse menu-dropdown" id="sidebarOrder">
-                            <ul class="nav nav-sm flex-column">
-                                @if (Auth::user()->hasPermission('view-orders'))
-                                    <li class="nav-item">
-                                        <a href="{{ route('orders.index') }}" class="nav-link">
-                                            Đơn hàng
-                                        </a>
-                                    </li>
-                                @endif
-                                @if (Auth::user()->hasPermission('view-order-notifications'))
-                                    <li class="nav-item">
-                                        <a href="{{ route('order.notifications') }}" class="nav-link">
-                                            Thông báo
-                                        </a>
-                                    </li>
-                                @endif
-                            </ul>
-                        </div>
-                    </li>
-                @endif
-
+                @if(Auth::user()->hasPermission('view-orders') || Auth::user()->hasPermission('view-order-notifications'))
                 <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('settings') }}">
-                        <i class="ri-settings-4-line"></i> <span data-key="t-advance-ui">Cài đặt</span>
+                    <a class="nav-link menu-link" href="#sidebarOrder" data-bs-toggle="collapse" role="button"
+                        aria-expanded="false" aria-controls="sidebarOrder">
+                        <i class="ri-rocket-line"></i> <span data-key="t-advance-ui">Quản Lý Đơn Hàng</span>
+                    </a>
+                    <div class="collapse menu-dropdown" id="sidebarOrder">
+                        <ul class="nav nav-sm flex-column">
+                            @if(Auth::user()->hasPermission('view-orders'))
+                            <li class="nav-item">
+                                <a href="{{ route('orders.index') }}" class="nav-link">
+                                    Đơn hàng
+                                </a>
+                            </li>
+                            @endif
+                            @if(Auth::user()->hasPermission('view-order-notifications'))
+                            <li class="nav-item">
+                                <a href="{{ route('order.notifications') }}" class="nav-link">
+                                    Thông báo
+                                </a>
+                            </li>
+                            @endif
+                        </ul>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link menu-link" href="{{ route('banners.index') }}">
+                        <i class="ri-image-line"></i> <span data-key="t-advance-ui">Quản lý banner</span>
                     </a>
                 </li>
+
+                <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
+                @endif
             </ul>
         </div>
         <!-- Sidebar -->

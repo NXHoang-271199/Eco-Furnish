@@ -1,0 +1,52 @@
+[
+  {
+    "label": "Disabled Label 1",
+    "value": "Disabled Value 1",
+    "disabled": true
+  },
+  {
+    "label": "Disabled Label 2",
+    "value": "Disabled Value 2",
+    "disabled": true
+  },
+  {
+    "label": "Disabled Label 3",
+    "value": "Disabled Value 3",
+    "disabled": true
+  },
+  {
+    "label": "Disabled Label 4",
+    "value": "Disabled Value 4",
+    "disabled": true
+  },
+  {
+    "label": "Disabled Label 5",
+    "value": "Disabled Value 5",
+    "disabled": true
+  },
+  {
+    "label": "Disabled Label 6",
+    "value": "Disabled Value 6",
+    "disabled": true
+  },
+  {
+    "label": "Disabled Label 7",
+    "value": "Disabled Value 7",
+    "disabled": true
+  },
+  {
+    "label": "Disabled Label 8",
+    "value": "Disabled Value 8",
+    "disabled": true
+  },
+  {
+    "label": "Disabled Label 9",
+    "value": "Disabled Value 9",
+    "disabled": true
+  },
+  {
+    "label": "Disabled Label 10",
+    "value": "Disabled Value 10",
+    "disabled": true
+  }
+]

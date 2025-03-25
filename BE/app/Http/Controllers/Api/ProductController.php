@@ -18,6 +18,12 @@ class ProductController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate(12);
 
+            // Thêm thông tin số lượng sản phẩm vào response
+            $products->getCollection()->transform(function ($product) {
+                $product->makeVisible(['quantity']);
+                return $product;
+            });
+            
             return response()->json([
                 'status' => 'success',
                 'data' => $products
@@ -37,8 +43,21 @@ class ProductController extends Controller
     public function show($id)
     {
         try {
-            $product = Product::with(['category', 'gallery', 'variants.variantValue'])
+            $product = Product::with(['category', 'gallery', 'variants.variant', 'variants.variantValue'])
                 ->findOrFail($id);
+
+            // Đảm bảo trường số lượng được hiển thị
+            $product->makeVisible(['quantity']);
+
+            // Xử lý dữ liệu biến thể để thêm thông tin chi tiết
+            $product->variants->each(function ($variant) {
+                // Thêm thông tin tên biến thể và giá trị biến thể
+                $variant->variant_name = $variant->variant ? $variant->variant->name : 'Không xác định';
+                $variant->variant_value_name = $variant->variantValue ? $variant->variantValue->value : 'Không xác định';
+                
+                // Tạo mô tả đầy đủ cho biến thể
+                $variant->full_description = $variant->variant_name . ': ' . $variant->variant_value_name;
+            });
 
             return response()->json([
                 'status' => 'success',
@@ -52,6 +71,7 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Tìm kiếm sản phẩm
@@ -77,8 +97,23 @@ class ProductController extends Controller
                 $query->where('price', '<=', $request->price_max);
             }
 
+            // Thêm tìm kiếm theo số lượng nếu có
+            if ($request->has('quantity_min')) {
+                $query->where('quantity', '>=', $request->quantity_min);
+            }
+
+            if ($request->has('quantity_max')) {
+                $query->where('quantity', '<=', $request->quantity_max);
+            }
+
             $products = $query->orderBy('created_at', 'desc')
                 ->paginate(12);
+
+            // Đảm bảo trường số lượng được hiển thị trong kết quả
+            $products->getCollection()->transform(function ($product) {
+                $product->makeVisible(['quantity']);
+                return $product;
+            });
 
             return response()->json([
                 'status' => 'success',

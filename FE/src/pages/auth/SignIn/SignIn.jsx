@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { motion } from "framer-motion"; // npm install framer-motion để chạy hiệu ứng
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 const SignIn = () => {
@@ -14,24 +14,103 @@ const SignIn = () => {
   } = useForm();
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const onSubmit = async (data) => {
-    console.log(data);
+    // console.log(data);
 
     try {
       const response = await axios.post(
         `http://localhost:8000/api/users/login`,
         data
       );
-      localStorage.setItem("token", response.data.accessToken);
-      navigate("/");
+
+      console.log("Response từ API đăng nhập:", response.data);
+
+      // Kiểm tra cấu trúc response và lấy token đúng cách
+      let token = null;
+      let userData = null;
+
+      if (response.data.data && response.data.data.access_token) {
+        // Nếu token nằm trong response.data.data.access_token
+        token = response.data.data.access_token;
+
+        // Tạo đối tượng userData từ data
+        userData = {
+          id: response.data.data.id,
+          name: response.data.data.name,
+          email: response.data.data.email,
+          role: response.data.data.role,
+          avatar: response.data.data.avatar,
+          // Tạo slug từ name nếu cần
+          slug:
+            response.data.data.name?.toLowerCase().replace(/\s+/g, "-") || "",
+        };
+      } else if (response.data.accessToken) {
+        // Nếu token nằm trực tiếp trong response.data.accessToken
+        token = response.data.accessToken;
+        userData = response.data.user;
+      } else {
+        // Trường hợp khác, hiển thị lỗi
+        console.error("Không tìm thấy token trong response:", response.data);
+        alert("Đăng nhập không thành công: Không tìm thấy token");
+        return;
+      }
+
+      // Lưu token và userData vào localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("userData", JSON.stringify(userData));
+
+      // Kiểm tra xem đã lưu token thành công chưa
+      console.log("Token đã lưu:", localStorage.getItem("token"));
+      console.log("User data đã lưu:", localStorage.getItem("userData"));
+
+      // Phát sự kiện để thông báo đăng nhập thành công cho các tab khác
+      const authChangeEvent = new Event("auth-change");
+      window.dispatchEvent(authChangeEvent);
+
+      // Phát sự kiện storage để cập nhật các tab khác
+      try {
+        const storageEvent = new StorageEvent("storage", {
+          key: "token",
+          newValue: token,
+        });
+        window.dispatchEvent(storageEvent);
+
+        // Thêm sự kiện cho userData
+        const userDataEvent = new StorageEvent("storage", {
+          key: "userData",
+          newValue: JSON.stringify(userData),
+        });
+        window.dispatchEvent(userDataEvent);
+      } catch (error) {
+        console.error("Lỗi khi phát sự kiện storage:", error);
+      }
+
+      // Kiểm tra xem có returnUrl trong state không
+      const returnUrl = location.state?.returnUrl || "/";
+
+      // Thêm dữ liệu để chuyển về trang chi tiết
+      if (location.state?.returnUrl) {
+        localStorage.setItem("returnPath", location.state.returnUrl);
+      }
+
+      navigate(returnUrl, { replace: true });
     } catch (error) {
       // Hiển thị lỗi validation cụ thể nếu có
       if (error.response && error.response.data && error.response.data.errors) {
         console.error("Lỗi validation:", error.response.data.errors);
         // Hiển thị lỗi cho người dùng
+        alert(
+          "Đăng nhập không thành công: " +
+            Object.values(error.response.data.errors).flat().join(", ")
+        );
       } else {
         console.error("Lỗi đăng nhập:", error);
+        alert(
+          "Đăng nhập không thành công: " +
+            (error.response?.data?.message || "Lỗi kết nối")
+        );
       }
     }
   };

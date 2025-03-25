@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { FaRobot, FaPaperPlane, FaTimes, FaTrash } from 'react-icons/fa';
+import { FaRobot, FaPaperPlane, FaTimes, FaTrash, FaShoppingCart, FaExternalLinkAlt } from 'react-icons/fa';
 
 const ChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -81,18 +81,48 @@ const ChatBot = () => {
             });
 
             console.log('API response:', response.data);
+            // Debug thêm thông tin danh mục
+            console.log('Categories from API:', response.data.categories);
+            console.log('Products from API:', response.data.products);
 
             // Kiểm tra dữ liệu trả về để tránh lỗi null
             let botReply = 'Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn.';
+            let products = [];
+            let searchKeywords = '';
+            let isProductSearch = false;
+            let categories = [];
 
             if (response.data && typeof response.data.reply === 'string') {
                 botReply = response.data.reply;
             }
 
+            // Kiểm tra xem có phải là tìm kiếm sản phẩm không
+            if (response.data && response.data.hasOwnProperty('has_products')) {
+                // Chỉ đánh dấu là tìm kiếm sản phẩm nếu có từ khóa tìm kiếm
+                if (response.data.hasOwnProperty('search_keywords') && response.data.search_keywords.trim() !== '') {
+                    isProductSearch = true;
+                    searchKeywords = response.data.search_keywords;
+                }
+
+                // Kiểm tra xem có sản phẩm được trả về không
+                if (response.data.has_products && Array.isArray(response.data.products)) {
+                    products = response.data.products;
+                }
+
+                // Lấy danh mục từ phản hồi API
+                if (response.data.hasOwnProperty('categories') && Array.isArray(response.data.categories)) {
+                    categories = response.data.categories;
+                }
+            }
+
             const botMessage = {
                 text: botReply,
                 sender: 'bot',
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                products: products,
+                isProductSearch: isProductSearch,
+                searchKeywords: searchKeywords,
+                categories: categories
             };
 
             setMessages(prevMessages => [...prevMessages, botMessage]);
@@ -118,6 +148,74 @@ const ChatBot = () => {
             e.preventDefault();
             sendMessage(e);
         }
+    };
+
+    // Component hiển thị sản phẩm
+    const ProductCard = ({ product }) => {
+        const formatPrice = (price) => {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+        };
+
+        return (
+            <div className="border rounded-lg overflow-hidden mb-2 bg-white shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex">
+                    <div className="w-20 h-20 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+                        {product.image ? (
+                            <img
+                                src={`/storage/${product.image}`}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    console.log("Lỗi tải ảnh:", e.target.src);
+                                    e.target.onerror = null;
+                                    // Sử dụng Bootstrap icons
+                                    e.target.parentNode.innerHTML = '<div class="flex items-center justify-center w-full h-full text-gray-400"><svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/></svg></div>';
+                                }}
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center w-full h-full text-gray-400">
+                                <svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                                    <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
+                                </svg>
+                            </div>
+                        )}
+                    </div>
+                    <div className="p-2 flex-1">
+                        <h4 className="font-medium text-sm text-gray-800 line-clamp-1">{product.name}</h4>
+                        <p className="text-xs text-gray-500 mb-1">{product.category}</p>
+                        <div className="flex items-center">
+                            {product.discount_price ? (
+                                <>
+                                    <span className="text-sm font-bold text-red-600">{formatPrice(product.discount_price)}</span>
+                                    <span className="text-xs text-gray-400 line-through ml-1">{formatPrice(product.price)}</span>
+                                </>
+                            ) : (
+                                <span className="text-sm font-bold text-gray-700">{formatPrice(product.price)}</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-gray-50 p-2 flex justify-between border-t">
+                    <a
+                        href={`/product/${product.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                    >
+                        <FaExternalLinkAlt className="mr-1" size={10} />
+                        Xem chi tiết
+                    </a>
+                    <a
+                        href={`/cart/add/${product.id}`}
+                        className="text-xs text-green-600 hover:text-green-800 flex items-center"
+                    >
+                        <FaShoppingCart className="mr-1" size={10} />
+                        Thêm vào giỏ
+                    </a>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -180,6 +278,66 @@ const ChatBot = () => {
                                             }`}
                                     >
                                         <p className="whitespace-pre-wrap">{msg.text || 'Không có nội dung'}</p>
+
+                                        {/* Hiển thị sản phẩm nếu có */}
+                                        {msg.products && msg.products.length > 0 && (
+                                            <div className="mt-3 pt-3 border-t border-gray-300">
+                                                <p className="text-xs font-medium mb-2">Sản phẩm gợi ý cho bạn:</p>
+
+                                                {/* Nếu có thông tin danh mục, hiển thị theo từng danh mục */}
+                                                {msg.categories && msg.categories.length > 0 ? (
+                                                    msg.categories.map((category) => {
+                                                        // Lọc sản phẩm theo danh mục hiện tại
+                                                        const categoryProducts = msg.products.filter(
+                                                            (product) => product.category === category
+                                                        );
+
+                                                        if (categoryProducts.length === 0) return null;
+
+                                                        return (
+                                                            <div key={category} className="mb-3">
+                                                                <h4 className="text-xs font-medium text-gray-700 bg-gray-100 p-1 rounded mb-2">
+                                                                    {category}
+                                                                </h4>
+                                                                <div className="space-y-2">
+                                                                    {categoryProducts.map((product) => (
+                                                                        <ProductCard key={product.id} product={product} />
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    // Nếu không có thông tin danh mục, hiển thị tất cả sản phẩm
+                                                    <div className="space-y-2">
+                                                        {msg.products.map((product) => (
+                                                            <ProductCard key={product.id} product={product} />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Hiển thị thông báo khi không tìm thấy sản phẩm */}
+                                        {msg.isProductSearch && msg.products && msg.products.length === 0 && (
+                                            <div className="mt-3 pt-3 border-t border-gray-300">
+                                                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded">
+                                                    <div className="flex">
+                                                        <div className="flex-shrink-0">
+                                                            <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                            </svg>
+                                                        </div>
+                                                        <div className="ml-3">
+                                                            <p className="text-xs text-yellow-700">
+                                                                Không tìm thấy sản phẩm nào phù hợp với từ khóa "{msg.searchKeywords}".
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <span className="text-xs opacity-70 block mt-1">
                                             {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
@@ -227,4 +385,4 @@ const ChatBot = () => {
     );
 };
 
-export default ChatBot; 
+export default ChatBot;
