@@ -115,9 +115,18 @@ class UserApiController extends Controller
 
         // Gửi email xác thực
         try {
+            $frontendUrl = 'http://localhost:5173'; 
+            $verificationUrl = $frontendUrl . '/auth/verify-email?' . http_build_query([
+                'token' => $verificationToken,
+                'email' => urlencode($user->email)
+            ]);
+
+            // Debug URL
+            \Log::info('Verification URL: ' . $verificationUrl);
+
             Mail::send('emails.verify_email', [
                 'user' => $user,
-                'verificationUrl' => config('app.frontend_url') . '/auth/verify-email?token=' . $verificationToken . '&email=' . urlencode($user->email)
+                'verificationUrl' => $verificationUrl
             ], function($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Xác thực tài khoản');
@@ -380,7 +389,7 @@ class UserApiController extends Controller
         $user->save();
 
         // Tạo URL đặt lại mật khẩu
-        $resetUrl = config('app.frontend_url', 'http://localhost:3000') . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
+        $resetUrl = config('app.frontend_url', 'http://localhost:5173') . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
 
         // Gửi email với link reset password
         try {
@@ -544,9 +553,18 @@ class UserApiController extends Controller
         $user->save();
 
         try {
+            $frontendUrl = 'http://localhost:5173'; // Hardcode tạm thời để test
+            $verificationUrl = $frontendUrl . '/auth/verify-email?' . http_build_query([
+                'token' => $verificationToken,
+                'email' => urlencode($user->email)
+            ]);
+
+            // Debug URL
+            \Log::info('Verification URL: ' . $verificationUrl);
+
             Mail::send('emails.verify_email', [
                 'user' => $user,
-                'verificationUrl' => config('app.frontend_url') . '/auth/verify-email?token=' . $verificationToken . '&email=' . urlencode($user->email)
+                'verificationUrl' => $verificationUrl
             ], function($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Xác thực tài khoản');
@@ -554,7 +572,7 @@ class UserApiController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Đã gửi lại email xác thực'
+                'message' => 'Đã gửi lại email xác thực'    
             ]);
         } catch (\Exception $e) {
             return response()->json([
