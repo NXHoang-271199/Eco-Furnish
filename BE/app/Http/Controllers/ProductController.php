@@ -114,29 +114,35 @@ class ProductController extends Controller
             // Xử lý biến thể nếu có
             if ($request->has('variants')) {
                 foreach ($request->variants as $variant) {
-                    foreach ($variant['values'] as $valueId) {
-                        // Lấy thông tin variant_id từ variant_value
-                        $variantValue = DB::table('variant_values')
+                    $variantDetails = [];
+                    foreach ($variant['values'] as $variantId => $valueId) {
+                        // Lấy thông tin về variant và variant_value
+                        $variantInfo = DB::table('variants')
+                            ->where('id', $variantId)
+                            ->first();
+                        $variantValueInfo = DB::table('variant_values')
                             ->where('id', $valueId)
                             ->first();
 
-                        if ($variantValue) {
-                            // Xử lý SKU để loại bỏ dấu
-                            $sku = $this->removeVietnameseAccents($variant['sku']);
-                            
-                            // Tạo product variant
-                            ProductVariant::create([
-                                'product_id' => $product->id,
-                                'variant_id' => $variantValue->variant_id,
-                                'variant_value_id' => $valueId,
-                                'sku' => $sku,
-                                'price' => $variant['price'],
-                                'discount_price' => isset($variant['discount_price']) ? $variant['discount_price'] : null,
-                                'quantity' => $variant['quantity'],
-                                'status' => 1
-                            ]);
+                        if ($variantInfo && $variantValueInfo) {
+                            // Thêm thông tin vào mảng variant_details
+                            $variantDetails[$variantId] = $valueId;
                         }
                     }
+
+                    // Xử lý SKU để loại bỏ dấu
+                    $sku = $this->removeVietnameseAccents($variant['sku']);
+                    
+                    // Tạo product variant với variant_details
+                    ProductVariant::create([
+                        'product_id' => $product->id,
+                        'variant_details' => $variantDetails,
+                        'sku' => $sku,
+                        'price' => $variant['price'],
+                        'discount_price' => isset($variant['discount_price']) ? $variant['discount_price'] : null,
+                        'quantity' => $variant['quantity'],
+                        'status' => 1
+                    ]);
                 }
             }
 
@@ -167,9 +173,7 @@ class ProductController extends Controller
             'category',
             'variants' => function($query) {
                 $query->whereNull('deleted_at');
-            },
-            'variants.variant',
-            'variants.variantValue'
+            }
         ]);
         return view('admins.products.show', compact('product'));
     }
@@ -204,11 +208,9 @@ class ProductController extends Controller
             $product->load([
                 'gallery',
                 'variants' => function($query) {
-                    $query->select('id', 'product_id', 'variant_id', 'variant_value_id', 'sku', 'price', 'discount_price', 'quantity')
+                    $query->select('id', 'product_id', 'variant_details', 'sku', 'price', 'discount_price', 'quantity')
                         ->whereNull('deleted_at');
-                },
-                'variants.variant:id,name',
-                'variants.variantValue:id,value'
+                }
             ]);
 
             // Log data for debugging
@@ -217,7 +219,44 @@ class ProductController extends Controller
                 'variants' => $groupedVariants->toArray()
             ]);
 
-            return view('admins.products.edit', compact('product', 'categories', 'variants', 'groupedVariants'));
+            // Kiểm tra các biến thể đã tồn tại nếu đang chỉnh sửa sản phẩm
+            $existingVariants = [];
+            if ($product) {
+                $existingVariants = $product->variants()
+                    ->whereNull('deleted_at')
+                    ->get()
+                    ->map(function($variant) use ($variants) {
+                        $variantDetailsDisplay = [];
+                        
+                        if ($variant->variant_details && is_array($variant->variant_details)) {
+                            foreach ($variant->variant_details as $attrKey => $attrValue) {
+                                // Tìm tên thuộc tính dựa vào key (slug)
+                                $displayName = $attrKey;
+                                foreach ($variants as $v) {
+                                    if ($this->slugify($v->name) === $attrKey) {
+                                        $displayName = $v->name;
+                                        break;
+                                    }
+                                }
+                                $variantDetailsDisplay[] = $displayName . ': ' . $attrValue;
+                            }
+                        }
+                        
+                        return [
+                            'id' => $variant->id,
+                            'variant_details' => $variant->variant_details,
+                            'variant_details_display' => implode(' - ', $variantDetailsDisplay),
+                            'sku' => $variant->sku,
+                            'price' => $variant->price,
+                            'discount_price' => $variant->discount_price,
+                            'quantity' => $variant->quantity,
+                            'status' => $variant->status
+                        ];
+                    })
+                    ->toArray();
+            }
+
+            return view('admins.products.edit', compact('product', 'categories', 'variants', 'groupedVariants', 'existingVariants'));
         } catch (\Exception $e) {
             \Log::error('Error loading product edit page: ' . $e->getMessage());
             return redirect()->route('products.index')
@@ -369,18 +408,18 @@ class ProductController extends Controller
                     ->toArray();
 
                 // Cập nhật hoặc tạo mới các biến thể
-                foreach ($requestVariantValues as $variantData) {
+                foreach ($request->variants as $variantData) {
                     // Tìm biến thể hiện có
                     $existingVariant = $product->variants()
                         ->whereNull('deleted_at')
-                        ->where('variant_id', $variantData['variant_id'])
-                        ->where('variant_value_id', $variantData['variant_value_id'])
+                        ->where('sku', $variantData['sku'])
                         ->first();
 
                     if ($existingVariant) {
                         // Cập nhật biến thể hiện có
                         $existingVariant->update([
                             'sku' => $variantData['sku'],
+                            'variant_details' => isset($variantData['variant_details']) ? json_decode($variantData['variant_details'], true) : [],
                             'price' => $variantData['price'],
                             'discount_price' => $variantData['discount_price'],
                             'quantity' => $variantData['quantity']
@@ -392,8 +431,7 @@ class ProductController extends Controller
                         // Tạo biến thể mới
                         $newVariant = new ProductVariant([
                             'product_id' => $product->id,
-                            'variant_id' => $variantData['variant_id'],
-                            'variant_value_id' => $variantData['variant_value_id'],
+                            'variant_details' => isset($variantData['variant_details']) ? json_decode($variantData['variant_details'], true) : [],
                             'sku' => $variantData['sku'],
                             'price' => $variantData['price'],
                             'discount_price' => $variantData['discount_price'],
@@ -533,34 +571,19 @@ class ProductController extends Controller
 
             // Lấy thông tin các thuộc tính và giá trị
             $attributeValues = [];
-            foreach ($variantAttributes as $variantId => $valueIds) {
-                if (empty($valueIds)) continue;
-
-                $variant = Variant::find($variantId);
-                if (!$variant) continue;
-
-                $values = VariantValue::whereIn('id', $valueIds)
-                    ->where('variant_id', $variantId)
-                    ->get();
-
-                if ($values->isEmpty()) continue;
-
-                $attributeValues[$variantId] = [
-                    'name' => $variant->name,
-                    'values' => $values->map(function($value) {
-                        return [
-                            'id' => $value->id,
-                            'value' => $value->value
-                        ];
-                    })->toArray()
-                ];
-            }
-
-            if (empty($attributeValues)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Không tìm thấy giá trị thuộc tính hợp lệ'
-                ], 400);
+            foreach ($variantAttributes as $variantId) {
+                $variant = Variant::with('values')->find($variantId);
+                if ($variant && $variant->values->count() > 0) {
+                    $attributeValues[$variantId] = [
+                        'name' => $variant->name,
+                        'values' => $variant->values->map(function($value) {
+                            return [
+                                'id' => $value->id,
+                                'value' => $value->value
+                            ];
+                        })->toArray()
+                    ];
+                }
             }
 
             // Tạo tất cả các tổ hợp có thể
@@ -570,17 +593,24 @@ class ProductController extends Controller
             $existingVariants = [];
             if ($product) {
                 $existingVariants = $product->variants()
-                    ->with(['variant:id,name', 'variantValue:id,value'])
+                    ->whereNull('deleted_at')
                     ->get()
                     ->map(function($variant) {
+                        $variantDetailsDisplay = [];
+                        
+                        if ($variant->variant_details && is_array($variant->variant_details)) {
+                            foreach ($variant->variant_details as $attrName => $attrValue) {
+                                $variantDetailsDisplay[] = $attrName . ': ' . $attrValue;
+                            }
+                        }
+                        
                         return [
                             'id' => $variant->id,
-                            'variant_id' => $variant->variant_id,
-                            'variant_name' => $variant->variant->name,
-                            'variant_value_id' => $variant->variant_value_id,
-                            'variant_value' => $variant->variantValue->value,
+                            'variant_details' => $variant->variant_details,
+                            'variant_details_display' => implode(' - ', $variantDetailsDisplay),
                             'sku' => $variant->sku,
                             'price' => $variant->price,
+                            'discount_price' => $variant->discount_price,
                             'quantity' => $variant->quantity,
                             'status' => $variant->status
                         ];
@@ -593,8 +623,21 @@ class ProductController extends Controller
             $basePrice = $product ? $product->price : 0;
 
             foreach ($combinations as $combination) {
+                $variantDetails = [];
+                
+                // Tạo mảng variant_details
+                foreach ($combination as $attr) {
+                    // Lấy tên variant và giá trị variant
+                    $variantName = $attr['variant_name'];
+                    $variantValue = $attr['value'];
+                    
+                    // Sử dụng tên variant làm key
+                    $variantDetails[$this->slugify($variantName)] = $variantValue;
+                }
+                
                 $variantData = [
                     'attributes' => $combination,
+                    'variant_details' => $variantDetails,
                     'sku' => $product ? $product->product_code . '-' : 'SKU-',
                     'price' => $basePrice,
                     'quantity' => 0,
@@ -728,6 +771,31 @@ class ProductController extends Controller
         $str = preg_replace("/(Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ)/", 'U', $str);
         $str = preg_replace("/(Ỳ|Ý|Ỵ|Ỷ|Ỹ)/", 'Y', $str);
         $str = preg_replace("/(Đ)/", 'D', $str);
+        return $str;
+    }
+
+    /**
+     * Chuyển đổi chuỗi thành slug
+     */
+    private function slugify($str) {
+        // Chuyển đổi chuỗi sang không dấu
+        $str = $this->removeVietnameseAccents($str);
+        
+        // Chuyển sang chữ thường
+        $str = strtolower($str);
+        
+        // Thay thế khoảng trắng bằng dấu gạch ngang
+        $str = preg_replace('/\s+/', '-', $str);
+        
+        // Loại bỏ các ký tự không phải chữ cái, số và dấu gạch ngang
+        $str = preg_replace('/[^a-z0-9-]/', '', $str);
+        
+        // Loại bỏ các dấu gạch ngang liên tiếp
+        $str = preg_replace('/-+/', '-', $str);
+        
+        // Cắt dấu gạch ngang ở đầu và cuối
+        $str = trim($str, '-');
+        
         return $str;
     }
 }

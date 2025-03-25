@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -18,9 +19,33 @@ class ProductController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate(12);
 
-            // Thêm thông tin số lượng sản phẩm vào response
+            // Thêm thông tin giá và số lượng vào response
             $products->getCollection()->transform(function ($product) {
-                $product->makeVisible(['quantity']);
+                // Nếu sản phẩm có biến thể
+                if ($product->has_variants) {
+                    // Tính giá thấp nhất và cao nhất từ các biến thể
+                    $minPrice = $product->variants->min('price');
+                    $maxPrice = $product->variants->max('price');
+                    $minDiscountPrice = $product->variants->min('discount_price');
+                    $maxDiscountPrice = $product->variants->max('discount_price');
+                    
+                    // Tổng số lượng từ các biến thể
+                    $totalQuantity = $product->variants->sum('quantity');
+                    
+                    $product->price_range = [
+                        'min' => $minPrice,
+                        'max' => $maxPrice != $minPrice ? $maxPrice : null,
+                        'min_discount' => $minDiscountPrice,
+                        'max_discount' => $maxDiscountPrice != $minDiscountPrice ? $maxDiscountPrice : null
+                    ];
+                    
+                    $product->total_quantity = $totalQuantity;
+                    $product->makeVisible(['total_quantity', 'price_range']);
+                } else {
+                    // Nếu không có biến thể, sử dụng giá và số lượng của sản phẩm
+                    $product->makeVisible(['quantity']);
+                }
+                
                 return $product;
             });
             
@@ -43,21 +68,63 @@ class ProductController extends Controller
     public function show($id)
     {
         try {
-            $product = Product::with(['category', 'gallery', 'variants.variant', 'variants.variantValue'])
+            $product = Product::with(['category', 'gallery', 'variants'])
                 ->findOrFail($id);
 
-            // Đảm bảo trường số lượng được hiển thị
-            $product->makeVisible(['quantity']);
-
-            // Xử lý dữ liệu biến thể để thêm thông tin chi tiết
-            $product->variants->each(function ($variant) {
-                // Thêm thông tin tên biến thể và giá trị biến thể
-                $variant->variant_name = $variant->variant ? $variant->variant->name : 'Không xác định';
-                $variant->variant_value_name = $variant->variantValue ? $variant->variantValue->value : 'Không xác định';
+            // Xử lý thông tin giá và số lượng
+            if ($product->has_variants) {
+                // Tính giá thấp nhất và cao nhất từ các biến thể
+                $minPrice = $product->variants->min('price');
+                $maxPrice = $product->variants->max('price');
+                $minDiscountPrice = $product->variants->min('discount_price');
+                $maxDiscountPrice = $product->variants->max('discount_price');
                 
-                // Tạo mô tả đầy đủ cho biến thể
-                $variant->full_description = $variant->variant_name . ': ' . $variant->variant_value_name;
-            });
+                // Tổng số lượng từ các biến thể
+                $totalQuantity = $product->variants->sum('quantity');
+                
+                $product->price_range = [
+                    'min' => $minPrice,
+                    'max' => $maxPrice != $minPrice ? $maxPrice : null,
+                    'min_discount' => $minDiscountPrice,
+                    'max_discount' => $maxDiscountPrice != $minDiscountPrice ? $maxDiscountPrice : null
+                ];
+                
+                $product->total_quantity = $totalQuantity;
+                $product->makeVisible(['total_quantity', 'price_range']);
+                
+                // Xử lý dữ liệu biến thể để thêm thông tin chi tiết
+                $product->variants->transform(function ($variant) {
+                    $variantDetailsDisplay = [];
+                    
+                    if (!empty($variant->variant_details)) {
+                        foreach ($variant->variant_details as $variantId => $valueId) {
+                            // Lấy thông tin về variant và variant_value
+                            $variantInfo = DB::table('variants')
+                                ->where('id', $variantId)
+                                ->first();
+                            $variantValueInfo = DB::table('variant_values')
+                                ->where('id', $valueId)
+                                ->first();
+                            
+                            if ($variantInfo && $variantValueInfo) {
+                                $variantDetailsDisplay[] = [
+                                    'variant_id' => $variantId,
+                                    'variant_name' => $variantInfo->name,
+                                    'value_id' => $valueId,
+                                    'value' => $variantValueInfo->value,
+                                    'full_description' => $variantInfo->name . ': ' . $variantValueInfo->value
+                                ];
+                            }
+                        }
+                    }
+                    
+                    $variant->variant_details_display = $variantDetailsDisplay;
+                    return $variant;
+                });
+            } else {
+                // Nếu không có biến thể, hiển thị giá và số lượng của sản phẩm
+                $product->makeVisible(['quantity']);
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -72,14 +139,13 @@ class ProductController extends Controller
         }
     }
 
-
     /**
      * Tìm kiếm sản phẩm
      */
     public function search(Request $request)
     {
         try {
-            $query = Product::query()->with(['category', 'gallery']);
+            $query = Product::query()->with(['category', 'gallery', 'variants']);
 
             if ($request->has('keyword')) {
                 $query->where('name', 'like', '%' . $request->keyword . '%');
@@ -89,29 +155,123 @@ class ProductController extends Controller
                 $query->where('category_id', $request->category_id);
             }
 
-            if ($request->has('price_min')) {
-                $query->where('price', '>=', $request->price_min);
+            // Xử lý tìm kiếm theo giá
+            if ($request->has('price_min') || $request->has('price_max')) {
+                $query->where(function($q) use ($request) {
+                    // Kiểm tra sản phẩm không có biến thể
+                    $q->where(function($subQ) use ($request) {
+                        $subQ->where('has_variants', false);
+                        
+                        if ($request->has('price_min')) {
+                            $subQ->where(function($priceQ) use ($request) {
+                                $priceQ->where('price', '>=', $request->price_min)
+                                      ->orWhere(function($discountQ) use ($request) {
+                                          $discountQ->where('discount_price', '>=', $request->price_min)
+                                                  ->whereNotNull('discount_price');
+                                      });
+                            });
+                        }
+                        
+                        if ($request->has('price_max')) {
+                            $subQ->where(function($priceQ) use ($request) {
+                                $priceQ->where('price', '<=', $request->price_max)
+                                      ->orWhere(function($discountQ) use ($request) {
+                                          $discountQ->where('discount_price', '<=', $request->price_max)
+                                                  ->whereNotNull('discount_price');
+                                      });
+                            });
+                        }
+                    });
+                    
+                    // Kiểm tra sản phẩm có biến thể
+                    $q->orWhere(function($subQ) use ($request) {
+                        $subQ->where('has_variants', true)
+                             ->whereHas('variants', function($variantQ) use ($request) {
+                                 if ($request->has('price_min')) {
+                                     $variantQ->where(function($priceQ) use ($request) {
+                                         $priceQ->where('price', '>=', $request->price_min)
+                                               ->orWhere(function($discountQ) use ($request) {
+                                                   $discountQ->where('discount_price', '>=', $request->price_min)
+                                                           ->whereNotNull('discount_price');
+                                               });
+                                     });
+                                 }
+                                 
+                                 if ($request->has('price_max')) {
+                                     $variantQ->where(function($priceQ) use ($request) {
+                                         $priceQ->where('price', '<=', $request->price_max)
+                                               ->orWhere(function($discountQ) use ($request) {
+                                                   $discountQ->where('discount_price', '<=', $request->price_max)
+                                                           ->whereNotNull('discount_price');
+                                               });
+                                     });
+                                 }
+                             });
+                    });
+                });
             }
 
-            if ($request->has('price_max')) {
-                $query->where('price', '<=', $request->price_max);
-            }
-
-            // Thêm tìm kiếm theo số lượng nếu có
-            if ($request->has('quantity_min')) {
-                $query->where('quantity', '>=', $request->quantity_min);
-            }
-
-            if ($request->has('quantity_max')) {
-                $query->where('quantity', '<=', $request->quantity_max);
+            // Xử lý tìm kiếm theo số lượng
+            if ($request->has('quantity_min') || $request->has('quantity_max')) {
+                $query->where(function($q) use ($request) {
+                    // Kiểm tra sản phẩm không có biến thể
+                    $q->where(function($subQ) use ($request) {
+                        $subQ->where('has_variants', false);
+                        
+                        if ($request->has('quantity_min')) {
+                            $subQ->where('quantity', '>=', $request->quantity_min);
+                        }
+                        
+                        if ($request->has('quantity_max')) {
+                            $subQ->where('quantity', '<=', $request->quantity_max);
+                        }
+                    });
+                    
+                    // Kiểm tra sản phẩm có biến thể
+                    $q->orWhere(function($subQ) use ($request) {
+                        $subQ->where('has_variants', true)
+                             ->whereHas('variants', function($variantQ) use ($request) {
+                                 if ($request->has('quantity_min')) {
+                                     $variantQ->where('quantity', '>=', $request->quantity_min);
+                                 }
+                                 
+                                 if ($request->has('quantity_max')) {
+                                     $variantQ->where('quantity', '<=', $request->quantity_max);
+                                 }
+                             });
+                    });
+                });
             }
 
             $products = $query->orderBy('created_at', 'desc')
                 ->paginate(12);
 
-            // Đảm bảo trường số lượng được hiển thị trong kết quả
+            // Thêm thông tin giá và số lượng vào response
             $products->getCollection()->transform(function ($product) {
-                $product->makeVisible(['quantity']);
+                if ($product->has_variants) {
+                    // Tính giá thấp nhất và cao nhất từ các biến thể
+                    $minPrice = $product->variants->min('price');
+                    $maxPrice = $product->variants->max('price');
+                    $minDiscountPrice = $product->variants->min('discount_price');
+                    $maxDiscountPrice = $product->variants->max('discount_price');
+                    
+                    // Tổng số lượng từ các biến thể
+                    $totalQuantity = $product->variants->sum('quantity');
+                    
+                    $product->price_range = [
+                        'min' => $minPrice,
+                        'max' => $maxPrice != $minPrice ? $maxPrice : null,
+                        'min_discount' => $minDiscountPrice,
+                        'max_discount' => $maxDiscountPrice != $minDiscountPrice ? $maxDiscountPrice : null
+                    ];
+                    
+                    $product->total_quantity = $totalQuantity;
+                    $product->makeVisible(['total_quantity', 'price_range']);
+                } else {
+                    // Nếu không có biến thể, sử dụng giá và số lượng của sản phẩm
+                    $product->makeVisible(['quantity']);
+                }
+                
                 return $product;
             });
 

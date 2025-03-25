@@ -15,6 +15,7 @@ class UpdateProductRequest extends FormRequest
     public function rules(): array
     {
         $hasVariants = (bool) $this->input('has_variants', false);
+        $productId = $this->input('_product_id');
 
         return [
             'name' => 'required|string|max:255',
@@ -22,7 +23,7 @@ class UpdateProductRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:50',
-                Rule::unique('products')->ignore($this->product)
+                Rule::unique('products')->ignore($productId)
             ],
             'category_id' => 'required|exists:categories,id',
             'price' => $hasVariants ? 'nullable|numeric|min:0|max:999999999' : 'required|numeric|min:0|max:999999999',

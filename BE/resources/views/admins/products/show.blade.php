@@ -177,10 +177,20 @@
                                                         <tbody>
                                                             @foreach($product->variants->groupBy('sku') as $sku => $variants)
                                                                 @php
+                                                                    $firstVariant = $variants->first();
                                                                     $variantDetails = [];
-                                                                    foreach ($variants as $variant) {
-                                                                        if ($variant->variant && $variant->variantValue) {
-                                                                            $variantDetails[] = $variant->variant->name . ': ' . $variant->variantValue->value;
+                                                                    if (!empty($firstVariant->variant_details)) {
+                                                                        foreach ($firstVariant->variant_details as $variantId => $valueId) {
+                                                                            $variantInfo = DB::table('variants')
+                                                                                ->where('id', $variantId)
+                                                                                ->first();
+                                                                            $variantValueInfo = DB::table('variant_values')
+                                                                                ->where('id', $valueId)
+                                                                                ->first();
+                                                                            
+                                                                            if ($variantInfo && $variantValueInfo) {
+                                                                                $variantDetails[] = $variantInfo->name . ': ' . $variantValueInfo->value;
+                                                                            }
                                                                         }
                                                                     }
                                                                 @endphp
@@ -188,20 +198,20 @@
                                                                     <td>{{ $sku }}</td>
                                                                     <td>{{ implode(' - ', $variantDetails) }}</td>
                                                                     <td>
-                                                                        @if($variants->first()->discount_price)
+                                                                        @if($firstVariant->discount_price)
                                                                             <div class="text-decoration-line-through text-muted">
-                                                                                <small>{{ number_format($variants->first()->price) }} VNĐ</small>
+                                                                                <small>{{ number_format($firstVariant->price) }} VNĐ</small>
                                                                             </div>
                                                                             <div>
-                                                                                <strong class="text-danger">{{ number_format($variants->first()->discount_price) }} VNĐ</strong>
+                                                                                <strong class="text-danger">{{ number_format($firstVariant->discount_price) }} VNĐ</strong>
                                                                             </div>
                                                                         @else
-                                                                            {{ number_format($variants->first()->price) }} VNĐ
+                                                                            {{ number_format($firstVariant->price) }} VNĐ
                                                                         @endif
                                                                     </td>
-                                                                    <td>{{ number_format($variants->first()->quantity) }}</td>
+                                                                    <td>{{ number_format($firstVariant->quantity) }}</td>
                                                                     <td>
-                                                                        @if($variants->first()->status)
+                                                                        @if($firstVariant->status)
                                                                             <span class="badge bg-success-subtle text-success">Đang bán</span>
                                                                         @else
                                                                             <span class="badge bg-danger-subtle text-danger">Ngừng bán</span>
