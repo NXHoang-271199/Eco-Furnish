@@ -15,11 +15,13 @@ class ProductVariant extends Model
         'variant_value_id',
         'sku',
         'price',
+        'discount_price',
         'quantity',
         'status'
     ];
     protected $casts = [
        'price' => 'float',
+       'discount_price' => 'float',
        'status' => 'integer',
     ];
     public function product()

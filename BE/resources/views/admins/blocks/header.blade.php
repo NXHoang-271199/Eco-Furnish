@@ -37,16 +37,16 @@
             <div class="d-flex align-items-center">
                 <div class="ms-1 header-item d-none d-sm-flex">
                     <button type="button"
-                        class="btn btn-icon btn-topbar material-shadow-none btn-ghost-secondary rounded-circle"
+                        class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle"
                         data-toggle="fullscreen">
-                        <i class='bx bx-fullscreen fs-22'></i>
+                        <i class='ri-fullscreen-line'></i>
                     </button>
                 </div>
 
                 <div class="ms-1 header-item d-none d-sm-flex">
                     <button type="button"
-                        class="btn btn-icon btn-topbar material-shadow-none btn-ghost-secondary rounded-circle light-dark-mode">
-                        <i class='bx bx-moon fs-22'></i>
+                        class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode">
+                        <i class='ri-moon-line'></i>
                     </button>
                 </div>
                 <style>
@@ -131,35 +131,49 @@
                     </div>
                 </div>
                 <div class="dropdown ms-sm-3 header-item topbar-user">
-                    <button type="button" class="btn material-shadow-none" id="page-header-user-dropdown"
+                    <button type="button" class="btn shadow-none" id="page-header-user-dropdown"
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <img class="rounded-circle header-profile-user"
-
-                                src="{{ asset('assets/admins/images/users/avatar-1.jpg') }}" 
-
+                                src="{{ asset('assets/images/users/avatar-1.jpg') }}"
                                 alt="Header Avatar">
                             <span class="text-start ms-xl-2">
                                 <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">
-                                    {{ Auth::user()->name }}
+                                    @if(Auth::check())
+                                        {{ Auth::user()->name }}
+                                    @else
+                                        Admin
+                                    @endif
                                 </span>
-                                <span class="d-none d-xl-block ms-1 fs-12 user-name-sub-text">
-                                    {{ Auth::user()->role->name ?? 'User' }}
+                                <span class="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text">
+                                    @if(Auth::check() && Auth::user()->role)
+                                        {{ Auth::user()->role->name }}
+                                    @else
+                                        User
+                                    @endif
                                 </span>
                             </span>
                         </span>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end">
                         <!-- item-->
-                        <h6 class="dropdown-header">Welcome {{ Auth::user()->name }}!</h6>
-                        <a class="dropdown-item" href="{{ route('users.show', Auth::id()) }}">
-                            <i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
-                            <span class="align-middle">Profile</span>
-                        </a>
-                        <a class="dropdown-item" href="{{ route('users.edit', Auth::id()) }}">
-                            <i class="mdi mdi-cog text-muted fs-16 align-middle me-1"></i>
-                            <span class="align-middle">Settings</span>
-                        </a>
+                        <h6 class="dropdown-header">
+                            @if(Auth::check())
+                                Welcome {{ Auth::user()->name }}!
+                            @else
+                                Welcome Admin!
+                            @endif
+                        </h6>
+                        @if(Auth::check())
+                            <a class="dropdown-item" href="{{ route('users.show', Auth::id()) }}">
+                                <i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
+                                <span class="align-middle">Profile</span>
+                            </a>
+                            <a class="dropdown-item" href="{{ route('users.edit', Auth::id()) }}">
+                                <i class="mdi mdi-cog text-muted fs-16 align-middle me-1"></i>
+                                <span class="align-middle">Settings</span>
+                            </a>
+                        @endif
 
                         <form method="POST" action="{{ route('admin.logout') }}" id="logout-form">
                             @csrf

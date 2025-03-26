@@ -51,6 +51,11 @@ VD:
 -   danh_mucs
 -   don-hangs
 
+# Lệnh chạy real-time
+* Từ folder BE
+- cd socket-server
+- node server.js => Chạy Socket.IO của Nodejs 
 # Tìm hiểu factory
 
 # Câu lệnh git
+git reset --hard HEAD~1 => reset code đến lần commit gần nhất

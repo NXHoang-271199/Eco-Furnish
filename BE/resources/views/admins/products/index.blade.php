@@ -158,29 +158,43 @@
                                                     data-min-variant-price="{{ $product->variants()->whereNull('deleted_at')->min('price') }}"
                                                     data-max-variant-price="{{ $product->variants()->whereNull('deleted_at')->max('price') }}"
                                                     @endif>
-                                                    <div>
-                                                        @if($product->discount_price)
-                                                            <div class="text-decoration-line-through text-muted">
-                                                                <small>Giá gốc: {{ number_format($product->price) }} VNĐ</small>
-                                                            </div>
-                                                            <div>
-                                                                <strong class="text-danger">Giá KM: {{ number_format($product->discount_price) }} VNĐ</strong>
-                                                            </div>
-                                                        @else
-                                                            <strong>Giá gốc: {{ number_format($product->price) }} VNĐ</strong>
-                                                        @endif
-                                                    </div>
                                                     @if($product->variants()->whereNull('deleted_at')->count() > 0)
-                                                        <div class="mt-2">
+                                                        <div>
                                                             <strong>Giá biến thể:</strong>
                                                             @php
                                                                 $minPrice = $product->variants()->whereNull('deleted_at')->min('price');
                                                                 $maxPrice = $product->variants()->whereNull('deleted_at')->max('price');
+                                                                $hasDiscount = $product->variants()->whereNull('deleted_at')->whereNotNull('discount_price')->count() > 0;
+                                                                $minDiscountPrice = $product->variants()->whereNull('deleted_at')->whereNotNull('discount_price')->min('discount_price');
+                                                                $maxDiscountPrice = $product->variants()->whereNull('deleted_at')->whereNotNull('discount_price')->max('discount_price');
                                                             @endphp
                                                             @if($minPrice === $maxPrice)
                                                                 {{ number_format($minPrice) }} VNĐ
                                                             @else
                                                                 {{ number_format($minPrice) }} - {{ number_format($maxPrice) }} VNĐ
+                                                            @endif
+                                                        </div>
+                                                        @if($hasDiscount)
+                                                        <div class="mt-1">
+                                                            <strong class="text-danger">Giá KM biến thể:</strong>
+                                                            @if($minDiscountPrice === $maxDiscountPrice)
+                                                                {{ number_format($minDiscountPrice) }} VNĐ
+                                                            @else
+                                                                {{ number_format($minDiscountPrice) }} - {{ number_format($maxDiscountPrice) }} VNĐ
+                                                            @endif
+                                                        </div>
+                                                        @endif
+                                                    @else
+                                                        <div>
+                                                            @if($product->discount_price)
+                                                                <div class="text-decoration-line-through text-muted">
+                                                                    <small>Giá gốc: {{ number_format($product->price) }} VNĐ</small>
+                                                                </div>
+                                                                <div>
+                                                                    <strong class="text-danger">Giá KM: {{ number_format($product->discount_price) }} VNĐ</strong>
+                                                                </div>
+                                                            @else
+                                                                <strong>Giá: {{ number_format($product->price) }} VNĐ</strong>
                                                             @endif
                                                         </div>
                                                     @endif
