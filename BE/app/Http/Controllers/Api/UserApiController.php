@@ -115,7 +115,7 @@ class UserApiController extends Controller
         // Gửi email xác thực
         try {
             $frontendUrl = 'http://localhost:5173'; 
-            $verificationUrl = $frontendUrl . '/auth/verify-email?' . http_build_query([
+            $verificationUrl = $frontendUrl.'/auth/verify-email?'.http_build_query([
                 'token' => $verificationToken,
                 'email' => urlencode($user->email)
             ]);
@@ -388,7 +388,7 @@ class UserApiController extends Controller
         $user->save();
 
         // Tạo URL đặt lại mật khẩu
-        $resetUrl = config('app.frontend_url', 'http://localhost:5173') . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
+        $resetUrl = config('app.frontend_url', 'http://localhost:5173') . '/auth/reset-password?token=' . $token . '&email=' . urlencode($request->email);
 
         // Gửi email với link reset password
         try {
@@ -419,7 +419,7 @@ class UserApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
-            'remember_token' => 'required|string',
+            'token' => 'required|string',
             'password' => 'required|string|min:5',
             'password_confirmation' => 'required|same:password',
         ]);
