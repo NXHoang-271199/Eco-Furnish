@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaRegEyeSlash, FaEye } from "react-icons/fa";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { motion } from "framer-motion"; // npm install framer-motion để chạy hiệu ứng
@@ -34,6 +34,7 @@ const SignIn = () => {
       if (response.data.status === "success") {
         // Lưu token và thông tin user
         localStorage.setItem("authToken", response.data.data.access_token);
+        localStorage.setItem("refreshToken", response.data.data.refresh_token);
         localStorage.setItem("userData", JSON.stringify(response.data.data));
         navigate("/");
       }
@@ -67,6 +68,7 @@ const SignIn = () => {
       if (response.data.status === "success") {
         localStorage.setItem("authToken", response.data.data.access_token);
         console.log("Token đã được làm mới:", response.data.data.access_token);
+        return response.data.data.access_token;
       }
     } catch (error) {
       console.error("Lỗi làm mới token:", error);

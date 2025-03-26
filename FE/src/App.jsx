@@ -15,7 +15,7 @@ import SignUp from "./pages/auth/SignUp/SignUp";
 // import CursorGlow from "./CursorGlow";
 import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import EmailVerification from "./pages/EmailVerification/EmailVerification";
-import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import ResetPassword from "./pages/auth/ResetPassword/ResetPassword";
 import ConfirmPassword from "./pages/ConfirmPassword/ConfirmPassword";
 
 // import ForgotPasswordModal from "./pages/SignIn/ForgotPasswordModal";
@@ -27,6 +27,7 @@ import Address from "./pages/(website)/UserAccount/Address/Address";
 import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
 import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
 import ChatBot from "./components/ChatBot";
+import OrderSuccess from "./pages/(website)/OrderSuccess/OrderSuccess";
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
           <Route path="blogs" element={<Blogs />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
+          <Route path="order-success" element={<OrderSuccess />} />
           <Route path="blog-detail" element={<BlogsDetail />} />
         </Route>
 
@@ -49,9 +51,9 @@ function App() {
         <Route path="changepass" element={<ForgotPasswordModal />} />
         <Route path="signup" element={<SignUp />} />
 
-        <Route path="verifyemail" element={<VerifyEmail />} />
+        {/* <Route path="verifyemail" element={<VerifyEmail />} /> */}
 
-        <Route path="reset" element={<ResetPassword />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
         <Route path="confirm" element={<ConfirmPassword />} />
         <Route path="/auth/verify-email" element={<EmailVerification />} />
 

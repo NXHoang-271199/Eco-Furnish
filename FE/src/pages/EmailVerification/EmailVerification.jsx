@@ -11,7 +11,7 @@ const EmailVerification = () => {
     const verifyEmail = async () => {
       try {
         const token = searchParams.get("token");
-        const email = searchParams.get("email");
+        const email = decodeURIComponent(searchParams.get("email"));
         console.log("Token:", token);
         console.log("Email:", email);
 
@@ -24,12 +24,12 @@ const EmailVerification = () => {
         const response = await axios.post(
           `http://127.0.0.1:8000/api/users/verify-email`,
           {
-            token: token,
+            verify_token: token,
             email: email,
           }
         );
 
-        if (response.data.users.is_active == 1) {
+        if (response.data.status === "success") {
           alert("Xác thực email thành công! Vui lòng đăng nhập.");
           navigate("/signin");
         }

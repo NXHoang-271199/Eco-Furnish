@@ -48,7 +48,7 @@
 
 @section('content')
     <div class="container-fluid">
-        <div class="row">
+        {{-- <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
                     <h4 class="mb-sm-0">Danh sách vai trò</h4>
@@ -67,7 +67,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Danh sách vai trò</h5>

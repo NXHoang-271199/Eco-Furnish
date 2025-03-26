@@ -236,12 +236,6 @@
 
                 <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
                 @endif
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('settings') }}">
-                        <i class="ri-settings-4-line"></i> <span data-key="t-advance-ui">Cài đặt</span>
-                    </a>
-                </li>
             </ul>
         </div>
         <!-- Sidebar -->
