@@ -22,10 +22,11 @@ use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\OrderNotificationController;
+use App\Http\Controllers\BannerController;
 use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
 use App\Http\Controllers\Admin\PermissionController;
-
+use App\Http\Controllers\SettingController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -187,4 +188,12 @@ Route::prefix('admin')->group(function () {
         Route::post('/permissions', [PermissionController::class, 'storePermission'])->name('permissions.store-permission');
         Route::delete('/permissions/{permission}', [PermissionController::class, 'destroyPermission'])->name('permissions.destroy-permission');
     });
+
+
+    // Banners Management
+    Route::resource('banners', BannerController::class);
+    Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
+    // Banners Management
+    Route::resource('banners', BannerController::class);
+    Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
 });

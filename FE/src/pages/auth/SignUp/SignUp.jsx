@@ -1,9 +1,13 @@
 import React from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
-import { data, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { FaRegEyeSlash, FaEye } from "react-icons/fa";
 import axios from "axios";
 const SignUp = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -11,26 +15,31 @@ const SignUp = () => {
   } = useForm();
 
   const navigate = useNavigate();
+
   const onSubmit = async (data) => {
     console.log(data);
+
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/users/register",
+        `http://127.0.0.1:8000/api/users/register`,
         data
       );
-      console.log("Đăng ký thành công:", response.data);
-      alert("Đăng ký thanh cong");
-      navigate("/signin");
+
+      if (response.data.status === "success") {
+        alert(
+          "Đăng ký thành công! Vui lòng kiểm tra email của bạn để xác thực tài khoản."
+        );
+        navigate("/auth/verify-email");
+      }
     } catch (error) {
-      // Hiển thị lỗi validation cụ thể nếu có
-      if (error.response && error.response.data && error.response.data.errors) {
-        console.error("Lỗi validation:", error.response.data.errors);
-        // Hiển thị lỗi cho người dùng
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
       } else {
-        console.error("Lỗi đăng ký:", error);
+        alert("Đã có lỗi xảy ra khi đăng ký");
       }
     }
   };
+
   return (
     <div className="flex w-full bg-white shadow-lg">
       <div className="relative overflow-hidden w-1/2 hidden md:block">
@@ -74,18 +83,27 @@ const SignUp = () => {
           </div>
           <div className="mb-4 relative">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Mật khẩu"
               name="password"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               {...register("password", { required: "Phải có mật khẩu" })}
             />
             {errors?.password && <p>{errors.password.message}</p>}
-            <i className="fas fa-eye absolute right-3 top-3 text-gray-500 cursor-pointer"></i>
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <FaEye className="absolute right-3 top-3 text-gray-500 cursor-pointer" />
+              ) : (
+                <FaRegEyeSlash className="absolute right-3 top-3 text-gray-500 cursor-pointer" />
+              )}
+            </button>
           </div>
-          <div className="mb-4">
+          <div className="mb-4 relative">
             <input
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               placeholder="Xác nhận mật khẩu"
               name="password_confirmation"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -96,6 +114,16 @@ const SignUp = () => {
             {errors?.password_confirmation && (
               <p>{errors.password_confirmation.message}</p>
             )}
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <FaEye className="absolute right-3 top-3 text-gray-500 cursor-pointer" />
+              ) : (
+                <FaRegEyeSlash className="absolute right-3 top-3 text-gray-500 cursor-pointer" />
+              )}
+            </button>
           </div>
           <div className="mb-4 flex items-center">
             <input type="checkbox" id="terms" className="mr-2" />

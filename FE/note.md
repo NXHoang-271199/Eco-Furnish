@@ -6,6 +6,7 @@ http://localhost:8000/api/users/login -> Login
 
 - register
 - {id}/profile
+- /logout
   http://localhost:8000/api/products/ -> Products
 - products
 - products/{id}
@@ -16,7 +17,18 @@ http://localhost:8000/api/users/login -> Login
   http://localhost:8000/api/category-posts/ -> CategoryPost
 - Lấy danh sách các danh mục bài viết
   http://localhost:8000/api/vouchers/ -> Vouchers
+
+
 - /{code}
+
+# Lưu ý khi lọc bài viết theo danh mục
+
+Để lọc bài viết theo danh mục:
+
+1. Lấy danh sách tất cả bài viết qua API `/posts`
+2. Với mỗi bài viết, gọi API `/posts/{slug}` để lấy chi tiết bài viết
+3. Kiểm tra trường `category_id` trong chi tiết bài viết
+4. Lọc các bài viết có `category_id` trùng với ID của danh mục đang xem
 
 # Lưu ý khi lọc bài viết theo danh mục
 

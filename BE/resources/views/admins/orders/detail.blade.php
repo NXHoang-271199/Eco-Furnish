@@ -78,7 +78,7 @@
                                 @endif
                             </div>
                             <div class="col-md-5">
-                                <p class="mb-1 ms-3 fw-bold">{{ $item->name }}</p>
+                                <p class="mb-1 ms-3 fw-bold">{{ $item->product_name }}</p>
                                 @if (!empty($item->productVariant))
                                     <p class="mb-1 ms-3"><strong>Phân loại hàng:</strong>
                                         @foreach ($item->product->productVariant as $index => $variant)
@@ -94,7 +94,7 @@
                                 <p class="mb-1 ms-3 text-dark"><strong>Số lượng:</strong> x{{ $item->quantity }}</p>
                             </div>
                             <div class="col-md-6 text-end">
-                                <p class="mb-1 text-danger fw-bold ">{{ number_format($item->price, 0, ',', '.') }} đ</p>
+                                <p class="mb-1 text-danger fw-bold ">{{ number_format($item->total_price, 0, ',', '.') }} đ</p>
                             </div>
                         </div>
                     @endforeach
@@ -129,7 +129,7 @@
                     </div>
                 </div>
                 <div>
-                    @if ($order->payment_status == 1)
+                    @if ($order->payment_status == 0)
                         <div class="alert alert-warning text-center my-3 ">
                             <strong>Đơn hàng chưa được thanh toán. Tổng số tiền cần thanh toán là {{ number_format($order->total_price, 0, ',', '.') }} đ</strong>.
                         </div>

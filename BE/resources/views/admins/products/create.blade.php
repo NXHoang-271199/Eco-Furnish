@@ -36,7 +36,7 @@
                         <div class="switch-container">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="variantToggle">
-                                <label class="form-check-label text-white" for="variantToggle">Thêm biến thể</label>
+                                <label class="form-check-label text-white" for="variantToggle">Bật biến thể</label>
                             </div>
                         </div>
                     </div>
@@ -69,7 +69,7 @@
                                 </div>
 
                                 <div id="basicPriceSection">
-                                    <div class="form-group mb-3">
+                                    <div class="form-group mb-3" id="priceSection">
                                         <label for="price" class="form-label">Giá gốc <span class="text-danger">*</span></label>
                                         <div class="input-group">
                                             <input type="number" class="form-control @error('price') is-invalid @enderror"
@@ -88,6 +88,18 @@
                                                 id="discount_price" name="discount_price" value="{{ old('discount_price') }}" min="0">
                                             <span class="input-group-text">VNĐ</span>
                                             @error('discount_price')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group mb-3" id="quantitySection">
+                                        <label for="quantity" class="form-label">Số lượng <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control @error('quantity') is-invalid @enderror"
+                                                id="quantity" name="quantity" value="{{ old('quantity') }}" min="0">
+                                            <span class="input-group-text">Cái</span>
+                                            @error('quantity')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
@@ -183,18 +195,25 @@
                         <!-- Form thêm biến thể -->
                         <div id="variantForm" class="border rounded p-4 mb-4 d-none" style="background: #f8f9fa;">
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label class="form-label">Giá <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <input type="number" class="form-control" id="variant-price" min="0">
                                         <span class="input-group-text">VNĐ</span>
                                     </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Giá khuyến mãi</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="variant-discount-price" min="0">
+                                        <span class="input-group-text">VNĐ</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
                                     <label class="form-label">Số lượng <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control" id="variant-quantity" min="0">
                                 </div>
-                                <!-- Trường SKU đã bị ẩn vì sẽ được tạo tự động -->
+                                <!-- Trường SKU bị ẩn vì sẽ được tạo tự động -->
                                 <input type="hidden" id="variant-sku">
                             </div>
                             <button type="button" class="btn btn-primary" id="add-variant-btn">

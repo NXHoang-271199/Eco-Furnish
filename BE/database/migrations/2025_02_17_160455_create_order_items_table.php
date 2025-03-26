@@ -23,7 +23,7 @@ return new class extends Migration
             $table->integer('quantity');
             $table->decimal('price', 15, 2);
             $table->decimal('total_price', 15, 2);
-            $table->foreignIdFor(ProductVariant::class)->constrained()->nullable();
+            $table->foreignIdFor(ProductVariant::class)->nullable()->constrained();
             $table->timestamps();
         });
     }

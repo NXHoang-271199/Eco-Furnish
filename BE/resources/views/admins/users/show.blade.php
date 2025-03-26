@@ -32,7 +32,8 @@
             </div>
         </div>
         <div class="profile-foreground position-relative mx-n4 mt-n4">
-            <div class="profile-wid-bg"></div>
+            <div class="profile-wid-bg">
+            </div>
         </div>
         <div class="pt-4 mb-4 mb-lg-3 pb-lg-4 profile-wrapper">
             <div class="row g-4">
@@ -62,22 +63,6 @@
         <div class="row">
             <div class="col-lg-12">
                 <div>
-                    <div class="d-flex profile-wrapper">
-                        <!-- Nav tabs -->
-                        <ul class="nav nav-pills animation-nav profile-nav gap-2 gap-lg-3 flex-grow-1" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link fs-14 active" data-bs-toggle="tab" href="#overview-tab" role="tab"
-                                    aria-selected="true">
-                                    <i class="ri-airplay-fill d-inline-block d-md-none"></i> <span
-                                        class="d-none d-md-inline-block">Thông tin</span>
-                                </a>
-                            </li>
-                        </ul>
-                        <div class="flex-shrink-0">
-                            <a href="{{ route('users.edit', $singerUser->id) }}" class="btn btn-success"><i
-                                    class="ri-edit-box-line align-bottom"></i> Cập nhật</a>
-                        </div>
-                    </div>
                     <!-- Tab panes -->
                     <div class="tab-content pt-4 text-muted">
                         <div class="tab-pane active show" id="overview-tab" role="tabpanel">
@@ -119,29 +104,44 @@
                                     <div class="card">
                                         <div class="card-body">
                                             <h5 class="card-title mb-3">Bình luận</h5>
-                                            <!-- Tables Without Borders -->
-                                            <table class="table table-borderless table-nowrap">
-                                                <thead>
-                                                    <tr>
-                                                        <th scope="col">Tên</th>
-                                                        <th scope="col">Nội dung</th>
-                                                        <th scope="col">Ngày</th>
-                                                        <th scope="col">Trạng thái</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        <th scope="row">{{ $singerUser->name }}</th>
-                                                        <td>Industrial Designer</td>
-                                                        <td>10, Nov 2021</td>
-                                                        <td><span class="badge bg-success-subtle text-success">Active</span>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
+                                            <div class="table-responsive">
+                                                <table class="table table-borderless align-middle mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th scope="col" style="width: 70%; min-width: 300px;">Nội dung</th>
+                                                            <th scope="col" style="width: 20%; min-width: 150px;">Ngày bình luận</th>
+                                                            {{-- <th scope="col" style="width: 10%; min-width: 70px;">Xem</th> --}}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @forelse($comments as $comment)
+                                                        <tr>
+                                                            <td>
+                                                                <div style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 90%;" title="{{ $comment->content }}">
+                                                                    {{ $comment->content }}
+                                                                </div>
+                                                            </td>
+                                                            <td>{{ $comment->created_at->format('d/m/Y H:i') }}</td>
+                                                            {{-- <td>
+                                                                <a href="{{ route('comments.index', ['comment_id' => $comment->id]) }}" class="text-muted">
+                                                                    <i class="ri-eye-line fs-16"></i>
+                                                                </a>
+                                                            </td> --}}
+                                                        </tr>
+                                                        @empty
+                                                        <tr>
+                                                            <td colspan="4" class="text-center">Không có bình luận nào</td>
+                                                        </tr>
+                                                        @endforelse
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-end mt-3">
+                                                {{ $comments->links('pagination::bootstrap-5') }}
+                                            </div>
                                         </div>
-                                        <!--end card-body-->
-                                    </div><!-- end card -->
+                                    </div>
 
                                     <div class="row">
                                         <div class="col-lg-12">
@@ -1498,4 +1498,16 @@
         <!--end row-->
 
     </div>
+
+    <style>
+    .profile-wid-bg::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        background: linear-gradient(to right, rgb(28 36 77 / 93%), rgb(9 5 22 / 62%))!important;
+    }
+    </style>
 @endsection

@@ -204,7 +204,7 @@ const Blogs = () => {
   return (
     <div className="bg-gray-100 mt-10">
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <section className="relative">
+        {/* <section className="relative">
           <motion.img
             src="https://storage.googleapis.com/a1aa/image/L2WwzaWj82s6j2ILIlmI8ucu4kkoaXdYw6hBRSqLzYY.jpg"
             alt="Living room with Christmas tree"
@@ -414,3 +414,4 @@ const Blogs = () => {
 };
 
 export default Blogs;
+

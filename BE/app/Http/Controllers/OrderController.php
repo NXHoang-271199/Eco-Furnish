@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Order;
+use App\Models\Product;
+use Illuminate\Http\Request;
+use App\Models\ProductVariant;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -129,29 +132,49 @@ class OrderController extends Controller
         //
     }
     public function updateStatus(Request $request, $id) {
-        $order = Order::findOrFail($id);
+        DB::beginTransaction();
+        try {
+            $order = Order::with('orderItems')->findOrFail($id);
 
-        if ($request->input('current_status') !== $order->order_status) {
-            return back()->with('error', 'Trạng thái đơn hàng đã được cập nhật bởi người khác. Vui lòng tải lại trang.');
+            if ($request->input('current_status') !== $order->order_status) {
+                return back()->with('error', 'Trạng thái đơn hàng đã được cập nhật bởi người khác. Vui lòng tải lại trang.');
+            }
+
+            $validTransitions = [
+                'Chưa Xác Nhận' => ['Đã Xác Nhận', 'Hủy Đơn'],
+                'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng', 'Hủy Đơn'],
+                'Đang Chuẩn Bị Hàng' => ['Đang Giao', 'Hủy Đơn'],
+                'Đang Giao' => ['Đã Giao'],
+                'Đã Giao' => ['Đã Nhận', 'Hoàn Hàng'],
+                'Đã Nhận' => ['Thành Công', 'Hoàn Hàng'],
+                'Thành Công' => ['Hoàn Hàng'],
+            ];
+
+            if (!in_array($request->order_status, $validTransitions[$order->order_status] ?? [])) {
+                return back()->with('error', 'Không thể chuyển sang trạng thái này.');
+            }
+
+            // Nếu trạng thái chuyển sang "Hủy Đơn" hoặc "Hoàn Hàng", hoàn lại số lượng sản phẩm
+            if (in_array($request->order_status, ['Hủy Đơn', 'Hoàn Hàng'])) {
+                foreach ($order->orderItems as $item) {
+                    if ($item->product_variant_id) {
+                        ProductVariant::where('id', $item->product_variant_id)->increment('quantity', $item->quantity);
+                    } else {
+                        Product::where('id', $item->product_id)->increment('quantity', $item->quantity);
+                    }
+                }
+            }
+
+            // Cập nhật trạng thái đơn hàng
+            $order->update(['order_status' => $request->order_status]);
+
+            DB::commit();
+            return back()->with('success', 'Cập nhật trạng thái thành công.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Lỗi khi cập nhật trạng thái: ' . $e->getMessage());
         }
-
-        $validTransitions = [
-            'Chưa Xác Nhận' => ['Đã Xác Nhận', 'Hủy Đơn'],
-            'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng', 'Hủy Đơn'],
-            'Đang Chuẩn Bị Hàng' => ['Đang Giao', 'Hủy Đơn'],
-            'Đang Giao' => ['Đã Giao'],
-            'Đã Giao' => ['Đã Nhận', 'Hoàn Hàng'],
-            'Đã Nhận' => ['Thành Công', 'Hoàn Hàng'],
-            'Thành Công' => ['Hoàn Hàng'],
-        ];
-
-        if (!in_array($request->order_status, $validTransitions[$order->order_status] ?? [])) {
-            return back()->with('error', 'Không thể chuyển sang trạng thái này.');
-        }
-
-        $order->update(['order_status' => $request->order_status]);
-
-        return back()->with('success', 'Cập nhật trạng thái thành công.');
     }
+
 
 }
