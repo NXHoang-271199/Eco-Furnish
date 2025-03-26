@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { addToCart } from "../../../store/cartSlice";
+import AddToCartToast from "../../../components/AddToCartToast";
 
 const ProductDetail = () => {
   const [product, setProduct] = useState(null);
@@ -18,6 +21,14 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
+  const [showToast, setShowToast] = useState(false);
+  const [toastProduct, setToastProduct] = useState(null);
+
+  // State để hiển thị thông báo
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackType, setFeedbackType] = useState("success"); // "success" hoặc "error"
 
   console.log("ID from useParams:", id);
 
@@ -413,27 +424,29 @@ const ProductDetail = () => {
       return;
     }
 
-    console.log("Thêm vào giỏ hàng:", {
-      product_id: product.id,
-      variants: selectedVariants,
-      quantity: quantity,
+    const selectedVariantValues = {};
+    Object.entries(selectedVariants).forEach(([variantId, valueId]) => {
+      const variant = product.variants.find(
+        (v) =>
+          v.variant_id === Number(variantId) && v.variant_value_id === valueId
+      );
+      if (variant) {
+        selectedVariantValues[variant.variant_info.name] =
+          variant.variant_value.value;
+      }
     });
 
-    alert("Đã thêm sản phẩm vào giỏ hàng!");
-  };
+    dispatch(
+      addToCart({
+        product,
+        quantity,
+        variants: selectedVariantValues,
+      })
+    );
 
-  const handleAddToWishlist = () => {
-    if (!hasSelectedAllRequiredVariants()) {
-      setError("Vui lòng chọn đầy đủ biến thể sản phẩm");
-      return;
-    }
-
-    console.log("Thêm vào danh sách yêu thích:", {
-      product_id: product.id,
-      variants: selectedVariants,
-    });
-
-    alert("Đã thêm sản phẩm vào danh sách yêu thích!");
+    setToastProduct(product);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
   const handleBuyNow = () => {
@@ -565,6 +578,16 @@ const ProductDetail = () => {
         setComments([...comments, newComment]);
         setCommentInput("");
 
+        // Hiển thị thông báo thành công
+        setFeedbackMessage("Bình luận đã được gửi thành công!");
+        setFeedbackType("success");
+        setShowFeedback(true);
+
+        // Ẩn thông báo sau 3 giây
+        setTimeout(() => {
+          setShowFeedback(false);
+        }, 3000);
+
         // Refresh comments sau khi thêm
         setTimeout(() => {
           refreshProductComments();
@@ -572,11 +595,18 @@ const ProductDetail = () => {
       }
     } catch (error) {
       console.error("Error submitting comment:", error.response || error);
-      // Hiển thị thông báo lỗi cho người dùng
-      alert(
+      // Hiển thị thông báo lỗi
+      setFeedbackMessage(
         "Không thể gửi bình luận: " +
           (error.response?.data?.message || "Lỗi kết nối")
       );
+      setFeedbackType("error");
+      setShowFeedback(true);
+
+      // Ẩn thông báo sau 3 giây
+      setTimeout(() => {
+        setShowFeedback(false);
+      }, 3000);
 
       if (error.response?.status === 401) {
         localStorage.removeItem("token");
@@ -604,12 +634,6 @@ const ProductDetail = () => {
     product.is_sample === 1 ||
     product.is_sample === true ||
     product.status === "sample";
-
-  const isVariantAvailable = () => {
-    // Hiện tại luôn trả về true để đơn giản hóa logic,
-    // có thể mở rộng trong tương lai khi cần kiểm tra tính khả dụng phức tạp hơn
-    return true;
-  };
 
   const refreshProductData = async () => {
     setLoading(true);
@@ -722,452 +746,661 @@ const ProductDetail = () => {
   };
 
   return (
-    <main className="max-w-6xl mx-auto mb-20 mt-32">
-      <div className="flex justify-between items-center mb-8">
-        <Link
-          to="/"
-          className="text-blue-500 hover:underline flex items-center"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 mr-1"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Quay lại trang chủ
-        </Link>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Tìm kiếm sản phẩm..."
-            className="px-4 py-2 border rounded-full w-64"
-          />
-          <button className="absolute right-2 top-2 text-gray-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-8 my-16">
-        <div className="grid grid-cols-1">
-          <div className="col-span-5">
-            <img
-              src={mainImageUrl}
-              alt={product.name || "Sản phẩm"}
-              className="w-full rounded-md h-[400px] object-contain"
-              onError={(e) => {
-                console.log("Main Image Load Error:", e);
-                e.target.src =
-                  "https://via.placeholder.com/400x400?text=Image+Error";
-              }}
-            />
-          </div>
-          <div className="flex justify-start space-x-5 mt-4">
-            {product.gallery && product.gallery.length > 0 ? (
-              product.gallery.map((item, index) => {
-                const galleryImageUrl = item.image_url
-                  ? item.image_url.startsWith("http")
-                    ? item.image_url
-                    : `${baseURL}storage/${item.image_url}`
-                  : "https://via.placeholder.com/100x100?text=No+Image";
+    <>
+      <main className="max-w-6xl mx-auto mb-20 mt-32">
+        {/* Thiết kế mới cho chi tiết sản phẩm */}
+        <div className="container mx-auto p-6">
+          <div className="flex flex-col lg:flex-row">
+            {/* Image Section */}
+            <div className="lg:w-1/2">
+              <div className="relative h-[650px] bg-gray-50 rounded-xl shadow-md flex justify-center items-center p-2 overflow-hidden border border-gray-100">
+                {/* Gradient overlay effect */}
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-100 to-transparent opacity-20"></div>
 
-                return (
-                  <div
-                    key={index}
-                    className="mt-4 cursor-pointer"
-                    onClick={() => handleGalleryImageClick(galleryImageUrl)}
-                  >
-                    <img
-                      src={galleryImageUrl}
-                      alt={`Gallery ${index + 1}`}
-                      className={`w-20 h-20 object-cover rounded-md ${
-                        selectedImage === galleryImageUrl
-                          ? "border-2 border-blue-500"
-                          : ""
-                      }`}
-                      onError={(e) => {
-                        console.log(
-                          `Gallery Image ${index + 1} Load Error:`,
-                          e
-                        );
-                        e.target.src =
-                          "https://via.placeholder.com/100x100?text=Error";
-                      }}
-                    />
-                  </div>
-                );
-              })
-            ) : (
-              <div className="mt-4 text-gray-500">Không có ảnh bổ sung</div>
-            )}
-          </div>
-        </div>
-        <div>
-          <h5 className="text-[20px] font-semibold text-3xl">
-            {product.name || "Tên sản phẩm"}
-          </h5>
+                <img
+                  src={mainImageUrl}
+                  alt={product.name || "Sản phẩm"}
+                  className="max-h-[620px] max-w-[95%] object-contain z-10 transition-all duration-500 hover:scale-105"
+                  onError={(e) => {
+                    console.log("Main Image Load Error:", e);
+                    e.target.src =
+                      "https://via.placeholder.com/600x600?text=Image+Error";
+                  }}
+                />
 
-          <h3 className="text-[40px] font-bold mt-2 text-[#EF4444]">
-            {currentDiscount
-              ? formatPrice(currentDiscount)
-              : currentPrice
-              ? formatPrice(currentPrice)
-              : formatPrice(product.price)}
-          </h3>
-          {currentDiscount &&
-            currentPrice &&
-            Number(currentDiscount) !== Number(currentPrice) && (
-              <p className="text-gray-500 line-through">
-                {formatPrice(currentPrice)}
-              </p>
-            )}
+                {product.discount_price &&
+                  Number(product.discount_price) !== Number(product.price) && (
+                    <span className="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1.5 rounded-full z-20 shadow-lg transform -rotate-2">
+                      GIẢM GIÁ
+                    </span>
+                  )}
+              </div>
 
-          {isSampleProduct && (
-            <p className="mt-3 text-[16px] font-medium">
-              Đây là sản phẩm mẫu không bán
-            </p>
-          )}
-
-          <p className="mt-3 text-[16px] font-medium">
-            {product.short_description || "Không có mô tả"}
-          </p>
-
-          {[1, 2, 3, 4].map((variantTypeId) => {
-            const variants = getVariantsByType(variantTypeId);
-            if (variants.length === 0) return null;
-
-            return (
-              <div className="mt-4" key={variantTypeId}>
-                <p className="text-[#A3A3A3]">
-                  {getVariantTypeName(variantTypeId)}
-                </p>
-                <div className="flex flex-wrap gap-4 mt-1">
-                  {variants.map((variant) => {
-                    if (!variant) {
-                      console.log(`Bỏ qua variant không hợp lệ:`, variant);
-                      return null;
-                    }
-
-                    const isSelected =
-                      selectedVariants[variantTypeId] ===
-                      variant.variant_value_id;
-                    const inStock = isVariantInStock(variant);
-
-                    const isAvailable = isVariantAvailable();
-
-                    if (variantTypeId === 1) {
-                      let bgColor = "gray";
-                      const variantValue =
-                        variant.variant_value?.value ||
-                        variant.variant_value_name ||
-                        "";
-                      const colorValue =
-                        typeof variantValue === "string"
-                          ? variantValue.toLowerCase()
-                          : "";
-
-                      console.log(`Màu sắc: ${colorValue}`, variant);
-
-                      if (colorValue.includes("đỏ")) bgColor = "red";
-                      else if (colorValue.includes("xanh")) bgColor = "blue";
-                      else if (colorValue.includes("đen")) bgColor = "black";
-                      else if (colorValue.includes("trắng")) bgColor = "white";
-                      else if (colorValue.includes("vàng")) bgColor = "yellow";
-                      else if (colorValue.includes("cam")) bgColor = "orange";
-                      else if (colorValue.includes("tím")) bgColor = "purple";
-                      else if (colorValue.includes("hồng")) bgColor = "pink";
-                      else if (colorValue.includes("nâu")) bgColor = "brown";
-                      else if (colorValue.includes("xám")) bgColor = "gray";
+              {/* Gallery images */}
+              <div className="mt-6">
+                <h3 className="text-sm font-medium text-gray-600 mb-2 uppercase tracking-wide">
+                  Thư viện ảnh
+                </h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {product.gallery && product.gallery.length > 0 ? (
+                    product.gallery.map((item, index) => {
+                      const galleryImageUrl = item.image_url
+                        ? item.image_url.startsWith("http")
+                          ? item.image_url
+                          : `${baseURL}storage/${item.image_url}`
+                        : "https://via.placeholder.com/100x100?text=No+Image";
 
                       return (
                         <div
-                          key={variant.id || `color-${Math.random()}`}
-                          className={`w-[30px] h-[30px] rounded-[50%] cursor-pointer ${
-                            isSelected
-                              ? "ring-2 ring-offset-2 ring-blue-500"
-                              : "border"
-                          } ${!inStock ? "opacity-50 cursor-not-allowed" : ""}`}
-                          title={`${variantValue || "Không xác định"} ${
-                            !inStock ? "(Hết hàng)" : ""
+                          key={index}
+                          className={`relative border-2 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 ${
+                            selectedImage === galleryImageUrl
+                              ? "border-green-500 shadow-md"
+                              : "border-gray-200 hover:border-gray-300"
                           }`}
-                          onClick={() => {
-                            if (inStock) {
-                              handleVariantSelect(
-                                variantTypeId,
-                                variant.variant_value_id,
-                                variant
-                              );
-                            }
-                          }}
-                          style={{
-                            backgroundColor: bgColor,
-                            border:
-                              bgColor === "white" ? "1px solid #ddd" : "none",
-                          }}
+                          onClick={() =>
+                            handleGalleryImageClick(galleryImageUrl)
+                          }
+                        >
+                          <div className="aspect-w-1 aspect-h-1">
+                            <img
+                              src={galleryImageUrl}
+                              alt={`Ảnh ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                console.log(
+                                  `Gallery Image ${index + 1} Load Error:`,
+                                  e
+                                );
+                                e.target.src =
+                                  "https://via.placeholder.com/100x100?text=Error";
+                              }}
+                            />
+                          </div>
+                          {selectedImage === galleryImageUrl && (
+                            <div className="absolute inset-0 bg-green-500 bg-opacity-10 flex items-center justify-center">
+                              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                                <span className="text-white text-[8px]">✓</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="col-span-5 text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 mx-auto text-gray-400 mb-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                         />
-                      );
-                    } else if (variantTypeId === 2) {
-                      const sizeValue =
-                        variant.variant_value?.value ||
-                        variant.variant_value_name ||
-                        "";
-                      const sizeLabel =
-                        typeof sizeValue === "string"
-                          ? sizeValue
-                          : "Không xác định";
-
-                      console.log(`Kích thước: ${sizeLabel}`, variant);
-
-                      return (
-                        <div
-                          key={variant.id || `size-${Math.random()}`}
-                          className={`px-6 py-2 border rounded-md cursor-pointer ${
-                            isSelected
-                              ? "bg-blue-500 text-white"
-                              : "hover:bg-gray-100"
-                          } ${
-                            !inStock
-                              ? "opacity-50 cursor-not-allowed bg-gray-200 hover:bg-gray-200"
-                              : ""
-                          }`}
-                          onClick={() => {
-                            if (inStock) {
-                              handleVariantSelect(
-                                variantTypeId,
-                                variant.variant_value_id,
-                                variant
-                              );
-                            }
-                          }}
-                          title={!inStock ? "Hết hàng" : ""}
-                        >
-                          {sizeLabel}
-                        </div>
-                      );
-                    } else {
-                      const otherValue =
-                        variant.variant_value?.value ||
-                        variant.variant_value_name ||
-                        "";
-                      const otherLabel =
-                        typeof otherValue === "string"
-                          ? otherValue
-                          : "Không xác định";
-
-                      return (
-                        <div
-                          key={variant.id || `variant-${Math.random()}`}
-                          className={`px-3 py-1 border rounded-md cursor-pointer ${
-                            isSelected
-                              ? "bg-blue-500 text-white"
-                              : "hover:bg-gray-100"
-                          } ${
-                            !inStock
-                              ? "opacity-50 cursor-not-allowed bg-gray-200 hover:bg-gray-200"
-                              : ""
-                          }`}
-                          onClick={() => {
-                            if (inStock) {
-                              handleVariantSelect(
-                                variantTypeId,
-                                variant.variant_value_id,
-                                variant
-                              );
-                            }
-                          }}
-                          title={!inStock ? "Hết hàng" : ""}
-                        >
-                          {otherLabel}
-                        </div>
-                      );
-                    }
-                  })}
+                      </svg>
+                      <span className="text-sm text-gray-500">
+                        Không có ảnh bổ sung
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
-            );
-          })}
+            </div>
 
-          {error && <div className="mt-2 text-red-500 text-sm">{error}</div>}
+            {/* Details Section */}
+            <div className="lg:w-1/2 lg:pl-10 mt-6 lg:mt-0">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-gray-800 leading-tight mb-4">
+                {product.name || "Tên sản phẩm"}
+              </h1>
 
-          <div className="mt-8 flex pb-8">
-            <div className="grid grid-cols-3 w-[123px] h-[44px] border border-[#A3A3A3] rounded-[5px]">
-              <button
-                className="justify-center flex items-center"
-                onClick={increaseQuantity}
-              >
-                +
-              </button>
-              <p className="flex justify-center items-center">{quantity}</p>
-              <button
-                className="justify-center flex items-center"
-                onClick={decreaseQuantity}
-              >
-                -
-              </button>
-            </div>
-            <div>
-              <button
-                className="justify-center flex items-center border border-[#CA8A04] rounded-[5px] w-[215px] h-[44px] ml-3 text-[#CA8A04] hover:bg-yellow-50"
-                onClick={handleAddToCart}
-              >
-                Add To Cart
-              </button>
-            </div>
-            <div>
-              <button
-                className="justify-center flex items-center border border-[#262626] rounded-[5px] w-[215px] h-[44px] ml-3 text-[#262626] hover:bg-gray-50"
-                onClick={handleAddToWishlist}
-              >
-                Add to wish list
-              </button>
-            </div>
-          </div>
-          <div className="w-full mx-auto">
-            <button
-              className="w-full border rounded-md mx-auto py-2 font-semibold hover:bg-yellow-200"
-              onClick={handleBuyNow}
-            >
-              Buy now
-            </button>
-          </div>
-          <div className="mt-3">
-            <div className="text-[#A3A3A3] text-[16px] mb-3">
-              Danh mục:{" "}
-              {product.category
-                ? typeof product.category === "string"
-                  ? product.category
-                  : product.category.name || "Không xác định"
-                : "Không xác định"}
-            </div>
-            <div className="text-[#A3A3A3] text-[16px] mb-3">
-              Số lượng :{" "}
-              {product.variants && Array.isArray(product.variants)
-                ? product.variants.reduce(
-                    (sum, v) => sum + (v.quantity || 0),
-                    0
-                  )
-                : product.quantity || 0}
+              <div className="flex items-center mt-6">
+                {currentDiscount &&
+                  currentPrice &&
+                  Number(currentDiscount) !== Number(currentPrice) && (
+                    <span className="text-gray-500 line-through mr-2">
+                      {formatPrice(currentPrice)}
+                    </span>
+                  )}
+                <span className="text-2xl font-semibold text-green-600">
+                  {currentDiscount
+                    ? formatPrice(currentDiscount)
+                    : currentPrice
+                    ? formatPrice(currentPrice)
+                    : formatPrice(product.price)}
+                </span>
+              </div>
+
+              {isSampleProduct && (
+                <p className="mt-4 text-red-500 font-medium">
+                  Đây là sản phẩm mẫu không bán
+                </p>
+              )}
+
+              <p className="mt-4 text-gray-600">
+                {product.short_description || "Không có mô tả"}
+              </p>
+
+              {/* Variants Section */}
+              <div className="mt-6 space-y-4">
+                {[1, 2, 3, 4].map((variantTypeId) => {
+                  const variants = getVariantsByType(variantTypeId);
+                  if (variants.length === 0) return null;
+
+                  return (
+                    <div className="mt-4" key={variantTypeId}>
+                      <p className="text-gray-700 font-medium">
+                        {getVariantTypeName(variantTypeId)}:
+                      </p>
+                      <div className="flex flex-wrap gap-3 mt-2">
+                        {variants.map((variant) => {
+                          if (!variant) return null;
+
+                          const isSelected =
+                            selectedVariants[variantTypeId] ===
+                            variant.variant_value_id;
+                          const inStock = isVariantInStock(variant);
+
+                          if (variantTypeId === 1) {
+                            // Màu sắc
+                            let bgColor = "gray";
+                            const variantValue =
+                              variant.variant_value?.value ||
+                              variant.variant_value_name ||
+                              "";
+                            const colorValue =
+                              typeof variantValue === "string"
+                                ? variantValue.toLowerCase()
+                                : "";
+
+                            if (colorValue.includes("đỏ")) bgColor = "red";
+                            else if (colorValue.includes("xanh"))
+                              bgColor = "blue";
+                            else if (colorValue.includes("đen"))
+                              bgColor = "black";
+                            else if (colorValue.includes("trắng"))
+                              bgColor = "white";
+                            else if (colorValue.includes("vàng"))
+                              bgColor = "yellow";
+                            else if (colorValue.includes("cam"))
+                              bgColor = "orange";
+                            else if (colorValue.includes("tím"))
+                              bgColor = "purple";
+                            else if (colorValue.includes("hồng"))
+                              bgColor = "pink";
+                            else if (colorValue.includes("nâu"))
+                              bgColor = "brown";
+                            else if (colorValue.includes("xám"))
+                              bgColor = "gray";
+
+                            return (
+                              <div
+                                key={variant.id || `color-${Math.random()}`}
+                                className={`w-8 h-8 rounded-full cursor-pointer border shadow transition-all duration-300 ${
+                                  isSelected
+                                    ? "ring-2 ring-offset-2 ring-green-500 scale-110"
+                                    : "hover:scale-105"
+                                } ${
+                                  !inStock
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                }`}
+                                title={`${variantValue || "Không xác định"} ${
+                                  !inStock ? "(Hết hàng)" : ""
+                                }`}
+                                onClick={() => {
+                                  if (inStock) {
+                                    handleVariantSelect(
+                                      variantTypeId,
+                                      variant.variant_value_id,
+                                      variant
+                                    );
+                                  }
+                                }}
+                                style={{
+                                  backgroundColor: bgColor,
+                                  border:
+                                    bgColor === "white"
+                                      ? "1px solid #ddd"
+                                      : "none",
+                                }}
+                              ></div>
+                            );
+                          } else if (variantTypeId === 2) {
+                            // Kích thước
+                            const sizeValue =
+                              variant.variant_value?.value ||
+                              variant.variant_value_name ||
+                              "";
+                            const sizeLabel =
+                              typeof sizeValue === "string"
+                                ? sizeValue
+                                : "Không xác định";
+
+                            return (
+                              <div
+                                key={variant.id || `size-${Math.random()}`}
+                                className={`px-4 py-2 border rounded-md cursor-pointer shadow-sm text-center min-w-[40px] transition-all duration-300 ${
+                                  isSelected
+                                    ? "bg-green-600 text-white font-semibold shadow-md transform scale-105"
+                                    : "hover:bg-gray-100 hover:border-gray-400"
+                                } ${
+                                  !inStock
+                                    ? "opacity-50 cursor-not-allowed bg-gray-200 hover:bg-gray-200"
+                                    : ""
+                                }`}
+                                onClick={() => {
+                                  if (inStock) {
+                                    handleVariantSelect(
+                                      variantTypeId,
+                                      variant.variant_value_id,
+                                      variant
+                                    );
+                                  }
+                                }}
+                                title={!inStock ? "Hết hàng" : ""}
+                              >
+                                {sizeLabel}
+                              </div>
+                            );
+                          } else {
+                            // Các loại biến thể khác
+                            const otherValue =
+                              variant.variant_value?.value ||
+                              variant.variant_value_name ||
+                              "";
+                            const otherLabel =
+                              typeof otherValue === "string"
+                                ? otherValue
+                                : "Không xác định";
+
+                            return (
+                              <div
+                                key={variant.id || `variant-${Math.random()}`}
+                                className={`px-3 py-1 border rounded-md cursor-pointer ${
+                                  isSelected
+                                    ? "bg-green-600 text-white"
+                                    : "hover:bg-gray-100"
+                                } ${
+                                  !inStock
+                                    ? "opacity-50 cursor-not-allowed bg-gray-200 hover:bg-gray-200"
+                                    : ""
+                                }`}
+                                onClick={() => {
+                                  if (inStock) {
+                                    handleVariantSelect(
+                                      variantTypeId,
+                                      variant.variant_value_id,
+                                      variant
+                                    );
+                                  }
+                                }}
+                                title={!inStock ? "Hết hàng" : ""}
+                              >
+                                {otherLabel}
+                              </div>
+                            );
+                          }
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {error && (
+                <div className="mt-2 text-red-500 text-sm">{error}</div>
+              )}
+
+              {/* Quantity Section */}
+              <div className="flex items-center mt-6">
+                <div className="flex border border-gray-300 rounded-full overflow-hidden">
+                  <button
+                    className="bg-gray-200 text-gray-700 px-3 py-1 hover:bg-gray-300 transition"
+                    onClick={decreaseQuantity}
+                    disabled={quantity <= 1}
+                  >
+                    -
+                  </button>
+                  <input
+                    type="text"
+                    value={quantity}
+                    readOnly
+                    className="w-12 text-center border-x border-gray-200 bg-white"
+                  />
+                  <button
+                    className="bg-gray-200 text-gray-700 px-3 py-1 hover:bg-gray-300 transition"
+                    onClick={increaseQuantity}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Add to Cart and Wishlist Buttons - Same Row with Black Background */}
+              <div className="flex gap-4 mt-4">
+                <button
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
+                  onClick={handleAddToCart}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                  THÊM VÀO GIỎ HÀNG
+                </button>
+              </div>
+
+              {/* Buy Now Button - Below */}
+              <div className="mt-4">
+                <button
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-full font-bold shadow-lg transform transition duration-300 hover:scale-[1.02] hover:shadow-xl hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
+                  onClick={handleBuyNow}
+                >
+                  MUA NGAY
+                </button>
+              </div>
+
+              {/* Additional Information */}
+              <div className="mt-6">
+                <p className="text-gray-600">
+                  Danh mục:{" "}
+                  {product.category
+                    ? typeof product.category === "string"
+                      ? product.category
+                      : product.category.name || "Không xác định"
+                    : "Không xác định"}
+                </p>
+                <p className="text-gray-600">
+                  Số lượng:{" "}
+                  {product.variants && Array.isArray(product.variants)
+                    ? product.variants.reduce(
+                        (sum, v) => sum + (v.quantity || 0),
+                        0
+                      )
+                    : product.quantity || 0}
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-4">
-        <ul className="flex gap-x-16 mb-4">
-          <li className="text-[20px] font-semibold text-[#000000]">
-            <Link to="/">Comment</Link>
-          </li>
+        {/* Comment Section (Keep Existing) */}
+        <div className="mt-12 px-6">
+          {/* Tab Navigation */}
+          <ul className="flex border-b border-gray-200 mb-8 gap-x-8">
+            <li className="mr-0">
+              <button className="py-3 px-1 border-b-2 border-green-600 font-semibold text-green-600 relative">
+                Bình luận
+                {comments.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {comments.length}
+                  </span>
+                )}
+              </button>
+            </li>
+            <li className="mr-0">
+              <button className="py-3 px-1 text-gray-500 hover:text-gray-700 transition duration-200">
+                Thông tin thêm
+              </button>
+            </li>
+            <li className="mr-0">
+              <button className="py-3 px-1 text-gray-500 hover:text-gray-700 transition duration-200">
+                Mô tả
+              </button>
+            </li>
+          </ul>
 
-          <li className="text-[20px] font-semibold text-[#A3A3A3]">
-            <Link to="/">Additional Information</Link>
-          </li>
-
-          <li className="text-[20px] font-semibold text-[#A3A3A3]">
-            <Link to="/">Description</Link>
-          </li>
-        </ul>
-
-        <div className="mt-4">
-          <h3 className="font-semibold text-xl mb-4">Bình luận</h3>
-
-          {isLoggedIn && currentUser ? (
-            <div className="flex justify-between items-center border p-4 rounded-md mb-6">
-              <div className="flex items-center gap-4 w-full">
-                {/* <img
-                  src={currentUser?.avatar || "https://via.placeholder.com/40"}
-                  alt="User avatar"
-                  className="w-10 h-10 rounded-full object-cover"
-                /> */}
-                <input
-                  type="text"
-                  className="flex-1 p-2 border rounded-md outline-none"
-                  placeholder="Nhập đánh giá của bạn ở đây"
-                  value={commentInput}
-                  onChange={(e) => setCommentInput(e.target.value)}
-                  onFocus={() => checkAuthentication()}
+          <div className="mt-8">
+            <h3 className="font-semibold text-xl mb-6 text-gray-800 flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 mr-2 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
                 />
-                <button
-                  className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                  onClick={handleCommentSubmit}
+              </svg>
+              Bình luận khách hàng
+            </h3>
+
+            {isLoggedIn && currentUser ? (
+              <div className="mb-10 bg-white rounded-lg shadow-sm overflow-hidden">
+                <form
+                  className="w-full divide-y divide-gray-100"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleCommentSubmit();
+                  }}
                 >
-                  Gửi
-                </button>
+                  {showFeedback && (
+                    <div
+                      className={`p-4 rounded-lg mb-4 ${
+                        feedbackType === "success"
+                          ? "bg-green-50 text-green-700 border-l-4 border-green-500"
+                          : "bg-red-50 text-red-700 border-l-4 border-red-500"
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className={`h-5 w-5 mr-2 ${
+                            feedbackType === "success"
+                              ? "text-green-500"
+                              : "text-red-500"
+                          }`}
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          {feedbackType === "success" ? (
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          ) : (
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
+                          )}
+                        </svg>
+                        {feedbackMessage}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="px-6 pt-5 pb-4">
+                    <div className="flex items-center mb-3">
+                      {currentUser?.avatar ? (
+                        <img
+                          src={currentUser.avatar}
+                          alt="Avatar"
+                          className="w-10 h-10 rounded-full object-cover mr-3 border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-semibold mr-3">
+                          {currentUser?.name?.charAt(0) || "U"}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-gray-700">
+                          {currentUser?.name || "Người dùng"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {currentUser?.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <textarea
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                      rows="3"
+                      placeholder="Chia sẻ cảm nhận của bạn về sản phẩm này..."
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      onFocus={() => checkAuthentication()}
+                    ></textarea>
+                  </div>
+
+                  <div className="flex items-center justify-between px-6 py-3 bg-gray-50">
+                    <div className="text-xs text-gray-500">
+                      <span className="mr-1">💬</span> Bình luận sẽ được hiển
+                      thị công khai
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!commentInput.trim()}
+                      className={`px-5 py-2 bg-green-600 text-white rounded-md text-sm font-medium transition ${
+                        !commentInput.trim()
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-green-700"
+                      }`}
+                    >
+                      Gửi bình luận
+                    </button>
+                  </div>
+                </form>
               </div>
-            </div>
-          ) : (
-            <div className="text-center p-4 bg-gray-50 rounded-md mb-6">
-              <p>
-                Vui lòng{" "}
+            ) : (
+              <div className="text-center p-8 bg-gray-50 rounded-lg mb-8 border border-gray-100 shadow-sm">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-10 w-10 mx-auto text-gray-400 mb-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+                <p className="text-gray-600 mb-4">
+                  Bạn cần đăng nhập để bình luận về sản phẩm này
+                </p>
                 <Link
                   to="/signin"
                   state={{ returnUrl: location.pathname }}
-                  className="text-blue-500 hover:underline"
+                  className="inline-block px-5 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition"
                   onClick={() => {
-                    // Lưu đường dẫn hiện tại để quay lại sau khi đăng nhập
                     localStorage.setItem("returnPath", location.pathname);
                   }}
                 >
-                  đăng nhập
-                </Link>{" "}
-                để bình luận
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {comments.length > 0 ? (
-              comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="flex gap-4 p-4 border rounded-md"
-                >
-                  <img
-                    src={
-                      comment.user?.avatar || "https://via.placeholder.com/40"
-                    }
-                    alt="User avatar"
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">
-                        {comment.user?.name || "Người dùng ẩn danh"}
-                      </h4>
-                      <span className="text-gray-500 text-sm">
-                        {new Date(comment.created_at).toLocaleDateString(
-                          "vi-VN"
-                        )}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-gray-700">{comment.content}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-gray-500">
-                Chưa có bình luận nào.
-              </p>
+                  Đăng nhập ngay
+                </Link>
+              </div>
             )}
+
+            {/* Comment List */}
+            <div className="space-y-6">
+              {comments.length > 0 ? (
+                <>
+                  <h4 className="font-medium text-gray-500 mb-2">
+                    {comments.length} bình luận
+                  </h4>
+
+                  {comments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100"
+                    >
+                      <div className="p-5">
+                        <div className="flex items-start">
+                          {comment.user?.avatar ? (
+                            <img
+                              src={comment.user?.avatar}
+                              alt="User avatar"
+                              className="w-10 h-10 rounded-full object-cover mr-4 border border-gray-200"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold mr-4">
+                              {comment.user?.name?.charAt(0) || "U"}
+                            </div>
+                          )}
+
+                          <div className="flex-1">
+                            <div className="flex justify-between items-center mb-1">
+                              <h4 className="font-semibold text-gray-800">
+                                {comment.user?.name || "Người dùng ẩn danh"}
+                              </h4>
+                              <span className="text-xs text-gray-500">
+                                {new Date(
+                                  comment.created_at
+                                ).toLocaleDateString("vi-VN", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-gray-700">{comment.content}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-14 w-14 mx-auto text-gray-400 mb-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1}
+                      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                    />
+                  </svg>
+                  <p className="text-gray-500 text-lg mb-2">
+                    Chưa có bình luận nào
+                  </p>
+                  <p className="text-gray-400">
+                    Hãy là người đầu tiên bình luận về sản phẩm này
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+
+      <AddToCartToast
+        isVisible={showToast}
+        product={toastProduct}
+        onClose={() => setShowToast(false)}
+      />
+    </>
   );
 };
 

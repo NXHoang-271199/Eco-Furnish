@@ -43,17 +43,14 @@ function App() {
           <Route path="blogs" element={<Blogs />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
-          <Route path="blog-detail" element={<BlogsDetail />} />
+          <Route path="blog-detail/:slug" element={<BlogsDetail />} />
         </Route>
-        <Route path="signin" element={<SignIn />} />
-        <Route path="changepass" element={<ForgotPasswordModal />} />
-        <Route path="signup" element={<SignUp />} />
-
-        <Route path="verifyemail" element={< VerifyEmail />} />
-
+        <Route path="verifyemail" element={<VerifyEmail />} />
         <Route path="reset" element={<ResetPassword />} />
         <Route path="confirm" element={<ConfirmPassword />} />
         <Route path="emailverification" element={<EmailVerification />} />
+        <Route path="signin" element={<SignIn />} />
+        <Route path="signup" element={<SignUp />} />
         <Route path="account" element={<LayoutAccount />}>
           <Route path="account" element={<Account />} />
           <Route path="address" element={<Address />} />
