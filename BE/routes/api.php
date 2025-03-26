@@ -102,6 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Payment Method routes
 Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']);
 
 // Order routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -111,6 +112,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{id}/refund', [OrderController::class, 'refundOrder']); // Hoàn hàng
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
 });
-// Payment Routes (Internal use only)
-Route::post('/payment/process', [PaymentController::class, 'processPayment']);
-Route::post('/payment/callback', [PaymentController::class, 'paymentCallback'])->name('payment.callback');
+
