@@ -57,12 +57,14 @@
                                     <div class="card shadow-sm mb-4">
                                         <div class="card-body">
                                             <div class="d-flex align-items-center border-bottom">
-                                                @foreach ($order->orderItems as $item)
-                                                    <div class="col-md">
-                                                        <img src="{{ Storage::url($item->image_url) }}" width="40px"
-                                                            height="40px" alt="Product" class="img-fluid rounded">
-                                                    </div>
-                                                @endforeach
+                                                @if ($order->orderItems->isNotEmpty())
+                                                <div class="col-md">
+                                                    <img src="{{ Storage::url($order->orderItems->first()->image_url) }}"
+                                                    width= "80px" height="80px" alt="Product"
+                                                    >
+                                                </div>
+                                                @endif
+
                                                 <div class="col-md-9">
                                                     <p class="mb-1 ms-3">
                                                         Ngày xác nhận:
@@ -87,6 +89,13 @@
                                                             class="fw-bold">{{ $order->order_code }}</span></p>
                                                     <p class="mb-1 ms-3 text-muted">Tên người nhận: {{ $order->user_name }}
                                                     </p>
+                                                    <p class="mb-1 ms-3">
+                                                        Trạng thái thanh toán:
+                                                        <span
+                                                            class="fw-bold {{ $order->payment_status == 1 ? 'text-success' : 'text-danger' }}">
+                                                            {{ $order->payment_status == 1 ? 'Đã thanh toán' : 'Chưa thanh toán' }}
+                                                        </span>
+                                                    </p>
                                                     <p class="mb-1 ms-3 text-danger fw-600"><strong>Tổng tiền:
                                                             {{ number_format($order->total_price, 0, ',', '.') }}
                                                             đ</strong></p>
@@ -95,18 +104,38 @@
                                                     <form action="{{ route('order.updateStatus', $order->id) }}"
                                                         method="POST">
                                                         @csrf
-                                                        <input type="hidden" name="current_status" value="{{ $order->order_status }}">
-                                                        <select name="order_status" class="form-control fw-bold" onchange="this.form.submit()"
-                                                                {{ $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' ? 'disabled' : '' }}>
-                                                            <option value="Chưa Xác Nhận" {{ $order->order_status === 'Chưa Xác Nhận' ? 'selected' : '' }}>Chưa Xác Nhận</option>
-                                                            <option value="Đã Xác Nhận" {{ $order->order_status === 'Đã Xác Nhận' ? 'selected' : '' }}>Đã Xác Nhận</option>
-                                                            <option value="Đang Chuẩn Bị Hàng" {{ $order->order_status === 'Đang Chuẩn Bị Hàng' ? 'selected' : '' }}>Đang Chuẩn Bị Hàng</option>
-                                                            <option value="Đang Giao" {{ $order->order_status === 'Đang Giao' ? 'selected' : '' }}>Đang Giao</option>
-                                                            <option value="Đã Giao" {{ $order->order_status === 'Đã Giao' ? 'selected' : '' }}>Đã Giao</option>
-                                                            <option value="Đã Nhận" {{ $order->order_status === 'Đã Nhận' ? 'selected' : '' }}>Đã Nhận</option>
-                                                            <option value="Thành Công" {{ $order->order_status === 'Thành Công' ? 'selected' : '' }}>Thành Công</option>
-                                                            <option value="Hoàn Hàng" {{ $order->order_status === 'Hoàn Hàng' ? 'selected disabled' : '' }}>Hoàn Hàng</option>
-                                                            <option value="Hủy Đơn" {{ $order->order_status === 'Hủy Đơn' ? 'selected disabled' : '' }}>Hủy Đơn</option>
+                                                        <input type="hidden" name="current_status"
+                                                            value="{{ $order->order_status }}">
+                                                        <select name="order_status" class="form-control fw-bold"
+                                                            onchange="this.form.submit()"
+                                                            {{ $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' ? 'disabled' : '' }}>
+                                                            <option value="Chưa Xác Nhận"
+                                                                {{ $order->order_status === 'Chưa Xác Nhận' ? 'selected' : '' }}>
+                                                                Chưa Xác Nhận</option>
+                                                            <option value="Đã Xác Nhận"
+                                                                {{ $order->order_status === 'Đã Xác Nhận' ? 'selected' : '' }}>
+                                                                Đã Xác Nhận</option>
+                                                            <option value="Đang Chuẩn Bị Hàng"
+                                                                {{ $order->order_status === 'Đang Chuẩn Bị Hàng' ? 'selected' : '' }}>
+                                                                Đang Chuẩn Bị Hàng</option>
+                                                            <option value="Đang Giao"
+                                                                {{ $order->order_status === 'Đang Giao' ? 'selected' : '' }}>
+                                                                Đang Giao</option>
+                                                            <option value="Đã Giao"
+                                                                {{ $order->order_status === 'Đã Giao' ? 'selected' : '' }}>
+                                                                Đã Giao</option>
+                                                            <option value="Đã Nhận"
+                                                                {{ $order->order_status === 'Đã Nhận' ? 'selected' : '' }}>
+                                                                Đã Nhận</option>
+                                                            <option value="Thành Công"
+                                                                {{ $order->order_status === 'Thành Công' ? 'selected' : '' }}>
+                                                                Thành Công</option>
+                                                            <option value="Hoàn Hàng"
+                                                                {{ $order->order_status === 'Hoàn Hàng' ? 'selected disabled' : '' }}>
+                                                                Hoàn Hàng</option>
+                                                            <option value="Hủy Đơn"
+                                                                {{ $order->order_status === 'Hủy Đơn' ? 'selected disabled' : '' }}>
+                                                                Hủy Đơn</option>
                                                         </select>
                                                     </form>
                                                 </div>
