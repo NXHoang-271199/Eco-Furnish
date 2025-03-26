@@ -295,7 +295,7 @@ class OrderController extends Controller
                 ], 404);
             }
 
-            if ($order->order_status !== 'Chưa Xác Nhận') {
+            if ($order->order_status !== 'Chưa Xác Nhận' && $order->order_status !== 'Đã Xác Nhận') {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Đơn hàng đã xử lý, không thể hủy'
