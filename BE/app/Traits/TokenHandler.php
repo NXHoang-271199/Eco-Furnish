@@ -17,7 +17,7 @@ trait TokenHandler
             $refreshTokenExpiry = now()->addDays(30);  // 30 ngày
         } else {
             // Thời gian token mặc định
-            $accessTokenExpiry = now()->addSeconds(20); // 30 phút
+            $accessTokenExpiry = now()->addMinutes(30); // 30 phút
             $refreshTokenExpiry = now()->addDays(7);    // 7 ngày
         }
         

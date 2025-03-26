@@ -81,50 +81,6 @@ class BreadcrumbServiceProvider extends ServiceProvider
                 ['name' => 'Chỉnh Sửa', 'url' => '']
             ],
 
-<<<<<<< HEAD
-    //         // Category Post Routes
-    //         'category-posts.index' => [
-    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
-    //             ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')]
-    //         ],
-    //         'category-posts.create' => [
-    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
-    //             ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')],
-    //             ['name' => 'Thêm Mới', 'url' => '']
-    //         ],
-    //         'category-posts.edit' => [
-    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
-    //             ['name' => 'Chuyên Mục Bài Viết', 'url' => route('category-posts.index')],
-    //             ['name' => 'Chỉnh Sửa', 'url' => '']
-    //         ],
-            
-    //         // Voucher Routes
-    //         'vouchers.index' => [
-    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
-    //             ['name' => 'Vouchers', 'url' => route('vouchers.index')]
-    //         ],
-    //         'vouchers.create' => [
-    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
-    //             ['name' => 'Vouchers', 'url' => route('vouchers.index')],
-    //             ['name' => 'Thêm Mới', 'url' => '']
-    //         ],
-    //         'vouchers.edit' => [
-    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
-    //             ['name' => 'Vouchers', 'url' => route('vouchers.index')],
-    //             ['name' => 'Chỉnh Sửa', 'url' => '']
-    //         ],
-
-    //         // Upload Image
-    //         'upload.image' => [
-    //             ['name' => 'Dashboard', 'url' => route('dashboard')],
-    //             ['name' => 'Tải Ảnh Lên', 'url' => '']
-    //         ],
-    //     ];
-
-    //     // Kiểm tra xem route có trong map không, nếu không thì tạo breadcrumb động
-    //     return $breadcrumbMap[$routeName] ?? $this->generateBreadcrumbsFromUrl();
-    // }
-=======
             // Category Post Routes
             'category-posts.index' => [
                 ['name' => 'Dashboard', 'url' => route('dashboard')],
@@ -167,7 +123,6 @@ class BreadcrumbServiceProvider extends ServiceProvider
         // Kiểm tra xem route có trong map không, nếu không thì tạo breadcrumb động
         return $breadcrumbMap[$routeName] ?? $this->generateBreadcrumbsFromUrl();
     }
->>>>>>> 7fe7595eb80974414ef43bb366c6187f7664871c
 
     /**
      * Generate breadcrumbs dynamically from the URL segments.
@@ -193,11 +148,6 @@ class BreadcrumbServiceProvider extends ServiceProvider
             $url .= '/' . $segment;
             $name = $translations[$segment] ?? ucfirst(str_replace('-', ' ', $segment)); // Dịch nếu có
 
-<<<<<<< HEAD
-    //     return $breadcrumbs;
-    // }
-}
-=======
             // Nếu segment là số (ID), kiểm tra và lấy tiêu đề bài viết
             if (is_numeric($segment) && request()->is('admin/posts/*')) {
                 $post = \App\Models\Post::find($segment);
@@ -233,4 +183,3 @@ class BreadcrumbServiceProvider extends ServiceProvider
         return $breadcrumbs;
     }
 }
->>>>>>> 7fe7595eb80974414ef43bb366c6187f7664871c

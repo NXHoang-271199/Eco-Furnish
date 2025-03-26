@@ -102,7 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Payment Method routes
 Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
-Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']);
+Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động 
 
 // Order routes
 Route::middleware('auth:sanctum')->group(function () {
