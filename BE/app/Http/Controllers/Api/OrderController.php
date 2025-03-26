@@ -128,7 +128,7 @@ class OrderController extends Controller
 
             $totalPrice = max(0, $subtotal - $discountAmount);
             $paymentMethod = PaymentMethod::find($request->payment_method_id)?->name;
-            $paymentStatus = ($paymentMethod === 'Tiền mặt') ? 0 : 1;
+            $paymentStatus = 0;
 
             // Tạo đơn hàng
             $order = Order::create([
@@ -178,22 +178,29 @@ class OrderController extends Controller
             // Xóa giỏ hàng
             $cart->cartItems()->delete();
 
-            // 🔥 **Di chuyển `VoucherUsage::create()` vào đây**
+            DB::commit();
+            // Xử lý thanh toán online (MoMo, VNPAY)
+            if (in_array($paymentMethod, ['MoMo', 'VNPAY'])) {
+                $paymentResponse = app(PaymentMethodController::class)->processPayment(new Request([
+                    'order_id' => $order->id,
+                    'order_code' => $order->order_code,
+                    'total_price' => $totalPrice,
+                    'payment_method' => $paymentMethod,
+                    'payment_method_id' => $order->payment_method_id
+                ]));
+
+                return $paymentResponse;
+            }
+            //
             if ($request->voucher_id) {
                 VoucherUsage::create(['user_id' => $userId, 'voucher_id' => $request->voucher_id]);
             }
 
-            DB::commit();
             // gửi mail xác nhận đơn hàng
-            Mail::to($order->user_email)->send(new OrderConfirmationMail($order, $discountAmount));
-            // Xử lý thanh toán nếu không phải tiền mặt
-            if ($paymentMethod === 'MoMo') {
-                return app(PaymentController::class)->processPayment(new Request([
-                    'order_id' => $order->id,
-                    'payment_method' => 'MoMo'
-                ]));
+            if ($paymentMethod === 'Tiền mặt') {
+                Mail::to($order->user_email)->send(new OrderConfirmationMail($order, $discountAmount));
             }
-
+            // Xử lý thanh toán nếu không phải tiền mặt
             return response()->json([
                 'status' => 'success',
                 'message' => 'Đơn hàng đã được tạo thành công',
@@ -208,81 +215,6 @@ class OrderController extends Controller
             ], 500);
         }
     }
-
-
-
-
-    /**
-     * 📌 4. Xác nhận thanh toán
-     */
-    public function confirmPayment($id)
-    {
-        try {
-            $order = Order::where('user_id', Auth::id())->findOrFail($id);
-
-            if ($order->payment_status == 1) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Đơn hàng đã được thanh toán trước đó'
-                ], 400);
-            }
-
-            $order->update([
-                'payment_status' => 1,
-                'order_status' => 'Đã Xác Nhận'
-            ]);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Thanh toán thành công'
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Lỗi khi xác nhận thanh toán',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // /**
-    //  * 📌 5. Tự động hủy đơn hàng nếu quá 15 phút chưa thanh toán
-    //  */
-    // public function cancelUnpaidOrders()
-    // {
-    //     try {
-    //         $expiredOrders = Order::where('payment_status', 0)
-    //             ->where('created_at', '<=', now()->subMinutes(15))
-    //             ->get();
-
-    //         foreach ($expiredOrders as $order) {
-    //             foreach ($order->orderItems as $item) {
-    //                 if ($item->product_variant_id) {
-    //                     $item->productVariant->increment('quantity', $item->quantity);
-    //                 } else {
-    //                     $item->product->increment('quantity', $item->quantity);
-    //                 }
-    //             }
-
-    //             $order->update([
-    //                 'order_status' => 'Hủy Đơn',
-    //                 'payment_status' => 2
-    //             ]);
-    //         }
-
-    //         return response()->json([
-    //             'status' => 'success',
-    //             'message' => 'Đã hủy đơn hàng chưa thanh toán quá lâu'
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Lỗi khi hủy đơn hàng',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-
     /**
      * 📌 6. Hoàn hàng
      */
@@ -363,7 +295,7 @@ class OrderController extends Controller
                 ], 404);
             }
 
-            if ($order->order_status !== 'Chưa Xác Nhận') {
+            if ($order->order_status !== 'Chưa Xác Nhận' && $order->order_status !== 'Đã Xác Nhận') {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Đơn hàng đã xử lý, không thể hủy'
