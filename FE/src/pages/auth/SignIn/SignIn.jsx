@@ -4,6 +4,7 @@ import { motion } from "framer-motion"; // npm install framer-motion để chạ
 import { useForm } from "react-hook-form";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { resetSocket } from "../../../utils/socketConfig";
 
 const SignIn = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,11 +59,17 @@ const SignIn = () => {
       }
 
       // Lưu token và userData vào localStorage
-      localStorage.setItem("token", token);
+      localStorage.setItem("authToken", token);
       localStorage.setItem("userData", JSON.stringify(userData));
 
+      // Khởi động lại socket connection
+      setTimeout(() => {
+        console.log("🔌 Khởi động lại kết nối socket sau đăng nhập...");
+        resetSocket();
+      }, 500);
+
       // Kiểm tra xem đã lưu token thành công chưa
-      console.log("Token đã lưu:", localStorage.getItem("token"));
+      console.log("Token đã lưu:", localStorage.getItem("authToken"));
       console.log("User data đã lưu:", localStorage.getItem("userData"));
 
       // Phát sự kiện để thông báo đăng nhập thành công cho các tab khác
@@ -72,7 +79,7 @@ const SignIn = () => {
       // Phát sự kiện storage để cập nhật các tab khác
       try {
         const storageEvent = new StorageEvent("storage", {
-          key: "token",
+          key: "authToken",
           newValue: token,
         });
         window.dispatchEvent(storageEvent);

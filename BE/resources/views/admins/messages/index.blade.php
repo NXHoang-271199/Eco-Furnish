@@ -53,101 +53,208 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentUserId = null;
     let socket = null;
+    let connectionAttempts = 0;
+    const maxConnectionAttempts = 3;
+    let adminToken = null;
+
+    // Lấy admin token ngay khi trang tải xong
+    adminToken = "{{ Auth::user()->createToken('admin-token')->plainTextToken }}";
+    console.log('Token admin được tạo:', adminToken.substring(0, 15) + '...');
+
+    // Debug info function
+    function addDebugInfo(message, type = 'info') {
+        console.log(`[DEBUG] ${message}`);
+        const debugDiv = document.createElement('div');
+        debugDiv.className = `alert alert-${type === 'error' ? 'danger' : 'info'} mt-2 mb-2 p-2 text-small`;
+        debugDiv.innerText = message;
+        debugDiv.style.fontSize = '12px';
+        chatBox.appendChild(debugDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
     // Kết nối đến Socket.IO server
     function connectToSocket() {
-        socket = io("http://127.0.0.1:3001", {
-            transports: ["websocket"]
-        });
+        connectionStatus.textContent = "Đang kết nối...";
+        connectionStatus.classList.remove('bg-success', 'bg-danger');
+        connectionStatus.classList.add('bg-warning');
 
-        // Sự kiện kết nối thành công
-        socket.on("connect", () => {
-            console.log("Đã kết nối đến Socket.IO server");
-            connectionStatus.textContent = "Đã kết nối";
-            connectionStatus.classList.remove('bg-warning', 'bg-danger');
-            connectionStatus.classList.add('bg-success');
+        addDebugInfo("Đang kết nối đến socket server 3002...");
 
-            // Đăng ký là admin
-            socket.emit("adminConnect", {
-                name: "Admin {{ Auth::user()->name ?? 'Administrator' }}",
-                id: socket.id
+        try {
+            // Thử tất cả các cách kết nối có thể
+            const possibleUrls = [
+                'http://localhost:3002',
+                'http://127.0.0.1:3002'
+            ];
+
+            // Chọn URL đầu tiên trong danh sách
+            const serverUrl = possibleUrls[0];
+            addDebugInfo(`Đang thử kết nối đến: ${serverUrl}`);
+
+            socket = io(serverUrl, {
+                transports: ['polling', 'websocket'], // Dùng polling trước, sau đó mới dùng websocket
+                auth: {
+                    token: adminToken,
+                    userId: "{{ Auth::id() }}",
+                    role: "admin"
+                },
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                timeout: 20000,
+                forceNew: true,
+                withCredentials: false
             });
-        });
 
-        // Sự kiện ngắt kết nối
-        socket.on("disconnect", () => {
-            console.log("Mất kết nối đến Socket.IO server");
-            connectionStatus.textContent = "Mất kết nối";
-            connectionStatus.classList.remove('bg-success', 'bg-warning');
-            connectionStatus.classList.add('bg-danger');
+            // Sự kiện kết nối thành công
+            socket.on("connect", () => {
+                console.log("Đã kết nối đến Socket.IO server");
+                addDebugInfo(`Socket đã kết nối: ${socket.id}`);
+                connectionStatus.textContent = "Đã kết nối";
+                connectionStatus.classList.remove('bg-warning', 'bg-danger');
+                connectionStatus.classList.add('bg-success');
+                connectionAttempts = 0;
 
-            userList.innerHTML = '<li class="list-group-item text-center text-muted">Đang kết nối lại...</li>';
-            disableChat();
-        });
-
-        // Nhận danh sách người dùng hiện tại
-        socket.on("currentUsers", (users) => {
-            updateUserList(users);
-        });
-
-        // Người dùng mới kết nối
-        socket.on("newClientConnected", (user) => {
-            console.log("Người dùng mới kết nối:", user);
-
-            // Thêm người dùng vào danh sách nếu chưa có
-            if (!document.getElementById(`user-${user.id}`)) {
-                addUserToList(user);
-            }
-        });
-
-        // Người dùng ngắt kết nối
-        socket.on("clientDisconnected", (data) => {
-            console.log("Người dùng ngắt kết nối:", data);
-
-            const userElement = document.getElementById(`user-${data.userId}`);
-            if (userElement) {
-                userElement.remove();
-            }
-
-            // Nếu không còn người dùng nào
-            if (userList.children.length === 0) {
-                userList.innerHTML = '<li class="list-group-item text-center text-muted">Chưa có người dùng kết nối</li>';
-            }
-
-            // Nếu người dùng đang chat bị ngắt kết nối
-            if (currentUserId === data.userId) {
-                chatBox.innerHTML += `
-                    <div class="alert alert-warning text-center">
-                        Người dùng đã ngắt kết nối
-                    </div>
-                `;
-                disableChat();
-            }
-        });
-
-        // Nhận tin nhắn từ client
-        socket.on("newClientMessage", (message) => {
-            console.log("Tin nhắn mới từ client:", message);
-
-            // Nếu đang chat với người dùng này
-            if (currentUserId === message.userId) {
-                addMessageToChat(message, 'client');
-            } else {
-                // Hiển thị thông báo có tin nhắn mới
-                const userElement = document.getElementById(`user-${message.userId}`);
-                if (userElement) {
-                    userElement.classList.add('list-group-item-warning');
-
-                    // Thêm badge thông báo nếu chưa có
-                    if (!userElement.querySelector('.new-message-badge')) {
-                        const badge = document.createElement('span');
-                        badge.className = 'badge bg-danger float-end new-message-badge';
-                        badge.textContent = 'Mới';
-                        userElement.appendChild(badge);
+                // Đăng ký là admin
+                addDebugInfo("Đang đăng ký với vai trò admin...");
+                socket.emit("adminConnect", { token: adminToken }, (response) => {
+                    if (response && response.success) {
+                        addDebugInfo("✅ Đăng ký admin thành công");
+                    } else {
+                        addDebugInfo("❌ Đăng ký admin thất bại", "error");
+                        reconnectWithDelay();
                     }
+                });
+            });
+
+            // Thêm hàm retry kết nối
+            function reconnectWithDelay() {
+                if (connectionAttempts < maxConnectionAttempts) {
+                    connectionAttempts++;
+                    const delay = connectionAttempts * 2000; // Tăng thời gian delay mỗi lần thử
+                    addDebugInfo(`Đang thử kết nối lại sau ${delay/1000}s (lần ${connectionAttempts})...`);
+                    setTimeout(connectToSocket, delay);
+                } else {
+                    addDebugInfo("❌ Đã vượt quá số lần thử kết nối. Vui lòng tải lại trang.", "error");
                 }
             }
-        });
+
+            // Sự kiện ngắt kết nối
+            socket.on("disconnect", (reason) => {
+                console.log("Mất kết nối đến Socket.IO server:", reason);
+                addDebugInfo(`⚠️ Mất kết nối đến socket server (${reason})`, "error");
+                connectionStatus.textContent = "Mất kết nối";
+                connectionStatus.classList.remove('bg-success', 'bg-warning');
+                connectionStatus.classList.add('bg-danger');
+
+                userList.innerHTML = '<li class="list-group-item text-center text-muted">Đang kết nối lại...</li>';
+                disableChat();
+
+                if (reason === 'io server disconnect' || reason === 'transport close') {
+                    reconnectWithDelay();
+                }
+            });
+
+            // Sự kiện lỗi kết nối
+            socket.on("connect_error", (error) => {
+                console.error("Lỗi kết nối socket:", error.message);
+                addDebugInfo(`❌ Lỗi kết nối: ${error.message}`, "error");
+                connectionStatus.textContent = "Lỗi kết nối";
+                connectionStatus.classList.remove('bg-success', 'bg-warning');
+                connectionStatus.classList.add('bg-danger');
+
+                // Thử kết nối lại với polling nếu websocket thất bại
+                if (error.message.includes('websocket')) {
+                    addDebugInfo("⚠️ Websocket thất bại, đang thử lại với polling...");
+                    socket.io.opts.transports = ['polling', 'websocket'];
+                }
+
+                reconnectWithDelay();
+            });
+
+            // Nhận danh sách người dùng hiện tại
+            socket.on("currentUsers", (users) => {
+                console.log("Nhận danh sách users:", users);
+                addDebugInfo(`Đã nhận danh sách ${users.length} người dùng online`);
+                updateUserList(users);
+            });
+
+            // Người dùng mới kết nối
+            socket.on("newClientConnected", (user) => {
+                console.log("Người dùng mới kết nối:", user);
+                addDebugInfo(`Người dùng mới kết nối: ${user.name || 'Không tên'} (${user.userId})`);
+
+                // Thêm người dùng vào danh sách nếu chưa có
+                if (!document.getElementById(`user-${user.userId}`)) {
+                    addUserToList(user);
+                }
+            });
+
+            // Người dùng ngắt kết nối
+            socket.on("clientDisconnected", (data) => {
+                console.log("Người dùng ngắt kết nối:", data);
+                addDebugInfo(`Người dùng ngắt kết nối: ${data.userId}`);
+
+                const userElement = document.getElementById(`user-${data.userId}`);
+                if (userElement) {
+                    userElement.remove();
+                }
+
+                // Nếu không còn người dùng nào
+                if (userList.children.length === 0) {
+                    userList.innerHTML = '<li class="list-group-item text-center text-muted">Chưa có người dùng kết nối</li>';
+                }
+
+                // Nếu người dùng đang chat bị ngắt kết nối
+                if (currentUserId === data.userId) {
+                    chatBox.innerHTML += `
+                        <div class="alert alert-warning text-center">
+                            Người dùng đã ngắt kết nối
+                        </div>
+                    `;
+                    disableChat();
+                }
+            });
+
+            // Nhận tin nhắn từ client
+            socket.on("newClientMessage", (message) => {
+                console.log("Tin nhắn mới từ client:", message);
+                addDebugInfo(`Tin nhắn mới từ client: ${message.sender_id}, nội dung: ${message.text}`);
+
+                // Nếu đang chat với người dùng này
+                if (currentUserId === message.sender_id) {
+                    addMessageToChat(message, 'client');
+                } else {
+                    // Hiển thị thông báo có tin nhắn mới
+                    const userElement = document.getElementById(`user-${message.sender_id}`);
+                    if (userElement) {
+                        userElement.classList.add('list-group-item-warning');
+
+                        // Thêm badge thông báo nếu chưa có
+                        if (!userElement.querySelector('.new-message-badge')) {
+                            const badge = document.createElement('span');
+                            badge.className = 'badge bg-danger float-end new-message-badge';
+                            badge.textContent = 'Mới';
+                            userElement.appendChild(badge);
+                        }
+                    } else {
+                        // Nếu người dùng không có trong danh sách, cần tải lại danh sách
+                        addDebugInfo(`Không tìm thấy user ${message.sender_id} trong danh sách, yêu cầu danh sách mới`);
+                        socket.emit("adminConnect"); // Yêu cầu danh sách users mới
+                    }
+                }
+            });
+
+            // Tin nhắn lỗi từ server
+            socket.on("error", (data) => {
+                console.error("Lỗi từ server:", data.message);
+                addDebugInfo(`❌ Lỗi từ server: ${data.message}`, "error");
+            });
+        } catch (error) {
+            console.error("Lỗi khởi tạo socket:", error);
+            addDebugInfo(`❌ Lỗi khởi tạo socket: ${error.message}`, "error");
+            reconnectWithDelay();
+        }
     }
 
     // Cập nhật danh sách người dùng
@@ -171,11 +278,17 @@ document.addEventListener('DOMContentLoaded', function() {
             emptyNotice.remove();
         }
 
+        // Debug để xem cấu trúc user object
+        console.log("Thêm user vào danh sách:", user);
+
+        const userId = user.userId || user.id; // Hỗ trợ cả 2 trường hợp userId hoặc id
+        const name = user.name || 'Khách hàng không rõ';
+
         const li = document.createElement('li');
-        li.id = `user-${user.id}`;
+        li.id = `user-${userId}`;
         li.className = 'list-group-item d-flex justify-content-between align-items-center user-item';
         li.innerHTML = `
-            <span>${user.name || 'Khách hàng không rõ'}</span>
+            <span>${name}</span>
             <span class="badge bg-primary">${new Date().toLocaleTimeString()}</span>
         `;
 
@@ -194,29 +307,114 @@ document.addEventListener('DOMContentLoaded', function() {
             li.classList.add('active');
 
             // Lưu user_id hiện tại
-            currentUserId = user.id;
+            currentUserId = userId;
 
             // Hiển thị tên người dùng đang chat
-            chattingWith.textContent = user.name || 'Khách hàng không rõ';
+            chattingWith.textContent = name;
 
             // Kích hoạt ô nhập tin nhắn
             enableChat();
 
-            // Tải tin nhắn cũ (nếu có)
-            loadMessages(user.id);
+            // Tải tin nhắn cũ
+            loadMessages(userId);
         });
 
         userList.appendChild(li);
     }
 
-    // Tải tin nhắn cũ
-    function loadMessages(userId) {
+    // Chọn người dùng để chat
+    function selectUser(userId, userName) {
+        currentUserId = userId;
+        chattingWith.textContent = userName;
         chatBox.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>Đang tải tin nhắn...</p></div>';
 
-        // Gọi API để lấy tin nhắn
-        fetch(`/api/messages/user/${userId}`)
-            .then(response => response.json())
-            .then(messages => {
+        // Xóa thông báo tin nhắn mới
+        const userElement = document.getElementById(`user-${userId}`);
+        if (userElement) {
+            userElement.classList.remove('list-group-item-warning');
+            const badgeElement = userElement.querySelector('.new-message-badge');
+            if (badgeElement) {
+                badgeElement.remove();
+            }
+        }
+
+        // Kích hoạt chat
+        enableChat();
+
+        // Tải tin nhắn cũ
+        loadMessages(userId);
+    }
+
+    // Tải tin nhắn cũ
+    async function loadMessages(userId) {
+        if (!userId) {
+            addDebugInfo("❌ Không có userId để tải tin nhắn", "error");
+            return;
+        }
+
+        chatBox.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>Đang tải tin nhắn...</p></div>';
+
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        addDebugInfo(`User ID yêu cầu: ${userId}`);
+
+        async function tryLoadMessages() {
+            try {
+                // Gọi API để lấy tin nhắn
+                addDebugInfo(`Đang gọi API tin nhắn cho user ${userId}...`);
+
+                const apiUrl = `/api/messages/user/${userId}`;
+                addDebugInfo(`API URL: ${apiUrl}`);
+
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    credentials: 'include' // Thêm credentials
+                });
+
+                // Lấy response dưới dạng text để debug
+                const responseText = await response.text();
+
+                if (!response.ok) {
+                    addDebugInfo(`❌ Lỗi HTTP: ${response.status}`, "error");
+                    addDebugInfo(`❌ Phản hồi: ${responseText}`, "error");
+
+                    if (response.status === 401) {
+                        addDebugInfo("❌ Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.", "error");
+                        chatBox.innerHTML = '<div class="alert alert-danger">Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.</div>';
+                        return;
+                    } else if (response.status === 403) {
+                        addDebugInfo("❌ Không có quyền xem tin nhắn của người dùng này. Mã lỗi: 403", "error");
+                        chatBox.innerHTML = '<div class="alert alert-danger">Không có quyền xem tin nhắn của người dùng này.</div>';
+                        return;
+                    }
+
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Parse JSON từ responseText
+                let messages;
+                try {
+                    messages = JSON.parse(responseText);
+                } catch (parseError) {
+                    addDebugInfo(`❌ Lỗi parse JSON: ${parseError.message}`, "error");
+                    addDebugInfo(`❌ Dữ liệu: ${responseText.substring(0, 100)}...`, "error");
+                    throw new Error(`Lỗi parse JSON: ${parseError.message}`);
+                }
+
+                if (!Array.isArray(messages)) {
+                    console.error('Dữ liệu không đúng định dạng:', messages);
+                    addDebugInfo(`Lỗi: Dữ liệu không đúng định dạng`, "error");
+                    chatBox.innerHTML = '<div class="alert alert-danger">Lỗi: Dữ liệu không đúng định dạng</div>';
+                    return;
+                }
+
+                // Clear chat box
                 chatBox.innerHTML = '';
 
                 if (messages.length === 0) {
@@ -226,20 +424,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Hiển thị tin nhắn
                 messages.forEach(msg => {
-                    const type = msg.type === 'admin' ? 'admin' : 'client';
+                    // Phân biệt tin nhắn của admin và client
+                    const isSentByAdmin = msg.sender_id.toString() === "{{ Auth::id() }}";
+                    const messageType = isSentByAdmin ? 'admin' : 'client';
+
                     addMessageToChat({
                         text: msg.text,
-                        sent_at: new Date(msg.sent_at).toLocaleString()
-                    }, type);
+                        sent_at: new Date(msg.sent_at).toLocaleString(),
+                        sender: msg.sender
+                    }, messageType);
                 });
 
                 // Cuộn xuống dưới cùng
                 chatBox.scrollTop = chatBox.scrollHeight;
-            })
-            .catch(error => {
+
+                addDebugInfo(`✅ Đã tải ${messages.length} tin nhắn thành công`);
+
+            } catch (error) {
                 console.error('Lỗi khi tải tin nhắn:', error);
-                chatBox.innerHTML = '<div class="alert alert-danger">Lỗi khi tải tin nhắn. Vui lòng thử lại sau.</div>';
-            });
+                addDebugInfo(`Lỗi khi tải tin nhắn: ${error.message}`, "error");
+
+                if (retryCount < maxRetries) {
+                    retryCount++;
+                    const delay = retryCount * 2000;
+                    addDebugInfo(`Đang thử tải lại tin nhắn sau ${delay/1000}s (lần ${retryCount})...`);
+                    setTimeout(tryLoadMessages, delay);
+                } else {
+                    if (error.name === 'TypeError') {
+                        chatBox.innerHTML = '<div class="alert alert-danger">Lỗi khi xử lý dữ liệu tin nhắn</div>';
+                    } else {
+                        chatBox.innerHTML = '<div class="alert alert-danger">Lỗi khi tải tin nhắn. Vui lòng thử lại sau.</div>';
+                    }
+                }
+            }
+        }
+
+        await tryLoadMessages();
     }
 
     // Thêm tin nhắn vào khung chat
@@ -251,6 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
             messageDiv.innerHTML = `
                 <div class="d-flex">
                     <div class="message-bubble bg-light p-2 rounded">
+                        <div class="message-sender text-muted small">${message.sender?.name || 'Khách hàng'}</div>
                         <div class="message-text">${message.text}</div>
                         <div class="message-time text-muted small">${message.sent_at || new Date().toLocaleString()}</div>
                     </div>
@@ -260,6 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
             messageDiv.innerHTML = `
                 <div class="d-flex justify-content-end">
                     <div class="message-bubble bg-primary text-white p-2 rounded">
+                        <div class="message-sender text-white-50 small">Admin</div>
                         <div class="message-text">${message.text}</div>
                         <div class="message-time text-white-50 small">${message.sent_at || new Date().toLocaleString()}</div>
                     </div>
@@ -300,6 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
         socket.emit('adminMessage', messageData, (response) => {
             if (response.success) {
                 console.log('Tin nhắn đã được gửi thành công');
+                addDebugInfo(`Tin nhắn đã được gửi thành công tới ${currentUserId}`);
 
                 // Thêm tin nhắn vào khung chat
                 addMessageToChat({
@@ -312,6 +535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 messageInput.focus();
             } else {
                 console.error('Lỗi khi gửi tin nhắn:', response.error);
+                addDebugInfo(`Lỗi khi gửi tin nhắn: ${response.error}`, "error");
                 alert('Không thể gửi tin nhắn: ' + response.error);
             }
         });
@@ -327,6 +551,50 @@ document.addEventListener('DOMContentLoaded', function() {
             sendMessage();
         }
     });
+
+    // Thêm nút kiểm tra kết nối
+    const debugButton = document.createElement('button');
+    debugButton.innerText = "Kiểm tra kết nối";
+    debugButton.className = "btn btn-sm btn-secondary mt-2 mb-2";
+    debugButton.onclick = function() {
+        addDebugInfo("Kiểm tra kết nối...");
+
+        if (socket && socket.connected) {
+            addDebugInfo(`Socket đang kết nối: ${socket.id}`);
+        } else {
+            addDebugInfo("Socket không kết nối! Đang kết nối lại...", "error");
+            connectToSocket();
+        }
+    };
+    document.querySelector('.card-body').prepend(debugButton);
+
+    // Thêm nút kiểm tra token
+    const tokenButton = document.createElement('button');
+    tokenButton.innerText = "Kiểm tra token";
+    tokenButton.className = "btn btn-sm btn-info mt-2 mb-2 ml-2";
+    tokenButton.style.marginLeft = '10px';
+    tokenButton.onclick = async function() {
+        addDebugInfo("Đang kiểm tra token...");
+
+        try {
+            const response = await fetch('/api/test-auth', {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                }
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                addDebugInfo(`✅ Token hợp lệ. User: ${data.user.name}, Role: ${data.user.role}`);
+            } else {
+                addDebugInfo(`❌ Token không hợp lệ: ${data.message}`, "error");
+            }
+        } catch (error) {
+            addDebugInfo(`❌ Lỗi kiểm tra token: ${error.message}`, "error");
+        }
+    };
+    document.querySelector('.card-body').prepend(tokenButton);
 
     // Kết nối đến socket khi trang load xong
     connectToSocket();

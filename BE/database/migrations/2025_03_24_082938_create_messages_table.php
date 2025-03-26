@@ -9,18 +9,25 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
             $table->text('text');
-            $table->string('userId')->nullable();
-            $table->string('userName')->nullable();
-            $table->string('adminId')->nullable();
-            $table->string('adminName')->nullable();
-            $table->enum('type', ['client', 'admin']);
-            $table->timestamp('sent_at');
+
+            // Người gửi (bắt buộc phải có)
+            $table->unsignedBigInteger('sender_id');
+            $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
+
+            // Người nhận (mặc định là admin)
+            $table->unsignedBigInteger('receiver_id')->nullable();
+            $table->foreign('receiver_id')->references('id')->on('users')->onDelete('cascade');
+
+            // Trạng thái đã đọc
             $table->boolean('is_read')->default(false);
+
+            // Thời điểm gửi tin nhắn
+            $table->timestamp('sent_at');
             $table->timestamps();
         });
     }
