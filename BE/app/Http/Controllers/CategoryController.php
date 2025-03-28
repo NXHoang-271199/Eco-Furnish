@@ -40,7 +40,7 @@ class CategoryController extends Controller
     {
         try {
             DB::beginTransaction();
-            
+
             // Kiểm tra danh mục đã tồn tại trong thùng rác
             $existingCategory = Category::withTrashed()
                 ->where('name', $request->name)
@@ -54,13 +54,13 @@ class CategoryController extends Controller
                     'category_id' => $existingCategory->id
                 ], 422);
             }
-            
+
             $data = $request->validated();
             // Tự động tạo slug từ tên
             $data['slug'] = Str::slug($data['name']);
-            
+
             $category = Category::create($data);
-            
+
             DB::commit();
 
             session()->flash('success', 'Thêm danh mục thành công');
@@ -75,7 +75,7 @@ class CategoryController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error creating category: ' . $e->getMessage());
+            // \Log::error('Error creating category: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi thêm danh mục: ' . $e->getMessage()
@@ -92,13 +92,13 @@ class CategoryController extends Controller
     {
         try {
             DB::beginTransaction();
-            
+
             $data = $request->validated();
             // Tự động cập nhật slug từ tên
             $data['slug'] = Str::slug($data['name']);
-            
+
             $category->update($data);
-            
+
             DB::commit();
 
             return response()->json([
@@ -107,7 +107,7 @@ class CategoryController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error updating category: ' . $e->getMessage());
+            // \Log::error('Error updating category: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi cập nhật danh mục: ' . $e->getMessage()
@@ -155,4 +155,4 @@ class CategoryController extends Controller
             return back()->with('error', 'Có lỗi xảy ra khi khôi phục danh mục');
         }
     }
-} 
+}
