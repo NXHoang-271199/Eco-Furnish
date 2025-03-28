@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useDispatch } from "react-redux";
-import { addToCart } from "../../../store/cartSlice";
+import { addToCart, updateQuantity } from "../../../store/cartSlice";
 import AddToCartToast from "../../../components/AddToCartToast";
 import { Toaster, toast } from "react-hot-toast";
 
@@ -83,6 +83,10 @@ const ProductDetail = () => {
   // Thêm state để quản lý tổng tiền trong Order Summary
   const [orderTotal, setOrderTotal] = useState(0);
 
+  // Thêm state quản lý trạng thái đang cập nhật và thông báo lỗi
+  const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false);
+  const [stockError, setStockError] = useState("");
+
   console.log("ID from useParams:", id);
 
   // Hàm kiểm tra xác thực và lấy thông tin người dùng
@@ -90,7 +94,7 @@ const ProductDetail = () => {
     // Thêm độ trễ nhỏ để đảm bảo token đã được lưu trữ
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("authToken"); // Thay đổi từ "token" thành "authToken"
     console.log("Current token:", token);
 
     // Tạm thời lấy thông tin từ userData trong localStorage nếu có
@@ -190,7 +194,7 @@ const ProductDetail = () => {
   useEffect(() => {
     const handleStorageChange = (e) => {
       console.log("Storage changed:", e);
-      if (e.key === "token" || e.key === "userData") {
+      if (e.key === "authToken" || e.key === "userData") {
         console.log("Token or userData changed, checking authentication");
         setTimeout(() => {
           checkAuthentication();
@@ -243,7 +247,7 @@ const ProductDetail = () => {
         console.log("No user data in response");
         setIsLoggedIn(false);
         setCurrentUser(null);
-        localStorage.removeItem("token");
+        localStorage.removeItem("authToken"); // Thay đổi từ "token" thành "authToken"
         return false;
       }
     } catch (error) {
@@ -252,7 +256,7 @@ const ProductDetail = () => {
         console.log("Token không hợp lệ hoặc API không tồn tại, đăng xuất...");
         setIsLoggedIn(false);
         setCurrentUser(null);
-        localStorage.removeItem("token");
+        localStorage.removeItem("authToken"); // Thay đổi từ "token" thành "authToken"
       }
       return false;
     }
@@ -523,7 +527,7 @@ const ProductDetail = () => {
     return availableVariantTypes.every((type) => selectedVariants[type]);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     // Kiểm tra xem đã chọn đủ biến thể chưa
     if (!selectedVariants[1] || !selectedVariants[2]) {
       toast.error("Vui lòng chọn đầy đủ màu sắc và kích thước", {
@@ -573,16 +577,59 @@ const ProductDetail = () => {
       variant_details: selectedVariant.variant_details,
     };
 
-    // Thêm vào giỏ hàng
-    dispatch(addToCart(cartItem));
-    toast.success("Đã thêm vào giỏ hàng", {
-      duration: 2000,
-      style: {
-        background: "#fff",
-        color: "#059669",
-        border: "1px solid #a7f3d0",
-      },
-    });
+    try {
+      // Kiểm tra token trong localStorage
+      const token = localStorage.getItem("authToken"); // Thay đổi từ "token" thành "authToken"
+      if (!token) {
+        navigate("/signin", { state: { returnUrl: location.pathname } });
+        return;
+      }
+
+      const response = await axios.post(
+        "http://localhost:8000/api/cart/add",
+        {
+          product_id: product.id,
+          product_variant_id: selectedVariant.id,
+          quantity: quantity,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.message === "Thêm vào giỏ hàng thành công") {
+        // Thêm vào Redux store
+        dispatch(addToCart(cartItem));
+        toast.success("Đã thêm vào giỏ hàng", {
+          duration: 2000,
+          style: {
+            background: "#fff",
+            color: "#059669",
+            border: "1px solid #a7f3d0",
+          },
+        });
+      }
+    } catch (error) {
+      if (error.response?.status === 401) {
+        // Token hết hạn hoặc không hợp lệ
+        localStorage.removeItem("authToken");
+        navigate("/signin", { state: { returnUrl: location.pathname } });
+        return;
+      }
+      toast.error(
+        error.response?.data?.message || "Có lỗi xảy ra khi thêm vào giỏ hàng",
+        {
+          duration: 2000,
+          style: {
+            background: "#fff",
+            color: "#e11d48",
+            border: "1px solid #fecdd3",
+          },
+        }
+      );
+    }
   };
 
   const handleBuyNow = () => {
@@ -600,16 +647,58 @@ const ProductDetail = () => {
     }
 
     handleAddToCart();
-    navigate("/cart");
+    navigate("/payment");
   };
 
+  const handleQuantityChange = (newQuantity) => {
+    if (newQuantity < 1) return;
+
+    setIsUpdatingQuantity(true);
+    setStockError("");
+
+    try {
+      // Tìm biến thể phù hợp
+      if (!product || !product.variants) {
+        setStockError("Không tìm thấy thông tin sản phẩm");
+        return;
+      }
+
+      const selectedVariant = product.variants.find((variant) => {
+        if (!variant.variant_details) return false;
+        const variantDetails = variant.variant_details;
+        return (
+          variantDetails[0]?.value === selectedVariants[1] &&
+          variantDetails[1]?.value === selectedVariants[2]
+        );
+      });
+
+      if (!selectedVariant) {
+        setStockError("Không tìm thấy biến thể phù hợp");
+        return;
+      }
+
+      // Kiểm tra tồn kho cục bộ
+      if (selectedVariant.quantity >= newQuantity) {
+        setQuantity(newQuantity);
+      } else {
+        setStockError(`Chỉ còn ${selectedVariant.quantity} sản phẩm trong kho`);
+      }
+    } catch (error) {
+      console.error("Lỗi xử lý:", error);
+      setStockError("Có lỗi xảy ra khi cập nhật số lượng");
+    } finally {
+      setIsUpdatingQuantity(false);
+    }
+  };
+
+  // Sửa lại hàm increaseQuantity và decreaseQuantity để sử dụng handleQuantityChange mới
   const increaseQuantity = () => {
-    setQuantity((prev) => prev + 1);
+    handleQuantityChange(quantity + 1);
   };
 
   const decreaseQuantity = () => {
     if (quantity > 1) {
-      setQuantity((prev) => prev - 1);
+      handleQuantityChange(quantity - 1);
     }
   };
 
@@ -674,7 +763,8 @@ const ProductDetail = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      // Kiểm tra token trong localStorage
+      const token = localStorage.getItem("authToken"); // Thay đổi từ "token" thành "authToken"
       if (!token) {
         setIsLoggedIn(false);
         setCurrentUser(null);
@@ -747,7 +837,7 @@ const ProductDetail = () => {
       }, 3000);
 
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
+        localStorage.removeItem("authToken"); // Sửa lại từ "token" thành "authToken"
         setIsLoggedIn(false);
         setCurrentUser(null);
         navigate("/signin", { state: { returnUrl: location.pathname } });
@@ -1313,6 +1403,7 @@ const ProductDetail = () => {
                   <button
                     className="bg-gray-200 text-gray-700 px-3 py-1 hover:bg-gray-300 transition"
                     onClick={increaseQuantity}
+                    disabled={isUpdatingQuantity}
                   >
                     +
                   </button>
@@ -1324,7 +1415,7 @@ const ProductDetail = () => {
 
                 <div className="flex gap-4 mt-4">
                   <button
-                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
+                    className="w-full bg-gradient-to-r from-blue-500 to-blue-800 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
                     onClick={handleAddToCart}
                   >
                     THÊM VÀO GIỎ HÀNG
@@ -1332,7 +1423,7 @@ const ProductDetail = () => {
                 </div>
                 <div className="flex gap-4 mt-4">
                   <button
-                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
+                    className="w-full bg-gradient-to-r from-blue-500 to-blue-800 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
                     onClick={handleBuyNow}
                   >
                     <svg
@@ -1384,6 +1475,12 @@ const ProductDetail = () => {
                     : product.quantity || 0}
                 </p>
               </div>
+
+              {stockError && (
+                <p className="text-red-500 text-xs mt-1 text-center">
+                  {stockError}
+                </p>
+              )}
             </div>
           </div>
         </div>

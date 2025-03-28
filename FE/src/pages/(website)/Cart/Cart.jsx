@@ -1,23 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { FiTrash2 } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   removeFromCart,
   updateQuantity,
   applyDiscount,
   clearCart,
+  setSelectedItems,
 } from "../../../store/cartSlice";
 import axios from "axios";
 
 const Cart = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart);
   const [discountCode, setDiscountCode] = useState("");
   const [discountError, setDiscountError] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
-  const [selectedItems, setSelectedItems] = useState([]);
+  const [localSelectedItems, setLocalSelectedItems] = useState([]);
+  const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false);
+  const [stockError, setStockError] = useState("");
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -26,17 +30,115 @@ const Cart = () => {
     }).format(price);
   };
 
-  const handleQuantityChange = (productId, variant_details, newQuantity) => {
+  const handleQuantityChange = async (
+    productId,
+    variant_details,
+    newQuantity
+  ) => {
     if (newQuantity < 1) return;
-    dispatch(
-      updateQuantity({ productId, quantity: newQuantity, variant_details })
-    );
+
+    // Không hiển thị trạng thái đang tải nữa
+    // setIsUpdatingQuantity(true);
+    setStockError("");
+
+    try {
+      // Tìm item trong giỏ hàng
+      const cartItem = cart.items.find(
+        (item) =>
+          item.product.id === productId &&
+          JSON.stringify(item.variant_details) ===
+            JSON.stringify(variant_details)
+      );
+
+      if (!cartItem) {
+        setStockError("Không tìm thấy sản phẩm trong giỏ hàng");
+        return;
+      }
+
+      // Luôn cập nhật giỏ hàng cục bộ trước để UI phản hồi nhanh
+      dispatch(
+        updateQuantity({ productId, quantity: newQuantity, variant_details })
+      );
+
+      // Sau đó gọi API để cập nhật trong database
+      try {
+        const token = localStorage.getItem("authToken");
+
+        // Chắc chắn user đã đăng nhập
+        if (!token) {
+          console.log(
+            "Người dùng chưa đăng nhập, chỉ cập nhật giỏ hàng cục bộ"
+          );
+          return;
+        }
+
+        // Tìm product_variant_id từ variant_details
+        let productVariantId = null;
+        if (
+          cartItem.variant_details &&
+          Array.isArray(cartItem.variant_details) &&
+          cartItem.variant_details.length > 0
+        ) {
+          // Nếu có thông tin variant_id trong variant_details, sử dụng nó
+          const variantIdInfo = cartItem.variant_details.find(
+            (v) => v.variant_id
+          );
+          if (variantIdInfo) {
+            productVariantId = variantIdInfo.variant_id;
+          }
+        }
+
+        // Gọi API cập nhật số lượng trong database
+        const response = await axios.post(
+          "http://localhost:8000/api/cart-items/update-quantity",
+          {
+            product_id: productId,
+            product_variant_id: productVariantId,
+            quantity: newQuantity,
+            variant_details: variant_details,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Kiểm tra phản hồi từ API
+        if (!response.data.success) {
+          // Nếu có lỗi từ server (ví dụ: vượt quá tồn kho)
+          setStockError(response.data.message);
+
+          // Lấy số lượng tối đa có thể từ thông báo lỗi
+          const maxQuantityMatch = response.data.message.match(/\d+/);
+          if (maxQuantityMatch) {
+            const maxQuantity = parseInt(maxQuantityMatch[0]);
+            // Cập nhật lại số lượng trong giỏ hàng với số lượng tối đa
+            dispatch(
+              updateQuantity({
+                productId,
+                quantity: maxQuantity,
+                variant_details,
+              })
+            );
+          }
+        } else {
+          console.log("Đã cập nhật số lượng trong database thành công");
+        }
+      } catch (apiError) {
+        console.error("Lỗi khi cập nhật database:", apiError);
+        // Không hiển thị lỗi API cho người dùng vì đã cập nhật UI
+      }
+    } catch (error) {
+      console.error("Lỗi xử lý:", error);
+      setStockError("Có lỗi xảy ra khi cập nhật số lượng");
+    }
   };
 
   const handleRemoveItem = (productId, variant_details) => {
     dispatch(removeFromCart({ productId, variant_details }));
-    setSelectedItems(
-      selectedItems.filter(
+    setLocalSelectedItems(
+      localSelectedItems.filter(
         (item) =>
           !(
             item.productId === productId &&
@@ -50,7 +152,7 @@ const Cart = () => {
   const handleClearCart = () => {
     if (window.confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?")) {
       dispatch(clearCart());
-      setSelectedItems([]);
+      setLocalSelectedItems([]);
     }
   };
 
@@ -90,15 +192,15 @@ const Cart = () => {
   };
 
   const toggleSelectItem = (productId, variant_details) => {
-    const isSelected = selectedItems.some(
+    const isSelected = localSelectedItems.some(
       (item) =>
         item.productId === productId &&
         JSON.stringify(item.variant_details) === JSON.stringify(variant_details)
     );
 
     if (isSelected) {
-      setSelectedItems(
-        selectedItems.filter(
+      setLocalSelectedItems(
+        localSelectedItems.filter(
           (item) =>
             !(
               item.productId === productId &&
@@ -108,15 +210,18 @@ const Cart = () => {
         )
       );
     } else {
-      setSelectedItems([...selectedItems, { productId, variant_details }]);
+      setLocalSelectedItems([
+        ...localSelectedItems,
+        { productId, variant_details },
+      ]);
     }
   };
 
   const toggleSelectAll = () => {
-    if (selectedItems.length === cart.items.length) {
-      setSelectedItems([]);
+    if (localSelectedItems.length === cart.items.length) {
+      setLocalSelectedItems([]);
     } else {
-      setSelectedItems(
+      setLocalSelectedItems(
         cart.items.map((item) => ({
           productId: item.product.id,
           variant_details: item.variant_details,
@@ -126,7 +231,7 @@ const Cart = () => {
   };
 
   const isItemSelected = (productId, variant_details) => {
-    return selectedItems.some(
+    return localSelectedItems.some(
       (item) =>
         item.productId === productId &&
         JSON.stringify(item.variant_details) === JSON.stringify(variant_details)
@@ -143,6 +248,23 @@ const Cart = () => {
       }
       return total;
     }, 0);
+  };
+
+  const handleCheckout = () => {
+    if (localSelectedItems.length === 0) return;
+
+    // Lưu các sản phẩm đã chọn vào Redux store
+    const selectedProducts = cart.items.filter((item) =>
+      localSelectedItems.some(
+        (selected) =>
+          selected.productId === item.product.id &&
+          JSON.stringify(selected.variant_details) ===
+            JSON.stringify(item.variant_details)
+      )
+    );
+
+    dispatch(setSelectedItems(selectedProducts));
+    navigate("/payment");
   };
 
   return (
@@ -189,7 +311,9 @@ const Cart = () => {
                       <input
                         type="checkbox"
                         className="w-5 h-5 rounded-lg border-gray-300 text-black focus:ring-black transition-all duration-300 hover:border-black"
-                        checked={selectedItems.length === cart.items.length}
+                        checked={
+                          localSelectedItems.length === cart.items.length
+                        }
                         onChange={toggleSelectAll}
                       />
                       <span className="ml-3 text-sm font-medium text-gray-500">
@@ -345,6 +469,11 @@ const Cart = () => {
                                 +
                               </button>
                             </div>
+                            {stockError && (
+                              <p className="text-red-500 text-xs mt-1 text-center">
+                                {stockError}
+                              </p>
+                            )}
                           </div>
 
                           <div className="col-span-2 text-center">
@@ -471,27 +600,23 @@ const Cart = () => {
                   </div>
 
                   <div className="mt-6 space-y-4">
-                    <Link
-                      to="/payment"
+                    <button
+                      onClick={handleCheckout}
                       className={`relative block w-full text-center py-3.5 rounded-xl transform transition-all duration-300 ${
-                        selectedItems.length > 0
+                        localSelectedItems.length > 0
                           ? "bg-gradient-to-r from-gray-900 to-gray-700 text-white hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
                           : "bg-gray-200 text-gray-500 cursor-not-allowed"
                       }`}
-                      onClick={(e) => {
-                        if (selectedItems.length === 0) {
-                          e.preventDefault();
-                        }
-                      }}
+                      disabled={localSelectedItems.length === 0}
                     >
                       <span className="absolute inset-0 w-full h-full bg-white opacity-0 hover:opacity-10 transition-opacity duration-300 rounded-xl"></span>
                       <span className="relative flex items-center justify-center gap-2">
                         <span>Checkout Now</span>
                         <span className="bg-white/20 px-2 py-0.5 rounded-lg text-sm">
-                          {selectedItems.length} items
+                          {localSelectedItems.length} items
                         </span>
                       </span>
-                    </Link>
+                    </button>
 
                     <div className="flex items-start gap-2 text-sm text-gray-500">
                       <span className="mt-0.5">⚬</span>

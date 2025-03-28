@@ -37,7 +37,7 @@ function App() {
         <Route path="/" element={<LayoutWebsite />}>
           <Route index element={<Homes />} />
           <Route path="products" element={<Products />} />
-          <Route path="product-detail/:id" element={<ProductDetail />} />
+          <Route path="product/:id" element={<ProductDetail />} />
           <Route path="contact" element={<Contact />} />
           <Route path="cart" element={<Cart />} />
           <Route path="blogs" element={<Blogs />} />
@@ -51,8 +51,8 @@ function App() {
             <Route path="password" element={<Edit_Pass />} />
           </Route>
         </Route>
-        <Route path="/sign-in" element={<SignIn />} />
-        <Route path="/sign-up" element={<SignUp />} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
         <Route path="/verify-email" element={<EmailVerification />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/confirm-password" element={<ConfirmPassword />} />

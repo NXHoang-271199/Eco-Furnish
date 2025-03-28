@@ -31,7 +31,10 @@ const initialState = loadState();
 
 const cartSlice = createSlice({
   name: "cart",
-  initialState,
+  initialState: {
+    ...initialState,
+    selectedItems: [],
+  },
   reducers: {
     addToCart: (state, action) => {
       const { product_id, product, quantity, variant_details, price } =
@@ -127,6 +130,14 @@ const cartSlice = createSlice({
       // Lưu state vào localStorage
       localStorage.setItem("cart", JSON.stringify(state));
     },
+    setSelectedItems: (state, action) => {
+      state.selectedItems = action.payload;
+      localStorage.setItem("cart", JSON.stringify(state));
+    },
+    clearSelectedItems: (state) => {
+      state.selectedItems = [];
+      localStorage.setItem("cart", JSON.stringify(state));
+    },
   },
 });
 
@@ -136,6 +147,8 @@ export const {
   updateQuantity,
   applyDiscount,
   clearCart,
+  setSelectedItems,
+  clearSelectedItems,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;
