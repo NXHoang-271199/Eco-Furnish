@@ -104,39 +104,25 @@ class OrderController extends Controller
         $order = Order::with(['orderItems.product'])->findOrFail($id);
 
         foreach ($order->orderItems as $item) {
-            // Lấy thông tin biến thể từ `product_variant_id`
-            $productVariant = ProductVariant::find($item->product_variant_id);
-
             $variantInfo = [];
 
-            if ($productVariant && $productVariant->variant_details) {
-                // Giải mã JSON nếu cần
-                $variantDetails = is_string($productVariant->variant_details)
-                    ? json_decode($productVariant->variant_details, true)
-                    : $productVariant->variant_details;
+            if ($item->product_variant_id) {
+                $productVariant = ProductVariant::find($item->product_variant_id);
 
-                if (is_array($variantDetails)) {
-                    $variantIds = array_keys($variantDetails);
-                    $variantValueIds = array_values($variantDetails);
-
-                    // Truy vấn tên biến thể
-                    $variants = Variant::whereIn('id', $variantIds)->pluck('name', 'id');
-                    $variantValues = VariantValue::whereIn('id', $variantValueIds)->pluck('value', 'id');
-
-                    foreach ($variantDetails as $variantId => $variantValueId) {
-                        $variantName = $variants[$variantId] ?? 'Unknown';
-                        $variantValueName = $variantValues[$variantValueId] ?? 'Unknown';
-                        $variantInfo[] = "$variantName: $variantValueName";
+                if ($productVariant && !empty($productVariant->variant_details)) {
+                    foreach ($productVariant->variant_details as $detail) {
+                        $variantInfo[] = "{$detail['name']}: {$detail['value']}";
                     }
                 }
             }
 
-            // Gán vào orderItem bằng `setAttribute()`
+            // Gán vào orderItem để dùng trong view
             $item->setAttribute('variant_info', $variantInfo);
         }
 
         return view('admins.orders.detail', compact('order'));
     }
+
 
 
 
