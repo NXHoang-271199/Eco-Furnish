@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
+use App\Http\Controllers\Api\DiscountController;
 
 /*
 |--------------------------------------------------------------------------
@@ -113,3 +114,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
 });
 
+
+// Discount routes
+Route::post('/discounts/verify', [DiscountController::class, 'verify']);
