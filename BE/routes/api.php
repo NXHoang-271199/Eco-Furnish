@@ -15,8 +15,6 @@ use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
-use App\Http\Controllers\Api\VoucherApiController;
-use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\DiscountController;
 
 /*
