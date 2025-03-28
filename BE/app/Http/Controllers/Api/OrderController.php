@@ -11,6 +11,7 @@ use App\Models\VoucherUsage;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use App\Models\ProductVariant;
+use App\Models\OrderNotification;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\OrderRequest;
 use App\Mail\OrderConfirmationMail;
@@ -177,6 +178,11 @@ class OrderController extends Controller
 
             // Xóa giỏ hàng
             $cart->cartItems()->delete();
+            // ✅ Thêm thông báo đơn hàng
+            OrderNotification::create([
+                'order_id' => $order->id,
+                'is_read' => false
+            ]);
 
             DB::commit();
             // Xử lý thanh toán online (MoMo, VNPAY)
