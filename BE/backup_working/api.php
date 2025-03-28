@@ -3,16 +3,22 @@
 use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\MessageController;
-use App\Http\Controllers\Api\ChatController;
-use App\Http\Controllers\Api\BannerController;
-use App\Http\Controllers\Api\CommentController;
-use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\UserApiController;
-use App\Http\Controllers\Api\VoucherApiController;
+use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\CategoryPostApiController;
+<<<<<<< HEAD
 use Illuminate\Support\Facades\Auth;
+=======
+use App\Http\Controllers\Api\VoucherApiController;
+use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\BannerController;
+use App\Http\Controllers\Api\CategoryApiController;
+use App\Http\Controllers\Api\PaymentMethodController;
+use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\MessageController;
+>>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -33,20 +39,22 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/search', [ProductController::class, 'search']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
+// Category routes
+Route::get('/categories', [CategoryApiController::class, 'index']);
+Route::get('/categories/{slug}', [CategoryApiController::class, 'show']);
+
 // Chat routes
 Route::post('/chat', [ChatController::class, 'chat']);
 
 // User routes
 Route::prefix('users')->group(function () {
     Route::get('/', [UserApiController::class, 'index']);
-    Route::get('/{id}', [UserApiController::class, 'show']);
+    Route::get('/{email}', [UserApiController::class, 'show']);
     Route::post('/register', [UserApiController::class, 'register']);
     Route::post('/login', [UserApiController::class, 'login']);
     Route::post('/forgot-password', [UserApiController::class, 'forgotPassword']);
     Route::post('/reset-password', [UserApiController::class, 'resetPassword']);
     Route::post('/refresh-token', [UserApiController::class, 'refreshToken']);
-    Route::post('/verify-email', [UserApiController::class, 'verifyEmail']);
-    Route::post('/resend-verification', [UserApiController::class, 'resendVerification']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
@@ -83,20 +91,41 @@ Route::get('/products/{product}/comments', [CommentController::class, 'getProduc
 // Banner routes
 Route::get('/banners', [BannerController::class, 'index']);
 
+// Cart Routers
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/cart', [CartController::class, 'index']); // Lấy giỏ hàng
+    Route::post('/cart/add', [CartController::class, 'addToCart']); // Thêm vào giỏ hàng
+    Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
+    Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
+    Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
+});
+
+// Payment Method routes
+Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+
 Route::post('/send-message', function (Request $request) {
     $message = $request->input('message');
     event(new MessageSent($message));
     return response()->json(['status' => 'Message sent']);
 });
 
+// Message routes
 Route::prefix('messages')->group(function () {
+<<<<<<< HEAD
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [MessageController::class, 'store']); // Lưu tin nhắn
+=======
+    Route::post('/', [MessageController::class, 'store']); // Lưu tin nhắn từ socket.io
+
+    // Routes yêu cầu xác thực
+    Route::middleware('auth:sanctum')->group(function () {
+>>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
         Route::get('/user/{userId}', [MessageController::class, 'getUserMessages']); // Lấy tin nhắn theo user
         Route::get('/unread', [MessageController::class, 'getUnreadMessages']); // Lấy tin chưa đọc
         Route::patch('/read/{messageId}', [MessageController::class, 'markAsRead']); // Đánh dấu đã đọc
         Route::post('/admin/send', [MessageController::class, 'sendByAdmin']); // Admin gửi tin nhắn
     });
+<<<<<<< HEAD
 });
 
 // Route xác thực token cho socket server
@@ -167,4 +196,6 @@ Route::get('/users/{id}', function ($id) {
         'email' => $user->email,
         'role_id' => $user->role_id
     ]);
+=======
+>>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
 });

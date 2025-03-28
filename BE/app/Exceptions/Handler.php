@@ -2,9 +2,9 @@
 
 namespace App\Exceptions;
 
-use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Auth\AuthenticationException;
 use Throwable;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 
 class Handler extends ExceptionHandler
 {
@@ -28,21 +28,15 @@ class Handler extends ExceptionHandler
             //
         });
     }
-
-    /**
-     * Convert an authentication exception into a response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Auth\AuthenticationException  $exception
-     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
-     */
     protected function unauthenticated($request, AuthenticationException $exception)
-    {
-        if ($request->expectsJson()) {
-            return response()->json(['error' => 'Unauthenticated.'], 401);
-        }
-
-        // Sử dụng redirectTo từ Authenticate middleware
-        return redirect()->guest(route('admin.login'));
+{
+    // Nếu request là API (có prefix /api hoặc client yêu cầu JSON)
+    if ($request->expectsJson() || $request->is('api/*')) {
+        return response()->json(['message' => 'Vui lòng đăng nhập để tiếp tục'], 401);
     }
+
+    // Nếu là admin, chuyển hướng về trang đăng nhập admin
+    return redirect()->guest(route('admin.login'));
+}
+
 }

@@ -31,8 +31,11 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_active',
         'avatar',
         'email_verified_at',
+        'email_verification_token',
         'access_token',
-        'refresh_token'
+        'refresh_token',
+        'remember_me',
+        'remember_me_expires_at'
     ];
 
     public function role()
@@ -108,6 +111,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_active' => 'boolean'
     ];
 
     public function posts()
