@@ -11,22 +11,22 @@ class ProductSeeder extends Seeder
 {
     // Định nghĩa các biến thể màu sắc
     private $colorVariants = [
-        'WOOD' => ['id' => 1, 'value_id' => 1], // Nâu gỗ
-        'WHITE' => ['id' => 1, 'value_id' => 2], // Trắng
-        'BLACK' => ['id' => 1, 'value_id' => 3], // Đen
-        'GRAY' => ['id' => 1, 'value_id' => 4], // Xám
-        'CREAM' => ['id' => 1, 'value_id' => 5], // Kem
-        'DARK_BROWN' => ['id' => 1, 'value_id' => 6], // Nâu đậm
+        'WOOD' => 'Nâu gỗ',
+        'WHITE' => 'Trắng',
+        'BLACK' => 'Đen',
+        'GRAY' => 'Xám',
+        'CREAM' => 'Kem',
+        'DARK_BROWN' => 'Nâu đậm',
     ];
 
     // Định nghĩa các biến thể kích thước
     private $sizeVariants = [
-        'SMALL' => ['id' => 2, 'value_id' => 1], // Nhỏ
-        'MEDIUM' => ['id' => 2, 'value_id' => 2], // Vừa
-        'LARGE' => ['id' => 2, 'value_id' => 3], // Lớn
-        'XL' => ['id' => 2, 'value_id' => 4], // XL
-        'SINGLE' => ['id' => 2, 'value_id' => 5], // 1 người
-        'DOUBLE' => ['id' => 2, 'value_id' => 6], // 2 người
+        'SMALL' => 'Nhỏ',
+        'MEDIUM' => 'Vừa',
+        'LARGE' => 'Lớn',
+        'XL' => 'XL',
+        'SINGLE' => '1 người',
+        'DOUBLE' => '2 người',
     ];
 
     // Định nghĩa các danh mục
@@ -52,6 +52,8 @@ class ProductSeeder extends Seeder
                 'price' => 1500000,
                 'description' => 'Gương trang trí cao cấp, phù hợp với nhiều không gian nội thất',
                 'image_thumnail' => 'products/mirror-1.jpg',
+                'quantity' => 50,
+                'status' => 1
             ],
             [
                 'name' => 'Thảm trải sàn hiện đại',
@@ -60,6 +62,8 @@ class ProductSeeder extends Seeder
                 'price' => 2000000,
                 'description' => 'Thảm trải sàn chất liệu cao cấp, họa tiết hiện đại',
                 'image_thumnail' => 'products/carpet-1.jpg',
+                'quantity' => 30,
+                'status' => 1
             ],
             [
                 'name' => 'Đèn treo tường trang trí',
@@ -68,6 +72,8 @@ class ProductSeeder extends Seeder
                 'price' => 850000,
                 'description' => 'Đèn treo tường phong cách hiện đại, ánh sáng dịu nhẹ',
                 'image_thumnail' => 'products/light-1.jpg',
+                'quantity' => 40,
+                'status' => 1
             ],
         ];
 
@@ -82,25 +88,27 @@ class ProductSeeder extends Seeder
                     'name' => 'Bàn ăn gỗ cao cấp',
                     'product_code' => 'TABLE-' . Str::random(6),
                     'category_id' => $this->categories['TABLE'],
-                    'price' => 5000000,
                     'description' => 'Bàn ăn gỗ tự nhiên, thiết kế hiện đại',
                     'image_thumnail' => 'products/table-1.jpg',
+                    'status' => 1
                 ],
                 'variants' => [
                     [
                         'sku' => 'TABLE-WOOD-S',
                         'price' => 5000000,
-                        'combinations' => [
-                            $this->colorVariants['WOOD'],
-                            $this->sizeVariants['SMALL']
+                        'quantity' => 20,
+                        'variant_details' => [
+                            'color' => 'Nâu gỗ',
+                            'size' => 'Nhỏ'
                         ]
                     ],
                     [
                         'sku' => 'TABLE-WOOD-M',
                         'price' => 6000000,
-                        'combinations' => [
-                            $this->colorVariants['WOOD'],
-                            $this->sizeVariants['MEDIUM']
+                        'quantity' => 15,
+                        'variant_details' => [
+                            'color' => 'Nâu gỗ',
+                            'size' => 'Vừa'
                         ]
                     ],
                 ]
@@ -110,25 +118,27 @@ class ProductSeeder extends Seeder
                     'name' => 'Ghế sofa đơn',
                     'product_code' => 'SOFA-' . Str::random(6),
                     'category_id' => $this->categories['SOFA'],
-                    'price' => 3000000,
                     'description' => 'Ghế sofa đơn phong cách hiện đại',
                     'image_thumnail' => 'products/sofa-1.jpg',
+                    'status' => 1
                 ],
                 'variants' => [
                     [
                         'sku' => 'SOFA-WHITE-SINGLE',
                         'price' => 3000000,
-                        'combinations' => [
-                            $this->colorVariants['WHITE'],
-                            $this->sizeVariants['SINGLE']
+                        'quantity' => 25,
+                        'variant_details' => [
+                            'color' => 'Trắng',
+                            'size' => '1 người'
                         ]
                     ],
                     [
                         'sku' => 'SOFA-BLACK-SINGLE',
                         'price' => 3000000,
-                        'combinations' => [
-                            $this->colorVariants['BLACK'],
-                            $this->sizeVariants['SINGLE']
+                        'quantity' => 25,
+                        'variant_details' => [
+                            'color' => 'Đen',
+                            'size' => '1 người'
                         ]
                     ],
                 ]
@@ -138,25 +148,27 @@ class ProductSeeder extends Seeder
                     'name' => 'Giường ngủ hiện đại',
                     'product_code' => 'BED-' . Str::random(6),
                     'category_id' => $this->categories['BED'],
-                    'price' => 8000000,
                     'description' => 'Giường ngủ thiết kế hiện đại, chất liệu gỗ công nghiệp cao cấp',
                     'image_thumnail' => 'products/bed-1.jpg',
+                    'status' => 1
                 ],
                 'variants' => [
                     [
                         'sku' => 'BED-WOOD-SINGLE',
                         'price' => 8000000,
-                        'combinations' => [
-                            $this->colorVariants['WOOD'],
-                            $this->sizeVariants['SINGLE']
+                        'quantity' => 10,
+                        'variant_details' => [
+                            'color' => 'Nâu gỗ',
+                            'size' => '1 người'
                         ]
                     ],
                     [
                         'sku' => 'BED-WOOD-DOUBLE',
                         'price' => 12000000,
-                        'combinations' => [
-                            $this->colorVariants['WOOD'],
-                            $this->sizeVariants['DOUBLE']
+                        'quantity' => 8,
+                        'variant_details' => [
+                            'color' => 'Nâu gỗ',
+                            'size' => '2 người'
                         ]
                     ],
                 ]
@@ -169,17 +181,14 @@ class ProductSeeder extends Seeder
 
             // Tạo các biến thể
             foreach ($productData['variants'] as $variantData) {
-                foreach ($variantData['combinations'] as $combination) {
-                    $variant = new ProductVariant([
-                        'sku' => $variantData['sku'],
-                        'price' => $variantData['price'],
-                        'status' => true,
-                        'variant_id' => $combination['id'],
-                        'variant_value_id' => $combination['value_id']
-                    ]);
-                    
-                    $product->variants()->save($variant);
-                }
+                ProductVariant::create([
+                    'product_id' => $product->id,
+                    'sku' => $variantData['sku'],
+                    'price' => $variantData['price'],
+                    'quantity' => $variantData['quantity'],
+                    'variant_details' => $variantData['variant_details'],
+                    'status' => 1
+                ]);
             }
         }
     }
