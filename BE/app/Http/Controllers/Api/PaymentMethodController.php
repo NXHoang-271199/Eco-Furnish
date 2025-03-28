@@ -71,7 +71,7 @@ class PaymentMethodController extends Controller
         $amount = $request->total_price;
         $orderId = time();
         $redirectUrl = "http://localhost:3000/order-success";
-        $ipnUrl = "https://f5d9-42-119-190-38.ngrok-free.app/api/momo/ipn";
+        $ipnUrl = "https://a158-14-232-196-39.ngrok-free.app/api/momo/ipn";
         $extraData = "";
         // ✅ Nếu có dữ liệu từ request thì ghi đè giá trị mặc định
         if ($request->has('order_code')) {

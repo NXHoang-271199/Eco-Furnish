@@ -109,6 +109,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']); // Danh sách đơn hàng
     Route::get('/orders/{id}', [OrderController::class, 'show']); // Chi tiết đơn hàng
     Route::post('/orders', [OrderController::class, 'createOrder']); // Tạo đơn hàng
+    Route::post('/orders/buy-now', [OrderController::class, 'quickOrder']); // Tạo đơn hàng nhanh
     Route::post('/orders/{id}/refund', [OrderController::class, 'refundOrder']); // Hoàn hàng
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
 });
