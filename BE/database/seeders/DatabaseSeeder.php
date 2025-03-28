@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -25,6 +27,18 @@ class DatabaseSeeder extends Seeder
             CommentSeeder::class,
             CartSeeder::class,
             CartItemSeeder::class,
+        ]);
+        
+        // Tạo tài khoản admin
+        User::create([
+            'name' => 'Admin',
+            'email' => '1@gmail.com',
+            'password' => Hash::make('1'),
+            'role_id' => 1, // Role Admin
+            'is_active' => 1,
+            'email_verified_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 }
