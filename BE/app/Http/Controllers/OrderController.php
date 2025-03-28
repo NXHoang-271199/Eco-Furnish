@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Variant;
+use App\Models\VariantValue;
 use Illuminate\Http\Request;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
@@ -99,14 +101,47 @@ class OrderController extends Controller
      */
     public function show(string $id)
     {
-        $order = Order::with([
-            'orderItems.product',
-            'orderItems.product.productVariant.variant',
-            'orderItems.product.productVariant.variantValue'
-        ])->findOrFail($id);
+        $order = Order::with(['orderItems.product'])->findOrFail($id);
+
+        foreach ($order->orderItems as $item) {
+            // Lấy thông tin biến thể từ `product_variant_id`
+            $productVariant = ProductVariant::find($item->product_variant_id);
+
+            $variantInfo = [];
+
+            if ($productVariant && $productVariant->variant_details) {
+                // Giải mã JSON nếu cần
+                $variantDetails = is_string($productVariant->variant_details)
+                    ? json_decode($productVariant->variant_details, true)
+                    : $productVariant->variant_details;
+
+                if (is_array($variantDetails)) {
+                    $variantIds = array_keys($variantDetails);
+                    $variantValueIds = array_values($variantDetails);
+
+                    // Truy vấn tên biến thể
+                    $variants = Variant::whereIn('id', $variantIds)->pluck('name', 'id');
+                    $variantValues = VariantValue::whereIn('id', $variantValueIds)->pluck('value', 'id');
+
+                    foreach ($variantDetails as $variantId => $variantValueId) {
+                        $variantName = $variants[$variantId] ?? 'Unknown';
+                        $variantValueName = $variantValues[$variantValueId] ?? 'Unknown';
+                        $variantInfo[] = "$variantName: $variantValueName";
+                    }
+                }
+            }
+
+            // Gán vào orderItem bằng `setAttribute()`
+            $item->setAttribute('variant_info', $variantInfo);
+        }
 
         return view('admins.orders.detail', compact('order'));
     }
+
+
+
+
+
 
     /**
      * Show the form for editing the specified resource.

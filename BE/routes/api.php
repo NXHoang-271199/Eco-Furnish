@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\CommentController;
-use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserApiController;
@@ -102,8 +101,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Payment Method routes
 Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
-Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']);
-Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']);
+Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // FE ko được động tới
+Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']); // FE ko được động tới
 
 // Order routes
 Route::middleware('auth:sanctum')->group(function () {

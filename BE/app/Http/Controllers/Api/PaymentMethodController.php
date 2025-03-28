@@ -75,7 +75,7 @@ class PaymentMethodController extends Controller
         $amount = $request->total_price;
         $orderId = $request->order_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5174/order-success";
-        $ipnUrl = $request->notify_url ?? "https://a158-14-232-196-39.ngrok-free.app/api/momo/ipn";
+        $ipnUrl = $request->notify_url ?? "https://a0f2-42-119-190-38.ngrok-free.app/api/momo/ipn";
 
         // ✅ Thêm `discount_amount` vào extraData dưới dạng JSON
         $extraData = json_encode([
