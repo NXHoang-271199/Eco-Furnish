@@ -73,7 +73,7 @@ const ProductDetail = () => {
       try {
         const timestamp = new Date().getTime();
         const response = await axios.get(
-          `http://localhost:8000/api/products/${id}?_=${timestamp}`
+          `http://127.0.0.1:8000/api/products/${id}?_=${timestamp}`
         );
         console.log("API Response:", response.data);
         let productData = response.data.data;
@@ -174,7 +174,7 @@ const ProductDetail = () => {
         }
 
         const commentsResponse = await axios.get(
-          `http://localhost:8000/api/products/${id}/comments?_=${timestamp}`
+          `http://127.0.0.1:8000/api/products/${id}/comments?_=${timestamp}`
         );
         setComments(commentsResponse.data.data || []);
 
@@ -263,7 +263,7 @@ const ProductDetail = () => {
   const fetchCurrentUser = async (token) => {
     try {
       console.log("Fetching user with token:", token);
-      const response = await axios.get("http://localhost:8000/api/user", {
+      const response = await axios.get("http://127.0.0.1:8000/api/user", {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("User profile response:", response.data);
@@ -313,7 +313,7 @@ const ProductDetail = () => {
       : "Giá không khả dụng";
   };
 
-  const baseURL = "http://localhost:8000/";
+  const baseURL = "http://127.0.0.1:8000/";
 
   const mainImageUrl =
     selectedImage ||
@@ -418,7 +418,14 @@ const ProductDetail = () => {
     return availableVariantTypes.every((type) => selectedVariants[type]);
   };
 
+  // Thêm sản phẩm vào giỏ hàng
   const handleAddToCart = () => {
+    // Kiểm tra đăng nhập
+    if (!isLoggedIn) {
+      navigate("/signin", { state: { returnUrl: location.pathname } });
+      return;
+    }
+
     if (!hasSelectedAllRequiredVariants()) {
       setError("Vui lòng chọn đầy đủ biến thể sản phẩm");
       return;
@@ -450,6 +457,12 @@ const ProductDetail = () => {
   };
 
   const handleBuyNow = () => {
+    // Kiểm tra đăng nhập
+    if (!isLoggedIn) {
+      navigate("/signin", { state: { returnUrl: location.pathname } });
+      return;
+    }
+
     if (!hasSelectedAllRequiredVariants()) {
       setError("Vui lòng chọn đầy đủ biến thể sản phẩm");
       return;
@@ -557,7 +570,7 @@ const ProductDetail = () => {
 
       // API endpoint cho comments từ routes/api.php
       const response = await axios.post(
-        `http://localhost:8000/api/comments`,
+        `http://127.0.0.1:8000/api/comments`,
         {
           product_id: id,
           content: commentInput,
@@ -622,7 +635,7 @@ const ProductDetail = () => {
     try {
       const timestamp = new Date().getTime();
       const commentsResponse = await axios.get(
-        `http://localhost:8000/api/products/${id}/comments?_=${timestamp}`
+        `http://127.0.0.1:8000/api/products/${id}/comments?_=${timestamp}`
       );
       setComments(commentsResponse.data.data || []);
     } catch (error) {
@@ -640,7 +653,7 @@ const ProductDetail = () => {
     try {
       const timestamp = new Date().getTime();
       const response = await axios.get(
-        `http://localhost:8000/api/products/${id}?_=${timestamp}`
+        `http://127.0.0.1:8000/api/products/${id}?_=${timestamp}`
       );
       console.log("Refreshed API Response:", response.data);
       let productData = response.data.data;
@@ -735,7 +748,7 @@ const ProductDetail = () => {
       }
 
       const commentsResponse = await axios.get(
-        `http://localhost:8000/api/products/${id}/comments?_=${timestamp}`
+        `http://127.0.0.1:8000/api/products/${id}/comments?_=${timestamp}`
       );
       setComments(commentsResponse.data.data || []);
     } catch (error) {
@@ -743,6 +756,33 @@ const ProductDetail = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Tính tổng số lượng sản phẩm
+  const getTotalQuantity = () => {
+    if (!product.variants || product.variants.length === 0) {
+      return product.quantity || 0;
+    }
+
+    // Tính tổng số lượng của các biến thể
+    const variantQuantity = product.variants.reduce(
+      (sum, variant) => sum + (variant.quantity || 0),
+      0
+    );
+
+    // Nếu có cả số lượng chính và biến thể, lấy tổng
+    return variantQuantity + (product.quantity || 0);
+  };
+
+  // Hiển thị số lượng theo biến thể
+  const getVariantQuantity = (variantId, valueId) => {
+    if (!product.variants) return 0;
+
+    const variant = product.variants.find(
+      (v) => v.variant_id === variantId && v.variant_value_id === valueId
+    );
+
+    return variant ? variant.quantity : 0;
   };
 
   return (
@@ -1126,14 +1166,41 @@ const ProductDetail = () => {
                     : "Không xác định"}
                 </p>
                 <p className="text-gray-600">
-                  Số lượng:{" "}
-                  {product.variants && Array.isArray(product.variants)
-                    ? product.variants.reduce(
-                        (sum, v) => sum + (v.quantity || 0),
-                        0
-                      )
-                    : product.quantity || 0}
+                  Tổng số lượng: {getTotalQuantity()}
                 </p>
+                {product.variants && product.variants.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-gray-700">
+                      Số lượng theo biến thể:
+                    </p>
+                    {[1, 2, 3, 4].map((variantTypeId) => {
+                      const variants = getVariantsByType(variantTypeId);
+                      if (variants.length === 0) return null;
+
+                      return (
+                        <div key={variantTypeId} className="mt-1">
+                          <p className="text-sm text-gray-600">
+                            {getVariantTypeName(variantTypeId)}:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {variants.map((variant) => (
+                              <span
+                                key={variant.id}
+                                className="text-sm text-gray-500"
+                              >
+                                {variant.variant_value.value}:{" "}
+                                {getVariantQuantity(
+                                  variant.variant_id,
+                                  variant.variant_value_id
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1151,16 +1218,6 @@ const ProductDetail = () => {
                     {comments.length}
                   </span>
                 )}
-              </button>
-            </li>
-            <li className="mr-0">
-              <button className="py-3 px-1 text-gray-500 hover:text-gray-700 transition duration-200">
-                Thông tin thêm
-              </button>
-            </li>
-            <li className="mr-0">
-              <button className="py-3 px-1 text-gray-500 hover:text-gray-700 transition duration-200">
-                Mô tả
               </button>
             </li>
           </ul>

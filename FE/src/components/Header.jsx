@@ -51,10 +51,7 @@ const Header = () => {
               Sản phẩm
             </Link>
             <Link to="/blogs" className="text-gray-700 hover:text-black">
-              Blog
-            </Link>
-            <Link to="/about" className="text-gray-700 hover:text-black">
-              Về chúng tôi
+              Bài viết
             </Link>
             <Link to="/contact" className="text-gray-700 hover:text-black">
               Liên hệ
@@ -66,10 +63,10 @@ const Header = () => {
             <Link to="/search" className="text-gray-700 hover:text-black">
               <AiOutlineSearch size={20} />
             </Link>
-            <Link to="/wishlist" className="text-gray-700 hover:text-black">
-              <AiOutlineHeart size={20} />
-            </Link>
-            <Link to="/cart" className="text-gray-700 hover:text-black relative">
+            <Link
+              to="/cart"
+              className="text-gray-700 hover:text-black relative"
+            >
               <IoCartOutline size={20} />
               <CartBadge />
             </Link>

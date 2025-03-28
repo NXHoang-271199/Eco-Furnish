@@ -10,6 +10,7 @@ import {
   useAnimation,
 } from "framer-motion";
 import api from "../../../service/api";
+import Banner from "../../../components/Banner";
 
 const Homes = () => {
   const [products, setProducts] = useState([]);
@@ -172,14 +173,14 @@ const Homes = () => {
 
   return (
     <>
-      <motion.div
+      {/* <motion.div
         ref={bannerRef}
         className="relative w-full overflow-hidden h-[90vh]"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={bannerControls}
         onMouseMove={handleMouseMove}
       >
-        {/* Parallax banner image */}
+        Parallax banner image
         <motion.div
           className="absolute inset-0 w-full h-full"
           style={{
@@ -195,7 +196,7 @@ const Homes = () => {
           />
         </motion.div>
 
-        {/* Overlay gradient effect */}
+        Overlay gradient effect
         <motion.div
           className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"
           style={{
@@ -205,7 +206,7 @@ const Homes = () => {
           }}
         />
 
-        {/* Shine effect layer */}
+        Shine effect layer
         <motion.div
           className="absolute inset-0 z-10 opacity-30"
           variants={shineVariants}
@@ -213,7 +214,7 @@ const Homes = () => {
           animate="animate"
         />
 
-        {/* Banner content */}
+        Banner content
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 px-4">
           <motion.div
             className="text-center text-white"
@@ -266,7 +267,7 @@ const Homes = () => {
           </motion.div>
         </div>
 
-        {/* Decorative elements */}
+        Decorative elements
         <motion.div
           className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white to-transparent z-20"
           animate={{
@@ -279,7 +280,8 @@ const Homes = () => {
             ease: "easeInOut",
           }}
         />
-      </motion.div>
+      </motion.div> */}
+      <Banner />
 
       <motion.section
         initial="hidden"
