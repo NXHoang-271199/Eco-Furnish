@@ -252,8 +252,32 @@
             }
 
             // Load biến thể hiện có
-            const existingVariants = {!! isset($product->variants) ? json_encode($product->variants) : '[]' !!};
+            const existingVariants = {!! isset($existingVariants) ? json_encode($existingVariants) : '[]' !!};
             console.log('Existing variants:', existingVariants);
+
+            // Thêm biến thể hiện có vào selectedVariants
+            if (existingVariants.length > 0) {
+                selectedVariants = existingVariants.map(variant => {
+                    return {
+                        id: variant.id,
+                        sku: variant.sku,
+                        price: variant.price,
+                        discount_price: variant.discount_price,
+                        quantity: variant.quantity,
+                        status: variant.status,
+                        values: variant.variant_details || {},
+                        variant_details: variant.variant_details || {}
+                    };
+                });
+
+                // Hiển thị từng biến thể
+                selectedVariants.forEach((variant, index) => {
+                    displayVariant(variant, index);
+                });
+                
+                // Gắn sự kiện cho các biến thể
+                attachEventsToGeneratedVariants();
+            }
 
             // Nhóm biến thể theo SKU
             const groupedVariants = {};
@@ -559,13 +583,26 @@
                 console.log(`Hiển thị biến thể #${variantIndex + 1} với ID: ${variantId}`, variant);
                 
                 // Tạo chuỗi hiển thị các giá trị biến thể
-                const variantValuesDisplay = Object.entries(variant.values).map(([variantId, valueId]) => {
+                const variantValuesDisplay = [];
+                
+                if (variant.variant_details && Object.keys(variant.variant_details).length > 0) {
+                    Object.entries(variant.variant_details).forEach(([variantId, valueId]) => {
+                        // Tìm thông tin tên variant và giá trị variant
                     const variantOption = variantTypeSelect.find(`option[value="${variantId}"]`);
+                        if (variantOption.length) {
                     const variantName = variantOption.text();
                     const variantValues = JSON.parse(variantOption.attr('data-values'));
                     const selectedValue = variantValues.find(v => v.id == valueId);
-                    return `${variantName}: ${selectedValue ? selectedValue.value : 'N/A'}`;
-                }).join(' - ');
+                            
+                            if (selectedValue) {
+                                variantValuesDisplay.push(`${variantName}: ${selectedValue.value}`);
+                            }
+                        } else {
+                            // Nếu không tìm thấy thông tin trong select, hiển thị ID
+                            variantValuesDisplay.push(`Thuộc tính ${variantId}: Giá trị ${valueId}`);
+                        }
+                    });
+                }
                 
                 const variantElement = $(`
                     <div class="variant-item mb-4 border rounded" data-variant-id="${variantId}" data-variant-index="${variantIndex}">
@@ -581,13 +618,13 @@
                                     <div class="variant-info">
                                         <label class="form-label text-muted mb-1">SKU</label>
                                         <p class="mb-0 fw-medium variant-sku-display">${variant.sku || 'Chưa có'}</p>
-                                </div>
+                                    </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="variant-info">
                                         <label class="form-label text-muted mb-1">Giá</label>
                                         <p class="mb-0 fw-medium variant-price-display">${variant.price ? parseInt(variant.price).toLocaleString('vi-VN') + ' VNĐ' : 'Chưa có'}</p>
-                                </div>
+                                    </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="variant-info">
@@ -599,33 +636,33 @@
                                     <div class="variant-info">
                                         <label class="form-label text-muted mb-1">Số lượng</label>
                                         <p class="mb-0 fw-medium variant-quantity-display">${variant.quantity || 'Chưa có'}</p>
-                            </div>
-                        </div>
+                                    </div>
+                                </div>
                                 <div class="col-md-4">
                                     <div class="variant-info">
                                         <label class="form-label text-muted mb-1">Thông tin biến thể</label>
-                                        <p class="mb-0 fw-medium">${variantValuesDisplay}</p>
+                                        <p class="mb-0 fw-medium">${variantValuesDisplay.join(' - ') || 'Không có thông tin'}</p>
                             </div>
+                        </div>
                                     </div>
                                 </div>
-                        </div>
                         <div class="variant-edit p-3 bg-light border-top" style="display: none;">
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <label class="form-label">SKU <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control variant-sku-input" value="${variant.sku || ''}">
                                     <div class="invalid-feedback">Vui lòng nhập SKU</div>
-                                </div>
+                                    </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Giá <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <input type="number" class="form-control variant-price-input" value="${variant.price || ''}" min="0">
                                         <span class="input-group-text">VNĐ</span>
                                         <div class="invalid-feedback">Giá phải lớn hơn 0</div>
-                                    </div>
+                                </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label">Giá khuyến mãi</label>
+                                        <label class="form-label">Giá khuyến mãi</label>
                                     <div class="input-group">
                                         <input type="number" class="form-control variant-discount-price-input" value="${variant.discount_price || ''}" min="0">
                                         <span class="input-group-text">VNĐ</span>
@@ -636,24 +673,23 @@
                                     <label class="form-label">Số lượng <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control variant-quantity-input" value="${variant.quantity || ''}" min="0">
                                     <div class="invalid-feedback">Số lượng phải lớn hơn 0</div>
+                                    </div>
                                 </div>
                             <div class="mt-3 text-end">
                                 <button type="button" class="btn btn-secondary me-2 cancel-variant-edit">Hủy</button>
                                 <button type="button" class="btn btn-primary save-variant-edit" data-variant-id="${variantId}">Lưu</button>
                             </div>
-                                </div>
+                        </div>
                         <div class="variant-hidden-inputs">
                             <input type="hidden" name="variants[${variantIndex}][sku]" class="variant-sku-hidden" value="${variant.sku || ''}">
                             <input type="hidden" name="variants[${variantIndex}][price]" class="variant-price-hidden" value="${variant.price || ''}">
                             <input type="hidden" name="variants[${variantIndex}][discount_price]" class="variant-discount-price-hidden" value="${variant.discount_price || ''}">
                             <input type="hidden" name="variants[${variantIndex}][quantity]" class="variant-quantity-hidden" value="${variant.quantity || ''}">
-                            ${Object.entries(variant.values).map(([variantId, valueId]) => 
-                                `<input type="hidden" name="variants[${variantIndex}][values][${variantId}]" value="${valueId}">`
-                            ).join('')}
-                            </div>
+                            <input type="hidden" name="variants[${variantIndex}][variant_details]" class="variant-details-hidden" value='${JSON.stringify(variant.variant_details || {})}'>
                         </div>
+                    </div>
                 `);
-
+                
                 // Thêm vào container
                 $('#variants-container').append(variantElement);
                 
@@ -744,16 +780,16 @@
                     event.stopPropagation();
                 }
                 
-                Swal.fire({
+                    Swal.fire({
                     title: 'Xác nhận xóa',
-                    text: 'Bạn có chắc chắn muốn xóa biến thể này?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Xóa',
-                    cancelButtonText: 'Hủy',
+                        text: 'Bạn có chắc chắn muốn xóa biến thể này?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Xóa',
+                        cancelButtonText: 'Hủy',
                     confirmButtonColor: '#f06548'
-                }).then((result) => {
-                    if (result.isConfirmed) {
+                    }).then((result) => {
+                        if (result.isConfirmed) {
                         const variantElement = $(`[data-variant-id="${variantId}"]`);
                         if (variantElement.length) {
                             const variantIndex = parseInt(variantElement.data('variant-index'));
@@ -763,9 +799,9 @@
                             }
                             
                             // Xóa biến thể khỏi mảng
-                            selectedVariants.splice(variantIndex, 1);
-                            variantElement.remove();
-                            
+                                selectedVariants.splice(variantIndex, 1);
+                                variantElement.remove();
+                                
                             // Cập nhật lại index và hiển thị cho tất cả các biến thể còn lại
                             updateVariantIndexes();
                             
@@ -802,13 +838,12 @@
             
             // Hàm kiểm tra SKU trùng lặp
             function checkDuplicateSku(sku, currentIndex) {
-                // Kiểm tra trong các biến thể khác
                 for (let i = 0; i < selectedVariants.length; i++) {
-                    if (i !== currentIndex && selectedVariants[i].sku === sku) {
-                        return true; // Tìm thấy SKU trùng lặp
+                    if (i !== parseInt(currentIndex) && selectedVariants[i].sku === sku) {
+                        return true;
                     }
                 }
-                return false; // Không tìm thấy SKU trùng lặp
+                return false;
             }
 
             // Lưu thông tin chỉnh sửa biến thể
@@ -928,6 +963,7 @@
                 variantElement.find('.variant-price-hidden').val(selectedVariants[variantIndex].price);
                 variantElement.find('.variant-discount-price-hidden').val(selectedVariants[variantIndex].discount_price || '');
                 variantElement.find('.variant-quantity-hidden').val(selectedVariants[variantIndex].quantity);
+                variantElement.find('.variant-details-hidden').val(JSON.stringify(selectedVariants[variantIndex].variant_details || {}));
                 
                 // Đóng form
                 toggleVariantEdit(variantId);
@@ -954,23 +990,6 @@
                 });
             }
             
-            // Hiển thị các biến thể hiện có
-            if (Object.keys(groupedVariants).length > 0) {
-                // Chuyển đổi từ object sang array
-                const variantsArray = Object.values(groupedVariants);
-                
-                // Thêm vào mảng selectedVariants
-                selectedVariants = variantsArray;
-                
-                // Hiển thị từng biến thể
-                variantsArray.forEach((variant, index) => {
-                    displayVariant(variant, index);
-                });
-                
-                // Gắn sự kiện cho các biến thể
-                attachEventsToGeneratedVariants();
-            }
-
             // Cập nhật hàm validate realtime
             function initializeRealTimeValidation() {
                 // Event listener cho trường tên sản phẩm
@@ -1231,18 +1250,20 @@
                     
                     // Tạo biến thể cho mỗi tổ hợp
                     combinations.forEach((combination, index) => {
+                        // Thu thập dữ liệu variant_details
+                        const variantDetails = {};
+                        combination.forEach(item => {
+                            variantDetails[item.variantId] = item.valueId;
+                        });
+                        
                         // Tạo đối tượng biến thể mới
                         const variant = {
                             sku: `SKU-${index + 1}`,
                             price: $('#price').val() || '0',
                             quantity: '0',
-                            values: {}
+                            variant_details: variantDetails,
+                            values: variantDetails  // Giữ lại để tương thích với code cũ
                         };
-                        
-                        // Thu thập tất cả các giá trị thuộc tính cho biến thể này
-                        combination.forEach(item => {
-                            variant.values[item.variantId] = item.valueId;
-                        });
                         
                         // Thêm vào mảng biến thể
                         selectedVariants.push(variant);
@@ -1255,10 +1276,10 @@
                     attachEventsToGeneratedVariants();
                     
                     // Thông báo thành công
-                    Swal.fire({
-                        title: 'Thành công!',
+                Swal.fire({
+                    title: 'Thành công!',
                         text: `Đã tạo ${combinations.length} biến thể sản phẩm`,
-                        icon: 'success',
+                    icon: 'success',
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#405189'
                     });
@@ -1317,7 +1338,7 @@
                             showError(field, 'Vui lòng nhập tên sản phẩm');
                             return false;
                         }
-                        break;
+                                break;
                         
                     case 'category_id':
                         if (!value) {
@@ -1619,7 +1640,6 @@
                 e.preventDefault();
                 
                 console.log('Form submitted');
-                console.log('isAddingVariant:', isAddingVariant);
                 console.log('selectedVariants:', selectedVariants);
                 console.log('variantToggle checked:', variantToggle.is(':checked'));
                 console.log('productForm action:', $(this).attr('action'));
@@ -1679,7 +1699,7 @@
                     }
                 } else {
                     // Kiểm tra nếu có biến thể, kiểm tra các biến thể đã được tạo đầy đủ chưa
-                    if (selectedVariants.length === 0 && $('.variant-item').length === 0) {
+                    if (selectedVariants.length === 0) {
                         Swal.fire({
                             title: 'Lỗi!',
                             text: 'Vui lòng tạo ít nhất một biến thể cho sản phẩm',
@@ -1700,7 +1720,6 @@
                                     confirmButtonText: 'Đóng'
                                 });
                                 isValid = false;
-                                // Cuộn đến container biến thể
                                 firstErrorElement = firstErrorElement || $('#variants-container')[0];
                                 break;
                             }
@@ -1724,7 +1743,7 @@
                 
                 // Tạo FormData mới
                 const formData = new FormData(this);
-                
+
                 // Thêm danh sách ảnh đã xóa vào formData nếu có
                 if (removedImages && removedImages.length > 0) {
                     formData.append('removed_images', JSON.stringify(removedImages));
@@ -1733,9 +1752,9 @@
                 // Thêm method PUT vào formData
                 formData.append('_method', 'PUT');
 
-                // Thu thập dữ liệu biến thể từ các variant-item đã được thêm vào danh sách
+                // Thu thập dữ liệu biến thể
                 if (variantToggle.is(':checked')) {
-                    // Đặt has_variants = 1 để server biết xử lý biến thể
+                    // Đặt has_variants = 1
                     formData.set('has_variants', '1');
                     
                     // Xóa tất cả các trường variants cũ từ formData
@@ -1745,73 +1764,35 @@
                             keysToDelete.push(pair[0]);
                         }
                     }
+                    keysToDelete.forEach(key => formData.delete(key));
                     
-                    // Xóa các trường đã được đánh dấu
-                    keysToDelete.forEach(key => {
-                        formData.delete(key);
-                    });
-                    
-                    // Nếu có biến thể mới được thêm vào trong phiên này
-                    if (selectedVariants.length > 0) {
-                        // Thêm lại dữ liệu biến thể từ mảng selectedVariants
-                        selectedVariants.forEach((variant, index) => {
-                            formData.append(`variants[${index}][sku]`, variant.sku);
-                            formData.append(`variants[${index}][price]`, variant.price);
-                            formData.append(`variants[${index}][discount_price]`, variant.discount_price || '');
-                            formData.append(`variants[${index}][quantity]`, variant.quantity);
-                            
-                            // Thêm các giá trị thuộc tính
+                    // Thêm lại dữ liệu biến thể từ mảng selectedVariants
+                    selectedVariants.forEach((variant, index) => {
+                        formData.append(`variants[${index}][sku]`, variant.sku);
+                        formData.append(`variants[${index}][price]`, variant.price);
+                        formData.append(`variants[${index}][discount_price]`, variant.discount_price || '');
+                        formData.append(`variants[${index}][quantity]`, variant.quantity);
+                        
+                        // Thêm variant_details
+                        if (variant.variant_details) {
+                            formData.append(`variants[${index}][variant_details]`, JSON.stringify(variant.variant_details));
+                        }
+                        
+                        // Thêm các giá trị thuộc tính
+                        if (variant.values) {
                             Object.entries(variant.values).forEach(([variantId, valueId]) => {
                                 formData.append(`variants[${index}][values][${variantId}]`, valueId);
                             });
-                        });
-                    } else {
-                        // Nếu không có biến thể mới, lấy dữ liệu từ các biến thể hiện có trên trang
-                        const existingVariantItems = $('.variant-item');
-                        if (existingVariantItems.length > 0) {
-                            existingVariantItems.each(function(index) {
-                                const variantItem = $(this);
-                                const sku = variantItem.find('.variant-sku').text().trim();
-                                const price = variantItem.find('.variant-price').text().trim().replace(/[^\d]/g, '');
-                                const discountPrice = variantItem.find('.variant-discount-price').text().trim().replace(/[^\d]/g, '') || '';
-                                const quantity = variantItem.find('.variant-quantity').text().trim().replace(/[^\d]/g, '');
-                                
-                                // Lấy các giá trị thuộc tính từ text hiển thị trong variant-attributes
-                                const variantInfo = variantItem.find('.variant-info').data('variant-info') || {};
-                                
-                                formData.append(`variants[${index}][sku]`, sku);
-                                formData.append(`variants[${index}][price]`, price);
-                                formData.append(`variants[${index}][discount_price]`, discountPrice);
-                                formData.append(`variants[${index}][quantity]`, quantity);
-                                
-                                // Thêm các giá trị thuộc tính từ data-attribute
-                                if (variantInfo.attributes) {
-                                    Object.entries(variantInfo.attributes).forEach(([variantId, valueId]) => {
-                                        formData.append(`variants[${index}][values][${variantId}]`, valueId);
-                                    });
-                                }
-                            });
-                        } else {
-                            // Nếu không có biến thể nào, hãy đặt has_variants = 0
-                            formData.set('has_variants', '0');
                         }
-                    }
+                    });
                 } else {
-                    // Nếu toggle biến thể tắt, đặt has_variants = 0
+                    // Nếu không có biến thể, đặt has_variants = 0 và xóa tất cả dữ liệu biến thể
                     formData.set('has_variants', '0');
-                    
-                    // Xóa tất cả các trường variants khỏi formData
-                    const keysToDelete = [];
                     for (let pair of formData.entries()) {
                         if (pair[0].startsWith('variants')) {
-                            keysToDelete.push(pair[0]);
+                            formData.delete(pair[0]);
                         }
                     }
-                    
-                    // Xóa các trường đã được đánh dấu
-                    keysToDelete.forEach(key => {
-                        formData.delete(key);
-                    });
                 }
 
                 // Debug: Log formData trước khi gửi
@@ -1819,9 +1800,6 @@
                 for (let pair of formData.entries()) {
                     console.log(pair[0] + ':', pair[1]);
                 }
-                
-                // Debug: Log variants array
-                console.log('Variants array:', selectedVariants);
 
                 // Gửi request AJAX
                 $.ajax({
@@ -1891,162 +1869,87 @@
                 });
             });
 
+            // Xóa event handler form submit cũ
+            $(document).ready(function() {
+                $('#productForm').off('submit.oldHandler');
+            });
+
             // Cập nhật hàm gắn các sự kiện cho biến thể tự động
             function attachEventsToGeneratedVariants() {
-                console.log('Đang gắn sự kiện cho các biến thể tự động');
-                
-                // Thêm sự kiện click cho các biến thể được tạo tự động
-                $('.variant-header.cursor-pointer').off('click').on('click', function() {
-                    const variantItem = $(this).closest('.variant-item');
-                    const variantId = variantItem.attr('data-variant-id');
-                    const variantIndex = parseInt(variantItem.attr('data-variant-index'));
-                    console.log('Click vào header của biến thể:', variantId, 'Index:', variantIndex);
-                    
-                    // Đóng tất cả các form khác trước
-                    $('.variant-edit').not(variantItem.find('.variant-edit')).slideUp(300);
-                    
-                    if (variantId && !variantId.startsWith('variant_')) {
-                        window.toggleVariantEdit(variantId);
-                    } else {
-                        const variantForm = variantItem.find('.variant-edit');
-                        
-                        // Hiển thị/ẩn form hiện tại
-                        variantForm.slideToggle(300);
-                    }
+                // Sự kiện khi click vào nút xóa biến thể
+                $('.btn-delete-variant').off('click').on('click', function() {
+                    const variantIndex = $(this).data('index');
+                    removeVariant(variantIndex);
                 });
                 
-                // Thêm sự kiện click cho nút lưu thay đổi
-                $('.save-variant-edit').off('click').on('click', function() {
-                    const variantItem = $(this).closest('.variant-item');
-                    const variantId = variantItem.attr('data-variant-id');
-                    const variantIndex = parseInt(variantItem.attr('data-variant-index'));
-                    console.log('Click vào nút lưu của biến thể:', variantId, 'Index:', variantIndex);
+                // Sự kiện khi click vào nút chỉnh sửa biến thể
+                $('.btn-edit-variant').off('click').on('click', function() {
+                    const variantIndex = $(this).data('index');
+                    const variant = selectedVariants[variantIndex];
                     
-                    // Kiểm tra xem biến thể có tồn tại trong mảng selectedVariants không
-                    if (isNaN(variantIndex) || variantIndex < 0 || variantIndex >= selectedVariants.length) {
-                        console.error('Không tìm thấy biến thể với index:', variantIndex);
-                        Swal.fire({
-                            title: 'Lỗi!',
-                            text: 'Không tìm thấy thông tin biến thể. Vui lòng thử lại.',
-                            icon: 'error',
-                            confirmButtonText: 'OK'
+                    // Đặt giá trị cho form chỉnh sửa
+                    $('#edit-variant-id').val(variantIndex);
+                    $('#edit-variant-sku').val(variant.sku || '');
+                    $('#edit-variant-price').val(variant.price || '0');
+                    $('#edit-variant-discount-price').val(variant.discount_price || '0');
+                    $('#edit-variant-quantity').val(variant.quantity || '0');
+                    
+                    // Hiển thị thông tin biến thể trong form chỉnh sửa
+                    $('#edit-variant-info').empty();
+                    
+                    if (variant.variant_details) {
+                        // Dùng variant_details mới
+                        Object.entries(variant.variant_details).forEach(([variantId, valueId]) => {
+                            // Tìm tên của biến thể và giá trị
+                            const variantType = $(`.variant-type-select option[value="${variantId}"]`).text();
+                            
+                            // Tìm tên của giá trị biến thể
+                            const variantValue = $(`.variant-value-select-${variantId} option[value="${valueId}"]`).text();
+                            
+                            $('#edit-variant-info').append(`
+                                <div class="mb-2">
+                                    <span class="badge bg-primary font-size-12 me-2">${variantType || variantId}: ${variantValue || valueId}</span>
+                                    <input type="hidden" name="edit_variant_details[${variantId}]" value="${valueId}">
+                                </div>
+                            `);
                         });
-                        return;
+                    } else if (variant.values) {
+                        // Hỗ trợ cả dạng cũ 'values' nếu cần
+                        Object.entries(variant.values).forEach(([variantId, valueId]) => {
+                            // Tìm tên của biến thể và giá trị
+                            const variantType = $(`.variant-type-select option[value="${variantId}"]`).text();
+                            
+                            // Tìm tên của giá trị biến thể
+                            const variantValue = $(`.variant-value-select-${variantId} option[value="${valueId}"]`).text();
+                            
+                            $('#edit-variant-info').append(`
+                                <div class="mb-2">
+                                    <span class="badge bg-primary font-size-12 me-2">${variantType || variantId}: ${variantValue || valueId}</span>
+                                    <input type="hidden" name="edit_variant_details[${variantId}]" value="${valueId}">
+                                </div>
+                            `);
+                        });
                     }
                     
-                    // Gọi hàm saveVariantEdit để lưu thay đổi
-                    if (variantId && variantId.startsWith('variant_')) {
-                        const variantForm = variantItem.find('.variant-edit');
-                        const variantHeader = variantItem.find('.variant-header');
-                        
-                        // Đảm bảo xóa thông báo lỗi của trường discount_price
-                        $('#discount_price').removeClass('is-invalid is-valid');
-                        $('#discount_price').siblings('.invalid-feedback').hide().empty();
-                        
-                        // Lấy giá trị từ form
-                        const sku = variantForm.find('.variant-sku-input').val();
-                        const price = variantForm.find('.variant-price-input').val();
-                        const quantity = variantForm.find('.variant-quantity-input').val();
-                        
-                        console.log('Giá trị từ form:', { sku, price, quantity, variantIndex });
-                        
-                        // Validate
-                        let isValid = true;
-                        
-                        // Validate SKU
-                        if (!sku.trim()) {
-                            showError(variantForm.find('.variant-sku-input'), 'Vui lòng nhập SKU');
-                            isValid = false;
-                        } else if (checkDuplicateSku(sku.trim(), variantIndex)) {
-                            showError(variantForm.find('.variant-sku-input'), 'SKU này đã tồn tại');
-                            isValid = false;
-                        } else {
-                            showSuccess(variantForm.find('.variant-sku-input'));
-                        }
-                        
-                        // Validate giá
-                        const priceValue = parseFloat(price);
-                        if (!price || isNaN(priceValue) || priceValue <= 0) {
-                            showError(variantForm.find('.variant-price-input'), 'Giá phải lớn hơn 0');
-                            isValid = false;
-                        } else if (priceValue > 999999999) {
-                            showError(variantForm.find('.variant-price-input'), 'Giá biến thể không được lớn hơn 999.999.999 VNĐ');
-                            isValid = false;
-                        } else {
-                            showSuccess(variantForm.find('.variant-price-input'));
-                        }
-                        
-                        // Validate số lượng
-                        const quantityValue = parseInt(quantity);
-                        if (!quantity || isNaN(quantityValue) || quantityValue < 0) {
-                            showError(variantForm.find('.variant-quantity-input'), 'Số lượng không được âm');
-                            isValid = false;
-                        } else {
-                            showSuccess(variantForm.find('.variant-quantity-input'));
-                        }
-                        
-                        if (!isValid) {
-                            console.error('Dữ liệu không hợp lệ');
-                            return;
-                        }
-                        
-                        // Cập nhật giá trị hiển thị
-                        variantHeader.find('span:contains("SKU:")').next('.fw-medium').text(sku || 'Chưa có');
-                        variantHeader.find('span:contains("Giá:")').next('.fw-medium').text(price ? parseInt(price).toLocaleString('vi-VN') + ' VNĐ' : 'Chưa có');
-                        variantHeader.find('span:contains("SL:")').next('.fw-medium').text(quantity || 'Chưa có');
-                        
-                        // Cập nhật giá trị input hidden
-                        variantHeader.find('input[name$="[sku]"]').val(sku);
-                        variantHeader.find('input[name$="[price]"]').val(price);
-                        variantHeader.find('input[name$="[quantity]"]').val(quantity);
-                        
-                        // Cập nhật dữ liệu trong mảng selectedVariants
-                        selectedVariants[variantIndex].sku = sku;
-                        selectedVariants[variantIndex].price = price;
-                        selectedVariants[variantIndex].quantity = quantity;
-                        
-                        console.log(`Đã cập nhật biến thể #${variantIndex + 1}:`, selectedVariants[variantIndex]);
-                        
-                        // Đóng form
-                        variantForm.slideUp(300);
+                    // Hiển thị modal chỉnh sửa
+                    $('#editVariantModal').modal('show');
+                });
+                
+                // Hiển thị form nhập biến thể khi có biến thể
+                if (selectedVariants.length > 0) {
+                    $('#variants-form').removeClass('d-none');
                     } else {
-                        window.saveVariantEdit(variantId);
-                    }
-                });
+                    $('#variants-form').addClass('d-none');
+                }
                 
-                // Thêm sự kiện click cho nút hủy
-                $('.cancel-variant-edit').off('click').on('click', function() {
-                    const variantItem = $(this).closest('.variant-item');
-                    const variantForm = variantItem.find('.variant-edit');
-                    
-                    // Đóng form
-                    variantForm.slideUp(300);
-                });
-                
-                // Thêm sự kiện click cho nút xóa biến thể
-                $('.remove-variant').off('click').on('click', function(e) {
-                    e.stopPropagation(); // Ngăn sự kiện click lan tỏa lên phần tử cha
-                    const variantItem = $(this).closest('.variant-item');
-                    
-                    Swal.fire({
-                        title: 'Xác nhận xóa',
-                        text: 'Bạn có chắc chắn muốn xóa biến thể này?',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Xóa',
-                        cancelButtonText: 'Hủy',
-                        confirmButtonColor: '#f06548'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            variantItem.remove();
-                        }
-                    });
-                });
-                
-                // Thêm sự kiện input cho các trường trong biến thể
-                $('.variant-item').each(function() {
-                    attachInputEventsToVariant($(this));
-                });
+                // Cập nhật trạng thái có biến thể
+                if (selectedVariants.length > 0) {
+                    $('#has_variants').val('1');
+                    $('#base-price-discount-quantity').addClass('d-none');
+                } else {
+                    $('#has_variants').val('0');
+                    $('#base-price-discount-quantity').removeClass('d-none');
+                }
             }
 
             // Thêm CSS fix để tránh hiển thị biểu tượng validation trên input-group-text
@@ -2069,5 +1972,455 @@
                     }
                 </style>
             `);
+
+            // Xử lý nút Thêm biến thể
+            $('#add-variant-btn').on('click', function() {
+                // Lấy dữ liệu từ form biến thể
+                const sku = $('#variant-sku').val().trim();
+                const price = $('#variant-price').val();
+                const discountPrice = $('#variant-discount-price').val() || null;
+                const quantity = $('#variant-quantity').val();
+                
+                // Kiểm tra xem đã nhập đủ thông tin chưa
+                let isValid = true;
+                
+                // Validate SKU
+                    if (!sku) {
+                    showError($('#variant-sku'), 'Vui lòng nhập SKU');
+                    isValid = false;
+                } else if (checkDuplicateSku(sku, -1)) {
+                    showError($('#variant-sku'), 'SKU này đã tồn tại');
+                    isValid = false;
+                }
+                
+                // Validate giá
+                if (!price || parseFloat(price) <= 0) {
+                    showError($('#variant-price'), 'Giá phải lớn hơn 0');
+                    isValid = false;
+                }
+                
+                // Validate giá khuyến mãi nếu có
+                if (discountPrice && parseFloat(discountPrice) >= parseFloat(price)) {
+                    showError($('#variant-discount-price'), 'Giá khuyến mãi phải nhỏ hơn giá gốc');
+                    isValid = false;
+                }
+                
+                // Validate số lượng
+                if (!quantity || parseInt(quantity) < 0) {
+                    showError($('#variant-quantity'), 'Số lượng không được âm');
+                    isValid = false;
+                }
+                
+                // Kiểm tra các giá trị thuộc tính đã được chọn chưa
+                const variantValues = {};
+                let hasAllValues = true;
+                
+                $('.variant-value-select').each(function() {
+                    const variantId = $(this).data('variant-id');
+                    const valueId = $(this).val();
+                    
+                    if (!valueId) {
+                        showError($(this), 'Vui lòng chọn giá trị');
+                        hasAllValues = false;
+                    } else {
+                        showSuccess($(this));
+                        variantValues[variantId] = valueId;
+                    }
+                });
+                
+                if (!hasAllValues) {
+                    isValid = false;
+                }
+                
+                if (!isValid) {
+                    return;
+                }
+                
+                // Kiểm tra xem tổ hợp thuộc tính này đã tồn tại chưa
+                const combinationExists = selectedVariants.some(variant => {
+                    if (!variant.variant_details) return false;
+                    
+                    // Kiểm tra xem mỗi cặp key-value trong variant_details có khớp không
+                    const keys1 = Object.keys(variant.variant_details);
+                    const keys2 = Object.keys(variantValues);
+                    
+                    if (keys1.length !== keys2.length) return false;
+                    
+                    for (const key of keys1) {
+                        if (variant.variant_details[key] !== variantValues[key]) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                });
+                
+                if (combinationExists) {
+                        Swal.fire({
+                            title: 'Lỗi!',
+                        text: 'Tổ hợp thuộc tính này đã tồn tại',
+                            icon: 'error',
+                            confirmButtonText: 'Đóng'
+                        });
+                        return;
+                    }
+                    
+                // Thêm biến thể mới vào mảng
+                const newVariant = {
+                    sku: sku,
+                    price: price,
+                    discount_price: discountPrice,
+                    quantity: quantity,
+                    variant_details: variantValues,
+                    values: variantValues  // Giữ lại để tương thích với code cũ
+                };
+                
+                selectedVariants.push(newVariant);
+                
+                // Hiển thị biến thể mới
+                displayVariant(newVariant);
+                
+                // Reset form
+                $('#variant-sku').val('');
+                $('#variant-price').val('');
+                $('#variant-discount-price').val('');
+                $('#variant-quantity').val('');
+                $('.variant-value-select').val('');
+                
+                // Xóa trạng thái validation
+                $('#variant-sku, #variant-price, #variant-discount-price, #variant-quantity, .variant-value-select')
+                    .removeClass('is-invalid is-valid');
+                
+                // Ẩn form
+                $('#variantForm').addClass('d-none');
+                $('#variant-values-container').addClass('d-none');
+                
+                // Hiển thị thông báo thành công
+                        Swal.fire({
+                    title: 'Thành công!',
+                    text: 'Đã thêm biến thể mới',
+                    icon: 'success',
+                    confirmButtonText: 'Đóng',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            });
+
+            // Sự kiện khi click nút lưu trong modal chỉnh sửa biến thể
+            $('#saveVariantEdit').on('click', function() {
+                saveVariantEdit();
+            });
+
+            // Lưu thay đổi khi chỉnh sửa biến thể
+            function saveVariantEdit() {
+                console.log('Lưu thay đổi biến thể');
+                const variantIndex = $('#edit-variant-id').val();
+                console.log('Đang lưu biến thể với index:', variantIndex);
+                
+                // Validate input data
+                let isValid = true;
+                
+                // Validate SKU
+                const sku = $('#edit-variant-sku').val();
+                if (!sku.trim()) {
+                    showError($('#edit-variant-sku'), 'Vui lòng nhập SKU');
+                    isValid = false;
+                } else if (checkDuplicateSku(sku.trim(), variantIndex)) {
+                    showError($('#edit-variant-sku'), 'SKU này đã tồn tại');
+                    isValid = false;
+                } else {
+                    showSuccess($('#edit-variant-sku'));
+                }
+                
+                // Validate price
+                const price = $('#edit-variant-price').val();
+                const priceValue = parseFloat(price);
+                if (!price || isNaN(priceValue) || priceValue <= 0) {
+                    showError($('#edit-variant-price'), 'Giá phải lớn hơn 0');
+                    isValid = false;
+                } else {
+                    showSuccess($('#edit-variant-price'));
+                }
+                
+                // Validate discount price
+                const discountPrice = $('#edit-variant-discount-price').val();
+                const discountPriceValue = parseFloat(discountPrice);
+                if (discountPrice && (!isNaN(discountPriceValue) && discountPriceValue > 0)) {
+                    if (discountPriceValue >= priceValue) {
+                        showError($('#edit-variant-discount-price'), 'Giá khuyến mãi phải nhỏ hơn giá gốc');
+                        isValid = false;
+                    } else {
+                        showSuccess($('#edit-variant-discount-price'));
+                    }
+                } else if (discountPrice && (isNaN(discountPriceValue) || discountPriceValue <= 0)) {
+                    showError($('#edit-variant-discount-price'), 'Giá khuyến mãi phải lớn hơn 0 hoặc để trống');
+                    isValid = false;
+                } else {
+                    showSuccess($('#edit-variant-discount-price'));
+                }
+                
+                // Validate quantity
+                const quantity = $('#edit-variant-quantity').val();
+                const quantityValue = parseInt(quantity);
+                if (!quantity || isNaN(quantityValue) || quantityValue < 0) {
+                    showError($('#edit-variant-quantity'), 'Số lượng không được âm');
+                    isValid = false;
+                } else {
+                    showSuccess($('#edit-variant-quantity'));
+                }
+                
+                if (!isValid) {
+                    console.error('Dữ liệu không hợp lệ');
+                        return;
+                    }
+                    
+                // Lấy variant_details từ form
+                const variantDetails = {};
+                $('input[name^="edit_variant_details"]').each(function() {
+                    const variantId = $(this).attr('name').match(/\[([^\]]+)\]/)[1];
+                    const valueId = $(this).val();
+                    variantDetails[variantId] = valueId;
+                });
+                
+                // Cập nhật thông tin trong mảng selectedVariants
+                        selectedVariants[variantIndex].sku = sku;
+                selectedVariants[variantIndex].price = price;
+                selectedVariants[variantIndex].discount_price = discountPrice || null;
+                selectedVariants[variantIndex].quantity = quantity;
+                selectedVariants[variantIndex].variant_details = variantDetails;
+                
+                // Cập nhật hiển thị trên UI
+                const variantElement = $(`.variant-item[data-variant-index="${variantIndex}"]`);
+                        variantElement.find('.variant-sku').text(sku);
+                variantElement.find('.variant-price').text(`${parseInt(price).toLocaleString('vi-VN')} VNĐ`);
+                
+                if (discountPrice && discountPriceValue > 0) {
+                    variantElement.find('.variant-discount-price').text(`${parseInt(discountPrice).toLocaleString('vi-VN')} VNĐ`);
+                    variantElement.find('.variant-discount-price-container').removeClass('d-none');
+                } else {
+                    variantElement.find('.variant-discount-price-container').addClass('d-none');
+                }
+                
+                variantElement.find('.variant-quantity').text(quantity);
+                
+                // Cập nhật input hidden
+                variantElement.find('input[name$="[sku]"]').val(sku);
+                variantElement.find('input[name$="[price]"]').val(price);
+                variantElement.find('input[name$="[discount_price]"]').val(discountPrice || '');
+                variantElement.find('input[name$="[quantity]"]').val(quantity);
+                variantElement.find('input[name$="[variant_details]"]').val(JSON.stringify(variantDetails));
+                
+                // Đóng modal
+                $('#editVariantModal').modal('hide');
+                
+                console.log('Đã cập nhật biến thể:', selectedVariants[variantIndex]);
+            }
+
+            // Xóa biến thể
+            function removeVariant(variantIndex) {
+                console.log('Xóa biến thể với index:', variantIndex);
+                
+                Swal.fire({
+                    title: 'Xác nhận xóa',
+                    text: 'Bạn có chắc chắn muốn xóa biến thể này?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xóa',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#f06548'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Xóa khỏi mảng selectedVariants
+                        selectedVariants.splice(variantIndex, 1);
+                        
+                        // Xóa khỏi UI
+                        $(`.variant-item[data-variant-index="${variantIndex}"]`).remove();
+                        
+                        // Cập nhật lại index cho các biến thể còn lại
+                        $('.variant-item').each(function(index) {
+                            $(this).attr('data-variant-index', index);
+                            $(this).find('.btn-edit-variant').attr('data-index', index);
+                            $(this).find('.btn-delete-variant').attr('data-index', index);
+                        });
+                        
+                        // Cập nhật trạng thái có biến thể hay không
+                        updateVariantStatus();
+                        
+                        Swal.fire({
+                            title: 'Đã xóa!',
+                            text: 'Biến thể đã được xóa thành công',
+                            icon: 'success',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#405189'
+                        });
+                    }
+                });
+            }
+
+            // Hiển thị tất cả biến thể đã lưu
+            function displayAllVariants() {
+                // Xóa container
+                $('#variants-container').empty();
+                
+                // Hiển thị các biến thể
+                selectedVariants.forEach((variant, index) => {
+                    displayVariant(variant, index);
+                });
+                
+                // Gắn sự kiện cho các biến thể
+                attachEventsToGeneratedVariants();
+                
+                // Cập nhật trạng thái có biến thể hay không
+                if (selectedVariants.length > 0) {
+                    $('#has_variants').val('1');
+                    $('#base-price-discount-quantity').addClass('d-none');
+                    $('#variants-form').removeClass('d-none');
+                } else {
+                    $('#has_variants').val('0');
+                    $('#base-price-discount-quantity').removeClass('d-none');
+                    $('#variants-form').addClass('d-none');
+                }
+            }
+
+            // Xử lý khi gửi form
+            $(document).ready(function() {
+                $('#productForm').on('submit', function(e) {
+                    // Kiểm tra nếu sản phẩm có biến thể
+                    if ($('#has_variants').val() === '1') {
+                        // Xóa thuộc tính required và vô hiệu hóa các trường giá và số lượng cơ bản
+                        $('#price, #quantity').prop('disabled', true);
+                    }
+                });
+            });
+
+            // Cập nhật trạng thái biến thể khi thay đổi toggle
+            $(document).ready(function() {
+                // Khi toggle biến thể thay đổi
+                $('#variantToggle').on('change', function() {
+                    updateVariantStatus();
+                });
+                
+                // Khi thêm hoặc xóa biến thể
+                function updateVariantStatus() {
+                    if ($('#variantToggle').is(':checked') || selectedVariants.length > 0) {
+                        $('#has_variants').val('1');
+                        $('#base-price-discount-quantity').addClass('d-none');
+                        $('#variantSection').slideDown();
+                    } else {
+                        $('#has_variants').val('0');
+                        $('#base-price-discount-quantity').removeClass('d-none');
+                        $('#variantSection').slideUp();
+                    }
+                }
+                
+                // Cập nhật ngay khi trang tải
+                updateVariantStatus();
+            });
+
+            // Form submission handler
+            $(document).ready(function() {
+                // Xử lý khi gửi form
+                $('#productForm').submit(function(e) {
+                    // Kiểm tra nếu sản phẩm có biến thể
+                    if ($('#hasVariants').val() === '1') {
+                        // Xóa tất cả input biến thể cũ (nếu có)
+                        $('input[name^="variants"]').remove();
+                        
+                        // Vô hiệu hóa các trường giá và số lượng cơ bản
+                        $('#price, #quantity').prop('disabled', true);
+                        
+                        // Nếu không có biến thể nào, hiển thị thông báo lỗi
+                        if (selectedVariants.length === 0) {
+                            e.preventDefault();
+                            Swal.fire({
+                                title: 'Lỗi!',
+                                text: 'Bạn đã chọn sản phẩm có biến thể nhưng chưa thêm biến thể nào. Vui lòng thêm ít nhất một biến thể hoặc tắt tùy chọn biến thể.',
+                                icon: 'error',
+                                confirmButtonText: 'Đã hiểu'
+                            });
+                            return false;
+                        }
+                        
+                        // Thêm các biến thể vào form
+                        selectedVariants.forEach(function(variant, index) {
+                            // Thêm các trường ẩn với thông tin biến thể
+                            const variantPrefix = `variants[${index}]`;
+                            
+                            // Thêm SKU
+                            $('<input>').attr({
+                                type: 'hidden',
+                                name: `${variantPrefix}[sku]`,
+                                value: variant.sku
+                            }).appendTo('#productForm');
+                            
+                            // Thêm giá
+                            $('<input>').attr({
+                                type: 'hidden',
+                                name: `${variantPrefix}[price]`,
+                                value: variant.price
+                            }).appendTo('#productForm');
+                            
+                            // Thêm giá khuyến mãi nếu có
+                            if (variant.discount_price) {
+                                $('<input>').attr({
+                                    type: 'hidden',
+                                    name: `${variantPrefix}[discount_price]`,
+                                    value: variant.discount_price
+                                }).appendTo('#productForm');
+                            }
+                            
+                            // Thêm số lượng
+                            $('<input>').attr({
+                                type: 'hidden',
+                                name: `${variantPrefix}[quantity]`,
+                                value: variant.quantity
+                            }).appendTo('#productForm');
+                            
+                            // Thêm variant_details
+                            if (variant.variant_details) {
+                                $('<input>').attr({
+                                    type: 'hidden',
+                                    name: `${variantPrefix}[variant_details]`,
+                                    value: JSON.stringify(variant.variant_details)
+                                }).appendTo('#productForm');
+                            }
+                            
+                            // Thêm các giá trị thuộc tính
+                            if (variant.values) {
+                                Object.entries(variant.values).forEach(([variantId, valueId]) => {
+                                    $('<input>').attr({
+                                        type: 'hidden',
+                                        name: `${variantPrefix}[values][${variantId}]`,
+                                        value: valueId
+                                    }).appendTo('#productForm');
+                                });
+                            }
+                        });
+                        
+                        // Thêm input để đánh dấu có biến thể
+                        $('<input>').attr({
+                            type: 'hidden',
+                            name: 'has_variants',
+                            value: '1'
+                        }).appendTo('#productForm');
+                        
+                        console.log('Form đã được cập nhật với biến thể, tiếp tục submit');
+                    } else {
+                        // Nếu không có biến thể, đảm bảo bật các trường giá và số lượng
+                        $('#price, #quantity').prop('disabled', false);
+                    }
+                });
+            });
+
+            // Cập nhật trạng thái biến thể khi có thay đổi
+            function updateVariantStatus() {
+                if (selectedVariants.length > 0) {
+                    $('#hasVariants').val('1');
+                    $('#base-price-discount-quantity').addClass('d-none');
+                } else {
+                    $('#hasVariants').val('0');
+                    $('#base-price-discount-quantity').removeClass('d-none');
+                }
+            }
         });
     </script>
