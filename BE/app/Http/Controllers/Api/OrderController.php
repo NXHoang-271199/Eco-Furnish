@@ -245,26 +245,34 @@ class OrderController extends Controller
         try {
             // Lấy thông tin sản phẩm
             $product = Product::findOrFail($request->product_id);
-            $variant = $request->product_variant_id ? ProductVariant::find($request->product_variant_id) : null;
+            $variant = $request->product_variant_id
+                ? ProductVariant::where('id', $request->product_variant_id)
+                ->where('product_id', $product->id)
+                ->first()
+                : null;
+
+            // Kiểm tra nếu sản phẩm có biến thể nhưng không chọn biến thể
+            if ($product->variants()->exists() && !$variant) {
+                return response()->json(['message' => 'Bạn phải chọn biến thể trước khi mua ngay'], 400);
+            }
+
+            // Kiểm tra tồn kho
+            $stock = $variant ? $variant->quantity : $product->quantity;
+            $requestedQuantity = $request->quantity;
+
+            if ($requestedQuantity > $stock) {
+                return response()->json([
+                    'message' => "Số lượng sản phẩm không đủ, chỉ còn $stock cái.",
+                ], 400);
+            }
 
             // Xác định giá bán
             $price = $variant
                 ? ($variant->discount_price ?? $variant->price)
                 : ($product->discount_price ?? $product->price);
 
-            // Kiểm tra số lượng tồn kho
-            if ($variant) {
-                if ($variant->quantity < $request->quantity) {
-                    throw new \Exception("Số lượng sản phẩm biến thể không đủ hàng.");
-                }
-            } else {
-                if ($product->quantity < $request->quantity) {
-                    throw new \Exception("Số lượng sản phẩm không đủ hàng.");
-                }
-            }
-
             // Tổng tiền trước khi áp dụng voucher
-            $subtotal = $price * $request->quantity;
+            $subtotal = $price * $requestedQuantity;
             $discountAmount = 0;
 
             // Kiểm tra voucher nếu có
@@ -308,20 +316,20 @@ class OrderController extends Controller
             // Thêm sản phẩm vào order_items
             OrderItem::create([
                 'order_id' => $order->id,
-                'product_id' => $request->product_id,
+                'product_id' => $product->id,
                 'product_variant_id' => $request->product_variant_id ?? null,
                 'product_name' => $product->name,
                 'image_url' => $product->image_thumnail,
-                'quantity' => $request->quantity,
+                'quantity' => $requestedQuantity,
                 'price' => $price,
                 'total_price' => $subtotal,
             ]);
 
             // Trừ số lượng tồn kho
             if ($variant) {
-                $variant->decrement('quantity', $request->quantity);
+                $variant->decrement('quantity', $requestedQuantity);
             } else {
-                $product->decrement('quantity', $request->quantity);
+                $product->decrement('quantity', $requestedQuantity);
             }
 
             // ✅ Thêm thông báo đơn hàng
@@ -348,9 +356,10 @@ class OrderController extends Controller
                 ]));
             }
 
-            // Gửi mail xác nhận đơn hàng
-            Mail::to($order->user_email)->send(new OrderConfirmationMail($order, $discountAmount));
-
+            // gửi mail xác nhận đơn hàng
+            if ($paymentMethod === 'Tiền mặt') {
+                Mail::to($order->user_email)->send(new OrderConfirmationMail($order, $discountAmount));
+            }
             return response()->json([
                 'status' => 'success',
                 'message' => 'Đơn hàng đã được tạo thành công',
@@ -365,6 +374,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
 
 
     /**
