@@ -448,7 +448,7 @@ class ChatController extends Controller
             $keywordParts = explode(' ', $keywords);
             
             // Bắt đầu truy vấn
-            $query = Product::with(['category', 'gallery']);
+            $query = Product::with(['category', 'gallery', 'variants']);
             
             // Ánh xạ giữa không gian và các loại sản phẩm phù hợp
             $spaceToProductMapping = [
@@ -645,11 +645,13 @@ class ChatController extends Controller
                     Log::info("Tìm sản phẩm với giá chính xác: {$exactPrice}, phạm vi [{$minPrice} - {$maxPrice}]");
                     
                     $query->where(function($q) use ($minPrice, $maxPrice) {
-                        $q->where(function($subQ) use ($minPrice, $maxPrice) {
-                            $subQ->whereBetween('price', [$minPrice, $maxPrice]);
-                        })->orWhere(function($subQ) use ($minPrice, $maxPrice) {
-                            $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
-                                 ->whereNotNull('discount_price');
+                        $q->whereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
+                            $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
+                                $subQ->whereBetween('price', [$minPrice, $maxPrice]);
+                            })->orWhere(function($subQ) use ($minPrice, $maxPrice) {
+                                $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                     ->whereNotNull('discount_price');
+                            });
                         });
                     });
                 }
@@ -663,14 +665,13 @@ class ChatController extends Controller
                         Log::info("Tìm sản phẩm với phạm vi giá: [{$minPrice} - {$maxPrice}]");
                         
                         $query->where(function($q) use ($minPrice, $maxPrice) {
-                            // Kiểm tra giá gốc trong khoảng
-                            $q->where(function($subQ) use ($minPrice, $maxPrice) {
-                                $subQ->whereBetween('price', [$minPrice, $maxPrice]);
-                            })
-                            // HOẶC giá khuyến mãi trong khoảng
-                            ->orWhere(function($subQ) use ($minPrice, $maxPrice) {
-                                $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
-                                     ->whereNotNull('discount_price');
+                            $q->whereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
+                                $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
+                                    $subQ->whereBetween('price', [$minPrice, $maxPrice]);
+                                })->orWhere(function($subQ) use ($minPrice, $maxPrice) {
+                                    $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                         ->whereNotNull('discount_price');
+                                });
                             });
                         });
                     }
@@ -682,11 +683,13 @@ class ChatController extends Controller
                     Log::info("Tìm sản phẩm với giá tối đa: {$maxPrice}");
                     
                     $query->where(function($q) use ($maxPrice) {
-                        $q->where(function($subQ) use ($maxPrice) {
-                            $subQ->where('price', '<=', $maxPrice);
-                        })->orWhere(function($subQ) use ($maxPrice) {
-                            $subQ->where('discount_price', '<=', $maxPrice)
-                                 ->whereNotNull('discount_price');
+                        $q->whereHas('variants', function($variantQuery) use ($maxPrice) {
+                            $variantQuery->where(function($subQ) use ($maxPrice) {
+                                $subQ->where('price', '<=', $maxPrice);
+                            })->orWhere(function($subQ) use ($maxPrice) {
+                                $subQ->where('discount_price', '<=', $maxPrice)
+                                     ->whereNotNull('discount_price');
+                            });
                         });
                     });
                 }
@@ -697,12 +700,13 @@ class ChatController extends Controller
                     Log::info("Tìm sản phẩm với giá tối thiểu: {$minPrice}");
                     
                     $query->where(function($q) use ($minPrice) {
-                        // Nếu có giá khuyến mãi, dùng giá khuyến mãi để so sánh
-                        $q->where(function($subQ) use ($minPrice) {
-                            $subQ->where('price', '>=', $minPrice);
-                        })->orWhere(function($subQ) use ($minPrice) {
-                            $subQ->where('discount_price', '>=', $minPrice)
-                                 ->whereNotNull('discount_price');
+                        $q->whereHas('variants', function($variantQuery) use ($minPrice) {
+                            $variantQuery->where(function($subQ) use ($minPrice) {
+                                $subQ->where('price', '>=', $minPrice);
+                            })->orWhere(function($subQ) use ($minPrice) {
+                                $subQ->where('discount_price', '>=', $minPrice)
+                                     ->whereNotNull('discount_price');
+                            });
                         });
                     });
                 }
@@ -710,7 +714,7 @@ class ChatController extends Controller
 
             // Lấy kết quả
             $products = $query->orderBy('created_at', 'desc')
-                ->limit(15) // Tăng giới hạn để hiển thị nhiều sản phẩm hơn khi tìm nhiều danh mục
+                ->limit(15)
                 ->get();
 
             
@@ -738,8 +742,29 @@ class ChatController extends Controller
                     $foundCategories[] = $categoryName;
                 }
                 
-                // Lấy giá hiển thị (ưu tiên giá khuyến mãi nếu có)
-                $displayPrice = ($product->discount_price && $product->discount_price > 0) ? $product->discount_price : $product->price;
+                // Xác định giá hiển thị dựa trên việc sản phẩm có biến thể hay không
+                $displayPrice = 0;
+                $productPrice = 0;
+                $productDiscountPrice = null;
+                $hasVariants = $product->variants->isNotEmpty();
+                
+                if ($hasVariants) {
+                    // Nếu có biến thể, lấy biến thể có giá thấp nhất
+                    $lowestPriceVariant = $product->variants->sortBy(function($variant) {
+                        return $variant->discount_price ?? $variant->price;
+                    })->first();
+                    
+                    if ($lowestPriceVariant) {
+                        $productPrice = $lowestPriceVariant->price;
+                        $productDiscountPrice = $lowestPriceVariant->discount_price;
+                        $displayPrice = $productDiscountPrice ?? $productPrice;
+                    }
+                } else {
+                    // Nếu không có biến thể, sử dụng giá của sản phẩm
+                    $productPrice = $product->price;
+                    $productDiscountPrice = $product->discount_price;
+                    $displayPrice = $productDiscountPrice ?? $productPrice;
+                }
                 
                 // Kiểm tra xem sản phẩm có trong khoảng giá không (nếu có yêu cầu giá)
                 $productInPriceRange = false;
@@ -749,17 +774,45 @@ class ChatController extends Controller
                         $exactPrice = $priceInfo['exact_price'];
                         $minPrice = $exactPrice * 0.85;
                         $maxPrice = $exactPrice * 1.15;
-                        $productInPriceRange = ($displayPrice >= $minPrice && $displayPrice <= $maxPrice);
+                        if ($hasVariants) {
+                            $productInPriceRange = $product->variants->some(function($variant) use ($minPrice, $maxPrice) {
+                                $variantPrice = $variant->discount_price ?? $variant->price;
+                                return $variantPrice >= $minPrice && $variantPrice <= $maxPrice;
+                            });
+                        } else {
+                            $productInPriceRange = $displayPrice >= $minPrice && $displayPrice <= $maxPrice;
+                        }
                     } elseif ($priceInfo['price_type'] === 'range') {
                         $minPrice = $priceInfo['min_price'];
                         $maxPrice = $priceInfo['max_price'];
-                        $productInPriceRange = ($displayPrice >= $minPrice && $displayPrice <= $maxPrice);
+                        if ($hasVariants) {
+                            $productInPriceRange = $product->variants->some(function($variant) use ($minPrice, $maxPrice) {
+                                $variantPrice = $variant->discount_price ?? $variant->price;
+                                return $variantPrice >= $minPrice && $variantPrice <= $maxPrice;
+                            });
+                        } else {
+                            $productInPriceRange = $displayPrice >= $minPrice && $displayPrice <= $maxPrice;
+                        }
                     } elseif ($priceInfo['price_type'] === 'min') {
                         $minPrice = $priceInfo['min_price'];
-                        $productInPriceRange = ($displayPrice >= $minPrice);
+                        if ($hasVariants) {
+                            $productInPriceRange = $product->variants->some(function($variant) use ($minPrice) {
+                                $variantPrice = $variant->discount_price ?? $variant->price;
+                                return $variantPrice >= $minPrice;
+                            });
+                        } else {
+                            $productInPriceRange = $displayPrice >= $minPrice;
+                        }
                     } elseif ($priceInfo['price_type'] === 'max') {
                         $maxPrice = $priceInfo['max_price'];
-                        $productInPriceRange = ($displayPrice <= $maxPrice);
+                        if ($hasVariants) {
+                            $productInPriceRange = $product->variants->some(function($variant) use ($maxPrice) {
+                                $variantPrice = $variant->discount_price ?? $variant->price;
+                                return $variantPrice <= $maxPrice;
+                            });
+                        } else {
+                            $productInPriceRange = $displayPrice <= $maxPrice;
+                        }
                     }
                     
                     if ($productInPriceRange) {
@@ -774,14 +827,24 @@ class ChatController extends Controller
                 $formattedProduct = [
                     'id' => $product->id,
                     'name' => $product->name,
-                    'price' => $product->price,
-                    'discount_price' => $product->discount_price,
+                    'price' => $productPrice,
+                    'discount_price' => $productDiscountPrice,
                     'image' => $imagePath,
                     'category' => $categoryName,
                     'category_group' => $categoryName,
                     'description' => Str::limit($product->description, 100),
                     'in_price_range' => $productInPriceRange,
-                    'display_price' => $displayPrice // Thêm giá hiển thị để dễ dàng sắp xếp
+                    'display_price' => $displayPrice,
+                    'has_variants' => $hasVariants,
+                    'variant_count' => $product->variants->count(),
+                    'variants' => $hasVariants ? $product->variants->map(function($variant) {
+                        return [
+                            'id' => $variant->id,
+                            'price' => $variant->price,
+                            'discount_price' => $variant->discount_price,
+                            'variant_details' => $variant->variant_details
+                        ];
+                    }) : []
                 ];
                 
                 // Chỉ lưu sản phẩm vào mảng kết quả nếu phù hợp với yêu cầu giá

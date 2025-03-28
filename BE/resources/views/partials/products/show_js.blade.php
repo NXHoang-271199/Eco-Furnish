@@ -7,45 +7,122 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            
-            // Force horizontal layout
+            initializeGallery();
+            initializeTabEffects();
+            initializeImageZoom();
+        });
+
+        function initializeGallery() {
             const galleryContainer = document.querySelector('.gallery-container');
+            const firstThumbnail = document.querySelector('.thumbnail-wrapper');
+            
             if (galleryContainer) {
-                
-                // Force layout recalculation
-                galleryContainer.style.display = 'flex';
-                galleryContainer.style.flexDirection = 'row';
-                galleryContainer.style.alignItems = 'center';
-                
-               
+                galleryContainer.style.opacity = '0';
+                setTimeout(() => {
+                    galleryContainer.style.transition = 'opacity 0.5s ease';
+                    galleryContainer.style.opacity = '1';
+                }, 100);
             }
 
-            // Initialize first thumbnail
-            const firstThumbnail = document.querySelector('.thumbnail-wrapper');
             if (firstThumbnail) {
                 firstThumbnail.classList.add('active');
             }
-        });
+        }
 
-        function changeMainImage(src) {
+        function initializeTabEffects() {
+            const tabLinks = document.querySelectorAll('.nav-link');
+            const tabContents = document.querySelectorAll('.tab-pane');
+
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // Thêm hiệu ứng fade cho tab content
+                    tabContents.forEach(content => {
+                        if (content.classList.contains('show')) {
+                            content.style.opacity = '0';
+                            setTimeout(() => {
+                                content.style.opacity = '1';
+                            }, 150);
+                        }
+                    });
+                });
+            });
+        }
+
+        function initializeImageZoom() {
+            const mainImage = document.getElementById('main-product-image');
+            if (mainImage) {
+                mainImage.style.transition = 'transform 0.3s ease';
+                mainImage.addEventListener('mousemove', handleImageZoom);
+                mainImage.addEventListener('mouseleave', resetImageZoom);
+            }
+        }
+
+        function handleImageZoom(e) {
+            const image = e.target;
+            const rect = image.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+            
+            const scale = 1.1;
+            const moveX = (x - 0.5) * 20;
+            const moveY = (y - 0.5) * 20;
+            
+            image.style.transform = `scale(${scale}) translate(${moveX}px, ${moveY}px)`;
+        }
+
+        function resetImageZoom(e) {
+            e.target.style.transform = 'scale(1) translate(0, 0)';
+        }
+
+        function changeMainImage(src, clickedThumb) {
             const mainImage = document.getElementById('main-product-image');
             const thumbnails = document.querySelectorAll('.thumbnail-wrapper');
+            const container = document.querySelector('.gallery-container');
             
-            if (mainImage) {
-                mainImage.src = src;
+            if (mainImage && clickedThumb) {
+                // Cập nhật ảnh chính với hiệu ứng fade
+                mainImage.style.opacity = '0';
+                mainImage.style.transform = 'scale(0.95)';
                 
-                thumbnails.forEach(thumb => {
-                    thumb.classList.remove('active');
+                setTimeout(() => {
+                    mainImage.src = src;
+                    mainImage.style.transition = 'all 0.3s ease';
+                    mainImage.style.opacity = '1';
+                    mainImage.style.transform = 'scale(1)';
+                }, 150);
+                
+                // Cập nhật trạng thái active cho thumbnails
+                thumbnails.forEach(thumb => thumb.classList.remove('active'));
+                clickedThumb.classList.add('active');
+
+                // Tính toán vị trí để thumbnail được chọn nằm giữa
+                const containerWidth = container.offsetWidth;
+                const thumbWidth = clickedThumb.offsetWidth;
+                const thumbLeft = clickedThumb.offsetLeft;
+                const scrollPosition = thumbLeft - (containerWidth / 2) + (thumbWidth / 2);
+
+                // Cuộn đến vị trí đã tính
+                container.scrollTo({
+                    left: scrollPosition,
+                    behavior: 'smooth'
                 });
-                
-                const activeThumbnail = Array.from(thumbnails).find(thumb => {
-                    const img = thumb.querySelector('img');
-                    return img && img.src === src;
+            }
+        }
+
+        function scrollGallery(direction) {
+            const container = document.querySelector('.gallery-container');
+            const scrollAmount = 200;
+            
+            if (container) {
+                const currentScroll = container.scrollLeft;
+                const newScroll = direction === 'next' 
+                    ? currentScroll + scrollAmount 
+                    : currentScroll - scrollAmount;
+                    
+                container.scrollTo({
+                    left: newScroll,
+                    behavior: 'smooth'
                 });
-                
-                if (activeThumbnail) {
-                    activeThumbnail.classList.add('active');
-                }
             }
         }
 
@@ -58,7 +135,16 @@
                 confirmButtonText: 'Có, xóa!',
                 cancelButtonText: 'Hủy',
                 confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6'
+                cancelButtonColor: '#3085d6',
+                customClass: {
+                    popup: 'animated zoomIn'
+                },
+                showClass: {
+                    popup: 'animated zoomIn faster'
+                },
+                hideClass: {
+                    popup: 'animated zoomOut faster'
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     button.closest('form').submit();
