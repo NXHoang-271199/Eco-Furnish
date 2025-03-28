@@ -20,6 +20,18 @@
         };
         
         $(document).ready(function() {
+            // Đảm bảo các dòng đã ẩn trước khi khởi tạo (trạng thái mặc định trong CSS)
+            setTimeout(function() {
+                // Sau khi mọi thứ đã tải xong, bắt đầu hiệu ứng với độ trễ
+                animateItems('#orderTable tbody tr', 100);
+            }, 100);
+            
+            initTooltips();
+            initDropdownAnimation();
+            initRowHoverEffect();
+            fixDropdownPosition();
+            initDropdownZIndexHandling();
+            
             // Khởi tạo price range slider
             priceRangeSlider = document.getElementById('product-price-range');
             if (priceRangeSlider) {
@@ -72,7 +84,167 @@
                     applyAllFilters();
                 }, 300);
             });
+            
+            // Xử lý sự kiện click bên ngoài dropdown menu để đóng
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.dropdown').length) {
+                    $('.dropdown-menu.show').removeClass('show');
+                    $('#orderTable tr').removeClass('has-dropdown-open');
+                }
+            });
         });
+        
+        // Xử lý z-index cho dropdown menu khi được mở
+        function initDropdownZIndexHandling() {
+            // Khi dropdown mở, đặt z-index cho dòng để vượt qua các dòng khác
+            $(document).on('show.bs.dropdown', '.dropdown', function() {
+                $(this).closest('tr').addClass('has-dropdown-open');
+                
+                // Đảm bảo rằng tất cả các dòng khác có z-index thấp hơn
+                $('#orderTable tr').not('.has-dropdown-open').css('z-index', '1');
+                $('.has-dropdown-open').css('z-index', '1060');
+            });
+            
+            // Khi dropdown đóng, reset z-index
+            $(document).on('hide.bs.dropdown', '.dropdown', function() {
+                $(this).closest('tr').removeClass('has-dropdown-open');
+            });
+        }
+        
+        // Sửa vị trí của dropdown menu để không bị cắt
+        function fixDropdownPosition() {
+            // Xử lý hiển thị dropdown menu
+            $(document).on('show.bs.dropdown', '.dropdown', function() {
+                var $this = $(this);
+                var $menu = $this.find('.dropdown-menu');
+                var $table = $this.closest('.table-responsive');
+                
+                // Đặt lại các thuộc tính vị trí
+                $menu.css({
+                    'position': 'absolute',
+                    'top': '100%',
+                    'left': 'auto',
+                    'right': '0',
+                    'transform': 'none',
+                    'z-index': '9999'
+                });
+                
+                // Kiểm tra xem dropdown có bị cắt bởi cạnh phải của màn hình không
+                setTimeout(function() {
+                    var menuRect = $menu[0].getBoundingClientRect();
+                    var windowWidth = window.innerWidth;
+                    
+                    // Nếu menu bị cắt bởi cạnh phải
+                    if (menuRect.right > windowWidth) {
+                        $menu.css({
+                            'right': '0',
+                            'left': 'auto'
+                        });
+                    }
+                    
+                    // Kiểm tra xem dropdown có bị cắt bởi cạnh dưới của màn hình không
+                    var menuBottom = menuRect.top + menuRect.height;
+                    var windowHeight = window.innerHeight;
+                    
+                    if (menuBottom > windowHeight) {
+                        $menu.css({
+                            'top': 'auto',
+                            'bottom': '100%',
+                            'margin-bottom': '5px'
+                        });
+                    }
+                    
+                    // Đảm bảo menu hiển thị trên các phần tử khác
+                    $menu.css('z-index', '9999');
+                    
+                    // Nếu là hàng cuối cùng của bảng, hiển thị dropdown phía trên
+                    var $row = $this.closest('tr');
+                    var $lastRow = $table.find('tr:last-child');
+                    var $secondLastRow = $table.find('tr:nth-last-child(2)');
+                    
+                    if ($row.is($lastRow) || $row.is($secondLastRow)) {
+                        $menu.css({
+                            'top': 'auto',
+                            'bottom': '100%',
+                            'margin-bottom': '5px'
+                        });
+                    }
+                    
+                    // Xử lý trên màn hình nhỏ
+                    if (window.innerWidth < 768) {
+                        $menu.css({
+                            'position': 'fixed',
+                            'top': 'auto',
+                            'left': '50%',
+                            'bottom': '20%',
+                            'right': 'auto',
+                            'transform': 'translateX(-50%)',
+                            'width': '80%',
+                            'max-width': '250px'
+                        });
+                    }
+                }, 0);
+            });
+        }
+        
+        // Khởi tạo tooltips cho các nút
+        function initTooltips() {
+            $('[data-bs-toggle="tooltip"]').tooltip({
+                trigger: 'hover',
+                animation: true
+            });
+        }
+        
+        // Thêm hiệu ứng cho các dropdown
+        function initDropdownAnimation() {
+            $('.dropdown').on('show.bs.dropdown', function() {
+                $(this).find('.dropdown-menu').first().stop(true, true).slideDown(200);
+            });
+            
+            $('.dropdown').on('hide.bs.dropdown', function() {
+                $(this).find('.dropdown-menu').first().stop(true, true).slideUp(200);
+            });
+        }
+        
+        // Hiệu ứng hover cho dòng sản phẩm
+        function initRowHoverEffect() {
+            $('#orderTable tbody tr').hover(
+                function() {
+                    // Kiểm tra xem có dropdown nào đang mở không
+                    if ($('#orderTable tr.has-dropdown-open').length === 0) {
+                        $(this).addClass('bg-light');
+                        $(this).css('transition', 'background-color 0.3s ease');
+                    } else {
+                        // Chỉ thêm hiệu ứng hover cho dòng đang mở dropdown
+                        if ($(this).hasClass('has-dropdown-open')) {
+                            $(this).addClass('bg-light');
+                            $(this).css('transition', 'background-color 0.3s ease');
+                        }
+                    }
+                }, 
+                function() {
+                    $(this).removeClass('bg-light');
+                }
+            );
+        }
+        
+        // Animation cho danh sách phần tử
+        function animateItems(selector, delay) {
+            const items = document.querySelectorAll(selector);
+            
+            // Đảm bảo rằng các hàng đã ẩn (opacity: 0)
+            items.forEach(item => {
+                item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            });
+            
+            // Bắt đầu hiển thị các hàng với độ trễ
+            items.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, index * delay);
+            });
+        }
 
         function applyAllFilters() {
             const productRows = document.querySelectorAll('#orderTable tbody tr');
@@ -150,7 +322,17 @@
                     html: `Không có sản phẩm nào có giá trong khoảng ${currentFilters.minPrice.toLocaleString('vi-VN')} - ${currentFilters.maxPrice.toLocaleString('vi-VN')} VNĐ<br>
                           Vui lòng thử lại với khoảng giá khác.`,
                     icon: 'info',
-                    confirmButtonText: 'Đóng'
+                    confirmButtonText: 'Đóng',
+                    customClass: {
+                        popup: 'animated fadeInDown faster',
+                        confirmButton: 'btn btn-primary'
+                    },
+                    showClass: {
+                        popup: 'animated fadeInDown faster'
+                    },
+                    hideClass: {
+                        popup: 'animated fadeOutUp faster'
+                    }
                 });
             } else {
                 Swal.fire({
@@ -158,9 +340,39 @@
                     html: `Tìm thấy ${visibleProducts} sản phẩm có giá trong khoảng ${currentFilters.minPrice.toLocaleString('vi-VN')} - ${currentFilters.maxPrice.toLocaleString('vi-VN')} VNĐ`,
                     icon: 'success',
                     timer: 2000,
-                    showConfirmButton: false
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'animated fadeInDown faster'
+                    },
+                    showClass: {
+                        popup: 'animated fadeInDown faster'
+                    },
+                    hideClass: {
+                        popup: 'animated fadeOutUp faster'
+                    }
                 });
+                
+                // Hiệu ứng highlight các sản phẩm được lọc
+                highlightFilteredProducts();
             }
+            
+            // Đóng sidebar filter trên mobile sau khi lọc
+            if (window.innerWidth < 768) {
+                toggleFilter();
+            }
+        }
+        
+        // Tạo hiệu ứng highlight cho các sản phẩm sau khi lọc
+        function highlightFilteredProducts() {
+            const visibleRows = document.querySelectorAll('#orderTable tbody tr[style=""]');
+            visibleRows.forEach(row => {
+                row.style.transition = 'background-color 0.5s ease';
+                row.style.backgroundColor = 'rgba(64, 81, 137, 0.08)';
+                
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 1000);
+            });
         }
 
         function resetFilters() {
@@ -198,8 +410,20 @@
                 text: 'Tất cả sản phẩm đã được hiển thị lại',
                 icon: 'success',
                 timer: 1500,
-                showConfirmButton: false
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'animated fadeInDown faster'
+                },
+                showClass: {
+                    popup: 'animated fadeInDown faster'
+                },
+                hideClass: {
+                    popup: 'animated fadeOutUp faster'
+                }
             });
+            
+            // Animation cho các sản phẩm
+            animateItems('#orderTable tbody tr', 50);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -215,6 +439,9 @@
                     this.classList.add('active');
                     selectedCategoryId = this.getAttribute('data-category-id');
 
+                    // Hiệu ứng cho các category filters
+                    animateElement(this);
+                    
                     // Chỉ áp dụng lọc danh mục
                     applyCategoryFilter();
                 });
@@ -226,6 +453,15 @@
                 filterButton.onclick = filterProducts;
             }
         });
+        
+        // Hiệu ứng cho element được click
+        function animateElement(el) {
+            el.style.transition = 'transform 0.3s ease';
+            el.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                el.style.transform = 'scale(1)';
+            }, 300);
+        }
 
         function confirmDelete(id) {
             Swal.fire({
@@ -236,44 +472,74 @@
                 confirmButtonText: 'Có, xóa!',
                 cancelButtonText: 'Hủy',
                 confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `/admin/products/${id}`,
-                        type: 'DELETE',
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire({
-                                    title: 'Thành công!',
-                                    text: response.message,
-                                    icon: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    window.location.reload();
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Lỗi!',
-                                    text: response.message,
-                                    icon: 'error',
-                                    confirmButtonText: 'OK'
-                                });
+                cancelButtonColor: '#6c757d',
+                showLoaderOnConfirm: true,
+                allowOutsideClick: false,
+                customClass: {
+                    popup: 'animated fadeInDown faster',
+                    confirmButton: 'btn btn-danger',
+                    cancelButton: 'btn btn-secondary'
+                },
+                showClass: {
+                    popup: 'animated fadeInDown faster'
+                },
+                hideClass: {
+                    popup: 'animated fadeOutUp faster'
+                },
+                preConfirm: () => {
+                    return new Promise((resolve, reject) => {
+                        $.ajax({
+                            url: `/admin/products/${id}`,
+                            type: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    // Animation xóa dòng sản phẩm
+                                    const row = document.querySelector(`#orderTable tbody tr td button[onclick="confirmDelete(${id})"]`).closest('tr');
+                                    row.style.transition = 'all 0.5s ease';
+                                    row.style.opacity = '0';
+                                    row.style.transform = 'translateX(20px)';
+                                    
+                                    setTimeout(() => {
+                                        resolve(response);
+                                    }, 500);
+                                } else {
+                                    reject(new Error(response.message || 'Có lỗi xảy ra khi xóa sản phẩm'));
+                                }
+                            },
+                            error: function(xhr) {
+                                reject(new Error('Có lỗi xảy ra khi xóa sản phẩm'));
                             }
-                        },
-                        error: function(xhr) {
-                            Swal.fire({
-                                title: 'Lỗi!',
-                                text: 'Có lỗi xảy ra khi xóa sản phẩm',
-                                icon: 'error',
-                                confirmButtonText: 'OK'
-                            });
-                        }
+                        });
                     });
                 }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Thành công!',
+                        text: result.value.message,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        customClass: {
+                            popup: 'animated fadeInDown faster'
+                        }
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                }
+            }).catch((error) => {
+                Swal.fire({
+                    title: 'Lỗi!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    customClass: {
+                        popup: 'animated fadeInDown faster'
+                    }
+                });
             });
         }
 
@@ -289,6 +555,9 @@
                 filter.classList.add('show');
                 backdrop.classList.add('show');
                 document.body.style.overflow = 'hidden';
+                
+                // Animation cho các filter items
+                animateItems('.filter-section', 100);
             }
         }
 
@@ -301,4 +570,87 @@
                 }
             }
         });
+        
+        // Hiệu ứng sóng nước khi click các nút
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    const rect = this.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    const ripple = document.createElement('span');
+                    ripple.className = 'ripple-effect';
+                    ripple.style.position = 'absolute';
+                    ripple.style.width = '100px';
+                    ripple.style.height = '100px';
+                    ripple.style.background = 'rgba(255, 255, 255, 0.4)';
+                    ripple.style.borderRadius = '50%';
+                    ripple.style.transform = 'translate(-50%, -50%) scale(0)';
+                    ripple.style.top = y + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.animation = 'ripple 0.6s linear';
+                    ripple.style.pointerEvents = 'none';
+                    
+                    this.style.position = 'relative';
+                    this.style.overflow = 'hidden';
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+        });
+        
+        // Thêm CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: translate(-50%, -50%) scale(3);
+                    opacity: 0;
+                }
+            }
+            
+            @keyframes fadeInDown {
+                from {
+                    opacity: 0;
+                    transform: translate3d(0, -20px, 0);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate3d(0, 0, 0);
+                }
+            }
+            
+            @keyframes fadeOutUp {
+                from {
+                    opacity: 1;
+                }
+                to {
+                    opacity: 0;
+                    transform: translate3d(0, -20px, 0);
+                }
+            }
+            
+            .animated {
+                animation-duration: 0.5s;
+                animation-fill-mode: both;
+            }
+            
+            .fadeInDown {
+                animation-name: fadeInDown;
+            }
+            
+            .fadeOutUp {
+                animation-name: fadeOutUp;
+            }
+            
+            .faster {
+                animation-duration: 0.3s;
+            }
+        `;
+        document.head.appendChild(style);
     </script>

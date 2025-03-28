@@ -11,8 +11,7 @@ class ProductVariant extends Model
 
     protected $fillable = [
         'product_id',
-        'variant_id',
-        'variant_value_id',
+        'variant_details',
         'sku',
         'price',
         'discount_price',
@@ -23,6 +22,7 @@ class ProductVariant extends Model
        'price' => 'float',
        'discount_price' => 'float',
        'status' => 'integer',
+       'variant_details' => 'json',
     ];
     public function product()
     {

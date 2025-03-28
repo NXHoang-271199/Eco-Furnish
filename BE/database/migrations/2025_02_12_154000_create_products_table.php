@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name', 255);
             $table->unsignedBigInteger('category_id');
             $table->text('image_thumnail');
-            $table->decimal('price', 15, 2)->nullable();
+            $table->decimal('price', 12, 2)->nullable();
             $table->decimal('discount_price', 15, 2)->nullable();
             $table->text('short_description')->nullable();
             $table->text('description')->nullable();
