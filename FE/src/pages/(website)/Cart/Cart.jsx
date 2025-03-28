@@ -285,15 +285,27 @@ const Cart = () => {
                                 {item.product.name}
                               </h3>
                               <div className="mt-1 space-x-2">
-                                {Object.entries(item.variants).map(
-                                  ([key, value]) => (
-                                    <span
-                                      key={key}
-                                      className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-br from-gray-100 to-gray-200 text-gray-800 hover:from-gray-200 hover:to-gray-300 transition-all duration-300 shadow-sm"
-                                    >
-                                      {value}
-                                    </span>
+                                {item.variants &&
+                                typeof item.variants === "object" ? (
+                                  Object.entries(item.variants).map(
+                                    ([key, value]) => (
+                                      <span
+                                        key={key}
+                                        className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-br from-gray-100 to-gray-200 text-gray-800 hover:from-gray-200 hover:to-gray-300 transition-all duration-300 shadow-sm"
+                                      >
+                                        {key === "color"
+                                          ? "Màu: "
+                                          : key === "size"
+                                          ? "Kích thước: "
+                                          : key + ": "}
+                                        {value || "Không xác định"}
+                                      </span>
+                                    )
                                   )
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-br from-gray-100 to-gray-200 text-gray-800">
+                                    Không có biến thể
+                                  </span>
                                 )}
                               </div>
                             </div>

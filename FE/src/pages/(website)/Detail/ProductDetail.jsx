@@ -5,6 +5,51 @@ import { useDispatch } from "react-redux";
 import { addToCart } from "../../../store/cartSlice";
 import AddToCartToast from "../../../components/AddToCartToast";
 
+// Hàm phân tích thông tin biến thể từ SKU
+const parseVariantFromSku = (sku) => {
+  // Ví dụ chuỗi SKU: BG-NAVU-111 (Nâu gỗ - Vừa)
+  // BG-DELO-101 (Đen - Lớn)
+  if (!sku || typeof sku !== "string") return null;
+
+  // Mẫu: [tiền tố]-[mã màu][mã kích thước]-[mã số]
+  const parts = sku.split("-");
+  if (parts.length < 3) return null;
+
+  const colorSizeCode = parts[1]; // NAVU, NALO, DEVU, DELO
+
+  // 2 ký tự đầu là mã màu (NA: Nâu, DE: Đen)
+  // 2 ký tự sau là mã kích thước (VU: Vừa, LO: Lớn)
+  const colorCode = colorSizeCode.substring(0, 2);
+  const sizeCode = colorSizeCode.substring(2, 4);
+
+  // Ánh xạ mã màu
+  const colorMap = {
+    NA: "Nâu gỗ",
+    DE: "Đen",
+    TR: "Trắng",
+    XA: "Xám",
+    VA: "Vàng",
+  };
+
+  // Ánh xạ mã kích thước
+  const sizeMap = {
+    VU: "Vừa",
+    LO: "Lớn",
+    NH: "Nhỏ",
+    TB: "Trung bình",
+  };
+
+  const color = colorMap[colorCode] || colorCode;
+  const size = sizeMap[sizeCode] || sizeCode;
+
+  return {
+    color,
+    size,
+    colorCode,
+    sizeCode,
+  };
+};
+
 const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [comments, setComments] = useState([]);
@@ -29,6 +74,13 @@ const ProductDetail = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackType, setFeedbackType] = useState("success"); // "success" hoặc "error"
+
+  // State để lưu thông tin các loại biến thể và giá trị
+  const [variantTypes, setVariantTypes] = useState([]);
+  const [variantValues, setVariantValues] = useState([]);
+
+  // Thêm state để quản lý tổng tiền trong Order Summary
+  const [orderTotal, setOrderTotal] = useState(0);
 
   console.log("ID from useParams:", id);
 
@@ -78,101 +130,288 @@ const ProductDetail = () => {
         console.log("API Response:", response.data);
         let productData = response.data.data;
 
+        // Log chi tiết cấu trúc dữ liệu của sản phẩm để debug
+        console.log("Chi tiết sản phẩm:", JSON.stringify(productData, null, 2));
+
+        // Thiết lập giá mặc định từ sản phẩm
+        setCurrentPrice(productData.price);
+        setCurrentDiscount(productData.discount_price);
+
+        // Kiểm tra xem productData có thuộc tính variants không
+        if (
+          !productData.variants ||
+          !Array.isArray(productData.variants) ||
+          productData.variants.length === 0
+        ) {
+          console.log(
+            "Không có dữ liệu biến thể trong phản hồi API hoặc biến thể rỗng"
+          );
+
+          const variants = [];
+
+          // Tạo biến thể màu sắc
+          const colors = [...new Set(variantTable.map((item) => item.color))];
+          colors.forEach((color, index) => {
+            variants.push({
+              id: index + 1,
+              variant_id: 1,
+              variant_name: "",
+              variant_value_id: index + 1,
+              variant_value_name: color,
+              quantity: 10,
+              price: productData.price,
+              sku: `COLOR-${index + 1}`,
+            });
+          });
+
+          // Tạo biến thể kích thước
+          const sizes = [...new Set(variantTable.map((item) => item.size))];
+          sizes.forEach((size, index) => {
+            variants.push({
+              id: index + 1,
+              variant_id: 2,
+              variant_name: "Kích thước",
+              variant_value_id: index + 1,
+              variant_value_name: size,
+              quantity: 10,
+              price: productData.price,
+              sku: `SIZE-${index + 1}`,
+            });
+          });
+
+          console.log("Biến thể:", sizes);
+
+          // Tạo các biến thể kết hợp (không hiển thị nhưng dùng để tính giá)
+          variantTable.forEach((item, index) => {
+            const colorId = colors.indexOf(item.color) + 1;
+            const sizeId = sizes.indexOf(item.size) + 1;
+
+            variants.push({
+              id: colors.length + sizes.length + index + 1,
+              variant_id: 3, // Biến thể kết hợp (không hiển thị)
+              variant_name: "Kết hợp",
+              variant_value_id: index + 1,
+              variant_value_name: `${item.color} - ${item.size}`,
+              color_id: colorId,
+              size_id: sizeId,
+              quantity: item.quantity,
+              price: item.price,
+              discount_price: item.discount_price,
+              sku: item.sku,
+            });
+          });
+
+          productData.variants = variants;
+          console.log("Đã tạo biến thể từ bảng SKU:", variants);
+        }
+
+        // Tiếp tục xử lý nếu có biến thể
         if (productData.variants && Array.isArray(productData.variants)) {
-          console.log("Variants từ API:", productData.variants);
+          console.log("Số lượng biến thể:", productData.variants.length);
 
-          setSelectedVariants({});
-          setCurrentPrice(productData.price);
-          setCurrentDiscount(productData.discount_price);
+          // Chuẩn hóa dữ liệu biến thể
+          const variantsWithValues = productData.variants.map(
+            (variant, index) => {
+              // Kiểm tra variant_id
+              let variantId = 0;
+              if (variant.variant_id !== undefined)
+                variantId = Number(variant.variant_id);
+              else if (variant.type_id !== undefined)
+                variantId = Number(variant.type_id);
+              else if (variant.attribute_id !== undefined)
+                variantId = Number(variant.attribute_id);
+              else if (
+                variant.variant_details &&
+                typeof variant.variant_details === "object"
+              ) {
+                const keys = Object.keys(variant.variant_details);
+                if (keys.length > 0) {
+                  console.log(
+                    "Tìm thấy variant_details:",
+                    variant.variant_details
+                  );
+                  variantId = Number(keys[0]);
+                  console.log(
+                    "Đã trích xuất variant_id từ variant_details:",
+                    variantId
+                  );
+                }
+              }
 
-          productData.variants.forEach((variant) => {
-            console.log("Biến thể:", variant);
-          });
+              // Kiểm tra variant_value_id
+              let variantValueId = 0;
+              if (variant.variant_value_id !== undefined)
+                variantValueId = Number(variant.variant_value_id);
+              else if (variant.value_id !== undefined)
+                variantValueId = Number(variant.value_id);
+              else if (variant.option_id !== undefined)
+                variantValueId = Number(variant.option_id);
+              else if (
+                variant.variant_details &&
+                typeof variant.variant_details === "object" &&
+                variantId > 0
+              ) {
+                const valueId = variant.variant_details[variantId];
+                if (valueId) {
+                  variantValueId = Number(valueId);
+                  console.log(
+                    "Đã trích xuất variant_value_id từ variant_details:",
+                    variantValueId
+                  );
+                }
+              }
 
-          const variantsWithValues = productData.variants.map((variant) => {
-            return {
-              ...variant,
-              variant_value: {
-                id: variant.variant_value_id || 0,
-                value: variant.variant_value_name || "Không xác định",
-              },
-              variant_info: {
-                id: variant.variant_id || 0,
-                name: variant.variant_name || "Không xác định",
-              },
-            };
-          });
+              // Kiểm tra tên biến thể
+              let variantName = "Không xác định";
+              if (variant.variant_name) variantName = variant.variant_name;
+              else if (variant.type_name) variantName = variant.type_name;
+              else if (variant.attribute_name)
+                variantName = variant.attribute_name;
+              else {
+                // Xác định tên biến thể dựa trên variant_id
+                if (variantId === 1) variantName = "Màu sắc";
+                else if (variantId === 2) variantName = "Kích thước";
+              }
 
+              // Kiểm tra giá trị biến thể
+              let variantValue = "Không xác định";
+              if (variant.variant_value_name)
+                variantValue = variant.variant_value_name;
+              else if (variant.value_name) variantValue = variant.value_name;
+              else if (variant.value) variantValue = variant.value;
+              else if (variant.option_name) variantValue = variant.option_name;
+              else if (variant.sku) {
+                // Cố gắng trích xuất từ SKU
+                const parsedVariant = parseVariantFromSku(variant.sku);
+                if (parsedVariant) {
+                  if (variantId === 1) {
+                    // Màu sắc
+                    variantValue = parsedVariant.color;
+                  } else if (variantId === 2) {
+                    // Kích thước
+                    variantValue = parsedVariant.size;
+                  }
+                }
+              }
+
+              // Tạo cấu trúc chuẩn của biến thể
+              const processedVariant = {
+                ...variant,
+                id: variant.id || index + 1,
+                variant_id: variantId,
+                variant_name: variantName,
+                variant_value_id: variantValueId,
+                variant_value_name: variantValue,
+                variant_value: {
+                  id: variantValueId,
+                  value: variantValue,
+                },
+                variant_info: {
+                  id: variantId,
+                  name: variantName,
+                },
+                quantity: Number(variant.quantity || 10),
+                price: variant.price || productData.price,
+                discount_price:
+                  variant.discount_price ||
+                  variant.price ||
+                  productData.discount_price ||
+                  productData.price,
+                sku: variant.sku || `${productData.id}-variant-${index + 1}`,
+              };
+
+              return processedVariant;
+            }
+          );
+
+          // Thêm debugging
+          console.log("Tất cả biến thể sau khi xử lý:", variantsWithValues);
+
+          // Sắp xếp các biến thể theo loại và loại bỏ những biến thể đặc biệt (như loại 3)
+          const displayVariants = variantsWithValues.filter(
+            (v) => v.variant_id < 3
+          );
+          displayVariants.sort((a, b) => a.variant_id - b.variant_id);
+
+          // Thiết lập biến thể mặc định được chọn
           const defaultVariants = {};
           const variantTypes = [
-            ...new Set(variantsWithValues.map((v) => v.variant_id)),
-          ];
+            ...new Set(displayVariants.map((v) => Number(v.variant_id))),
+          ].filter((id) => id > 0);
 
+          console.log("Các loại biến thể để hiển thị:", variantTypes);
+
+          // Chọn biến thể đầu tiên cho mỗi loại
           variantTypes.forEach((typeId) => {
-            const availableVariants = variantsWithValues.filter(
-              (v) => v.variant_id === typeId && v.quantity > 0
+            if (typeId === 0) return; // Bỏ qua biến thể có id = 0
+
+            const availableVariants = displayVariants.filter(
+              (v) => Number(v.variant_id) === typeId && Number(v.quantity) > 0
             );
 
             if (availableVariants.length > 0) {
-              defaultVariants[typeId] = availableVariants[0].variant_value_id;
+              defaultVariants[typeId] = Number(
+                availableVariants[0].variant_value_id
+              );
+              console.log(
+                `Đã chọn biến thể mặc định cho loại ${typeId}:`,
+                defaultVariants[typeId]
+              );
             }
           });
 
+          // Thiết lập giá dựa trên biến thể mặc định
           if (Object.keys(defaultVariants).length > 0) {
-            const skuCandidates = new Set();
-
-            Object.entries(defaultVariants).forEach(([typeId, valueId]) => {
-              const matches = variantsWithValues.filter(
-                (v) =>
-                  v.variant_id === Number(typeId) &&
-                  v.variant_value_id === valueId
+            // Tìm biến thể phù hợp với sự kết hợp của những loại đã chọn
+            const findMatchingVariant = () => {
+              // Nếu có biến thể loại 3 (kết hợp), tìm biến thể phù hợp
+              const combinedVariants = variantsWithValues.filter(
+                (v) => v.variant_id === 3
               );
+              if (combinedVariants.length > 0) {
+                const colorId = defaultVariants[1]; // ID giá trị màu sắc đã chọn
+                const sizeId = defaultVariants[2]; // ID giá trị kích thước đã chọn
 
-              matches.forEach((v) => skuCandidates.add(v.sku));
-            });
+                const matchingVariant = combinedVariants.find(
+                  (v) => v.color_id === colorId && v.size_id === sizeId
+                );
 
-            let bestSku = null;
-
-            for (const sku of skuCandidates) {
-              const isMatch = Object.entries(defaultVariants).every(
-                ([typeId, valueId]) => {
-                  return variantsWithValues.some(
-                    (v) =>
-                      v.sku === sku &&
-                      v.variant_id === Number(typeId) &&
-                      v.variant_value_id === valueId
+                if (matchingVariant) {
+                  console.log(
+                    "Tìm thấy biến thể kết hợp phù hợp:",
+                    matchingVariant
                   );
+                  return matchingVariant;
                 }
-              );
-
-              if (isMatch) {
-                bestSku = sku;
-                break;
               }
-            }
 
-            if (bestSku) {
-              const bestVariant = variantsWithValues.find(
-                (v) => v.sku === bestSku
-              );
-              if (bestVariant && bestVariant.price) {
-                setCurrentPrice(bestVariant.price);
-                setCurrentDiscount(
-                  bestVariant.discount_price || bestVariant.price
-                );
-                console.log(
-                  `Giá ban đầu được thiết lập theo biến thể: ${bestVariant.price}`
-                );
+              // Nếu không tìm thấy, lấy biến thể đầu tiên
+              if (displayVariants.length > 0) {
+                return displayVariants[0];
               }
+
+              return null;
+            };
+
+            const bestVariant = findMatchingVariant();
+
+            if (bestVariant && bestVariant.price) {
+              setCurrentPrice(bestVariant.price);
+              setCurrentDiscount(
+                bestVariant.discount_price || bestVariant.price
+              );
+              console.log(
+                `Giá ban đầu được thiết lập theo biến thể: ${bestVariant.price}`
+              );
             }
           }
 
-          setProduct({ ...productData, variants: variantsWithValues });
+          setProduct({ ...productData, variants: displayVariants });
           setSelectedVariants(defaultVariants);
-        } else {
-          setProduct(productData);
+          console.log("Biến thể đã chọn mặc định:", defaultVariants);
         }
 
+        // Lấy bình luận
         const commentsResponse = await axios.get(
           `http://localhost:8000/api/products/${id}/comments?_=${timestamp}`
         );
@@ -296,6 +535,184 @@ const ProductDetail = () => {
     }
   };
 
+  useEffect(() => {
+    // Log biến thể kích thước khi product thay đổi
+    if (product && product.variants) {
+      const sizeVariants = product.variants.filter((v) => v.variant_id === 2);
+      console.log("============= BIẾN THỂ KÍCH THƯỚC =============");
+      console.log("Số lượng biến thể kích thước:", sizeVariants.length);
+      sizeVariants.forEach((variant, index) => {
+        console.log(`Kích thước ${index + 1}:`, {
+          id: variant.id,
+          variant_id: variant.variant_id,
+          variant_name: variant.variant_name,
+          variant_value_id: variant.variant_value_id,
+          variant_value_name: variant.variant_value_name,
+          variant_details: variant.variant_details,
+          sku: variant.sku,
+          price: variant.price,
+          quantity: variant.quantity,
+        });
+      });
+      console.log("==============================================");
+    }
+  }, [product]);
+
+  // Thêm hàm xử lý variant_details
+  const extractVariantTypes = (variants) => {
+    const types = new Set();
+
+    if (variants && variants.length > 0) {
+      variants.forEach((variant) => {
+        if (variant.variant_details) {
+          // Lấy tất cả các loại biến thể từ variant_details
+          Object.keys(variant.variant_details).forEach((typeId) => {
+            types.add(Number(typeId));
+          });
+        }
+      });
+    }
+
+    return Array.from(types).sort();
+  };
+
+  // Trong useEffect khi nhận được dữ liệu
+  useEffect(() => {
+    if (product && product.variants) {
+      // Lấy các loại biến thể
+      const types = extractVariantTypes(product.variants);
+      console.log("Các loại biến thể: ", types); // Sẽ bao gồm cả 1 (màu sắc) và 2 (kích thước)
+
+      // Xử lý hiển thị cho từng loại
+      types.forEach((typeId) => {
+        // Tìm các giá trị biến thể cho từng loại
+        const typeValues = getVariantValuesByType(typeId);
+        console.log(`Giá trị biến thể cho loại ${typeId}:`, typeValues);
+      });
+    }
+  }, [product]);
+
+  // Hàm lấy giá trị biến thể theo loại
+  const getVariantValuesByType = (typeId) => {
+    if (!product || !product.variants) return [];
+
+    const values = new Set();
+    product.variants.forEach((variant) => {
+      if (variant.variant_details && variant.variant_details[typeId]) {
+        const valueId = variant.variant_details[typeId];
+        // Tìm thông tin giá trị
+        const matchingVariant = product.variants.find(
+          (v) =>
+            v.variant_info &&
+            v.variant_info.id === typeId &&
+            v.variant_value &&
+            v.variant_value.id === valueId
+        );
+
+        if (matchingVariant) {
+          values.add({
+            id: valueId,
+            value: matchingVariant.variant_value.value,
+          });
+        }
+      }
+    });
+
+    return Array.from(values);
+  };
+
+  // Sửa lại hàm processVariantDetails
+  const processVariantDetails = (variant) => {
+    if (!variant.variant_details) return null;
+
+    try {
+      // Đảm bảo variant_details là object
+      const details =
+        typeof variant.variant_details === "string"
+          ? JSON.parse(variant.variant_details)
+          : variant.variant_details;
+
+      // Lấy variant_value_id cho màu sắc và kích thước
+      const colorId = details["1"]; // variant type 1 là màu sắc
+      const sizeId = details["2"]; // variant type 2 là kích thước
+
+      // Tìm tên của biến thể
+      const variantName =
+        variant.variant_value_name || variant.variant_value?.value;
+
+      return {
+        colorId: colorId ? String(colorId) : null,
+        sizeId: sizeId ? String(sizeId) : null,
+        variantName,
+      };
+    } catch (error) {
+      console.error("Lỗi xử lý variant_details:", error);
+      return null;
+    }
+  };
+
+  // Sửa lại hàm getVariantsByType
+  const getVariantsByType = (variantTypeId) => {
+    if (!product || !product.variants) return [];
+
+    // Lọc các biến thể có chứa variantTypeId trong variant_details
+    const variants = product.variants.filter((variant) => {
+      const details = processVariantDetails(variant);
+      if (!details) return false;
+
+      // Kiểm tra xem biến thể có chứa loại variant cần tìm không
+      return variantTypeId === 1
+        ? details.colorId !== undefined
+        : details.sizeId !== undefined;
+    });
+
+    // Loại bỏ các biến thể trùng lặp
+    const uniqueVariants = [];
+    const seen = new Set();
+
+    variants.forEach((variant) => {
+      const details = processVariantDetails(variant);
+      if (!details) return;
+
+      const valueId = variantTypeId === 1 ? details.colorId : details.sizeId;
+
+      if (!seen.has(valueId)) {
+        seen.add(valueId);
+        uniqueVariants.push(variant);
+      }
+    });
+
+    return uniqueVariants;
+  };
+
+  useEffect(() => {
+    if (product && product.variants) {
+      console.log("Tất cả biến thể:", product.variants);
+
+      // Log chi tiết từng loại biến thể
+      const colorVariants = getVariantsByType(1);
+      const sizeVariants = getVariantsByType(2);
+
+      console.log(
+        "Biến thể màu sắc:",
+        colorVariants.map((v) => ({
+          variant_details: v.variant_details,
+          sku: v.sku,
+          parsed: parseVariantFromSku(v.sku),
+        }))
+      );
+
+      console.log(
+        "Biến thể kích thước:",
+        sizeVariants.map((v) => ({
+          variant_details: v.variant_details,
+          sku: v.sku,
+          parsed: parseVariantFromSku(v.sku),
+        }))
+      );
+    }
+  }, [product]);
+
   if (loading) {
     return <div className="text-center mt-32">Đang tải...</div>;
   }
@@ -341,63 +758,44 @@ const ProductDetail = () => {
     setSelectedImage(imageUrl);
   };
 
+  // Sửa lại hàm handleVariantSelect để cập nhật giá chính xác
   const handleVariantSelect = (variantId, variantValueId, variant) => {
+    const numericVariantId = Number(variantId);
+    const numericVariantValueId = Number(variantValueId);
+
     const newSelectedVariants = {
       ...selectedVariants,
-      [variantId]: variantValueId,
+      [numericVariantId]: numericVariantValueId,
     };
     setSelectedVariants(newSelectedVariants);
 
-    console.log(`Đã chọn biến thể:`, variant);
-    console.log(`Lựa chọn biến thể hiện tại:`, newSelectedVariants);
-
-    const selectedVariantTypes = Object.keys(newSelectedVariants).map(Number);
-    const skuCandidates = new Set();
-
-    selectedVariantTypes.forEach((typeId) => {
-      const valueId = newSelectedVariants[typeId];
-      const matches = product.variants.filter(
-        (v) => v.variant_id === typeId && v.variant_value_id === valueId
-      );
-
-      matches.forEach((v) => skuCandidates.add(v.sku));
-    });
-
-    console.log("Các SKU ứng viên:", [...skuCandidates]);
-
-    let bestSku = null;
-
-    for (const sku of skuCandidates) {
-      const isMatch = selectedVariantTypes.every((typeId) => {
-        const valueId = newSelectedVariants[typeId];
-        return product.variants.some(
-          (v) =>
-            v.sku === sku &&
-            v.variant_id === typeId &&
-            v.variant_value_id === valueId
+    // Cập nhật giá khi đã chọn đủ cả màu sắc và kích thước
+    if (newSelectedVariants[1] && newSelectedVariants[2]) {
+      const matchingVariant = product.variants.find((v) => {
+        if (!v.variant_details) return false;
+        const details =
+          typeof v.variant_details === "string"
+            ? JSON.parse(v.variant_details)
+            : v.variant_details;
+        return (
+          details["1"] === String(newSelectedVariants[1]) &&
+          details["2"] === String(newSelectedVariants[2])
         );
       });
 
-      if (isMatch) {
-        bestSku = sku;
-        break;
-      }
-    }
+      if (matchingVariant) {
+        const variantPrice = matchingVariant.price || product.price;
+        const variantDiscountPrice =
+          matchingVariant.discount_price || variantPrice;
 
-    console.log("SKU phù hợp nhất:", bestSku);
+        setCurrentPrice(variantPrice);
+        setCurrentDiscount(variantDiscountPrice);
 
-    if (bestSku) {
-      const bestVariant = product.variants.find((v) => v.sku === bestSku);
-      if (bestVariant && bestVariant.price) {
-        console.log("Biến thể phù hợp nhất:", bestVariant);
-        setCurrentPrice(bestVariant.price);
-        setCurrentDiscount(bestVariant.discount_price || bestVariant.price);
-        console.log(`Cập nhật giá theo biến thể: ${bestVariant.price}`);
+        // Cập nhật tổng tiền cho Order Summary
+        const finalPrice = variantDiscountPrice || variantPrice;
+        const total = finalPrice * quantity;
+        setOrderTotal(total);
       }
-    } else if (variant && variant.price) {
-      setCurrentPrice(variant.price);
-      setCurrentDiscount(variant.discount_price || variant.price);
-      console.log(`Cập nhật giá theo biến thể được chọn: ${variant.price}`);
     }
 
     setError("");
@@ -409,49 +807,130 @@ const ProductDetail = () => {
   };
 
   const hasSelectedAllRequiredVariants = () => {
-    if (!product.variants || product.variants.length === 0) return true;
+    // Kiểm tra trực tiếp xem đã chọn cả màu sắc (1) và kích thước (2) chưa
+    return (
+      selectedVariants[1] !== undefined && selectedVariants[2] !== undefined
+    );
+  };
 
-    const availableVariantTypes = [
-      ...new Set(product.variants.map((v) => v.variant_id)),
-    ];
-
-    return availableVariantTypes.every((type) => selectedVariants[type]);
+  // Xác định có tồn tại biến thể màu sắc và kích thước không
+  const hasVariantTypes = () => {
+    const hasColors =
+      product.variants && product.variants.some((v) => v.variant_id === 1);
+    const hasSizes =
+      product.variants && product.variants.some((v) => v.variant_id === 2);
+    return { hasColors, hasSizes };
   };
 
   const handleAddToCart = () => {
-    if (!hasSelectedAllRequiredVariants()) {
-      setError("Vui lòng chọn đầy đủ biến thể sản phẩm");
+    // Kiểm tra đã chọn biến thể chưa
+    const { hasColors, hasSizes } = hasVariantTypes();
+
+    if (
+      (hasColors && !selectedVariants[1]) ||
+      (hasSizes && !selectedVariants[2])
+    ) {
+      // ... phần xử lý lỗi giữ nguyên ...
       return;
     }
 
-    const selectedVariantValues = {};
-    Object.entries(selectedVariants).forEach(([variantId, valueId]) => {
-      const variant = product.variants.find(
-        (v) =>
-          v.variant_id === Number(variantId) && v.variant_value_id === valueId
-      );
-      if (variant) {
-        selectedVariantValues[variant.variant_info.name] =
-          variant.variant_value.value;
-      }
-    });
+    // Tìm biến thể phù hợp dựa trên màu sắc và kích thước đã chọn
+    const selectedColorId = selectedVariants[1]; // ID của màu sắc đã chọn
+    const selectedSizeId = selectedVariants[2]; // ID của kích thước đã chọn
 
-    dispatch(
-      addToCart({
-        product,
-        quantity,
-        variants: selectedVariantValues,
-      })
+    // Tìm thông tin tên màu sắc và kích thước từ variants
+    const colorVariant = product.variants.find(
+      (v) => v.variant_id === 1 && v.variant_value_id === selectedColorId
+    );
+    const sizeVariant = product.variants.find(
+      (v) => v.variant_id === 2 && v.variant_value_id === selectedSizeId
     );
 
-    setToastProduct(product);
+    // Lấy tên của màu sắc và kích thước
+    const colorName = colorVariant?.variant_value_name || "Không xác định";
+    const sizeName = sizeVariant?.variant_value_name || "Không xác định";
+
+    // Log để debug
+    console.log("Màu sắc đã chọn:", colorName, "ID:", selectedColorId);
+    console.log("Kích thước đã chọn:", sizeName, "ID:", selectedSizeId);
+
+    // Tìm biến thể kết hợp để lấy giá chính xác (giữ nguyên code cũ)
+    const combinedVariant = product.variants.find((variant) => {
+      if (!variant.variant_details) return false;
+      const details =
+        typeof variant.variant_details === "string"
+          ? JSON.parse(variant.variant_details)
+          : variant.variant_details;
+      return (
+        details["1"] === String(selectedColorId) &&
+        details["2"] === String(selectedSizeId)
+      );
+    });
+
+    // Tính toán giá cuối cùng
+    const finalPrice =
+      combinedVariant?.discount_price ||
+      combinedVariant?.price ||
+      currentDiscount ||
+      currentPrice;
+    const total = finalPrice * quantity;
+
+    // Tạo đối tượng để thêm vào giỏ hàng
+    const cartItem = {
+      product: {
+        ...product,
+        price: finalPrice,
+        total: total,
+      },
+      quantity: quantity,
+      variants: {
+        color: colorName, // Sử dụng tên đã tìm được
+        size: sizeName, // Sử dụng tên đã tìm được
+      },
+      variant_details: {
+        color_id: selectedColorId,
+        size_id: selectedSizeId,
+      },
+    };
+
+    console.log("Thêm vào giỏ hàng:", cartItem);
+    dispatch(addToCart(cartItem));
+
+    setToastProduct({
+      ...product,
+      selectedVariants: cartItem.variants,
+      quantity: quantity,
+      total: total,
+    });
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
 
   const handleBuyNow = () => {
-    if (!hasSelectedAllRequiredVariants()) {
-      setError("Vui lòng chọn đầy đủ biến thể sản phẩm");
+    const { hasColors, hasSizes } = hasVariantTypes();
+
+    // Bắt buộc phải chọn biến thể nếu tồn tại
+    if (
+      (hasColors && !selectedVariants[1]) ||
+      (hasSizes && !selectedVariants[2])
+    ) {
+      let errorMessage = "Vui lòng chọn ";
+
+      if (hasColors && hasSizes) {
+        if (!selectedVariants[1] && !selectedVariants[2]) {
+          errorMessage += "màu sắc và kích thước";
+        } else if (!selectedVariants[1]) {
+          errorMessage += "màu sắc";
+        } else if (!selectedVariants[2]) {
+          errorMessage += "kích thước";
+        }
+      } else if (hasColors && !selectedVariants[1]) {
+        errorMessage += "màu sắc";
+      } else if (hasSizes && !selectedVariants[2]) {
+        errorMessage += "kích thước";
+      }
+
+      setError(errorMessage);
       return;
     }
 
@@ -474,52 +953,51 @@ const ProductDetail = () => {
     }
   };
 
-  const getVariantsByType = (variantId) => {
-    const typeVariants =
-      product.variants?.filter((variant) => variant.variant_id === variantId) ||
-      [];
-
-    const latestVariants = new Map();
-
-    typeVariants.forEach((variant) => {
-      const key = `${variant.variant_id}_${variant.variant_value_id}`;
-
-      if (
-        !latestVariants.has(key) ||
-        (variant.updated_at &&
-          latestVariants.get(key).updated_at &&
-          new Date(variant.updated_at) >
-            new Date(latestVariants.get(key).updated_at))
-      ) {
-        latestVariants.set(key, variant);
-      }
-    });
-
-    const uniqueVariants = Array.from(latestVariants.values());
-
-    uniqueVariants.sort((a, b) => a.variant_value_id - b.variant_value_id);
-
-    console.log(
-      `Biến thể loại ${variantId} (đã lọc trùng lặp):`,
-      uniqueVariants
-    );
-
-    return uniqueVariants;
-  };
-
+  // Hàm lấy tên loại biến thể
   const getVariantTypeName = (variantId) => {
+    // Kiểm tra trong state trước
+    const typeFromState = variantTypes.find((t) => t.id === variantId);
+    if (typeFromState) return typeFromState.name;
+
+    // Kiểm tra trong các biến thể của sản phẩm
     const variant = product.variants?.find((v) => v.variant_id === variantId);
     if (variant && variant.variant_info && variant.variant_info.name) {
       return variant.variant_info.name;
     }
 
-    const variantTypes = {
+    // Fallback tới giá trị mặc định
+    const variantTypeNames = {
       1: "Màu sắc",
       2: "Kích thước",
       3: "Chất liệu",
       4: "Kiểu dáng",
     };
-    return variantTypes[variantId] || "Biến thể";
+    return variantTypeNames[variantId] || "Biến thể";
+  };
+
+  // Hàm lấy tên giá trị biến thể
+  const getVariantValueName = (variantId, valueId) => {
+    // Tìm trong các giá trị biến thể đã lấy từ API
+    const valueFromState = variantValues.find(
+      (v) => v.id === valueId && v.variant_id === variantId
+    );
+    if (valueFromState) return valueFromState.value;
+
+    // Tìm trong các biến thể của sản phẩm
+    const variant = product.variants?.find(
+      (v) => v.variant_id === variantId && v.variant_value_id === valueId
+    );
+
+    if (variant) {
+      if (variant.variant_value && variant.variant_value.value) {
+        return variant.variant_value.value;
+      }
+      if (variant.variant_value_name) {
+        return variant.variant_value_name;
+      }
+    }
+
+    return "Không xác định";
   };
 
   const handleCommentSubmit = async () => {
@@ -650,87 +1128,236 @@ const ProductDetail = () => {
       setCurrentDiscount(productData.discount_price);
 
       if (productData.variants && Array.isArray(productData.variants)) {
-        const variantsWithValues = productData.variants.map((variant) => {
-          return {
-            ...variant,
-            variant_value: {
-              id: variant.variant_value_id || 0,
-              value: variant.variant_value_name || "Không xác định",
-            },
-            variant_info: {
-              id: variant.variant_id || 0,
-              name: variant.variant_name || "Không xác định",
-            },
-          };
-        });
+        const variantsWithValues = productData.variants.map(
+          (variant, index) => {
+            console.log(
+              `Biến thể thô thứ ${index + 1}:`,
+              JSON.stringify(variant, null, 2)
+            );
 
+            // Kiểm tra variant_id
+            let variantId = 0;
+            if (variant.variant_id !== undefined)
+              variantId = Number(variant.variant_id);
+            else if (variant.type_id !== undefined)
+              variantId = Number(variant.type_id);
+            else if (variant.attribute_id !== undefined)
+              variantId = Number(variant.attribute_id);
+            else if (
+              variant.variant_details &&
+              typeof variant.variant_details === "object"
+            ) {
+              const keys = Object.keys(variant.variant_details);
+              if (keys.length > 0) {
+                console.log(
+                  "Tìm thấy variant_details:",
+                  variant.variant_details
+                );
+                // Sử dụng key đầu tiên trong variant_details làm variant_id
+                variantId = Number(keys[0]);
+                console.log(
+                  "Đã trích xuất variant_id từ variant_details:",
+                  variantId
+                );
+              }
+            }
+
+            // Kiểm tra variant_value_id
+            let variantValueId = 0;
+            if (variant.variant_value_id !== undefined)
+              variantValueId = Number(variant.variant_value_id);
+            else if (variant.value_id !== undefined)
+              variantValueId = Number(variant.value_id);
+            else if (variant.option_id !== undefined)
+              variantValueId = Number(variant.option_id);
+            else if (
+              variant.variant_details &&
+              typeof variant.variant_details === "object" &&
+              variantId > 0
+            ) {
+              const valueId = variant.variant_details[variantId];
+              if (valueId) {
+                variantValueId = Number(valueId);
+                console.log(
+                  "Đã trích xuất variant_value_id từ variant_details:",
+                  variantValueId
+                );
+              }
+            }
+
+            // Kiểm tra tên biến thể
+            let variantName = "Không xác định";
+            if (variant.variant_name) variantName = variant.variant_name;
+            else if (variant.type_name) variantName = variant.type_name;
+            else if (variant.attribute_name)
+              variantName = variant.attribute_name;
+
+            // Kiểm tra giá trị biến thể
+            let variantValue = "Không xác định";
+            if (variant.variant_value_name)
+              variantValue = variant.variant_value_name;
+            else if (variant.value_name) variantValue = variant.value_name;
+            else if (variant.value) variantValue = variant.value;
+            else if (variant.option_name) variantValue = variant.option_name;
+            else if (variant.sku) {
+              // Cố gắng trích xuất từ SKU
+              const parsedVariant = parseVariantFromSku(variant.sku);
+              if (parsedVariant) {
+                if (variantId === 1) {
+                  // Màu sắc
+                  variantValue = parsedVariant.color;
+                } else if (variantId === 2) {
+                  // Kích thước
+                  variantValue = parsedVariant.size;
+                }
+              }
+            }
+
+            // Tạo cấu trúc chuẩn của biến thể
+            const processedVariant = {
+              ...variant,
+              id: variant.id || index + 1,
+              variant_id: variantId,
+              variant_name: variantName,
+              variant_value_id: variantValueId,
+              variant_value_name: variantValue,
+              variant_value: {
+                id: variantValueId,
+                value: variantValue,
+              },
+              variant_info: {
+                id: variantId,
+                name: variantName,
+              },
+              quantity: Number(variant.quantity || 10),
+              price: variant.price || productData.price,
+              discount_price:
+                variant.discount_price ||
+                variant.price ||
+                productData.discount_price ||
+                productData.price,
+              sku: variant.sku || `${productData.id}-variant-${index + 1}`,
+            };
+
+            console.log("Biến thể đã xử lý:", processedVariant);
+            return processedVariant;
+          }
+        );
+
+        // Thêm debugging
+        console.log(
+          "Tất cả biến thể sau khi xử lý:",
+          JSON.stringify(variantsWithValues, null, 2)
+        );
+
+        // Kiểm tra lại một số biến thể
+        if (variantsWithValues.length > 0) {
+          console.log(
+            "Biến thể đầu tiên sau xử lý - variant_id:",
+            variantsWithValues[0].variant_id
+          );
+          console.log(
+            "Biến thể đầu tiên sau xử lý - variant_info:",
+            variantsWithValues[0].variant_info
+          );
+          console.log(
+            "Biến thể đầu tiên sau xử lý - variant_value:",
+            variantsWithValues[0].variant_value
+          );
+        }
+
+        // Sắp xếp các biến thể theo loại
+        variantsWithValues.sort((a, b) => a.variant_id - b.variant_id);
+
+        // Thiết lập biến thể mặc định được chọn
         const defaultVariants = {};
         const variantTypes = [
-          ...new Set(variantsWithValues.map((v) => v.variant_id)),
-        ];
+          ...new Set(variantsWithValues.map((v) => Number(v.variant_id))),
+        ].filter((id) => id > 0);
 
+        console.log("Các loại biến thể (sau khi lọc):", variantTypes);
+
+        // Chọn biến thể đầu tiên cho mỗi loại
         variantTypes.forEach((typeId) => {
+          if (typeId === 0) return; // Bỏ qua biến thể có id = 0
+
           const availableVariants = variantsWithValues.filter(
-            (v) => v.variant_id === typeId && v.quantity > 0
+            (v) => Number(v.variant_id) === typeId && Number(v.quantity) > 0
           );
 
           if (availableVariants.length > 0) {
-            defaultVariants[typeId] = availableVariants[0].variant_value_id;
+            defaultVariants[typeId] = Number(
+              availableVariants[0].variant_value_id
+            );
+            console.log(
+              `Đã chọn biến thể mặc định cho loại ${typeId}:`,
+              defaultVariants[typeId]
+            );
           }
         });
 
+        // Thiết lập giá dựa trên biến thể mặc định
         if (Object.keys(defaultVariants).length > 0) {
-          const skuCandidates = new Set();
-
-          Object.entries(defaultVariants).forEach(([typeId, valueId]) => {
-            const matches = variantsWithValues.filter(
-              (v) =>
-                v.variant_id === Number(typeId) &&
-                v.variant_value_id === valueId
+          // Tìm biến thể phù hợp với sự kết hợp của những loại đã chọn
+          const findMatchingVariant = () => {
+            // Nếu có biến thể loại 3 (kết hợp), tìm biến thể phù hợp
+            const combinedVariants = variantsWithValues.filter(
+              (v) => v.variant_id === 3
             );
+            if (combinedVariants.length > 0) {
+              const colorId = defaultVariants[1]; // ID giá trị màu sắc đã chọn
+              const sizeId = defaultVariants[2]; // ID giá trị kích thước đã chọn
 
-            matches.forEach((v) => skuCandidates.add(v.sku));
-          });
+              const matchingVariant = combinedVariants.find(
+                (v) => v.color_id === colorId && v.size_id === sizeId
+              );
 
-          let bestSku = null;
-
-          for (const sku of skuCandidates) {
-            const isMatch = Object.entries(defaultVariants).every(
-              ([typeId, valueId]) => {
-                return variantsWithValues.some(
-                  (v) =>
-                    v.sku === sku &&
-                    v.variant_id === Number(typeId) &&
-                    v.variant_value_id === valueId
-                );
+              if (matchingVariant) {
+                return matchingVariant;
               }
-            );
-
-            if (isMatch) {
-              bestSku = sku;
-              break;
             }
-          }
 
-          if (bestSku) {
-            const bestVariant = variantsWithValues.find(
-              (v) => v.sku === bestSku
-            );
-            if (bestVariant && bestVariant.price) {
-              setCurrentPrice(bestVariant.price);
-              setCurrentDiscount(
-                bestVariant.discount_price || bestVariant.price
+            // Nếu không tìm thấy biến thể kết hợp, sử dụng logic cũ
+            const skuCandidates = new Set();
+
+            Object.entries(defaultVariants).forEach(([typeId, valueId]) => {
+              const matches = variantsWithValues.filter(
+                (v) =>
+                  v.variant_id === Number(typeId) &&
+                  v.variant_value_id === valueId
               );
-              console.log(
-                `Giá ban đầu được thiết lập theo biến thể: ${bestVariant.price}`
+
+              matches.forEach((v) => skuCandidates.add(v.sku));
+            });
+
+            for (const sku of skuCandidates) {
+              const matchingVariants = variantsWithValues.filter(
+                (v) => v.sku === sku
               );
+              if (matchingVariants.length > 0) {
+                return matchingVariants[0];
+              }
             }
+
+            return null;
+          };
+
+          const bestVariant = findMatchingVariant();
+
+          if (bestVariant && bestVariant.price) {
+            setCurrentPrice(bestVariant.price);
+            setCurrentDiscount(bestVariant.discount_price || bestVariant.price);
+            console.log(
+              `Giá ban đầu được thiết lập theo biến thể: ${bestVariant.price}`
+            );
           }
         }
 
         setProduct({ ...productData, variants: variantsWithValues });
         setSelectedVariants(defaultVariants);
+        console.log("Biến thể đã chọn mặc định:", defaultVariants);
       } else {
+        console.error("Không thể tìm thấy biến thể sản phẩm");
         setProduct(productData);
       }
 
@@ -840,7 +1467,7 @@ const ProductDetail = () => {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={1.5}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                         />
                       </svg>
                       <span className="text-sm text-gray-500">
@@ -887,161 +1514,78 @@ const ProductDetail = () => {
 
               {/* Variants Section */}
               <div className="mt-6 space-y-4">
-                {[1, 2, 3, 4].map((variantTypeId) => {
+                {[1, 2].map((variantTypeId) => {
                   const variants = getVariantsByType(variantTypeId);
                   if (variants.length === 0) return null;
 
                   return (
                     <div className="mt-4" key={variantTypeId}>
                       <p className="text-gray-700 font-medium">
-                        {getVariantTypeName(variantTypeId)}:
+                        {variantTypeId === 1 ? "Màu sắc" : "Kích thước"}:
                       </p>
                       <div className="flex flex-wrap gap-3 mt-2">
                         {variants.map((variant) => {
-                          if (!variant) return null;
+                          const details = processVariantDetails(variant);
+                          if (!details) return null;
 
+                          const valueId =
+                            variantTypeId === 1
+                              ? details.colorId
+                              : details.sizeId;
                           const isSelected =
-                            selectedVariants[variantTypeId] ===
-                            variant.variant_value_id;
-                          const inStock = isVariantInStock(variant);
+                            selectedVariants[variantTypeId] === valueId;
+
+                          // Lấy tên biến thể từ SKU hoặc variant_value_name
+                          const parsedVariant = parseVariantFromSku(
+                            variant.sku
+                          );
+                          const variantName =
+                            variantTypeId === 1
+                              ? parsedVariant?.color || "Màu không xác định"
+                              : parsedVariant?.size ||
+                                "Kích thước không xác định";
 
                           if (variantTypeId === 1) {
-                            // Màu sắc
-                            let bgColor = "gray";
-                            const variantValue =
-                              variant.variant_value?.value ||
-                              variant.variant_value_name ||
-                              "";
-                            const colorValue =
-                              typeof variantValue === "string"
-                                ? variantValue.toLowerCase()
-                                : "";
-
-                            if (colorValue.includes("đỏ")) bgColor = "red";
-                            else if (colorValue.includes("xanh"))
-                              bgColor = "blue";
-                            else if (colorValue.includes("đen"))
-                              bgColor = "black";
-                            else if (colorValue.includes("trắng"))
-                              bgColor = "white";
-                            else if (colorValue.includes("vàng"))
-                              bgColor = "yellow";
-                            else if (colorValue.includes("cam"))
-                              bgColor = "orange";
-                            else if (colorValue.includes("tím"))
-                              bgColor = "purple";
-                            else if (colorValue.includes("hồng"))
-                              bgColor = "pink";
-                            else if (colorValue.includes("nâu"))
-                              bgColor = "brown";
-                            else if (colorValue.includes("xám"))
-                              bgColor = "gray";
-
+                            // Render màu sắc
                             return (
                               <div
-                                key={variant.id || `color-${Math.random()}`}
+                                key={`${variantTypeId}-${valueId}`}
                                 className={`w-8 h-8 rounded-full cursor-pointer border shadow transition-all duration-300 ${
                                   isSelected
                                     ? "ring-2 ring-offset-2 ring-green-500 scale-110"
                                     : "hover:scale-105"
-                                } ${
-                                  !inStock
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
                                 }`}
-                                title={`${variantValue || "Không xác định"} ${
-                                  !inStock ? "(Hết hàng)" : ""
-                                }`}
-                                onClick={() => {
-                                  if (inStock) {
-                                    handleVariantSelect(
-                                      variantTypeId,
-                                      variant.variant_value_id,
-                                      variant
-                                    );
-                                  }
-                                }}
-                                style={{
-                                  backgroundColor: bgColor,
-                                  border:
-                                    bgColor === "white"
-                                      ? "1px solid #ddd"
-                                      : "none",
-                                }}
-                              ></div>
-                            );
-                          } else if (variantTypeId === 2) {
-                            // Kích thước
-                            const sizeValue =
-                              variant.variant_value?.value ||
-                              variant.variant_value_name ||
-                              "";
-                            const sizeLabel =
-                              typeof sizeValue === "string"
-                                ? sizeValue
-                                : "Không xác định";
-
-                            return (
-                              <div
-                                key={variant.id || `size-${Math.random()}`}
-                                className={`px-4 py-2 border rounded-md cursor-pointer shadow-sm text-center min-w-[40px] transition-all duration-300 ${
-                                  isSelected
-                                    ? "bg-green-600 text-white font-semibold shadow-md transform scale-105"
-                                    : "hover:bg-gray-100 hover:border-gray-400"
-                                } ${
-                                  !inStock
-                                    ? "opacity-50 cursor-not-allowed bg-gray-200 hover:bg-gray-200"
-                                    : ""
-                                }`}
-                                onClick={() => {
-                                  if (inStock) {
-                                    handleVariantSelect(
-                                      variantTypeId,
-                                      variant.variant_value_id,
-                                      variant
-                                    );
-                                  }
-                                }}
-                                title={!inStock ? "Hết hàng" : ""}
+                                onClick={() =>
+                                  handleVariantSelect(
+                                    variantTypeId,
+                                    valueId,
+                                    variant
+                                  )
+                                }
+                                title={variantName}
                               >
-                                {sizeLabel}
+                                {/* Hiển thị màu sắc */}
                               </div>
                             );
                           } else {
-                            // Các loại biến thể khác
-                            const otherValue =
-                              variant.variant_value?.value ||
-                              variant.variant_value_name ||
-                              "";
-                            const otherLabel =
-                              typeof otherValue === "string"
-                                ? otherValue
-                                : "Không xác định";
-
+                            // Render kích thước
                             return (
                               <div
-                                key={variant.id || `variant-${Math.random()}`}
-                                className={`px-3 py-1 border rounded-md cursor-pointer ${
+                                key={`${variantTypeId}-${valueId}`}
+                                className={`px-4 py-2 border rounded-md cursor-pointer ${
                                   isSelected
                                     ? "bg-green-600 text-white"
                                     : "hover:bg-gray-100"
-                                } ${
-                                  !inStock
-                                    ? "opacity-50 cursor-not-allowed bg-gray-200 hover:bg-gray-200"
-                                    : ""
                                 }`}
-                                onClick={() => {
-                                  if (inStock) {
-                                    handleVariantSelect(
-                                      variantTypeId,
-                                      variant.variant_value_id,
-                                      variant
-                                    );
-                                  }
-                                }}
-                                title={!inStock ? "Hết hàng" : ""}
+                                onClick={() =>
+                                  handleVariantSelect(
+                                    variantTypeId,
+                                    valueId,
+                                    variant
+                                  )
+                                }
                               >
-                                {otherLabel}
+                                {variantName}
                               </div>
                             );
                           }
@@ -1053,7 +1597,21 @@ const ProductDetail = () => {
               </div>
 
               {error && (
-                <div className="mt-2 text-red-500 text-sm">{error}</div>
+                <div className="mt-4 flex items-center p-3 bg-red-50 text-red-600 rounded-md border border-red-200">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {error}
+                </div>
               )}
 
               {/* Quantity Section */}
@@ -1081,38 +1639,49 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Add to Cart and Wishlist Buttons - Same Row with Black Background */}
-              <div className="flex gap-4 mt-4">
-                <button
-                  className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
-                  onClick={handleAddToCart}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                  THÊM VÀO GIỎ HÀNG
-                </button>
-              </div>
+              <div className="flex gap-2  mt-4">
+                {/* Add to Cart and Wishlist Buttons - Same Row with Black Background */}
 
-              {/* Buy Now Button - Below */}
-              <div className="mt-4">
+                <div className="flex gap-4 mt-4">
+                  <button
+                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
+                    onClick={handleAddToCart}
+                  >
+                    THÊM VÀO GIỎ HÀNG
+                  </button>
+                </div>
+                <div className="flex gap-4 mt-4">
+                  <button
+                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
+                    onClick={handleBuyNow}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                    MUA NGAY
+                  </button>
+                </div>
+
+                {/* Buy Now Button - Below */}
+                {/* <div className="mt-4">
                 <button
                   className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-full font-bold shadow-lg transform transition duration-300 hover:scale-[1.02] hover:shadow-xl hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
                   onClick={handleBuyNow}
                 >
                   MUA NGAY
                 </button>
+                </div> */}
               </div>
 
               {/* Additional Information */}
