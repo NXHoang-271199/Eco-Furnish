@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -115,9 +114,18 @@ class UserApiController extends Controller
 
         // Gửi email xác thực
         try {
+            $frontendUrl = 'http://localhost:5173'; 
+            $verificationUrl = $frontendUrl.'/auth/verify-email?'.http_build_query([
+                'token' => $verificationToken,
+                'email' => urlencode($user->email)
+            ]);
+
+            // Debug URL
+            \Log::info('Verification URL: ' . $verificationUrl);
+
             Mail::send('emails.verify_email', [
                 'user' => $user,
-                'verificationUrl' => config('app.frontend_url') . '/auth/verify-email?token=' . $verificationToken . '&email=' . urlencode($user->email)
+                'verificationUrl' => $verificationUrl
             ], function($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Xác thực tài khoản');
@@ -330,20 +338,20 @@ class UserApiController extends Controller
     public function apiLogout(Request $request)
     {
         $user = $request->user();
-
+        
         if (!$user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Người dùng chưa đăng nhập'
             ], 401);
         }
-
+        
         // Xóa token và remember_me
         $request->user()->currentAccessToken()->delete();
         $user->remember_me = false;
         $user->remember_me_expires_at = null;
         $user->save();
-
+        
         return response()->json([
             'success' => true,
             'message' => 'Đăng xuất thành công'
@@ -380,11 +388,11 @@ class UserApiController extends Controller
         $user->save();
 
         // Tạo URL đặt lại mật khẩu
-        $resetUrl = config('app.frontend_url', 'http://localhost:3000') . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
+        $resetUrl = config('app.frontend_url', 'http://localhost:5173') . '/auth/reset-password?token=' . $token . '&email=' . urlencode($request->email);
 
         // Gửi email với link reset password
         try {
-            \Mail::send('emails.reset_password', ['resetUrl' => $resetUrl, 'user' => $user], function ($message) use ($user) {
+            Mail::send('emails.reset_password', ['resetUrl' => $resetUrl, 'user' => $user], function ($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Đặt lại mật khẩu');
             });
@@ -411,7 +419,7 @@ class UserApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
-            'remember_token' => 'required|string',
+            'token' => 'required|string',
             'password' => 'required|string|min:5',
             'password_confirmation' => 'required|same:password',
         ]);
@@ -544,9 +552,18 @@ class UserApiController extends Controller
         $user->save();
 
         try {
+            $frontendUrl = 'http://localhost:5173'; // Hardcode tạm thời để test
+            $verificationUrl = $frontendUrl . '/auth/verify-email?' . http_build_query([
+                'token' => $verificationToken,
+                'email' => urlencode($user->email)
+            ]);
+
+            // Debug URL
+            \Log::info('Verification URL: ' . $verificationUrl);
+
             Mail::send('emails.verify_email', [
                 'user' => $user,
-                'verificationUrl' => config('app.frontend_url') . '/auth/verify-email?token=' . $verificationToken . '&email=' . urlencode($user->email)
+                'verificationUrl' => $verificationUrl
             ], function($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Xác thực tài khoản');
@@ -554,7 +571,7 @@ class UserApiController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Đã gửi lại email xác thực'
+                'message' => 'Đã gửi lại email xác thực'    
             ]);
         } catch (\Exception $e) {
             return response()->json([

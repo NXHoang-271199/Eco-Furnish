@@ -2,17 +2,21 @@
 
 use App\Events\MessageSent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\VoucherApiController;
+
+use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
-use Illuminate\Support\Facades\Auth;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -71,6 +75,7 @@ Route::prefix('category-posts')->group(function () {
 Route::prefix('vouchers')->group(function () {
     Route::get('/', [VoucherApiController::class, 'index']);
     Route::get('/{code}', [VoucherApiController::class, 'show']);
+    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']);
 });
 
 // Comment routes
@@ -168,3 +173,14 @@ Route::get('/users/{id}', function ($id) {
         'role_id' => $user->role_id
     ]);
 });
+Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động
+
+// Order routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/orders', [OrderController::class, 'index']); // Danh sách đơn hàng
+    Route::get('/orders/{id}', [OrderController::class, 'show']); // Chi tiết đơn hàng
+    Route::post('/orders', [OrderController::class, 'createOrder']); // Tạo đơn hàng
+    Route::post('/orders/{id}/refund', [OrderController::class, 'refundOrder']); // Hoàn hàng
+    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
+});
+

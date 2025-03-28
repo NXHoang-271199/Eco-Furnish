@@ -19,6 +19,7 @@ class Order extends Model
         'payment_status',
         'order_status',
         'voucher_id',
+        'total_price',
     ];
     public function user()
     {

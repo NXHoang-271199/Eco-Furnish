@@ -28,7 +28,6 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\OrderNotificationController;
 use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -195,12 +194,6 @@ Route::prefix('admin')->group(function () {
     // Banners Management
     Route::resource('banners', BannerController::class);
     Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
-
-    Route::get('/settings', [SettingController::class, 'index'])->name('settings');
-    Route::get('/settings/smtp', [SettingController::class, 'smtp'])->name('settings.smtp');
-    Route::get('/settings/website', [SettingController::class, 'website'])->name('settings.website');
-    Route::post('/settings/smtp/update', [SettingController::class, 'updateSmtp'])->name('settings.smtp.update');
-    Route::post('/settings/website/update', [SettingController::class, 'updateWebsite'])->name('settings.website.update');
     // Banners Management
     Route::resource('banners', BannerController::class);
     Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');

@@ -121,14 +121,15 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getDisplayNameAttribute()
     {
-        if(is_string($this->name) && is_array(json_decode($this->name, true))) {
+        if (is_string($this->name) && is_array(json_decode($this->name, true))) {
             $userData = json_decode($this->name, true);
             return $userData['name'] ?? 'Admin';
         }
         return $this->name ?? 'Admin';
     }
 
-    private function isJson($string) {
+    private function isJson($string)
+    {
         json_decode($string);
         return json_last_error() === JSON_ERROR_NONE;
     }
@@ -144,5 +145,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function comments()
     {
         return $this->hasMany(Comment::class);
+    }
+    public function voucherUsages()
+    {
+        return $this->hasMany(VoucherUsage::class);
     }
 }

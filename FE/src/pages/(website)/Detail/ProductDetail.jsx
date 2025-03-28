@@ -723,7 +723,7 @@ const ProductDetail = () => {
 
   return (
     <main className="max-w-6xl mx-auto mb-20 mt-32">
-      <div className="flex justify-between items-center mb-8">
+      {/* <div className="flex justify-between items-center mb-8">
         <Link
           to="/"
           className="text-blue-500 hover:underline flex items-center"
@@ -763,7 +763,7 @@ const ProductDetail = () => {
             </svg>
           </button>
         </div>
-      </div>
+      </div> */}
       <div className="grid grid-cols-2 gap-8 my-16">
         <div className="grid grid-cols-1">
           <div className="col-span-5">
@@ -778,7 +778,7 @@ const ProductDetail = () => {
               }}
             />
           </div>
-          <div className="flex justify-start space-x-5 mt-4">
+          <div className="flex justify-center space-x-5 mt-4">
             {product.gallery && product.gallery.length > 0 ? (
               product.gallery.map((item, index) => {
                 const galleryImageUrl = item.image_url
@@ -1069,22 +1069,10 @@ const ProductDetail = () => {
       </div>
 
       <div className="mt-4">
-        <ul className="flex gap-x-16 mb-4">
-          <li className="text-[20px] font-semibold text-[#000000]">
-            <Link to="/">Comment</Link>
-          </li>
-
-          <li className="text-[20px] font-semibold text-[#A3A3A3]">
-            <Link to="/">Additional Information</Link>
-          </li>
-
-          <li className="text-[20px] font-semibold text-[#A3A3A3]">
-            <Link to="/">Description</Link>
-          </li>
-        </ul>
-
         <div className="mt-4">
-          <h3 className="font-semibold text-xl mb-4">Bình luận</h3>
+          <div className="underline mb-4">
+            <h3 className="font-semibold text-xl mb-4">Bình luận</h3>
+          </div>
 
           {isLoggedIn && currentUser ? (
             <div className="flex justify-between items-center border p-4 rounded-md mb-6">
