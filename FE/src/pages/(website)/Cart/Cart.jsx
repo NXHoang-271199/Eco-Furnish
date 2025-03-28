@@ -26,19 +26,22 @@ const Cart = () => {
     }).format(price);
   };
 
-  const handleQuantityChange = (productId, variants, newQuantity) => {
+  const handleQuantityChange = (productId, variant_details, newQuantity) => {
     if (newQuantity < 1) return;
-    dispatch(updateQuantity({ productId, quantity: newQuantity, variants }));
+    dispatch(
+      updateQuantity({ productId, quantity: newQuantity, variant_details })
+    );
   };
 
-  const handleRemoveItem = (productId, variants) => {
-    dispatch(removeFromCart({ productId, variants }));
+  const handleRemoveItem = (productId, variant_details) => {
+    dispatch(removeFromCart({ productId, variant_details }));
     setSelectedItems(
       selectedItems.filter(
         (item) =>
           !(
             item.productId === productId &&
-            JSON.stringify(item.variants) === JSON.stringify(variants)
+            JSON.stringify(item.variant_details) ===
+              JSON.stringify(variant_details)
           )
       )
     );
@@ -86,25 +89,26 @@ const Cart = () => {
     }
   };
 
-  const toggleSelectItem = (productId, variants) => {
-    if (
-      selectedItems.some(
-        (item) =>
-          item.productId === productId &&
-          JSON.stringify(item.variants) === JSON.stringify(variants)
-      )
-    ) {
+  const toggleSelectItem = (productId, variant_details) => {
+    const isSelected = selectedItems.some(
+      (item) =>
+        item.productId === productId &&
+        JSON.stringify(item.variant_details) === JSON.stringify(variant_details)
+    );
+
+    if (isSelected) {
       setSelectedItems(
         selectedItems.filter(
           (item) =>
             !(
               item.productId === productId &&
-              JSON.stringify(item.variants) === JSON.stringify(variants)
+              JSON.stringify(item.variant_details) ===
+                JSON.stringify(variant_details)
             )
         )
       );
     } else {
-      setSelectedItems([...selectedItems, { productId, variants }]);
+      setSelectedItems([...selectedItems, { productId, variant_details }]);
     }
   };
 
@@ -115,23 +119,23 @@ const Cart = () => {
       setSelectedItems(
         cart.items.map((item) => ({
           productId: item.product.id,
-          variants: item.variants,
+          variant_details: item.variant_details,
         }))
       );
     }
   };
 
-  const isItemSelected = (productId, variants) => {
+  const isItemSelected = (productId, variant_details) => {
     return selectedItems.some(
       (item) =>
         item.productId === productId &&
-        JSON.stringify(item.variants) === JSON.stringify(variants)
+        JSON.stringify(item.variant_details) === JSON.stringify(variant_details)
     );
   };
 
   const calculateSelectedTotal = () => {
     return cart.items.reduce((total, item) => {
-      if (isItemSelected(item.product.id, item.variants)) {
+      if (isItemSelected(item.product.id, item.variant_details)) {
         return (
           total +
           (item.product.discount_price || item.product.price) * item.quantity
@@ -236,7 +240,7 @@ const Cart = () => {
                     {cart.items.map((item) => (
                       <motion.div
                         key={`${item.product.id}-${JSON.stringify(
-                          item.variants
+                          item.variant_details
                         )}`}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -251,10 +255,13 @@ const Cart = () => {
                               className="w-5 h-5 rounded-lg border-gray-300 text-black focus:ring-black transition-all duration-300 hover:border-black"
                               checked={isItemSelected(
                                 item.product.id,
-                                item.variants
+                                item.variant_details
                               )}
                               onChange={() =>
-                                toggleSelectItem(item.product.id, item.variants)
+                                toggleSelectItem(
+                                  item.product.id,
+                                  item.variant_details
+                                )
                               }
                             />
                             <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 group/image">
@@ -285,15 +292,24 @@ const Cart = () => {
                                 {item.product.name}
                               </h3>
                               <div className="mt-1 space-x-2">
-                                {Object.entries(item.variants).map(
-                                  ([key, value]) => (
-                                    <span
-                                      key={key}
-                                      className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-br from-gray-100 to-gray-200 text-gray-800 hover:from-gray-200 hover:to-gray-300 transition-all duration-300 shadow-sm"
-                                    >
-                                      {value}
-                                    </span>
-                                  )
+                                {item.variant_details &&
+                                Array.isArray(item.variant_details) ? (
+                                  <>
+                                    {item.variant_details.map(
+                                      (variant, index) => (
+                                        <span
+                                          key={index}
+                                          className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-br from-gray-100 to-gray-200 text-gray-800 hover:from-gray-200 hover:to-gray-300 transition-all duration-300 shadow-sm"
+                                        >
+                                          {variant.name}: {variant.value}
+                                        </span>
+                                      )
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-br from-gray-100 to-gray-200 text-gray-800">
+                                    Không có biến thể
+                                  </span>
                                 )}
                               </div>
                             </div>
@@ -305,7 +321,7 @@ const Cart = () => {
                                 onClick={() =>
                                   handleQuantityChange(
                                     item.product.id,
-                                    item.variants,
+                                    item.variant_details,
                                     item.quantity - 1
                                   )
                                 }
@@ -320,7 +336,7 @@ const Cart = () => {
                                 onClick={() =>
                                   handleQuantityChange(
                                     item.product.id,
-                                    item.variants,
+                                    item.variant_details,
                                     item.quantity + 1
                                   )
                                 }
@@ -343,7 +359,10 @@ const Cart = () => {
                           <div className="col-span-1 flex justify-center">
                             <button
                               onClick={() =>
-                                handleRemoveItem(item.product.id, item.variants)
+                                handleRemoveItem(
+                                  item.product.id,
+                                  item.variant_details
+                                )
                               }
                               className="group/delete relative p-2.5 rounded-xl overflow-hidden transition-all duration-300 hover:bg-red-50"
                             >
@@ -434,7 +453,8 @@ const Cart = () => {
 
                     <div className="flex justify-between text-gray-600">
                       <span>Delivery fee</span>
-                      <span>{formatPrice(cart.shipping)}</span>
+                      {/* <span>{formatPrice(cart.shipping)}</span> */}
+                      <span>Free</span>
                     </div>
 
                     <div className="border-t border-gray-100 pt-4">
@@ -442,9 +462,9 @@ const Cart = () => {
                         <span className="text-gray-900">Total</span>
                         <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                           {formatPrice(
-                            calculateSelectedTotal() -
-                              cart.discount +
-                              cart.shipping
+                            calculateSelectedTotal() - cart.discount
+                            // +
+                            // cart.shipping
                           )}
                         </span>
                       </div>

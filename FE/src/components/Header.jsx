@@ -79,7 +79,7 @@ const Header = () => {
               </Link>
             ) : (
               <Link
-                to="/signin"
+                to="/sign-in"
                 className="text-gray-700 hidden md:block hover:text-black"
               >
                 <AiOutlineUser className="inline mr-1" />

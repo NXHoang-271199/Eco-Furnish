@@ -4,6 +4,9 @@ import axios from "axios";
 
 const API_URL = "http://localhost:8000/api";
 
+// add to cart_items
+
+
 const BlogsDetail = () => {
   const { slug } = useParams();
   const [post, setPost] = useState(null);

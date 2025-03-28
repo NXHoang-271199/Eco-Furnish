@@ -13,7 +13,7 @@ import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
 
 // import CursorGlow from "./CursorGlow";
-import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
+// import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import EmailVerification from "./pages/EmailVerification/EmailVerification";
 import ResetPassword from "./pages/auth/ResetPassword/ResetPassword";
 import ConfirmPassword from "./pages/ConfirmPassword/ConfirmPassword";
@@ -37,31 +37,26 @@ function App() {
         <Route path="/" element={<LayoutWebsite />}>
           <Route index element={<Homes />} />
           <Route path="products" element={<Products />} />
-          <Route path="product/:id" element={<ProductDetail />} />
+          <Route path="product-detail/:id" element={<ProductDetail />} />
           <Route path="contact" element={<Contact />} />
           <Route path="cart" element={<Cart />} />
           <Route path="blogs" element={<Blogs />} />
+          <Route path="blog-detail/:slug" element={<BlogsDetail />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
           <Route path="order-success" element={<OrderSuccess />} />
-          <Route path="blog-detail" element={<BlogsDetail />} />
+          <Route path="account" element={<LayoutAccount />}>
+            <Route index element={<Account />} />
+            <Route path="address" element={<Address />} />
+            <Route path="password" element={<Edit_Pass />} />
+          </Route>
         </Route>
-
-        <Route path="signin" element={<SignIn />} />
-        <Route path="changepass" element={<ForgotPasswordModal />} />
-        <Route path="signup" element={<SignUp />} />
-
-        {/* <Route path="verifyemail" element={<VerifyEmail />} /> */}
-
-        <Route path="/auth/reset-password" element={<ResetPassword />} />
-        <Route path="confirm" element={<ConfirmPassword />} />
-        <Route path="/auth/verify-email" element={<EmailVerification />} />
-
-        <Route path="account" element={<LayoutAccount />}>
-          <Route index element={<Account />} />
-          <Route path="address" element={<Address />} />
-          <Route path="editpass" element={<Edit_Pass />} />
-        </Route>
+        <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/sign-up" element={<SignUp />} />
+        <Route path="/verify-email" element={<EmailVerification />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/confirm-password" element={<ConfirmPassword />} />
+        <Route path="/forgot-password" element={<ForgotPasswordModal />} />
       </Routes>
       <ChatBot />
     </>

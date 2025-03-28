@@ -107,7 +107,7 @@ const Products = () => {
                   key={product.id}
                   className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition"
                 >
-                  <Link to={`/product/${product.id}`}>
+                  <Link to={`/product-detail/${product.id}`}>
                     <div className="relative overflow-hidden rounded-lg">
                       <img
                         src={

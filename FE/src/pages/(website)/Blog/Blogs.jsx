@@ -205,19 +205,7 @@ const Blogs = () => {
     <div className="bg-gray-100 mt-10">
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* <section className="relative">
-          <motion.img
-            src="https://storage.googleapis.com/a1aa/image/L2WwzaWj82s6j2ILIlmI8ucu4kkoaXdYw6hBRSqLzYY.jpg"
-            alt="Living room with Christmas tree"
-            className=" w-full h-64 md:h-96 lg:h-[600px] object-cover rounded-3xl mx-auto px-4 md:px-8 lg:px-16 py-4 md:py-6 lg:py-8"
-            initial={{ scale: 1 }}
-            animate={{ scale: 1.05 }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
-          />
-          <div className="absolute top-6 left-6 bg-white p-2 rounded-full shadow">
-            <i className="fas fa-bars text-gray-700"></i>
-          </div>
-        </section>
-
+          
         {/* Tiêu đề và mô tả trang */}
         <div className="mt-10 mb-8 text-center">
           <h1 className="text-3xl font-bold mb-4">Blog Nội Thất</h1>
@@ -305,16 +293,6 @@ const Blogs = () => {
                       >
                         <div className="bg-white rounded-xl shadow-sm h-full hover:shadow-md transition-all duration-300 overflow-hidden group-hover:translate-y-[-5px]">
                           <div className="relative overflow-hidden rounded-t-xl">
-                            {/* Thẻ danh mục */}
-                            {/* <div className="absolute top-4 left-4 z-10">
-                              <span className="bg-amber-400 text-white text-xs font-medium px-3 py-1 rounded-full shadow-sm">
-                                {activeCategory === "all"
-                                  ? "Nội thất"
-                                  : categories.find(
-                                      (c) => c.slug === activeCategory
-                                    )?.title || "Nội thất"}
-                              </span>
-                            </div> */}
 
                             {/* Ảnh thumbnail */}
                             <div className="aspect-w-16 aspect-h-9 relative">
