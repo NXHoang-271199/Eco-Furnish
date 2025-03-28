@@ -37,8 +37,8 @@ const ProductDetail = () => {
     // Thêm độ trễ nhỏ để đảm bảo token đã được lưu trữ
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const token = localStorage.getItem("token");
-    console.log("Current token:", token);
+    const token = localStorage.getItem("authToken");
+    console.log("authToken:", token);
 
     // Tạm thời lấy thông tin từ userData trong localStorage nếu có
     const userDataStr = localStorage.getItem("userData");
@@ -423,6 +423,7 @@ const ProductDetail = () => {
     // Kiểm tra đăng nhập
     if (!isLoggedIn) {
       navigate("/signin", { state: { returnUrl: location.pathname } });
+      localStorage.setItem("returnPath", location.pathname);
       return;
     }
 
@@ -443,6 +444,7 @@ const ProductDetail = () => {
       }
     });
 
+    // Thêm vào giỏ hàng
     dispatch(
       addToCart({
         product,
@@ -451,13 +453,14 @@ const ProductDetail = () => {
       })
     );
 
+    // Hiển thị thông báo
     setToastProduct(product);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  // Mua ngay - vẫn yêu cầu đăng nhập
   const handleBuyNow = () => {
-    // Kiểm tra đăng nhập
     if (!isLoggedIn) {
       navigate("/signin", { state: { returnUrl: location.pathname } });
       return;

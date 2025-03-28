@@ -53,7 +53,6 @@ class ProductSeeder extends Seeder
                 'description' => 'Gương trang trí cao cấp, phù hợp với nhiều không gian nội thất',
                 'image_thumnail' => 'products/mirror-1.jpg',
                 'quantity' => 50,
-                'status' => 1
             ],
             [
                 'name' => 'Thảm trải sàn hiện đại',
@@ -63,7 +62,6 @@ class ProductSeeder extends Seeder
                 'description' => 'Thảm trải sàn chất liệu cao cấp, họa tiết hiện đại',
                 'image_thumnail' => 'products/carpet-1.jpg',
                 'quantity' => 30,
-                'status' => 1
             ],
             [
                 'name' => 'Đèn treo tường trang trí',
@@ -73,7 +71,6 @@ class ProductSeeder extends Seeder
                 'description' => 'Đèn treo tường phong cách hiện đại, ánh sáng dịu nhẹ',
                 'image_thumnail' => 'products/light-1.jpg',
                 'quantity' => 40,
-                'status' => 1
             ],
         ];
 
@@ -90,7 +87,7 @@ class ProductSeeder extends Seeder
                     'category_id' => $this->categories['TABLE'],
                     'description' => 'Bàn ăn gỗ tự nhiên, thiết kế hiện đại',
                     'image_thumnail' => 'products/table-1.jpg',
-                    'status' => 1
+
                 ],
                 'variants' => [
                     [
@@ -120,7 +117,7 @@ class ProductSeeder extends Seeder
                     'category_id' => $this->categories['SOFA'],
                     'description' => 'Ghế sofa đơn phong cách hiện đại',
                     'image_thumnail' => 'products/sofa-1.jpg',
-                    'status' => 1
+
                 ],
                 'variants' => [
                     [
@@ -150,7 +147,7 @@ class ProductSeeder extends Seeder
                     'category_id' => $this->categories['BED'],
                     'description' => 'Giường ngủ thiết kế hiện đại, chất liệu gỗ công nghiệp cao cấp',
                     'image_thumnail' => 'products/bed-1.jpg',
-                    'status' => 1
+
                 ],
                 'variants' => [
                     [
@@ -187,7 +184,7 @@ class ProductSeeder extends Seeder
                     'price' => $variantData['price'],
                     'quantity' => $variantData['quantity'],
                     'variant_details' => $variantData['variant_details'],
-                    'status' => 1
+
                 ]);
             }
         }
