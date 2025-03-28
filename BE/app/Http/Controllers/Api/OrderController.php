@@ -192,7 +192,8 @@ class OrderController extends Controller
                     'order_code' => $order->order_code,
                     'total_price' => $totalPrice,
                     'payment_method' => $paymentMethod,
-                    'payment_method_id' => $order->payment_method_id
+                    'payment_method_id' => $order->payment_method_id,
+                    'discount_amount' => $discountAmount
                 ]));
 
                 return $paymentResponse;
@@ -352,7 +353,8 @@ class OrderController extends Controller
                     'order_code' => $order->order_code,
                     'total_price' => $totalPrice,
                     'payment_method' => $paymentMethod,
-                    'payment_method_id' => $order->payment_method_id
+                    'payment_method_id' => $order->payment_method_id,
+                    'discount_amount' => $discountAmount
                 ]));
             }
 
