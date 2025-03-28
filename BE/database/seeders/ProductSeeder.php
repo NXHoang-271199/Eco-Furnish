@@ -52,8 +52,7 @@ class ProductSeeder extends Seeder
                 'price' => 1500000,
                 'description' => 'Gương trang trí cao cấp, phù hợp với nhiều không gian nội thất',
                 'image_thumnail' => 'products/mirror-1.jpg',
-                'quantity' => 50,
-                'status' => 1
+                'quantity' => 50
             ],
             [
                 'name' => 'Thảm trải sàn hiện đại',
@@ -62,8 +61,7 @@ class ProductSeeder extends Seeder
                 'price' => 2000000,
                 'description' => 'Thảm trải sàn chất liệu cao cấp, họa tiết hiện đại',
                 'image_thumnail' => 'products/carpet-1.jpg',
-                'quantity' => 30,
-                'status' => 1
+                'quantity' => 30
             ],
             [
                 'name' => 'Đèn treo tường trang trí',
@@ -72,8 +70,7 @@ class ProductSeeder extends Seeder
                 'price' => 850000,
                 'description' => 'Đèn treo tường phong cách hiện đại, ánh sáng dịu nhẹ',
                 'image_thumnail' => 'products/light-1.jpg',
-                'quantity' => 40,
-                'status' => 1
+                'quantity' => 40
             ],
         ];
 
@@ -89,8 +86,7 @@ class ProductSeeder extends Seeder
                     'product_code' => 'TABLE-' . Str::random(6),
                     'category_id' => $this->categories['TABLE'],
                     'description' => 'Bàn ăn gỗ tự nhiên, thiết kế hiện đại',
-                    'image_thumnail' => 'products/table-1.jpg',
-                    'status' => 1
+                    'image_thumnail' => 'products/table-1.jpg'
                 ],
                 'variants' => [
                     [
@@ -119,8 +115,7 @@ class ProductSeeder extends Seeder
                     'product_code' => 'SOFA-' . Str::random(6),
                     'category_id' => $this->categories['SOFA'],
                     'description' => 'Ghế sofa đơn phong cách hiện đại',
-                    'image_thumnail' => 'products/sofa-1.jpg',
-                    'status' => 1
+                    'image_thumnail' => 'products/sofa-1.jpg'
                 ],
                 'variants' => [
                     [
@@ -149,8 +144,7 @@ class ProductSeeder extends Seeder
                     'product_code' => 'BED-' . Str::random(6),
                     'category_id' => $this->categories['BED'],
                     'description' => 'Giường ngủ thiết kế hiện đại, chất liệu gỗ công nghiệp cao cấp',
-                    'image_thumnail' => 'products/bed-1.jpg',
-                    'status' => 1
+                    'image_thumnail' => 'products/bed-1.jpg'
                 ],
                 'variants' => [
                     [
