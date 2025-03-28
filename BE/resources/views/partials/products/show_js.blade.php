@@ -74,12 +74,13 @@
             e.target.style.transform = 'scale(1) translate(0, 0)';
         }
 
-        function changeMainImage(src) {
+        function changeMainImage(src, clickedThumb) {
             const mainImage = document.getElementById('main-product-image');
             const thumbnails = document.querySelectorAll('.thumbnail-wrapper');
+            const container = document.querySelector('.gallery-container');
             
-            if (mainImage) {
-                // Thêm hiệu ứng fade khi đổi ảnh
+            if (mainImage && clickedThumb) {
+                // Cập nhật ảnh chính với hiệu ứng fade
                 mainImage.style.opacity = '0';
                 mainImage.style.transform = 'scale(0.95)';
                 
@@ -90,20 +91,38 @@
                     mainImage.style.transform = 'scale(1)';
                 }, 150);
                 
-                thumbnails.forEach(thumb => {
-                    thumb.classList.remove('active');
-                    thumb.style.transform = 'scale(1)';
+                // Cập nhật trạng thái active cho thumbnails
+                thumbnails.forEach(thumb => thumb.classList.remove('active'));
+                clickedThumb.classList.add('active');
+
+                // Tính toán vị trí để thumbnail được chọn nằm giữa
+                const containerWidth = container.offsetWidth;
+                const thumbWidth = clickedThumb.offsetWidth;
+                const thumbLeft = clickedThumb.offsetLeft;
+                const scrollPosition = thumbLeft - (containerWidth / 2) + (thumbWidth / 2);
+
+                // Cuộn đến vị trí đã tính
+                container.scrollTo({
+                    left: scrollPosition,
+                    behavior: 'smooth'
                 });
-                
-                const activeThumbnail = Array.from(thumbnails).find(thumb => {
-                    const img = thumb.querySelector('img');
-                    return img && img.src === src;
+            }
+        }
+
+        function scrollGallery(direction) {
+            const container = document.querySelector('.gallery-container');
+            const scrollAmount = 200;
+            
+            if (container) {
+                const currentScroll = container.scrollLeft;
+                const newScroll = direction === 'next' 
+                    ? currentScroll + scrollAmount 
+                    : currentScroll - scrollAmount;
+                    
+                container.scrollTo({
+                    left: newScroll,
+                    behavior: 'smooth'
                 });
-                
-                if (activeThumbnail) {
-                    activeThumbnail.classList.add('active');
-                    activeThumbnail.style.transform = 'scale(1.05)';
-                }
             }
         }
 
@@ -131,83 +150,5 @@
                     button.closest('form').submit();
                 }
             });
-        }
-
-        function scrollGallery(direction) {
-            const container = document.querySelector('.gallery-container');
-            const scrollAmount = 200;
-            
-            if (container) {
-                const maxScroll = container.scrollWidth - container.clientWidth;
-                let newScrollPosition;
-
-                if (direction === 'next') {
-                    if (container.scrollLeft >= maxScroll) {
-                        // Cuộn mượt về đầu
-                        container.style.scrollBehavior = 'smooth';
-                        container.scrollLeft = 0;
-                    } else {
-                        // Cuộn bình thường về phải
-                        newScrollPosition = container.scrollLeft + scrollAmount;
-                        container.scrollTo({
-                            left: newScrollPosition,
-                            behavior: 'smooth'
-                        });
-                    }
-                } else {
-                    if (container.scrollLeft <= 0) {
-                        // Cuộn mượt về cuối
-                        container.style.scrollBehavior = 'smooth';
-                        container.scrollLeft = maxScroll;
-                    } else {
-                        // Cuộn bình thường về trái
-                        newScrollPosition = container.scrollLeft - scrollAmount;
-                        container.scrollTo({
-                            left: newScrollPosition,
-                            behavior: 'smooth'
-                        });
-                    }
-                }
-
-                // Cập nhật trạng thái active cho thumbnail
-                setTimeout(() => {
-                    updateActiveThumbByScroll();
-                }, 300);
-            }
-        }
-
-        function updateActiveThumbByScroll() {
-            const container = document.querySelector('.gallery-container');
-            const thumbnails = container.querySelectorAll('.thumbnail-wrapper');
-            
-            if (!thumbnails.length) return;
-
-            let activeIndex = 0;
-            let minDistance = Infinity;
-
-            // Tìm thumbnail gần nhất với vị trí scroll hiện tại
-            thumbnails.forEach((thumb, index) => {
-                const thumbRect = thumb.getBoundingClientRect();
-                const containerRect = container.getBoundingClientRect();
-                const distance = Math.abs(thumbRect.left - containerRect.left);
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    activeIndex = index;
-                }
-            });
-
-            // Cập nhật trạng thái active
-            thumbnails.forEach(thumb => thumb.classList.remove('active'));
-            thumbnails[activeIndex].classList.add('active');
-
-            // Cập nhật ảnh chính
-            const activeThumb = thumbnails[activeIndex].querySelector('img');
-            if (activeThumb) {
-                const mainImage = document.getElementById('main-product-image');
-                if (mainImage && mainImage.src !== activeThumb.src) {
-                    changeMainImage(activeThumb.src);
-                }
-            }
         }
     </script>

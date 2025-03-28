@@ -3,27 +3,25 @@
 
 <style>
     .product-image-container {
-        position: relative;
-        background-color: #fff;
-        border-radius: 15px;
-        padding: 20px;
-        max-width: 500px;
-        margin: 0 auto;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
+        position: relative !important;
+        background-color: #fff !important;
+        border-radius: 15px !important;
+        padding: 0 !important;
+        max-width: 500px !important;
+        margin: 0 auto !important;
     }
 
     .product-image-container:hover {
-        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
     }
 
     .main-image {
-        width: 100%;
-        height: 450px;
-        object-fit: contain;
-        background-color: #fff;
-        border-radius: 12px;
-        margin-bottom: 20px;
+        width: 100% !important;
+        height: 500px !important;
+        object-fit: contain !important;
+        background-color: #fff !important;
+        border-radius: 4px !important;
+        margin-bottom: 10px !important;
         transition: transform 0.3s ease;
     }
 
@@ -33,45 +31,38 @@
 
     .gallery-section {
         position: relative !important;
-        margin-top: 25px !important;
         width: 100% !important;
-        padding: 20px 40px !important;
-        background: #ffffff !important;
-        border-radius: 12px !important;
-        border: 1px solid #e9ecef !important;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+        padding: 0 40px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
     .gallery-section h5 {
-        font-size: 16px !important;
-        margin-bottom: 20px !important;
-        color: #2c3e50 !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.3px !important;
+        display: none !important;
     }
 
     .gallery-container {
         display: flex !important;
         flex-wrap: nowrap !important;
-        gap: 15px !important;
+        gap: 10px !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         overflow: hidden !important;
         scroll-behavior: smooth !important;
+        align-items: center !important;
     }
 
     .gallery-nav-button {
         position: absolute !important;
         top: 50% !important;
         transform: translateY(-50%) !important;
-        width: 28px !important;
-        height: 28px !important;
+        width: 24px !important;
+        height: 24px !important;
         border-radius: 50% !important;
-        background: rgba(64, 81, 137, 0.8) !important;
-        backdrop-filter: blur(4px) !important;
-        -webkit-backdrop-filter: blur(4px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        border: none !important;
         color: white !important;
         display: flex !important;
         align-items: center !important;
@@ -80,13 +71,10 @@
         transition: all 0.3s ease !important;
         z-index: 10 !important;
         padding: 0 !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
     }
 
     .gallery-nav-button:hover {
-        background: rgba(64, 81, 137, 1) !important;
-        transform: translateY(-50%) scale(1.1) !important;
-        box-shadow: 0 4px 12px rgba(64, 81, 137, 0.3) !important;
+        background: rgba(0, 0, 0, 0.7) !important;
     }
 
     .gallery-nav-button.prev {
@@ -98,7 +86,7 @@
     }
 
     .gallery-nav-button i {
-        font-size: 16px !important;
+        font-size: 14px !important;
         line-height: 1 !important;
     }
 
@@ -120,42 +108,37 @@
     }
 
     .thumbnail-wrapper {
-        flex: 0 0 90px !important;
-        width: 90px !important;
-        height: 90px !important;
+        flex: 0 0 80px !important;
+        width: 80px !important;
+        height: 80px !important;
         position: relative !important;
         border: 2px solid #eef2f7 !important;
-        border-radius: 10px !important;
+        border-radius: 8px !important;
         overflow: hidden !important;
         cursor: pointer !important;
         transition: all 0.3s ease !important;
         background: #fff !important;
+        opacity: 0.5 !important;
+        filter: grayscale(50%) !important;
+        transform: scale(0.95) !important;
     }
 
     .thumbnail-wrapper:hover {
-        border-color: #405189 !important;
-        transform: translateY(-3px) !important;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+        opacity: 0.8 !important;
+        filter: grayscale(20%) !important;
+        transform: scale(0.98) !important;
     }
 
     .thumbnail-wrapper.active {
         border: 2px solid #405189 !important;
-        box-shadow: 0 3px 10px rgba(64,81,137,0.2) !important;
+        opacity: 1 !important;
     }
 
     .thumbnail {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
         width: 100% !important;
         height: 100% !important;
         object-fit: cover !important;
-        padding: 5px !important;
-        transition: transform 0.3s ease !important;
-    }
-
-    .thumbnail:hover {
-        transform: scale(1.1) !important;
+        padding: 0 !important;
     }
 
     /* Product Info Styling */
@@ -234,27 +217,19 @@
     /* Responsive Design */
     @media (max-width: 768px) {
         .main-image {
-            height: 350px;
+            height: 350px !important;
         }
         
-        .gallery-container {
-            grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)) !important;
-            gap: 10px !important;
-        }
-
-        .nav-tabs-custom .nav-item .nav-link {
-            padding: 10px 15px;
+        .thumbnail-wrapper {
+            flex: 0 0 60px !important;
+            width: 60px !important;
+            height: 60px !important;
         }
     }
 
     @media (max-width: 480px) {
         .main-image {
-            height: 300px;
-        }
-        
-        .gallery-container {
-            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)) !important;
-            gap: 8px !important;
+            height: 300px !important;
         }
     }
 </style>

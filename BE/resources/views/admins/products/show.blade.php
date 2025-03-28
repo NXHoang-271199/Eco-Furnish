@@ -35,7 +35,6 @@
                                      id="main-product-image">
 
                                 <div class="gallery-section">
-                                    <h5>Ảnh phụ sản phẩm</h5>
                                     <button class="gallery-nav-button prev" onclick="scrollGallery('prev')">
                                         <i class="ri-arrow-left-s-line"></i>
                                     </button>
@@ -43,14 +42,14 @@
                                         <i class="ri-arrow-right-s-line"></i>
                                     </button>
                                     <div class="gallery-container">
-                                        <div class="thumbnail-wrapper active" onclick="changeMainImage('{{ asset('storage/' . $product->image_thumnail) }}')">
+                                        <div class="thumbnail-wrapper active" onclick="changeMainImage('{{ asset('storage/' . $product->image_thumnail) }}', this)">
                                             <img src="{{ asset('storage/' . $product->image_thumnail) }}"
                                                  alt="Main image"
                                                  class="thumbnail">
                                         </div>
                                         @if($product->gallery)
                                             @foreach($product->gallery as $image)
-                                                <div class="thumbnail-wrapper" onclick="changeMainImage('{{ asset('storage/' . $image->image_url) }}')">
+                                                <div class="thumbnail-wrapper" onclick="changeMainImage('{{ asset('storage/' . $image->image_url) }}', this)">
                                                     <img src="{{ asset('storage/' . $image->image_url) }}"
                                                          alt="Gallery image {{ $loop->iteration }}"
                                                          class="thumbnail">
