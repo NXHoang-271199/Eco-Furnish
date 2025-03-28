@@ -128,7 +128,15 @@ class OrderController extends Controller
             }
 
             $totalPrice = max(0, $subtotal - $discountAmount);
-            $paymentMethod = PaymentMethod::find($request->payment_method_id)?->name;
+            $paymentMethodId = PaymentMethod::find($request->payment_method_id);
+
+            if (!$paymentMethodId || $paymentMethodId->is_connected != 1) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Phương thức thanh toán chưa được kích hoạt'
+                ], 400);
+            }
+            $paymentMethod = $paymentMethodId->name;
             $paymentStatus = 0;
 
             // Tạo đơn hàng
@@ -183,6 +191,9 @@ class OrderController extends Controller
                 'order_id' => $order->id,
                 'is_read' => false
             ]);
+            if ($request->voucher_id) {
+                VoucherUsage::create(['user_id' => $userId, 'voucher_id' => $request->voucher_id]);
+            }
 
             DB::commit();
             // Xử lý thanh toán online (MoMo, VNPAY)
@@ -197,10 +208,6 @@ class OrderController extends Controller
                 ]));
 
                 return $paymentResponse;
-            }
-            //
-            if ($request->voucher_id) {
-                VoucherUsage::create(['user_id' => $userId, 'voucher_id' => $request->voucher_id]);
             }
 
             // gửi mail xác nhận đơn hàng
@@ -296,7 +303,15 @@ class OrderController extends Controller
             $totalPrice = max(0, $subtotal - $discountAmount);
 
             // Xử lý phương thức thanh toán
-            $paymentMethod = PaymentMethod::find($request->payment_method_id)?->name;
+            $paymentMethodId = PaymentMethod::find($request->payment_method_id);
+
+            if (!$paymentMethodId || $paymentMethodId->is_connected != 1) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Phương thức thanh toán chưa được kích hoạt'
+                ], 400);
+            }
+            $paymentMethod = $paymentMethodId->name;
             $paymentStatus = 0;
 
             // Tạo đơn hàng
