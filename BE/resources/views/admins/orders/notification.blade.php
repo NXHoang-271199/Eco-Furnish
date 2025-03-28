@@ -21,7 +21,7 @@
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                         <strong>Đơn hàng: {{ $notification->order->order_code }}</strong><br>
-                        <span>{{ $notification->order->user_name }} đã đặt hàng.</span>
+                        <span>{{ $notification->order->user->name }} đã đặt hàng.</span>
                         <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
                     </div>
                     @if (!$notification->is_read)

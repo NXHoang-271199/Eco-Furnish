@@ -54,3 +54,9 @@ VD:
 # Tìm hiểu factory
 
 # Câu lệnh git
+
+# cài ngrok
+-   choco install ngrok
+# chạy ngrok
+-   ngrok http 8000 => chạy ngrok trên port 8000
+
