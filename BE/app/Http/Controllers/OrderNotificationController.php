@@ -18,7 +18,7 @@ class OrderNotificationController extends Controller
 
     public function index()
     {
-        $notifications = OrderNotification::with('order')
+        $notifications = OrderNotification::with('order.user')
             ->orderBy('created_at', 'desc')
             ->get();
             $notificationsCount = $notifications->count();
