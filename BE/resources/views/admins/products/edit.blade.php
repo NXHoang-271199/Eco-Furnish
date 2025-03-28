@@ -26,6 +26,7 @@
     <form id="productForm" action="{{ route('products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
+        <input type="hidden" name="_product_id" value="{{ $product->id }}">
         <input type="hidden" name="has_variants" value="{{ count($product->variants) > 0 ? '1' : '0' }}" id="hasVariants">
         
         <div class="row">
@@ -46,8 +47,7 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label for="product_code" class="form-label">Mã sản phẩm</label>
-                                    <input type="text" class="form-control" id="product_code" name="product_code" 
-                                        value="{{ $product->product_code }}" readonly>
+                                    <input type="text" class="form-control" id="product_code" value="{{ $product->product_code }}" readonly>
                                 </div>
                                 
                                 <div class="form-group mb-3">
@@ -76,42 +76,39 @@
                                     @enderror
                                 </div>
 
-                                <div id="basicPriceSection">
-                                    <div class="form-group mb-3" id="priceSection">
-                                        <label for="price" class="form-label">Giá gốc <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control @error('price') is-invalid @enderror"
-                                                id="price" name="price" value="{{ old('price', $product->price) }}" min="0">
-                                            <span class="input-group-text">VNĐ</span>
+                                <div class="row mb-4" id="base-price-discount-quantity" @if($product->variants->count() > 0) style="display: none;" @endif>
+                                    <div class="col-lg-4">
+                                        <div class="mb-3">
+                                            <label for="price" class="form-label">Giá gốc <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="price" id="price" placeholder="Nhập giá gốc" min="0" value="{{ old('price', $product->price) }}">
+                                                <span class="input-group-text">VNĐ</span>
+                                            </div>
                                             @error('price')
-                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                <div class="text-danger">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
-
-                                    <div class="form-group mb-3" id="discountPriceSection">
-                                        <label for="discount_price" class="form-label">Giá khuyến mãi</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control @error('discount_price') is-invalid @enderror"
-                                                id="discount_price" name="discount_price" value="{{ old('discount_price', $product->discount_price) }}" min="0">
-                                            <span class="input-group-text">VNĐ</span>
+                                    <div class="col-lg-4">
+                                        <div class="mb-3">
+                                            <label for="discount_price" class="form-label">Giá khuyến mãi</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="discount_price" id="discount_price" placeholder="Nhập giá khuyến mãi" min="0" value="{{ old('discount_price', $product->discount_price) }}">
+                                                <span class="input-group-text">VNĐ</span>
+                                            </div>
                                             @error('discount_price')
-                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                <div class="text-danger">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
-                                    
-                                    <div class="form-group mb-3" id="quantitySection">
-                                        <label for="quantity" class="form-label">Số lượng <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control @error('quantity') is-invalid @enderror"
-                                                id="quantity" name="quantity" value="{{ old('quantity', $product->quantity) }}" min="0">
-                                            <span class="input-group-text">Cái</span>
+                                    <div class="col-lg-4">
+                                        <div class="mb-3">
+                                            <label for="quantity" class="form-label">Số lượng <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control" name="quantity" id="quantity" placeholder="Nhập số lượng" min="0" value="{{ old('quantity', $product->quantity) }}">
                                             @error('quantity')
-                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                <div class="text-danger">{{ $message }}</div>
                                             @enderror
                                         </div>
-                                        <div id="quantity-error" class="text-danger mt-1" style="display: none;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -295,6 +292,49 @@
             </div>
         </div>
     </form>
+</div>
+
+<!-- Modal chỉnh sửa biến thể -->
+<div class="modal fade" id="editVariantModal" tabindex="-1" aria-labelledby="editVariantModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editVariantModalLabel">Chỉnh sửa biến thể</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-variant-id">
+                <div class="mb-3">
+                    <label for="edit-variant-info" class="form-label">Thông tin biến thể</label>
+                    <div id="edit-variant-info" class="mb-3"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="edit-variant-sku" class="form-label">SKU</label>
+                    <input type="text" class="form-control" id="edit-variant-sku" placeholder="Nhập SKU">
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="edit-variant-price" class="form-label">Giá</label>
+                    <input type="number" class="form-control" id="edit-variant-price" placeholder="Nhập giá" min="0">
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="edit-variant-discount-price" class="form-label">Giá khuyến mãi</label>
+                    <input type="number" class="form-control" id="edit-variant-discount-price" placeholder="Nhập giá khuyến mãi" min="0">
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="edit-variant-quantity" class="form-label">Số lượng</label>
+                    <input type="number" class="form-control" id="edit-variant-quantity" placeholder="Nhập số lượng" min="0">
+                    <div class="invalid-feedback"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="saveVariantEdit">Lưu</button>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 

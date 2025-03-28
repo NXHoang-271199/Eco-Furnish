@@ -108,6 +108,10 @@ class TrashController extends Controller
             switch($type) {
                 case 'trash-products':
                     $item = Product::onlyTrashed()->findOrFail($id);
+                    
+                    // Xóa các product variants trước
+                    $item->productVariant()->forceDelete();
+                    
                     if ($item->image_thumbnail) {
                         Storage::disk('public')->delete($item->image_thumbnail);
                     }
