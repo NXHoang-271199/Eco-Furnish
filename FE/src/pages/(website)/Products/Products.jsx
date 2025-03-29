@@ -39,7 +39,7 @@ const Products = () => {
     fetchProducts();
   }, []);
   return (
-    <>
+    <div className="pt-20">
       {/* Banner */}
       <section className="max-w-6xl mx-auto mt-10">
         <Banner />
@@ -193,7 +193,7 @@ const Products = () => {
           ))}
         </div>
       </section>
-    </>
+    </div>
   );
 };
 

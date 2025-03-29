@@ -69,6 +69,7 @@ class CartController extends Controller
         }
 
         // Kiểm tra biến thể sản phẩm (nếu có)
+
         $variant = null;
         if ($request->product_variant_id) {
             $variant = ProductVariant::where('id', $request->product_variant_id)

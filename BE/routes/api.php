@@ -97,7 +97,7 @@ Route::get('/banners', [BannerController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cart', [CartController::class, 'index']); // Lấy giỏ hàng
     Route::post('/cart/add', [CartController::class, 'addToCart']); // Thêm vào giỏ hàng
-    Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
+    Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng 
     Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
     Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
     Route::post('/cart-items/update-quantity', [CartController::class, 'updateCartItemQuantity']); // API mới cập nhật số lượng
