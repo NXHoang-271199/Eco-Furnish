@@ -9,6 +9,7 @@ import {
   useInView,
   useAnimation,
 } from "framer-motion";
+import { BsStarFill, BsStarHalf, BsStar } from "react-icons/bs";
 import api from "../../../service/api";
 
 const Homes = () => {
@@ -168,6 +169,24 @@ const Homes = () => {
         repeat: Infinity,
       },
     },
+  };
+
+  // Render sao đánh giá
+  const renderStars = (rating) => {
+    const stars = [];
+    const totalStars = 5;
+
+    for (let i = 1; i <= totalStars; i++) {
+      if (i <= rating) {
+        stars.push(<BsStarFill key={i} className="text-yellow-500" />);
+      } else if (i - 0.5 <= rating) {
+        stars.push(<BsStarHalf key={i} className="text-yellow-500" />);
+      } else {
+        stars.push(<BsStar key={i} className="text-yellow-500" />);
+      }
+    }
+
+    return <div className="flex space-x-1">{stars}</div>;
   };
 
   return (
@@ -382,6 +401,38 @@ const Homes = () => {
                         >
                           {product.name}
                         </motion.h3>
+
+                        {/* Hiển thị đánh giá sao */}
+                        <motion.div
+                          className="flex items-center mb-2"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.5,
+                            delay: 0.25 + index * 0.1,
+                          }}
+                        >
+                          {product.rating ? (
+                            <>
+                              {renderStars(product.rating)}
+                              <span className="text-xs text-gray-500 ml-1">
+                                ({product.rating_count || 0})
+                              </span>
+                            </>
+                          ) : (
+                            <div className="flex text-gray-300">
+                              {Array(5)
+                                .fill()
+                                .map((_, i) => (
+                                  <BsStar key={i} className="text-xs" />
+                                ))}
+                              <span className="text-xs text-gray-400 ml-1">
+                                (0)
+                              </span>
+                            </div>
+                          )}
+                        </motion.div>
+
                         <motion.p
                           className="text-sm text-gray-500 mb-2 line-clamp-2 min-h-[40px]"
                           initial={{ opacity: 0, y: 10 }}

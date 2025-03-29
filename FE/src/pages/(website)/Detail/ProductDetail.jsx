@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useDispatch } from "react-redux";
@@ -51,6 +51,9 @@ const parseVariantFromSku = (sku) => {
   };
 };
 
+// Tạo cache đơn giản
+const apiCache = {};
+
 const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [comments, setComments] = useState([]);
@@ -70,6 +73,11 @@ const ProductDetail = () => {
   const dispatch = useDispatch();
   const [showToast, setShowToast] = useState(false);
   const [toastProduct, setToastProduct] = useState(null);
+  const [editingQuantity, setEditingQuantity] = useState("");
+  const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false);
+  const [stockError, setStockError] = useState("");
+  const quantityInputRef = useRef(null);
+  const isEditingRef = useRef(false);
 
   // State để hiển thị thông báo
   const [showFeedback, setShowFeedback] = useState(false);
@@ -83,28 +91,254 @@ const ProductDetail = () => {
   // Thêm state để quản lý tổng tiền trong Order Summary
   const [orderTotal, setOrderTotal] = useState(0);
 
-  // Thêm state quản lý trạng thái đang cập nhật và thông báo lỗi
-  const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false);
-  const [stockError, setStockError] = useState("");
+  // console.log("ID from useParams:", id);
 
-  console.log("ID from useParams:", id);
+  // Hàm để fetch data với cache đơn giản
+  const fetchWithCache = async (url) => {
+    // Kiểm tra cache
+    const now = Date.now();
+    if (apiCache[url] && now - apiCache[url].timestamp < 5 * 60 * 1000) {
+      return apiCache[url].data;
+    }
+
+    // Fetch data từ API
+    const response = await axios.get(url);
+
+    // Lưu vào cache
+    apiCache[url] = {
+      data: response.data,
+      timestamp: now,
+    };
+
+    return response.data;
+  };
+
+  // Hàm để refresh dữ liệu sản phẩm
+  const refreshProductData = async () => {
+    setLoading(true);
+    try {
+      const timestamp = new Date().getTime();
+      const url = `http://localhost:8000/api/products/${id}?_=${timestamp}`;
+
+      // Sử dụng fetchWithCache thay vì axios trực tiếp
+      const response = await fetchWithCache(url);
+      let productData = response.data;
+
+      setSelectedVariants({});
+      setCurrentPrice(productData.price);
+      setCurrentDiscount(productData.discount_price);
+
+      if (productData.variants && Array.isArray(productData.variants)) {
+        const variantsWithValues = productData.variants.map(
+          (variant, index) => {
+            // Kiểm tra variant_id
+            let variantId = 0;
+            if (variant.variant_id !== undefined)
+              variantId = Number(variant.variant_id);
+            else if (variant.type_id !== undefined)
+              variantId = Number(variant.type_id);
+            else if (variant.attribute_id !== undefined)
+              variantId = Number(variant.attribute_id);
+            else if (
+              variant.variant_details &&
+              typeof variant.variant_details === "object"
+            ) {
+              const keys = Object.keys(variant.variant_details);
+              if (keys.length > 0) {
+                // Sử dụng key đầu tiên trong variant_details làm variant_id
+                variantId = Number(keys[0]);
+              }
+            }
+
+            // Kiểm tra variant_value_id
+            let variantValueId = 0;
+            if (variant.variant_value_id !== undefined)
+              variantValueId = Number(variant.variant_value_id);
+            else if (variant.value_id !== undefined)
+              variantValueId = Number(variant.value_id);
+            else if (variant.option_id !== undefined)
+              variantValueId = Number(variant.option_id);
+            else if (
+              variant.variant_details &&
+              typeof variant.variant_details === "object" &&
+              variantId > 0
+            ) {
+              const valueId = variant.variant_details[variantId];
+              if (valueId) {
+                variantValueId = Number(valueId);
+              }
+            }
+
+            // Kiểm tra tên biến thể
+            let variantName = "Không xác định";
+            if (variant.variant_name) variantName = variant.variant_name;
+            else if (variant.type_name) variantName = variant.type_name;
+            else if (variant.attribute_name)
+              variantName = variant.attribute_name;
+
+            // Kiểm tra giá trị biến thể
+            let variantValue = "Không xác định";
+            if (variant.variant_value_name)
+              variantValue = variant.variant_value_name;
+            else if (variant.value_name) variantValue = variant.value_name;
+            else if (variant.value) variantValue = variant.value;
+            else if (variant.option_name) variantValue = variant.option_name;
+            else if (variant.sku) {
+              // Cố gắng trích xuất từ SKU
+              const parsedVariant = parseVariantFromSku(variant.sku);
+              if (parsedVariant) {
+                if (variantId === 1) {
+                  // Màu sắc
+                  variantValue = parsedVariant.color;
+                } else if (variantId === 2) {
+                  // Kích thước
+                  variantValue = parsedVariant.size;
+                }
+              }
+            }
+
+            // Tạo cấu trúc chuẩn của biến thể
+            return {
+              ...variant,
+              id: variant.id || index + 1,
+              variant_id: variantId,
+              variant_name: variantName,
+              variant_value_id: variantValueId,
+              variant_value_name: variantValue,
+              variant_value: {
+                id: variantValueId,
+                value: variantValue,
+              },
+              variant_info: {
+                id: variantId,
+                name: variantName,
+              },
+              quantity: Number(variant.quantity || 10),
+              price: variant.price || productData.price,
+              discount_price:
+                variant.discount_price ||
+                variant.price ||
+                productData.discount_price ||
+                productData.price,
+              sku: variant.sku || `${productData.id}-variant-${index + 1}`,
+            };
+          }
+        );
+
+        // Sắp xếp các biến thể theo loại
+        variantsWithValues.sort((a, b) => a.variant_id - b.variant_id);
+
+        // Thiết lập biến thể mặc định được chọn
+        const defaultVariants = {};
+        const variantTypes = [
+          ...new Set(variantsWithValues.map((v) => Number(v.variant_id))),
+        ].filter((id) => id > 0);
+
+        // Chọn biến thể đầu tiên cho mỗi loại
+        variantTypes.forEach((typeId) => {
+          if (typeId === 0) return; // Bỏ qua biến thể có id = 0
+
+          const availableVariants = variantsWithValues.filter(
+            (v) => Number(v.variant_id) === typeId && Number(v.quantity) > 0
+          );
+
+          if (availableVariants.length > 0) {
+            defaultVariants[typeId] = Number(
+              availableVariants[0].variant_value_id
+            );
+          }
+        });
+
+        // Thiết lập giá dựa trên biến thể mặc định
+        if (Object.keys(defaultVariants).length > 0) {
+          // Tìm biến thể phù hợp với sự kết hợp của những loại đã chọn
+          const findMatchingVariant = () => {
+            // Nếu có biến thể loại 3 (kết hợp), tìm biến thể phù hợp
+            const combinedVariants = variantsWithValues.filter(
+              (v) => v.variant_id === 3
+            );
+            if (combinedVariants.length > 0) {
+              const colorId = defaultVariants[1]; // ID giá trị màu sắc đã chọn
+              const sizeId = defaultVariants[2]; // ID giá trị kích thước đã chọn
+
+              const matchingVariant = combinedVariants.find(
+                (v) => v.color_id === colorId && v.size_id === sizeId
+              );
+
+              if (matchingVariant) {
+                return matchingVariant;
+              }
+            }
+
+            // Nếu không tìm thấy biến thể kết hợp, sử dụng logic cũ
+            const skuCandidates = new Set();
+
+            Object.entries(defaultVariants).forEach(([typeId, valueId]) => {
+              const matches = variantsWithValues.filter(
+                (v) =>
+                  v.variant_id === Number(typeId) &&
+                  v.variant_value_id === valueId
+              );
+
+              matches.forEach((v) => skuCandidates.add(v.sku));
+            });
+
+            for (const sku of skuCandidates) {
+              const matchingVariants = variantsWithValues.filter(
+                (v) => v.sku === sku
+              );
+              if (matchingVariants.length > 0) {
+                return matchingVariants[0];
+              }
+            }
+
+            return null;
+          };
+
+          const bestVariant = findMatchingVariant();
+
+          if (bestVariant && bestVariant.price) {
+            setCurrentPrice(bestVariant.price);
+            setCurrentDiscount(bestVariant.discount_price || bestVariant.price);
+          }
+        }
+
+        setProduct({ ...productData, variants: variantsWithValues });
+        setSelectedVariants(defaultVariants);
+      } else {
+        setProduct(productData);
+      }
+
+      // Lấy comments riêng biệt
+      const commentsUrl = `http://localhost:8000/api/products/${id}/comments?_=${timestamp}`;
+      const commentsResponse = await fetchWithCache(commentsUrl);
+      setComments(commentsResponse.data || []);
+    } catch (error) {
+      console.error("Error refreshing product data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Hàm kiểm tra xác thực và lấy thông tin người dùng
   const checkAuthentication = async () => {
     // Thêm độ trễ nhỏ để đảm bảo token đã được lưu trữ
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const token = localStorage.getItem("authToken"); // Thay đổi từ "token" thành "authToken"
-    console.log("Current token:", token);
+    const token = localStorage.getItem("authToken");
+
+    // Nếu không có token, không cần gọi API để kiểm tra
+    if (!token) {
+      setIsLoggedIn(false);
+      setCurrentUser(null);
+      return;
+    }
 
     // Tạm thời lấy thông tin từ userData trong localStorage nếu có
     const userDataStr = localStorage.getItem("userData");
     if (userDataStr) {
       try {
         const userData = JSON.parse(userDataStr);
-        console.log("Loaded user data from localStorage:", userData);
-
-        // Cập nhật trạng thái người dùng từ localStorage
         setCurrentUser(userData);
         setIsLoggedIn(true);
       } catch (error) {
@@ -112,63 +346,16 @@ const ProductDetail = () => {
       }
     }
 
-    // Vẫn gọi API để cập nhật thông tin mới nhất
-    if (token) {
+    // Gọi API để cập nhật thông tin mới nhất
+    try {
       const success = await fetchCurrentUser(token);
       if (!success) {
-        console.log("Xác thực thất bại, xóa dữ liệu người dùng...");
         localStorage.removeItem("userData");
       }
-    } else {
-      setIsLoggedIn(false);
-      setCurrentUser(null);
+    } catch (error) {
+      console.error("Error during authentication check:", error);
     }
   };
-
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const productResponse = await axios.get(
-          `http://localhost:8000/api/products/${id}`
-        );
-        const productResult = productResponse.data.data;
-        console.log("Product Data:", productResult);
-
-        // Set default price
-        setCurrentPrice(productResult.price);
-        setCurrentDiscount(productResult.discount_price);
-
-        // Kiểm tra và xử lý variants từ API
-        if (productResult.variants && Array.isArray(productResult.variants)) {
-          // Lấy biến thể đầu tiên làm mặc định
-          const firstVariant = productResult.variants[0];
-          if (firstVariant) {
-            const variantDetails = firstVariant.variant_details;
-            if (variantDetails) {
-              setSelectedVariants({
-                1: variantDetails[0]?.value, // Màu sắc
-                2: variantDetails[1]?.value, // Kích thước
-              });
-            }
-          }
-        }
-
-        setProduct(productResult);
-        setLoading(false);
-
-        // Fetch comments
-        const commentsResponse = await axios.get(
-          `http://localhost:8000/api/products/${id}/comments`
-        );
-        setComments(commentsResponse.data.data || []);
-      } catch (error) {
-        console.error("Error fetching product:", error);
-        setLoading(false);
-      }
-    };
-
-    fetchProduct();
-  }, [id]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -183,7 +370,7 @@ const ProductDetail = () => {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [id]);
+  }, [id, refreshProductData, checkAuthentication]);
 
   // Theo dõi thay đổi của location
   useEffect(() => {
@@ -193,9 +380,9 @@ const ProductDetail = () => {
   // Theo dõi thay đổi của localStorage để cập nhật trạng thái đăng nhập
   useEffect(() => {
     const handleStorageChange = (e) => {
-      console.log("Storage changed:", e);
+      // console.log("Storage changed:", e);
       if (e.key === "authToken" || e.key === "userData") {
-        console.log("Token or userData changed, checking authentication");
+        // console.log("Token or userData changed, checking authentication");
         setTimeout(() => {
           checkAuthentication();
         }, 200); // Thêm độ trễ để đảm bảo localStorage đã được cập nhật
@@ -227,37 +414,43 @@ const ProductDetail = () => {
   }, []);
 
   const fetchCurrentUser = async (token) => {
+    if (!token) return false;
+
     try {
-      console.log("Fetching user with token:", token);
       const response = await axios.get("http://localhost:8000/api/user", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("User profile response:", response.data);
+
       if (response.data && response.data.data) {
         setCurrentUser(response.data.data);
         setIsLoggedIn(true);
-        console.log("User logged in successfully:", response.data.data.name);
+        // Lưu thông tin người dùng vào localStorage để sử dụng khi offline
+        localStorage.setItem("userData", JSON.stringify(response.data.data));
         return true;
       } else if (response.data) {
         setCurrentUser(response.data);
         setIsLoggedIn(true);
-        console.log("User logged in successfully:", response.data.name);
+        localStorage.setItem("userData", JSON.stringify(response.data));
         return true;
       } else {
-        console.log("No user data in response");
         setIsLoggedIn(false);
         setCurrentUser(null);
-        localStorage.removeItem("authToken"); // Thay đổi từ "token" thành "authToken"
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userData");
         return false;
       }
     } catch (error) {
       console.error("Error fetching user:", error.response || error);
+
+      // Xử lý lỗi 401 (Unauthorized) - người dùng chưa đăng nhập hoặc token hết hạn
       if (error.response?.status === 401 || error.response?.status === 404) {
-        console.log("Token không hợp lệ hoặc API không tồn tại, đăng xuất...");
         setIsLoggedIn(false);
         setCurrentUser(null);
-        localStorage.removeItem("authToken"); // Thay đổi từ "token" thành "authToken"
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userData");
       }
+
+      // Không hiển thị lỗi nếu người dùng chưa đăng nhập, chỉ trả về false
       return false;
     }
   };
@@ -266,8 +459,8 @@ const ProductDetail = () => {
     // Log biến thể kích thước khi product thay đổi
     if (product && product.variants) {
       const sizeVariants = product.variants.filter((v) => v.variant_id === 2);
-      console.log("============= BIẾN THỂ KÍCH THƯỚC =============");
-      console.log("Số lượng biến thể kích thước:", sizeVariants.length);
+      // console.log("============= BIẾN THỂ KÍCH THƯỚC =============");
+      // console.log("Số lượng biến thể kích thước:", sizeVariants.length);
       sizeVariants.forEach((variant, index) => {
         console.log(`Kích thước ${index + 1}:`, {
           id: variant.id,
@@ -281,7 +474,7 @@ const ProductDetail = () => {
           quantity: variant.quantity,
         });
       });
-      console.log("==============================================");
+      // console.log("==============================================");
     }
   }, [product]);
 
@@ -308,13 +501,13 @@ const ProductDetail = () => {
     if (product && product.variants) {
       // Lấy các loại biến thể
       const types = extractVariantTypes(product.variants);
-      console.log("Các loại biến thể: ", types); // Sẽ bao gồm cả 1 (màu sắc) và 2 (kích thước)
+      // console.log("Các loại biến thể: ", types); // Sẽ bao gồm cả 1 (màu sắc) và 2 (kích thước)
 
       // Xử lý hiển thị cho từng loại
       types.forEach((typeId) => {
         // Tìm các giá trị biến thể cho từng loại
         const typeValues = getVariantValuesByType(typeId);
-        console.log(`Giá trị biến thể cho loại ${typeId}:`, typeValues);
+        // console.log(`Giá trị biến thể cho loại ${typeId}:`, typeValues);
       });
     }
   }, [product]);
@@ -414,7 +607,7 @@ const ProductDetail = () => {
 
   useEffect(() => {
     if (product && product.variants) {
-      console.log("Tất cả biến thể:", product.variants);
+      // console.log("Tất cả biến thể:", product.variants);
 
       // Log chi tiết từng loại biến thể
       const colorVariants = getVariantsByType(1);
@@ -440,6 +633,23 @@ const ProductDetail = () => {
     }
   }, [product]);
 
+  // Đoạn mã chuyển đổi token từ access_token sang authToken nếu cần
+  useEffect(() => {
+    // Đồng bộ token giữa access_token và authToken
+    const accessToken = localStorage.getItem("access_token");
+    const authToken = localStorage.getItem("authToken");
+
+    if (accessToken && !authToken) {
+      // Nếu có access_token nhưng không có authToken, sao chép sang authToken
+      localStorage.setItem("authToken", accessToken);
+      console.log("Đã đồng bộ từ access_token sang authToken");
+    } else if (!accessToken && authToken) {
+      // Nếu có authToken nhưng không có access_token, sao chép sang access_token
+      localStorage.setItem("access_token", authToken);
+      console.log("Đã đồng bộ từ authToken sang access_token");
+    }
+  }, []);
+
   if (loading) {
     return <div className="text-center mt-32">Đang tải...</div>;
   }
@@ -448,7 +658,7 @@ const ProductDetail = () => {
     return <div className="text-center mt-32">Không tìm thấy sản phẩm</div>;
   }
 
-  console.log("Product state:", product);
+  // console.log("Product state:", product);
 
   const formatPrice = (price) => {
     const numericPrice = price ? parseFloat(price) : null;
@@ -467,7 +677,7 @@ const ProductDetail = () => {
         : `${baseURL}storage/${product.image_thumnail}`
       : "https://via.placeholder.com/400x400?text=No+Image");
 
-  console.log("Main Image URL:", mainImageUrl);
+  // console.log("Main Image URL:", mainImageUrl);
 
   if (product.gallery) {
     product.gallery.forEach((item, index) => {
@@ -562,28 +772,49 @@ const ProductDetail = () => {
       return;
     }
 
-    // Tính toán giá cuối cùng
-    const finalPrice = selectedVariant.discount_price || selectedVariant.price;
-
-    // Tạo đối tượng cart item với thông tin đầy đủ
-    const cartItem = {
-      product_id: product.id,
-      product: {
-        ...product,
-        price: finalPrice,
-      },
-      quantity: quantity,
-      price: finalPrice * quantity,
-      variant_details: selectedVariant.variant_details,
-    };
+    // Kiểm tra tồn kho cục bộ trước khi thêm vào giỏ hàng
+    if (selectedVariant.quantity < quantity) {
+      toast.error(`Chỉ còn ${selectedVariant.quantity} sản phẩm trong kho`, {
+        duration: 3000,
+        style: {
+          background: "#fff",
+          color: "#e11d48",
+          border: "1px solid #fecdd3",
+        },
+      });
+      return;
+    }
 
     try {
       // Kiểm tra token trong localStorage
-      const token = localStorage.getItem("authToken"); // Thay đổi từ "token" thành "authToken"
+      const token = localStorage.getItem("authToken");
       if (!token) {
         navigate("/signin", { state: { returnUrl: location.pathname } });
         return;
       }
+
+      // Tính toán giá cuối cùng
+      const finalPrice =
+        selectedVariant.discount_price || selectedVariant.price;
+
+      // Tạo đối tượng cart item với thông tin đầy đủ
+      const cartItem = {
+        product_id: product.id,
+        product: {
+          ...product,
+          price: finalPrice,
+        },
+        quantity: quantity,
+        price: finalPrice * quantity,
+        variant_details: selectedVariant.variant_details,
+      };
+
+      // Gọi API thêm vào giỏ hàng
+      console.log("Gửi dữ liệu đến API:", {
+        product_id: product.id,
+        product_variant_id: selectedVariant.id,
+        quantity: quantity,
+      });
 
       const response = await axios.post(
         "http://localhost:8000/api/cart/add",
@@ -595,14 +826,19 @@ const ProductDetail = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
           },
         }
       );
 
-      if (response.data.message === "Thêm vào giỏ hàng thành công") {
+      if (
+        response.data.success ||
+        response.data.message === "Thêm vào giỏ hàng thành công"
+      ) {
         // Thêm vào Redux store
         dispatch(addToCart(cartItem));
-        toast.success("Đã thêm vào giỏ hàng", {
+        toast.success(response.data.message || "Đã thêm vào giỏ hàng", {
           duration: 2000,
           style: {
             background: "#fff",
@@ -610,14 +846,26 @@ const ProductDetail = () => {
             border: "1px solid #a7f3d0",
           },
         });
+      } else {
+        toast.error(response.data.message || "Không thể thêm vào giỏ hàng", {
+          duration: 2000,
+          style: {
+            background: "#fff",
+            color: "#e11d48",
+            border: "1px solid #fecdd3",
+          },
+        });
       }
     } catch (error) {
+      console.error("Lỗi khi thêm vào giỏ hàng:", error.response || error);
+
       if (error.response?.status === 401) {
         // Token hết hạn hoặc không hợp lệ
         localStorage.removeItem("authToken");
         navigate("/signin", { state: { returnUrl: location.pathname } });
         return;
       }
+
       toast.error(
         error.response?.data?.message || "Có lỗi xảy ra khi thêm vào giỏ hàng",
         {
@@ -650,6 +898,42 @@ const ProductDetail = () => {
     navigate("/payment");
   };
 
+  const handleQuantityInputChange = (value) => {
+    // Chỉ cập nhật giá trị đang nhập, không cập nhật số lượng thực
+    setEditingQuantity(value);
+  };
+
+  const handleQuantityInputFocus = () => {
+    isEditingRef.current = true;
+  };
+
+  const handleQuantityInputBlur = (inputValue) => {
+    isEditingRef.current = false;
+
+    // Xử lý giá trị khi người dùng rời khỏi ô input
+    const value = inputValue || "";
+
+    // Đặt lại giá trị đang nhập
+    setEditingQuantity("");
+
+    // Kiểm tra và cập nhật số lượng thực
+    const newValue = parseInt(value, 10);
+    if (!isNaN(newValue) && newValue > 0) {
+      handleQuantityChange(newValue);
+    } else {
+      // Nếu giá trị không hợp lệ, đặt lại về 1
+      setQuantity(1);
+      setStockError("");
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    // Xử lý khi người dùng nhấn Enter
+    if (e.key === "Enter") {
+      quantityInputRef.current.blur();
+    }
+  };
+
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity < 1) return;
 
@@ -680,6 +964,9 @@ const ProductDetail = () => {
       // Kiểm tra tồn kho cục bộ
       if (selectedVariant.quantity >= newQuantity) {
         setQuantity(newQuantity);
+
+        // Kiểm tra xem sản phẩm này đã có trong giỏ hàng chưa và cập nhật nếu có
+        updateCartItemIfExists(product.id, selectedVariant, newQuantity);
       } else {
         setStockError(`Chỉ còn ${selectedVariant.quantity} sản phẩm trong kho`);
       }
@@ -688,6 +975,127 @@ const ProductDetail = () => {
       setStockError("Có lỗi xảy ra khi cập nhật số lượng");
     } finally {
       setIsUpdatingQuantity(false);
+    }
+  };
+
+  // Hàm mới: Cập nhật số lượng sản phẩm trong giỏ hàng nếu đã tồn tại
+  const updateCartItemIfExists = async (productId, variant, newQuantity) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) return; // Nếu chưa đăng nhập, không cần cập nhật giỏ hàng
+
+    try {
+      // Lấy thông tin giỏ hàng
+      const cartResponse = await axios.get("http://localhost:8000/api/cart", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!cartResponse.data.items || cartResponse.data.items.length === 0) {
+        return; // Giỏ hàng trống, không cần cập nhật
+      }
+
+      // Tìm sản phẩm trong giỏ hàng
+      const cartItem = cartResponse.data.items.find(
+        (item) =>
+          item.product_id === productId &&
+          JSON.stringify(item.variant_details) ===
+            JSON.stringify(variant.variant_details)
+      );
+
+      if (!cartItem) {
+        return; // Sản phẩm chưa có trong giỏ hàng, không cần cập nhật
+      }
+
+      // Cập nhật số lượng sản phẩm trong giỏ hàng
+      await axios.put(
+        `http://localhost:8000/api/cart/update/${cartItem.id}`,
+        { quantity: newQuantity },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Cập nhật Redux store
+      dispatch(
+        updateQuantity({
+          productId,
+          quantity: newQuantity,
+          variant_details: variant.variant_details,
+        })
+      );
+
+      toast.success("Đã cập nhật số lượng trong giỏ hàng", {
+        duration: 2000,
+        style: {
+          background: "#fff",
+          color: "#059669",
+          border: "1px solid #a7f3d0",
+        },
+      });
+    } catch (error) {
+      console.error("Lỗi khi cập nhật giỏ hàng:", error);
+
+      // Xử lý lỗi từ server
+      if (error.response) {
+        if (error.response.status === 401) {
+          // Token hết hạn hoặc không hợp lệ
+          localStorage.removeItem("authToken");
+          toast.error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại", {
+            duration: 2000,
+            style: {
+              background: "#fff",
+              color: "#e11d48",
+              border: "1px solid #fecdd3",
+            },
+          });
+          navigate("/signin", { state: { returnUrl: location.pathname } });
+          return;
+        } else if (error.response.status === 500) {
+          // Lỗi server 500 - Có thể sản phẩm không tồn tại
+          const errorMessage = error.response?.data?.message || "";
+          if (
+            errorMessage.includes("property") &&
+            errorMessage.includes("null")
+          ) {
+            toast.error("Sản phẩm này không còn tồn tại trên hệ thống", {
+              duration: 3000,
+              style: {
+                background: "#fff",
+                color: "#e11d48",
+                border: "1px solid #fecdd3",
+              },
+            });
+          } else {
+            toast.error(`Lỗi server: ${errorMessage}. Vui lòng thử lại sau.`, {
+              duration: 3000,
+              style: {
+                background: "#fff",
+                color: "#e11d48",
+                border: "1px solid #fecdd3",
+              },
+            });
+          }
+        } else {
+          toast.error(
+            error.response?.data?.message ||
+              "Có lỗi xảy ra khi cập nhật giỏ hàng",
+            {
+              duration: 2000,
+              style: {
+                background: "#fff",
+                color: "#e11d48",
+                border: "1px solid #fecdd3",
+              },
+            }
+          );
+        }
+      } else {
+        toast.error("Lỗi kết nối đến server", {
+          duration: 2000,
+          style: {
+            background: "#fff",
+            color: "#e11d48",
+            border: "1px solid #fecdd3",
+          },
+        });
+      }
     }
   };
 
@@ -781,7 +1189,7 @@ const ProductDetail = () => {
         console.error("Lỗi parse userData:", e);
       }
 
-      console.log("Gửi bình luận với token:", token);
+      // console.log("Gửi bình luận với token:", token);
 
       // API endpoint cho comments từ routes/api.php
       const response = await axios.post(
@@ -795,7 +1203,7 @@ const ProductDetail = () => {
         }
       );
 
-      console.log("Phản hồi từ API bình luận:", response.data);
+      // console.log("Phản hồi từ API bình luận:", response.data);
 
       if (response.data && response.data.data) {
         // Thêm comment mới vào danh sách
@@ -862,265 +1270,6 @@ const ProductDetail = () => {
     product.is_sample === 1 ||
     product.is_sample === true ||
     product.status === "sample";
-
-  const refreshProductData = async () => {
-    setLoading(true);
-    try {
-      const timestamp = new Date().getTime();
-      const response = await axios.get(
-        `http://localhost:8000/api/products/${id}?_=${timestamp}`
-      );
-      console.log("Refreshed API Response:", response.data);
-      let productData = response.data.data;
-
-      setSelectedVariants({});
-      setCurrentPrice(productData.price);
-      setCurrentDiscount(productData.discount_price);
-
-      if (productData.variants && Array.isArray(productData.variants)) {
-        const variantsWithValues = productData.variants.map(
-          (variant, index) => {
-            console.log(
-              `Biến thể thô thứ ${index + 1}:`,
-              JSON.stringify(variant, null, 2)
-            );
-
-            // Kiểm tra variant_id
-            let variantId = 0;
-            if (variant.variant_id !== undefined)
-              variantId = Number(variant.variant_id);
-            else if (variant.type_id !== undefined)
-              variantId = Number(variant.type_id);
-            else if (variant.attribute_id !== undefined)
-              variantId = Number(variant.attribute_id);
-            else if (
-              variant.variant_details &&
-              typeof variant.variant_details === "object"
-            ) {
-              const keys = Object.keys(variant.variant_details);
-              if (keys.length > 0) {
-                console.log(
-                  "Tìm thấy variant_details:",
-                  variant.variant_details
-                );
-                // Sử dụng key đầu tiên trong variant_details làm variant_id
-                variantId = Number(keys[0]);
-                console.log(
-                  "Đã trích xuất variant_id từ variant_details:",
-                  variantId
-                );
-              }
-            }
-
-            // Kiểm tra variant_value_id
-            let variantValueId = 0;
-            if (variant.variant_value_id !== undefined)
-              variantValueId = Number(variant.variant_value_id);
-            else if (variant.value_id !== undefined)
-              variantValueId = Number(variant.value_id);
-            else if (variant.option_id !== undefined)
-              variantValueId = Number(variant.option_id);
-            else if (
-              variant.variant_details &&
-              typeof variant.variant_details === "object" &&
-              variantId > 0
-            ) {
-              const valueId = variant.variant_details[variantId];
-              if (valueId) {
-                variantValueId = Number(valueId);
-                console.log(
-                  "Đã trích xuất variant_value_id từ variant_details:",
-                  variantValueId
-                );
-              }
-            }
-
-            // Kiểm tra tên biến thể
-            let variantName = "Không xác định";
-            if (variant.variant_name) variantName = variant.variant_name;
-            else if (variant.type_name) variantName = variant.type_name;
-            else if (variant.attribute_name)
-              variantName = variant.attribute_name;
-
-            // Kiểm tra giá trị biến thể
-            let variantValue = "Không xác định";
-            if (variant.variant_value_name)
-              variantValue = variant.variant_value_name;
-            else if (variant.value_name) variantValue = variant.value_name;
-            else if (variant.value) variantValue = variant.value;
-            else if (variant.option_name) variantValue = variant.option_name;
-            else if (variant.sku) {
-              // Cố gắng trích xuất từ SKU
-              const parsedVariant = parseVariantFromSku(variant.sku);
-              if (parsedVariant) {
-                if (variantId === 1) {
-                  // Màu sắc
-                  variantValue = parsedVariant.color;
-                } else if (variantId === 2) {
-                  // Kích thước
-                  variantValue = parsedVariant.size;
-                }
-              }
-            }
-
-            // Tạo cấu trúc chuẩn của biến thể
-            const processedVariant = {
-              ...variant,
-              id: variant.id || index + 1,
-              variant_id: variantId,
-              variant_name: variantName,
-              variant_value_id: variantValueId,
-              variant_value_name: variantValue,
-              variant_value: {
-                id: variantValueId,
-                value: variantValue,
-              },
-              variant_info: {
-                id: variantId,
-                name: variantName,
-              },
-              quantity: Number(variant.quantity || 10),
-              price: variant.price || productData.price,
-              discount_price:
-                variant.discount_price ||
-                variant.price ||
-                productData.discount_price ||
-                productData.price,
-              sku: variant.sku || `${productData.id}-variant-${index + 1}`,
-            };
-
-            console.log("Biến thể đã xử lý:", processedVariant);
-            return processedVariant;
-          }
-        );
-
-        // Thêm debugging
-        console.log(
-          "Tất cả biến thể sau khi xử lý:",
-          JSON.stringify(variantsWithValues, null, 2)
-        );
-
-        // Kiểm tra lại một số biến thể
-        if (variantsWithValues.length > 0) {
-          console.log(
-            "Biến thể đầu tiên sau xử lý - variant_id:",
-            variantsWithValues[0].variant_id
-          );
-          console.log(
-            "Biến thể đầu tiên sau xử lý - variant_info:",
-            variantsWithValues[0].variant_info
-          );
-          console.log(
-            "Biến thể đầu tiên sau xử lý - variant_value:",
-            variantsWithValues[0].variant_value
-          );
-        }
-
-        // Sắp xếp các biến thể theo loại
-        variantsWithValues.sort((a, b) => a.variant_id - b.variant_id);
-
-        // Thiết lập biến thể mặc định được chọn
-        const defaultVariants = {};
-        const variantTypes = [
-          ...new Set(variantsWithValues.map((v) => Number(v.variant_id))),
-        ].filter((id) => id > 0);
-
-        console.log("Các loại biến thể (sau khi lọc):", variantTypes);
-
-        // Chọn biến thể đầu tiên cho mỗi loại
-        variantTypes.forEach((typeId) => {
-          if (typeId === 0) return; // Bỏ qua biến thể có id = 0
-
-          const availableVariants = variantsWithValues.filter(
-            (v) => Number(v.variant_id) === typeId && Number(v.quantity) > 0
-          );
-
-          if (availableVariants.length > 0) {
-            defaultVariants[typeId] = Number(
-              availableVariants[0].variant_value_id
-            );
-            console.log(
-              `Đã chọn biến thể mặc định cho loại ${typeId}:`,
-              defaultVariants[typeId]
-            );
-          }
-        });
-
-        // Thiết lập giá dựa trên biến thể mặc định
-        if (Object.keys(defaultVariants).length > 0) {
-          // Tìm biến thể phù hợp với sự kết hợp của những loại đã chọn
-          const findMatchingVariant = () => {
-            // Nếu có biến thể loại 3 (kết hợp), tìm biến thể phù hợp
-            const combinedVariants = variantsWithValues.filter(
-              (v) => v.variant_id === 3
-            );
-            if (combinedVariants.length > 0) {
-              const colorId = defaultVariants[1]; // ID giá trị màu sắc đã chọn
-              const sizeId = defaultVariants[2]; // ID giá trị kích thước đã chọn
-
-              const matchingVariant = combinedVariants.find(
-                (v) => v.color_id === colorId && v.size_id === sizeId
-              );
-
-              if (matchingVariant) {
-                return matchingVariant;
-              }
-            }
-
-            // Nếu không tìm thấy biến thể kết hợp, sử dụng logic cũ
-            const skuCandidates = new Set();
-
-            Object.entries(defaultVariants).forEach(([typeId, valueId]) => {
-              const matches = variantsWithValues.filter(
-                (v) =>
-                  v.variant_id === Number(typeId) &&
-                  v.variant_value_id === valueId
-              );
-
-              matches.forEach((v) => skuCandidates.add(v.sku));
-            });
-
-            for (const sku of skuCandidates) {
-              const matchingVariants = variantsWithValues.filter(
-                (v) => v.sku === sku
-              );
-              if (matchingVariants.length > 0) {
-                return matchingVariants[0];
-              }
-            }
-
-            return null;
-          };
-
-          const bestVariant = findMatchingVariant();
-
-          if (bestVariant && bestVariant.price) {
-            setCurrentPrice(bestVariant.price);
-            setCurrentDiscount(bestVariant.discount_price || bestVariant.price);
-            console.log(
-              `Giá ban đầu được thiết lập theo biến thể: ${bestVariant.price}`
-            );
-          }
-        }
-
-        setProduct({ ...productData, variants: variantsWithValues });
-        setSelectedVariants(defaultVariants);
-        console.log("Biến thể đã chọn mặc định:", defaultVariants);
-      } else {
-        console.error("Không thể tìm thấy biến thể sản phẩm");
-        setProduct(productData);
-      }
-
-      const commentsResponse = await axios.get(
-        `http://localhost:8000/api/products/${id}/comments?_=${timestamp}`
-      );
-      setComments(commentsResponse.data.data || []);
-    } catch (error) {
-      console.error("Error refreshing product data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Render variants section
   const renderVariants = () => {
@@ -1236,6 +1385,13 @@ const ProductDetail = () => {
     );
   };
 
+  // Hàm trích xuất variant options đơn giản hóa
+  const getVariantOptions = () => {
+    if (!product || !product.variants) return [];
+    return extractVariantTypes(product.variants);
+  };
+
+  // Render sản phẩm
   return (
     <>
       <Toaster position="top-right" />
@@ -1395,9 +1551,13 @@ const ProductDetail = () => {
                     -
                   </button>
                   <input
+                    ref={quantityInputRef}
                     type="text"
-                    value={quantity}
-                    readOnly
+                    value={isEditingRef.current ? editingQuantity : quantity}
+                    onChange={(e) => handleQuantityInputChange(e.target.value)}
+                    onFocus={handleQuantityInputFocus}
+                    onBlur={(e) => handleQuantityInputBlur(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     className="w-12 text-center border-x border-gray-200 bg-white"
                   />
                   <button
@@ -1409,6 +1569,10 @@ const ProductDetail = () => {
                   </button>
                 </div>
               </div>
+
+              {stockError && (
+                <p className="text-red-500 text-xs mt-2">{stockError}</p>
+              )}
 
               <div className="flex gap-2  mt-4">
                 {/* Add to Cart and Wishlist Buttons - Same Row with Black Background */}
@@ -1475,12 +1639,6 @@ const ProductDetail = () => {
                     : product.quantity || 0}
                 </p>
               </div>
-
-              {stockError && (
-                <p className="text-red-500 text-xs mt-1 text-center">
-                  {stockError}
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -1642,7 +1800,7 @@ const ProductDetail = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={1.5}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v4h8z"
                   />
                 </svg>
                 <p className="text-gray-600 mb-4">
