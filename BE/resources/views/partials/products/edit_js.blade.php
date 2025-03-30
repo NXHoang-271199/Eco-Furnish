@@ -258,6 +258,19 @@
             // Thêm biến thể hiện có vào selectedVariants
             if (existingVariants.length > 0) {
                 selectedVariants = existingVariants.map(variant => {
+                    // Đảm bảo variant_details được xử lý chính xác
+                    let variantDetails = variant.variant_details;
+                    
+                    // Chuyển đổi định dạng nếu cần
+                    if (typeof variantDetails === 'string') {
+                        try {
+                            variantDetails = JSON.parse(variantDetails);
+                        } catch (e) {
+                            console.error('Error parsing variant_details:', e);
+                            variantDetails = {};
+                        }
+                    }
+                    
                     return {
                         id: variant.id,
                         sku: variant.sku,
@@ -265,8 +278,8 @@
                         discount_price: variant.discount_price,
                         quantity: variant.quantity,
                         status: variant.status,
-                        values: variant.variant_details || {},
-                        variant_details: variant.variant_details || {}
+                        values: variant.values || {},
+                        variant_details: variantDetails || {}
                     };
                 });
 
@@ -585,10 +598,31 @@
                 // Tạo chuỗi hiển thị các giá trị biến thể
                 let variantValuesDisplay = '';
                 
-                if (variant.variant_details && Array.isArray(variant.variant_details)) {
-                    variantValuesDisplay = variant.variant_details.map(detail => 
-                        `${detail.name}: ${detail.value}`
-                    ).join(' - ');
+                if (variant.variant_details) {
+                    // Kiểm tra nếu variant_details là mảng của các đối tượng có name và value
+                    if (Array.isArray(variant.variant_details) && variant.variant_details.length > 0 && 
+                        typeof variant.variant_details[0] === 'object' && variant.variant_details[0].name) {
+                        variantValuesDisplay = variant.variant_details.map(detail => 
+                            `${detail.name}: ${detail.value}`
+                        ).join(' - ');
+                    } 
+                    // Kiểm tra nếu là đối tượng với cặp khóa-giá trị
+                    else if (typeof variant.variant_details === 'object' && !Array.isArray(variant.variant_details)) {
+                        // Xử lý khi variant_details là đối tượng
+                        const detailsArray = [];
+                        for (const variantId in variant.variant_details) {
+                            const variantOption = variantTypeSelect.find(`option[value="${variantId}"]`);
+                            if (variantOption.length) {
+                                const variantName = variantOption.text();
+                                const variantValues = JSON.parse(variantOption.attr('data-values') || '[]');
+                                const valueObj = variantValues.find(v => v.id == variant.variant_details[variantId]);
+                                if (valueObj) {
+                                    detailsArray.push(`${variantName}: ${valueObj.value}`);
+                                }
+                            }
+                        }
+                        variantValuesDisplay = detailsArray.join(' - ');
+                    }
                 } else if (variant.variant_info) {
                     variantValuesDisplay = variant.variant_info;
                 }

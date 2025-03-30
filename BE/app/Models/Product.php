@@ -43,7 +43,9 @@ class Product extends Model
      */
     public function variants()
     {
-        return $this->hasMany(ProductVariant::class)->withTrashed();
+        return $this->hasMany(ProductVariant::class)
+            ->select(['id', 'product_id', 'sku', 'price', 'discount_price', 'variant_details', 'quantity', 'status'])
+            ->withTrashed();
     }
 
     /**
@@ -57,10 +59,6 @@ class Product extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
-    }
-
-    public function productVariant(){
-        return $this->hasMany(ProductVariant::class);
     }
 
     /**

@@ -226,24 +226,30 @@ class ProductController extends Controller
                     ->whereNull('deleted_at')
                     ->get()
                     ->map(function($variant) {
+                        // Đảm bảo variant_details được định dạng đúng
+                        $variantDetails = $variant->variant_details;
                         $variantDetailsDisplay = [];
                         
-                        if ($variant->variant_details) {
-                            foreach ($variant->variant_details as $detail) {
-                                $variantDetailsDisplay[] = $detail['name'] . ': ' . $detail['value'];
+                        if (is_array($variantDetails)) {
+                            foreach ($variantDetails as $detail) {
+                                if (isset($detail['name']) && isset($detail['value'])) {
+                                    $variantDetailsDisplay[] = $detail['name'] . ': ' . $detail['value'];
+                                }
                             }
                         }
                         
+                        $displayText = implode(' - ', $variantDetailsDisplay);
+                        
                         return [
                             'id' => $variant->id,
-                            'variant_details' => $variant->variant_details,
-                            'variant_details_display' => implode(' - ', $variantDetailsDisplay),
+                            'variant_details' => $variantDetails,
+                            'variant_details_display' => $displayText,
                             'sku' => $variant->sku,
                             'price' => $variant->price,
                             'discount_price' => $variant->discount_price,
                             'quantity' => $variant->quantity,
                             'status' => $variant->status,
-                            'variant_info' => implode(' - ', $variantDetailsDisplay)
+                            'variant_info' => $displayText
                         ];
                     })
                     ->toArray();
