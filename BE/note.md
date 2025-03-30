@@ -59,3 +59,9 @@ VD:
 
 # Câu lệnh git
 git reset --hard HEAD~1 => reset code đến lần commit gần nhất
+
+# cài ngrok
+-   choco install ngrok
+# chạy ngrok
+-   ngrok http 8000 => chạy ngrok trên port 8000
+

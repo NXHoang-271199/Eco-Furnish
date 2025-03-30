@@ -60,8 +60,7 @@
                                                 @if ($order->orderItems->isNotEmpty())
                                                 <div class="col-md">
                                                     <img src="{{ Storage::url($order->orderItems->first()->image_url) }}"
-                                                    width= "80px" height="80px" alt="Product"
-                                                    >
+                                                    width= "80px" height="80px" alt="Product">
                                                 </div>
                                                 @endif
 

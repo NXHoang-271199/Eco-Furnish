@@ -25,10 +25,12 @@ class AdminMiddleware
         $user = Auth::user();
 
         // Kiểm tra tài khoản có được kích hoạt không
-        if (!$user->is_active) {
-            abort(403, 'Tài khoản chưa được kích hoạt.');
+        if ($user->is_active != 1) { 
+            Auth::logout(); 
+            return back()->withErrors([ 
+                'email' => 'Tài khoản của bạn chưa được kích hoạt.', 
+            ]); 
         }
-
         // Kiểm tra role admin/staff
         if (!in_array($user->role->slug, ['admin', 'staff'])) {
             abort(403, 'Bạn không có quyền truy cập vào trang này.');

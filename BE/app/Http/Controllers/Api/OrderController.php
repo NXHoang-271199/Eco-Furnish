@@ -11,6 +11,7 @@ use App\Models\VoucherUsage;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use App\Models\ProductVariant;
+use App\Models\OrderNotification;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\OrderRequest;
 use App\Mail\OrderConfirmationMail;
@@ -127,7 +128,15 @@ class OrderController extends Controller
             }
 
             $totalPrice = max(0, $subtotal - $discountAmount);
-            $paymentMethod = PaymentMethod::find($request->payment_method_id)?->name;
+            $paymentMethodId = PaymentMethod::find($request->payment_method_id);
+
+            if (!$paymentMethodId || $paymentMethodId->is_connected != 1) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Phương thức thanh toán chưa được kích hoạt'
+                ], 400);
+            }
+            $paymentMethod = $paymentMethodId->name;
             $paymentStatus = 0;
 
             // Tạo đơn hàng
@@ -177,6 +186,14 @@ class OrderController extends Controller
 
             // Xóa giỏ hàng
             $cart->cartItems()->delete();
+            // ✅ Thêm thông báo đơn hàng
+            OrderNotification::create([
+                'order_id' => $order->id,
+                'is_read' => false
+            ]);
+            if ($request->voucher_id) {
+                VoucherUsage::create(['user_id' => $userId, 'voucher_id' => $request->voucher_id]);
+            }
 
             DB::commit();
             // Xử lý thanh toán online (MoMo, VNPAY)
@@ -186,14 +203,11 @@ class OrderController extends Controller
                     'order_code' => $order->order_code,
                     'total_price' => $totalPrice,
                     'payment_method' => $paymentMethod,
-                    'payment_method_id' => $order->payment_method_id
+                    'payment_method_id' => $order->payment_method_id,
+                    'discount_amount' => $discountAmount
                 ]));
 
                 return $paymentResponse;
-            }
-            //
-            if ($request->voucher_id) {
-                VoucherUsage::create(['user_id' => $userId, 'voucher_id' => $request->voucher_id]);
             }
 
             // gửi mail xác nhận đơn hàng
@@ -215,6 +229,171 @@ class OrderController extends Controller
             ], 500);
         }
     }
+    /**
+     * 📌 4. Mua ngay
+     */
+    public function quickOrder(Request $request)
+    {
+        $userId = Auth::id();
+
+        // Kiểm tra dữ liệu đầu vào
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'product_variant_id' => 'nullable|exists:product_variants,id',
+            'voucher_id' => 'nullable|exists:vouchers,id',
+            'user_name' => 'required|string',
+            'user_email' => 'required|email',
+            'user_phone' => 'required|string',
+            'user_address' => 'required|string',
+            'payment_method_id' => 'required|exists:payment_methods,id'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Lấy thông tin sản phẩm
+            $product = Product::findOrFail($request->product_id);
+            $variant = $request->product_variant_id
+                ? ProductVariant::where('id', $request->product_variant_id)
+                ->where('product_id', $product->id)
+                ->first()
+                : null;
+
+            // Kiểm tra nếu sản phẩm có biến thể nhưng không chọn biến thể
+            if ($product->variants()->exists() && !$variant) {
+                return response()->json(['message' => 'Bạn phải chọn biến thể trước khi mua ngay'], 400);
+            }
+
+            // Kiểm tra tồn kho
+            $stock = $variant ? $variant->quantity : $product->quantity;
+            $requestedQuantity = $request->quantity;
+
+            if ($requestedQuantity > $stock) {
+                return response()->json([
+                    'message' => "Số lượng sản phẩm không đủ, chỉ còn $stock cái.",
+                ], 400);
+            }
+
+            // Xác định giá bán
+            $price = $variant
+                ? ($variant->discount_price ?? $variant->price)
+                : ($product->discount_price ?? $product->price);
+
+            // Tổng tiền trước khi áp dụng voucher
+            $subtotal = $price * $requestedQuantity;
+            $discountAmount = 0;
+
+            // Kiểm tra voucher nếu có
+            if ($request->voucher_id) {
+                $voucherResponse = app(VoucherApiController::class)->checkVoucher(new Request([
+                    'voucher_id' => $request->voucher_id,
+                    'subtotal' => $subtotal
+                ]));
+
+                $voucherData = json_decode($voucherResponse->getContent(), true);
+                if ($voucherData['status'] === 'error') {
+                    throw new \Exception($voucherData['message']);
+                }
+
+                $discountAmount = $voucherData['discount_amount'];
+                Voucher::where('id', $request->voucher_id)->decrement('usage_limit');
+            }
+
+            // Tính tổng tiền sau khi áp dụng voucher
+            $totalPrice = max(0, $subtotal - $discountAmount);
+
+            // Xử lý phương thức thanh toán
+            $paymentMethodId = PaymentMethod::find($request->payment_method_id);
+
+            if (!$paymentMethodId || $paymentMethodId->is_connected != 1) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Phương thức thanh toán chưa được kích hoạt'
+                ], 400);
+            }
+            $paymentMethod = $paymentMethodId->name;
+            $paymentStatus = 0;
+
+            // Tạo đơn hàng
+            $order = Order::create([
+                'order_code' => 'ORD' . time() . rand(1000, 9999),
+                'user_id' => $userId,
+                'user_name' => $request->user_name,
+                'user_email' => $request->user_email,
+                'user_phone' => $request->user_phone,
+                'user_address' => $request->user_address,
+                'payment_method_id' => $request->payment_method_id,
+                'payment_status' => $paymentStatus,
+                'order_status' => 'Chưa Xác Nhận',
+                'total_price' => $totalPrice,
+                'voucher_id' => $request->voucher_id ?? null
+            ]);
+
+            // Thêm sản phẩm vào order_items
+            OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $product->id,
+                'product_variant_id' => $request->product_variant_id ?? null,
+                'product_name' => $product->name,
+                'image_url' => $product->image_thumnail,
+                'quantity' => $requestedQuantity,
+                'price' => $price,
+                'total_price' => $subtotal,
+            ]);
+
+            // Trừ số lượng tồn kho
+            if ($variant) {
+                $variant->decrement('quantity', $requestedQuantity);
+            } else {
+                $product->decrement('quantity', $requestedQuantity);
+            }
+
+            // ✅ Thêm thông báo đơn hàng
+            OrderNotification::create([
+                'order_id' => $order->id,
+                'is_read' => false
+            ]);
+
+            // Lưu thông tin voucher đã sử dụng
+            if ($request->voucher_id) {
+                VoucherUsage::create(['user_id' => $userId, 'voucher_id' => $request->voucher_id]);
+            }
+
+            DB::commit();
+
+            // Xử lý thanh toán nếu không phải tiền mặt
+            if (in_array($paymentMethod, ['MoMo', 'VNPAY'])) {
+                return app(PaymentMethodController::class)->processPayment(new Request([
+                    'order_id' => $order->id,
+                    'order_code' => $order->order_code,
+                    'total_price' => $totalPrice,
+                    'payment_method' => $paymentMethod,
+                    'payment_method_id' => $order->payment_method_id,
+                    'discount_amount' => $discountAmount
+                ]));
+            }
+
+            // gửi mail xác nhận đơn hàng
+            if ($paymentMethod === 'Tiền mặt') {
+                Mail::to($order->user_email)->send(new OrderConfirmationMail($order, $discountAmount));
+            }
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Đơn hàng đã được tạo thành công',
+                'data' => $order
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi đặt hàng',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
     /**
      * 📌 6. Hoàn hàng
      */
