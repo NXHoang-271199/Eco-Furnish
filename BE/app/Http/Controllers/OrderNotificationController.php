@@ -18,13 +18,13 @@ class OrderNotificationController extends Controller
 
     public function index()
     {
-        $notifications = OrderNotification::with('order')
+        $notifications = OrderNotification::with('order.user')
             ->orderBy('created_at', 'desc')
             ->get();
             $notificationsCount = $notifications->count();
         // Tính số lượng thông báo chưa đọc
         $unreadCount = OrderNotification::where('is_read', false)->count();
-        return view('admins.orders.notification', compact('notifications','unreadCount','notificationsCount'));
+        return view(('admins.orders.notification'), compact('notifications','unreadCount','notificationsCount'));
     }
 
     public function markAsRead($id)

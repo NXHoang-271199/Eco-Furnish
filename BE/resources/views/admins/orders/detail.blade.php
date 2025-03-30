@@ -65,41 +65,38 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="align-items-center ">
+                <div class="align-items-center">
                     @foreach ($order->orderItems as $item)
                         <div class="d-flex align-items-center border-bottom pt-2 pb-2">
                             <div class="col-md-1">
                                 @if (!empty($item->image_url))
-                                    <!-- Kiểm tra nếu image_url không rỗng hoặc null -->
-                                    <img src="{{ asset('storage/' . $item->image_url) }}" width="100px" alt="Product"
-                                        class="img-fluid rounded">
+                                    <img src="{{ Storage::url($item->image_url) }}" width="80px" alt="Product" class="img-fluid rounded">
                                 @else
                                     Không có ảnh
                                 @endif
                             </div>
                             <div class="col-md-5">
                                 <p class="mb-1 ms-3 fw-bold">{{ $item->product_name }}</p>
+
                                 @if (!empty($item->productVariant))
-                                    <p class="mb-1 ms-3"><strong>Phân loại hàng:</strong>
-                                        @foreach ($item->product->productVariant as $index => $variant)
-                                            {{ $variant->variant->name }}:
-                                            {{ $variant->variantValue->value }}{{ $loop->last ? '' : ', ' }}
-                                        @endforeach
-                                    </p>
+                                    <p class="mb-1 ms-3"><strong>Phân loại hàng:</strong> {{ implode(' - ', $item->variant_info) }}</p>
                                 @else
                                     <p class="mb-1 ms-3 text-muted">Không có phân loại</p>
                                 @endif
 
-
-                                <p class="mb-1 ms-3 text-dark"><strong>Số lượng:</strong> x{{ $item->quantity }}</p>
+                                <p class="mb-0 ms-3 text-dark"><strong>Số lượng:</strong> x{{ $item->quantity }}</p>
                             </div>
                             <div class="col-md-6 text-end">
-                                <p class="mb-1 text-danger fw-bold ">{{ number_format($item->total_price, 0, ',', '.') }} đ</p>
+                                <p class="mb-0 text-danger fw-bold">
+                                    {{ number_format($item->total_price, 0, ',', '.') }} đ
+                                </p>
                             </div>
                         </div>
                     @endforeach
                 </div>
             </div>
+
+
             <div class="border-top">
                 <div class="d-flex align-items-center justify-content-end pe-3 text-end border-bottom">
                     <div class="pe-3 fw-bold"><span>Tổng tiền hàng</span></div>
@@ -131,7 +128,8 @@
                 <div>
                     @if ($order->payment_status == 0)
                         <div class="alert alert-warning text-center my-3 ">
-                            <strong>Đơn hàng chưa được thanh toán. Tổng số tiền cần thanh toán là {{ number_format($order->total_price, 0, ',', '.') }} đ</strong>.
+                            <strong>Đơn hàng chưa được thanh toán. Tổng số tiền cần thanh toán là
+                                {{ number_format($order->total_price, 0, ',', '.') }} đ</strong>.
                         </div>
                     @else
                         <div class="alert alert-success text-center my-3">

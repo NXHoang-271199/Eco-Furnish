@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Variant;
+use App\Models\VariantValue;
 use Illuminate\Http\Request;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
@@ -99,14 +101,33 @@ class OrderController extends Controller
      */
     public function show(string $id)
     {
-        $order = Order::with([
-            'orderItems.product',
-            'orderItems.product.productVariant.variant',
-            'orderItems.product.productVariant.variantValue'
-        ])->findOrFail($id);
+        $order = Order::with(['orderItems.product'])->findOrFail($id);
+
+        foreach ($order->orderItems as $item) {
+            $variantInfo = [];
+
+            if ($item->product_variant_id) {
+                $productVariant = ProductVariant::find($item->product_variant_id);
+
+                if ($productVariant && !empty($productVariant->variant_details)) {
+                    foreach ($productVariant->variant_details as $detail) {
+                        $variantInfo[] = "{$detail['name']}: {$detail['value']}";
+                    }
+                }
+            }
+
+            // Gán vào orderItem để dùng trong view
+            $item->setAttribute('variant_info', $variantInfo);
+        }
 
         return view('admins.orders.detail', compact('order'));
     }
+
+
+
+
+
+
 
     /**
      * Show the form for editing the specified resource.
