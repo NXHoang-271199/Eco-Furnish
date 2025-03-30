@@ -225,20 +225,12 @@ class ProductController extends Controller
                 $existingVariants = $product->variants()
                     ->whereNull('deleted_at')
                     ->get()
-                    ->map(function($variant) use ($variants) {
+                    ->map(function($variant) {
                         $variantDetailsDisplay = [];
                         
-                        if ($variant->variant_details && is_array($variant->variant_details)) {
-                            foreach ($variant->variant_details as $attrKey => $attrValue) {
-                                // Tìm tên thuộc tính dựa vào key (slug)
-                                $displayName = $attrKey;
-                                foreach ($variants as $v) {
-                                    if ($this->slugify($v->name) === $attrKey) {
-                                        $displayName = $v->name;
-                                        break;
-                                    }
-                                }
-                                $variantDetailsDisplay[] = $displayName . ': ' . $attrValue;
+                        if ($variant->variant_details) {
+                            foreach ($variant->variant_details as $detail) {
+                                $variantDetailsDisplay[] = $detail['name'] . ': ' . $detail['value'];
                             }
                         }
                         
@@ -250,7 +242,8 @@ class ProductController extends Controller
                             'price' => $variant->price,
                             'discount_price' => $variant->discount_price,
                             'quantity' => $variant->quantity,
-                            'status' => $variant->status
+                            'status' => $variant->status,
+                            'variant_info' => implode(' - ', $variantDetailsDisplay)
                         ];
                     })
                     ->toArray();
@@ -417,9 +410,22 @@ class ProductController extends Controller
 
                     if ($existingVariant) {
                         // Cập nhật biến thể hiện có
+                        $variantDetails = [];
+                        foreach ($variantData['values'] as $variantId => $valueId) {
+                            $variant = Variant::find($variantId);
+                            $variantValue = VariantValue::find($valueId);
+                            
+                            if ($variant && $variantValue) {
+                                $variantDetails[] = [
+                                    'name' => $variant->name,
+                                    'value' => $variantValue->value
+                                ];
+                            }
+                        }
+
                         $existingVariant->update([
                             'sku' => $variantData['sku'],
-                            'variant_details' => isset($variantData['variant_details']) ? json_decode($variantData['variant_details'], true) : [],
+                            'variant_details' => $variantDetails,
                             'price' => $variantData['price'],
                             'discount_price' => $variantData['discount_price'],
                             'quantity' => $variantData['quantity']
@@ -429,9 +435,22 @@ class ProductController extends Controller
                         $existingVariantIds = array_diff($existingVariantIds, [$existingVariant->id]);
                     } else {
                         // Tạo biến thể mới
+                        $variantDetails = [];
+                        foreach ($variantData['values'] as $variantId => $valueId) {
+                            $variant = Variant::find($variantId);
+                            $variantValue = VariantValue::find($valueId);
+                            
+                            if ($variant && $variantValue) {
+                                $variantDetails[] = [
+                                    'name' => $variant->name,
+                                    'value' => $variantValue->value
+                                ];
+                            }
+                        }
+
                         $newVariant = new ProductVariant([
                             'product_id' => $product->id,
-                            'variant_details' => isset($variantData['variant_details']) ? json_decode($variantData['variant_details'], true) : [],
+                            'variant_details' => $variantDetails,
                             'sku' => $variantData['sku'],
                             'price' => $variantData['price'],
                             'discount_price' => $variantData['discount_price'],
@@ -598,9 +617,9 @@ class ProductController extends Controller
                     ->map(function($variant) {
                         $variantDetailsDisplay = [];
                         
-                        if ($variant->variant_details && is_array($variant->variant_details)) {
-                            foreach ($variant->variant_details as $attrName => $attrValue) {
-                                $variantDetailsDisplay[] = $attrName . ': ' . $attrValue;
+                        if ($variant->variant_details) {
+                            foreach ($variant->variant_details as $detail) {
+                                $variantDetailsDisplay[] = $detail['name'] . ': ' . $detail['value'];
                             }
                         }
                         
@@ -627,12 +646,10 @@ class ProductController extends Controller
                 
                 // Tạo mảng variant_details
                 foreach ($combination as $attr) {
-                    // Lấy tên variant và giá trị variant
-                    $variantName = $attr['variant_name'];
-                    $variantValue = $attr['value'];
-                    
-                    // Sử dụng tên variant làm key
-                    $variantDetails[$this->slugify($variantName)] = $variantValue;
+                    $variantDetails[] = [
+                        'name' => $attr['variant_name'],
+                        'value' => $attr['value']
+                    ];
                 }
                 
                 $variantData = [
