@@ -341,7 +341,8 @@ io.on("connection", (socket) => {
             // Gửi tin nhắn đến client cụ thể
             const messageForClient = {
                 ...savedMessage,
-                senderName: socket.user.name
+                senderName: socket.user.name,
+                is_read: false // Thêm trạng thái chưa đọc
             };
 
             io.to(`user_${data.userId}`).emit("adminResponse", messageForClient);
@@ -370,6 +371,41 @@ io.on("connection", (socket) => {
             onlineAdmins.delete(socket.id);
             console.log(`👨‍💼 Admin ${socket.id} (${socket.user.name}) disconnected`);
             console.log(`📊 Tổng số admin online còn lại: ${onlineAdmins.size}`);
+        }
+    });
+
+    // Thêm event listener mới cho sự kiện đánh dấu đã đọc
+    socket.on("markMessagesAsRead", async (data, callback = () => {}) => {
+        try {
+            // Kiểm tra người dùng
+            if (!data.userId) {
+                return callback({ success: false, error: "Thiếu userId" });
+            }
+
+            console.log(`📬 Đánh dấu tin nhắn đã đọc cho user ${data.userId}`);
+
+            // Gọi API để đánh dấu tin nhắn đã đọc
+            const response = await fetch(`${API_URL}/api/messages/read-all/${data.userId}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${socket.handshake.auth.token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            // Thông báo cho admin biết rằng tin nhắn đã được đọc
+            io.to("admin_room").emit("messagesRead", { userId: data.userId });
+            console.log(`📣 Đã thông báo admin rằng tin nhắn của user ${data.userId} đã được đọc`);
+
+            callback({ success: true });
+        } catch (error) {
+            console.error("❌ Lỗi khi đánh dấu tin nhắn đã đọc:", error);
+            callback({ success: false, error: error.message });
         }
     });
 });

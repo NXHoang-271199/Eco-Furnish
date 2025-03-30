@@ -35,7 +35,12 @@ class MessageController extends Controller
 
         // Load relationships
         $message->load('sender');
-        return response()->json($message, 201);
+
+        // Thêm trường is_read vào phản hồi JSON
+        $response = $message->toArray();
+        $response['is_read'] = false;
+
+        return response()->json($response, 201);
     }
 
     public function getUserMessages($userId)
@@ -168,5 +173,42 @@ class MessageController extends Controller
         $message->load(['sender', 'receiver']);
 
         return response()->json($message, 201);
+    }
+
+    public function markAllAsRead($userId)
+    {
+        // Kiểm tra xác thực người dùng
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Chỉ người dùng được đánh dấu là admin mới có thể đánh dấu tất cả là đã đọc
+        if ($user->id != $userId && $user->role !== 'admin') {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
+        try {
+            // Đánh dấu tất cả tin nhắn gửi đến người dùng này là đã đọc
+            Message::where('receiver_id', $userId)
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tất cả tin nhắn đã được đánh dấu là đã đọc'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi đánh dấu tin nhắn đã đọc', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Server Error',
+                'message' => 'Lỗi khi đánh dấu tin nhắn đã đọc: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

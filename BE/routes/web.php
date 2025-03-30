@@ -198,8 +198,8 @@ Route::prefix('admin')->group(function () {
     Route::resource('banners', BannerController::class);
     Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
 
-    Route::get('/messages', [MessageController::class, 'index'])->name('admin.messages.index');
-    Route::post('/messages/send', [MessageController::class, 'send'])->name('admin.messages.send');
-    Route::post('/admin/messages/send', [MessageController::class, 'sendByAdmin'])->name('admin.messages.send');
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/send', [MessageController::class, 'send'])->name('messages.send');
+    Route::post('/admin/messages/send', [MessageController::class, 'sendByAdmin'])->name('messages.send');
 
 });

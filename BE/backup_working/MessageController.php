@@ -7,14 +7,9 @@ use App\Models\User;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
-<<<<<<< HEAD
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-=======
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
->>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
 
 class MessageController extends Controller
 {
@@ -31,31 +26,6 @@ class MessageController extends Controller
      */
     public function store(Request $request)
     {
-<<<<<<< HEAD
-        // Validate request
-        $request->validate([
-            'text' => 'required|string',
-            'receiver_id' => 'nullable|exists:users,id',
-        ]);
-
-        // Kiểm tra xác thực người dùng
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        $message = Message::create([
-            'text' => $request->text,
-            'sender_id' => $user->id,
-            'receiver_id' => $request->receiver_id,
-            'sent_at' => now(),
-            'is_read' => false,
-        ]);
-
-        // Load relationships
-        $message->load('sender');
-        return response()->json($message, 201);
-=======
         $validator = Validator::make($request->all(), [
             'user_id' => 'required',
             'text' => 'required|string',
@@ -111,7 +81,6 @@ class MessageController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
->>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
     }
 
     /**
@@ -119,70 +88,6 @@ class MessageController extends Controller
      */
     public function getUserMessages(Request $request, $userId)
     {
-<<<<<<< HEAD
-        // Kiểm tra xác thực người dùng
-        $user = Auth::user();
-        if (!$user) {
-            Log::error('Lỗi xác thực: Không có người dùng');
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        // Debug thông tin user
-        Log::info('User info in getUserMessages', [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'role_id' => $user->role_id ?? null,
-            'user_token' => request()->bearerToken(),
-            'role type' => gettype($user->role),
-            'requested userId' => $userId
-        ]);
-
-        // Luôn cho phép xem tin nhắn (tạm thời để debug)
-        $isAdmin = true;
-
-        Log::info('Is user admin?', ['isAdmin' => $isAdmin]);
-
-        // Bỏ qua kiểm tra quyền - mọi người dùng đều có thể xem tin nhắn (tạm thời để debug)
-        // if (!$isAdmin && $user->id != $userId) {
-        //     return response()->json([
-        //         'error' => 'Forbidden',
-        //         'message' => 'Bạn không có quyền xem tin nhắn của người dùng khác',
-        //         'user_id' => $user->id,
-        //         'requested_user_id' => $userId,
-        //         'is_admin' => $isAdmin
-        //     ], 403);
-        // }
-
-        try {
-            $messages = Message::where(function ($query) use ($userId) {
-                    $query->where('sender_id', $userId)
-                        ->orWhere('receiver_id', $userId);
-                })
-                ->with(['sender', 'receiver'])
-                ->orderBy('sent_at', 'asc')
-                ->get();
-
-            // Đánh dấu tất cả tin nhắn đến người dùng này là đã đọc
-            // nếu người đọc là người nhận
-            if ($user->id == $userId) {
-                Message::where('receiver_id', $userId)
-                    ->where('is_read', false)
-                    ->update(['is_read' => true]);
-            }
-
-            Log::info('Tin nhắn đã tải', ['count' => $messages->count()]);
-            return response()->json($messages);
-        } catch (\Exception $e) {
-            Log::error('Lỗi khi tải tin nhắn', [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json([
-                'error' => 'Server Error',
-                'message' => 'Lỗi khi tải tin nhắn: ' . $e->getMessage()
-=======
         // Kiểm tra người dùng đã xác thực chưa
         if (!Auth::check()) {
             return response()->json([
@@ -229,7 +134,6 @@ class MessageController extends Controller
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi khi lấy tin nhắn',
                 'error' => $e->getMessage()
->>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
             ], 500);
         }
     }
@@ -239,18 +143,6 @@ class MessageController extends Controller
      */
     public function getUnreadMessages(Request $request)
     {
-<<<<<<< HEAD
-        // Kiểm tra xác thực admin
-        $user = Auth::user();
-        if (!$user || $user->role !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        $messages = Message::where('is_read', false)
-            ->whereNotNull('receiver_id')
-            ->with(['sender', 'receiver'])
-            ->get();
-=======
         // Kiểm tra quyền admin
         if (Auth::user()->role->slug !== 'admin') {
             return response()->json([
@@ -258,7 +150,6 @@ class MessageController extends Controller
                 'message' => 'Bạn không có quyền truy cập chức năng này'
             ], 403);
         }
->>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
 
         try {
             // Lấy tất cả tin nhắn chưa đọc, gom nhóm theo user_id
@@ -298,24 +189,6 @@ class MessageController extends Controller
      */
     public function markAsRead(Request $request, $messageId)
     {
-<<<<<<< HEAD
-        // Kiểm tra xác thực người dùng
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        $message = Message::findOrFail($messageId);
-
-        // Chỉ người nhận tin nhắn mới có thể đánh dấu là đã đọc
-        if ($user->id != $message->receiver_id && $user->role !== 'admin') {
-            return response()->json(['error' => 'Forbidden'], 403);
-        }
-
-        $message->update(['is_read' => true]);
-
-        return response()->json(['message' => 'Tin nhắn đã được đánh dấu là đã đọc']);
-=======
         try {
             $message = Message::findOrFail($messageId);
 
@@ -341,7 +214,6 @@ class MessageController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
->>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
     }
 
     /**
@@ -349,32 +221,6 @@ class MessageController extends Controller
      */
     public function sendByAdmin(Request $request)
     {
-<<<<<<< HEAD
-        // Kiểm tra xác thực admin
-        $user = Auth::user();
-        if (!$user || $user->role !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        // Validate request
-        $request->validate([
-            'text' => 'required|string',
-            'receiver_id' => 'required|exists:users,id'
-        ]);
-
-        $message = Message::create([
-            'text' => $request->text,
-            'sender_id' => $user->id,
-            'receiver_id' => $request->receiver_id,
-            'sent_at' => now(),
-            'is_read' => false,
-        ]);
-
-        // Load relationships
-        $message->load(['sender', 'receiver']);
-
-        return response()->json($message, 201);
-=======
         // Kiểm tra quyền admin
         if (Auth::user()->role->slug !== 'admin') {
             return response()->json([
@@ -422,6 +268,5 @@ class MessageController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
->>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
     }
 }

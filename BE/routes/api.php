@@ -9,7 +9,6 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\MessageController;
-use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserApiController;
@@ -100,6 +99,7 @@ Route::prefix('messages')->group(function () {
         Route::get('/user/{userId}', [MessageController::class, 'getUserMessages']); // Lấy tin nhắn theo user
         Route::get('/unread', [MessageController::class, 'getUnreadMessages']); // Lấy tin chưa đọc
         Route::patch('/read/{messageId}', [MessageController::class, 'markAsRead']); // Đánh dấu đã đọc
+        Route::patch('/read-all/{userId}', [MessageController::class, 'markAllAsRead']); // Đánh dấu tất cả là đã đọc
         Route::post('/admin/send', [MessageController::class, 'sendByAdmin']); // Admin gửi tin nhắn
     });
 });
@@ -173,13 +173,15 @@ Route::get('/users/{id}', function ($id) {
         'role_id' => $user->role_id
     ]);
 });
-Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động
+Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động // FE ko được động tới
+Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']); // FE ko được động tới
 
 // Order routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']); // Danh sách đơn hàng
     Route::get('/orders/{id}', [OrderController::class, 'show']); // Chi tiết đơn hàng
     Route::post('/orders', [OrderController::class, 'createOrder']); // Tạo đơn hàng
+    Route::post('/orders/buy-now', [OrderController::class, 'quickOrder']); // Tạo đơn hàng nhanh
     Route::post('/orders/{id}/refund', [OrderController::class, 'refundOrder']); // Hoàn hàng
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
 });
