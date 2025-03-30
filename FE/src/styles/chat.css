@@ -1,0 +1,55 @@
+.message-read {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.message-unread {
+  opacity: 0.7;
+}
+
+.chat-notification-badge {
+  transition: all 0.3s ease;
+}
+
+.chat-notification-badge.has-unread {
+  animation: pulse 2s infinite;
+}
+
+.chat-message {
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.chat-message.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hiệu ứng nhấp nháy cho badge chưa đọc */
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s infinite;
+}
+
+/* Style cho icon đã đọc */
+.message-sent {
+  color: rgba(255, 255, 255, 0.5);
+}

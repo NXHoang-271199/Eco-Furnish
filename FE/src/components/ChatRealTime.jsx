@@ -14,6 +14,7 @@ const ChatRealTime = () => {
     const [userData, setUserData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [lastError, setLastError] = useState("");
+    const [unreadCount, setUnreadCount] = useState(0);
 
     // Thêm ref cho phần messages
     const messagesEndRef = useRef(null);
@@ -46,6 +47,14 @@ const ChatRealTime = () => {
             if (response.data && Array.isArray(response.data)) {
                 console.log("📜 Lịch sử tin nhắn:", response.data);
                 setMessages(response.data);
+                
+                // Đếm tin nhắn chưa đọc
+                const unread = response.data.filter(msg => 
+                    msg.receiver_id === userId && !msg.is_read
+                ).length;
+                
+                setUnreadCount(unread);
+                console.log("📬 Số tin nhắn chưa đọc:", unread);
             } else {
                 console.warn("⚠️ Dữ liệu không đúng định dạng:", response.data);
             }
@@ -237,6 +246,75 @@ const ChatRealTime = () => {
         };
     }, []);
 
+    // Hàm đánh dấu tin nhắn đã đọc
+    const markMessagesAsRead = async () => {
+        if (!isAuthenticated || !userData?.id) return;
+        
+        try {
+            const token = localStorage.getItem("authToken");
+            
+            // Gọi API đánh dấu tất cả tin nhắn là đã đọc
+            await axios.patch(
+                `http://localhost:8000/api/messages/read-all/${userData.id}`,
+                {},
+                {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+            
+            // Cập nhật UI
+            setUnreadCount(0);
+            setMessages(prev => prev.map(msg => ({
+                ...msg,
+                is_read: true
+            })));
+            
+            console.log("✅ Đã đánh dấu tất cả tin nhắn là đã đọc");
+        } catch (error) {
+            console.error("❌ Lỗi khi đánh dấu tin nhắn đã đọc:", error.message);
+        }
+    };
+
+    // Thêm sự kiện khi mở chat box
+    useEffect(() => {
+        if (isOpen && isAuthenticated && userData?.id) {
+            // Đánh dấu tin nhắn đã đọc khi mở chatbox
+            markMessagesAsRead();
+        }
+    }, [isOpen]);
+
+    // Lắng nghe tin nhắn mới từ admin
+    useEffect(() => {
+        if (socket) {
+            socket.on("adminResponse", (data) => {
+                console.log("📩 Nhận phản hồi từ admin:", data);
+                setMessages((prev) => [...prev, data]);
+                
+                // Tăng số lượng tin nhắn chưa đọc nếu chat box đang đóng
+                if (!isOpen) {
+                    setUnreadCount(prev => prev + 1);
+                    
+                    // Thông báo âm thanh nếu có thể
+                    const audio = new Audio('/notification.mp3');
+                    audio.play().catch(e => console.log("Không thể phát âm thanh"));
+                } else {
+                    // Nếu chat box đang mở, đánh dấu là đã đọc
+                    markMessagesAsRead();
+                }
+            });
+        }
+        
+        return () => {
+            if (socket) {
+                socket.off("adminResponse");
+            }
+        };
+    }, [socket, isOpen]);
+
     const sendMessage = () => {
         if (!isAuthenticated || !socket || !isConnected) {
             console.error("❌ Không thể gửi tin nhắn: Chưa đăng nhập hoặc mất kết nối");
@@ -340,9 +418,9 @@ const ChatRealTime = () => {
                 }`}
             >
                 {isOpen ? <BsXLg className="text-2xl" /> : <BsChatDots className="text-2xl" />}
-                {!isOpen && messages.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center">
-                        {messages.length}
+                {!isOpen && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center animate-pulse">
+                        {unreadCount}
                     </span>
                 )}
             </button>
@@ -411,9 +489,16 @@ const ChatRealTime = () => {
                                             }`}
                                         >
                                             <p className="text-sm">{msg.text}</p>
-                                            <span className="text-xs opacity-70 mt-1 block">
-                                                {new Date(msg.sent_at).toLocaleTimeString()}
-                                            </span>
+                                            <div className="flex justify-between items-center mt-1">
+                                                <span className="text-xs opacity-70">
+                                                    {new Date(msg.sent_at).toLocaleTimeString()}
+                                                </span>
+                                                {(msg.sender_id === userData?.id || msg.isCurrentUser) && (
+                                                    <span className={`text-xs ${msg.is_read ? "message-read" : "message-unread"}`}>
+                                                        {msg.is_read ? "Đã xem" : "Đã gửi"}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
