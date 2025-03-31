@@ -4,6 +4,7 @@ import { FaCartArrowDown } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 
 const Cart = () => {
   const navigate = useNavigate(); // Hook để điều hướng giữa các trang trong React Router
@@ -132,8 +133,13 @@ const Cart = () => {
   // Hàm tính tổng tiền của các sản phẩm đã chọn trong giỏ hàng
   const calculateSelectedTotal = () => {
     return cart.items.reduce((total, item) => {
-      if (!localSelectedItems.includes(item._id)) return total;
-      return total + (Number(item.total_price) || 0);
+      if (localSelectedItems.includes(item.id)) {
+        const price = item.product_variant
+          ? item.product_variant.discount_price || item.product_variant.price
+          : item.product.discount_price || item.product.price;
+        return total + price * item.quantity;
+      }
+      return total;
     }, 0);
   };
 
@@ -162,7 +168,67 @@ const Cart = () => {
     }
   };
 
-  console.log(cart);
+  // Hàm tạo mã giảm giá
+  // const addDiscount = async () => {
+  //   const token = localStorage.getItem("authToken");
+  //   try {
+  //     const response = await axios.post(
+  //       "http://localhost:8000/api/discounts/verify",
+  //       {
+  //         discount_code: discountCode,
+  //       },
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+  //     if (response.status === 200) {
+  //       setDiscount(response.data.discount);
+  //     }
+  //   } catch (error) {
+  //     console.error("Lỗi xử lý:", error);
+  //   }
+  // };
+
+  // Hàm tạo đơn hàng
+  const handleCheckout = async () => {
+    // Kiểm tra có sản phẩm được chọn không
+    if (localSelectedItems.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một sản phẩm");
+      return;
+    }
+
+    // Lấy thông tin các sản phẩm đã chọn từ giỏ hàng
+    const selectedProducts = cart.items.filter((item) =>
+      localSelectedItems.includes(item.id)
+    );
+
+    console.log("Các sản phẩm đã chọn:", selectedProducts); // Kiểm tra dữ liệu
+
+    // Kiểm tra xem có lấy được sản phẩm không
+    if (!selectedProducts || selectedProducts.length === 0) {
+      toast.error("Không thể lấy thông tin sản phẩm đã chọn");
+      return;
+    }
+
+    try {
+      // Lưu vào localStorage
+      localStorage.setItem(
+        "selectedProducts",
+        JSON.stringify({
+          items: selectedProducts,
+          total: calculateSelectedTotal(),
+        })
+      );
+
+      // Chuyển đến trang Payment
+      navigate("/payment");
+    } catch (error) {
+      console.error("Lỗi khi lưu dữ liệu:", error);
+      toast.error("Có lỗi xảy ra, vui lòng thử lại");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12">
@@ -249,7 +315,7 @@ const Cart = () => {
                     {cart.items.map((item) => (
                       <motion.div
                         key={`${item.product.id}-${JSON.stringify(
-                          item.variant_details
+                          item.product_variant
                         )}`}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -262,16 +328,8 @@ const Cart = () => {
                             <input
                               type="checkbox"
                               className="w-5 h-5 rounded-lg border-gray-300 text-black focus:ring-black transition-all duration-300 hover:border-black"
-                              // checked={isItemSelected(
-                              //   item.product.id,
-                              //   item.variant_details
-                              // )}
-                              // onChange={() =>
-                              //   toggleSelectItem(
-                              //     item.product.id,
-                              //     item.variant_details
-                              //   )
-                              // }
+                              checked={isItemSelected(item.id)}
+                              onChange={() => toggleItemSelection(item.id)}
                             />
                             <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 group/image">
                               <img
@@ -301,10 +359,13 @@ const Cart = () => {
                                 {item.product.name}
                               </h3>
                               <div className="mt-1 space-x-2">
-                                {item.variant_details &&
-                                Array.isArray(item.variant_details) ? (
+                                {item.product_variant &&
+                                item.product_variant.variant_details &&
+                                Array.isArray(
+                                  item.product_variant.variant_details
+                                ) ? (
                                   <>
-                                    {item.variant_details.map(
+                                    {item.product_variant.variant_details.map(
                                       (variant, index) => (
                                         <span
                                           key={index}
@@ -459,8 +520,7 @@ const Cart = () => {
                       <div className="flex justify-between text-lg font-medium">
                         <span className="text-gray-900">Total</span>
                         <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                          {formatPrice(calculateSelectedTotal()) -
-                            cart.discount}
+                          {formatPrice(calculateSelectedTotal())}
                         </span>
                       </div>
                     </div>
@@ -468,7 +528,7 @@ const Cart = () => {
 
                   <div className="mt-6 space-y-4">
                     <button
-                      // onClick={handleCheckout}
+                      onClick={handleCheckout}
                       className={`relative block w-full text-center py-3.5 rounded-xl transform transition-all duration-300 ${
                         localSelectedItems.length > 0
                           ? "bg-gradient-to-r from-gray-900 to-gray-700 text-white hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"

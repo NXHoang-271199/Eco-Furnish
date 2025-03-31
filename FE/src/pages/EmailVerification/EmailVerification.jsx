@@ -17,7 +17,7 @@ const EmailVerification = () => {
 
         if (!token || !email) {
           alert("Link xác thực không hợp lệ");
-          navigate("/signin");
+          navigate("/sign-in");
           return;
         }
 
@@ -31,12 +31,12 @@ const EmailVerification = () => {
 
         if (response.data.status === "success") {
           alert("Xác thực email thành công! Vui lòng đăng nhập.");
-          navigate("/signin");
+          navigate("/sign-in");
         }
       } catch (error) {
         console.error("Lỗi xác thực:", error);
         alert("Xác thực email thất bại. Vui lòng thử lại sau.");
-        navigate("/signin");
+        navigate("/sign-in");
       } finally {
         setVerifying(false);
       }

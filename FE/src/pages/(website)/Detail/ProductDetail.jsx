@@ -131,20 +131,22 @@ const ProductDetail = () => {
         );
         console.log("Product Data:", productResponse.data.data);
 
-        setCurrentPrice(productResponse.data.data.price);
-        setCurrentDiscount(productResponse.data.data.discount_price);
+        const productData = productResponse.data.data;
 
-        // Xử lý biến thể mặc định nếu có
-        if (
-          productResponse.data.variants &&
-          Array.isArray(productResponse.data.variants)
-        ) {
-          const firstVariant = productResponse.data.variants[0];
-          if (firstVariant?.variant_details) {
-            setSelectedVariants({
-              1: firstVariant.variant_details[0]?.value, // Màu sắc
-              2: firstVariant.variant_details[1]?.value, // Kích thước
+        // Thiết lập giá mặc định từ biến thể đầu tiên
+        if (productData.variants && productData.variants.length > 0) {
+          const firstVariant = productData.variants[0];
+          setCurrentPrice(firstVariant.price);
+          setCurrentDiscount(firstVariant.discount_price);
+
+          // Thiết lập biến thể mặc định từ variant_details của biến thể đầu tiên
+          if (firstVariant.variant_details) {
+            const defaultVariants = {};
+            firstVariant.variant_details.forEach((detail, index) => {
+              // index + 1 vì chúng ta đang sử dụng 1 cho màu sắc và 2 cho kích thước
+              defaultVariants[index + 1] = detail.value;
             });
+            setSelectedVariants(defaultVariants);
           }
         }
 
@@ -314,6 +316,10 @@ const ProductDetail = () => {
       if (selectedVariant) {
         setCurrentPrice(selectedVariant.price);
         setCurrentDiscount(selectedVariant.discount_price);
+        console.log("Giá được cập nhật:", {
+          price: selectedVariant.price,
+          discount: selectedVariant.discount_price,
+        });
       }
     }
   };
@@ -1201,20 +1207,16 @@ const ProductDetail = () => {
               </h1>
 
               <div className="flex items-center mt-6">
-                {currentDiscount &&
-                  currentPrice &&
-                  Number(currentDiscount) !== Number(currentPrice) && (
+                {currentDiscount && currentPrice && (
+                  <>
                     <span className="text-gray-500 line-through mr-2">
                       {formatPrice(currentPrice)}
                     </span>
-                  )}
-                <span className="text-2xl font-semibold text-green-600">
-                  {currentDiscount
-                    ? formatPrice(currentDiscount)
-                    : currentPrice
-                    ? formatPrice(currentPrice)
-                    : formatPrice(product.price)}
-                </span>
+                    <span className="text-2xl font-semibold text-green-600">
+                      {formatPrice(currentDiscount)}
+                    </span>
+                  </>
+                )}
               </div>
 
               {isSampleProduct && (

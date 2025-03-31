@@ -7,9 +7,7 @@ import axios from "axios";
 const Payment = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { selectedItems, shipping, discount } = useSelector(
-    (state) => state.cart
-  );
+  const { selectedItems, discount } = useSelector((state) => state.cart);
   const [userName, setUserName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [address, setAddress] = useState({
@@ -37,9 +35,9 @@ const Payment = () => {
     setUserName(userData.name || "Khách"); // Nếu không có tên thì hiển thị "Khách"
 
     // Nếu không có sản phẩm được chọn, quay lại trang giỏ hàng
-    if (!selectedItems || selectedItems.length === 0) {
-      navigate("/cart");
-    }
+    // if (!selectedItems || selectedItems.length === 0) {
+    //   navigate("/cart");
+    // }
   }, [selectedItems, navigate]);
 
   const formatPrice = (price) => {
