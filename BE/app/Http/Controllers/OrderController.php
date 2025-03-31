@@ -53,7 +53,6 @@ class OrderController extends Controller
             'Đang Giao' => Order::where('order_status', 'Đang Giao'),
             'Đã Giao' => Order::where('order_status', 'Đã Giao'),
             'Đã Nhận' => Order::where('order_status', 'Đã Nhận'),
-            'Thành Công' => Order::where('order_status', 'Thành Công'),
             'Hoàn Hàng' => Order::where('order_status', 'Hoàn Hàng'),
             'Hủy Đơn' => Order::where('order_status', 'Hủy Đơn'),
         ];
@@ -164,11 +163,10 @@ class OrderController extends Controller
             $validTransitions = [
                 'Chưa Xác Nhận' => ['Đã Xác Nhận', 'Hủy Đơn'],
                 'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng', 'Hủy Đơn'],
-                'Đang Chuẩn Bị Hàng' => ['Đang Giao', 'Hủy Đơn'],
+                'Đang Chuẩn Bị Hàng' => ['Đang Giao'],
                 'Đang Giao' => ['Đã Giao'],
                 'Đã Giao' => ['Đã Nhận', 'Hoàn Hàng'],
-                'Đã Nhận' => ['Thành Công', 'Hoàn Hàng'],
-                'Thành Công' => ['Hoàn Hàng'],
+                'Đã Nhận' => ['Hoàn Hàng']
             ];
 
             if (!in_array($request->order_status, $validTransitions[$order->order_status] ?? [])) {
