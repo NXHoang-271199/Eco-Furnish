@@ -28,6 +28,7 @@ const Products = () => {
           response.data.data.data.forEach((product) => {
             console.log("Tên sản phẩm:", product.name);
             console.log("Đường dẫn ảnh:", product.image_thumnail);
+            console.log("gia", product.variants.discount_price);
           });
           setProducts(response.data.data.data);
         }
@@ -134,11 +135,17 @@ const Products = () => {
                     <h3 className="mt-3 font-semibold text-gray-800">
                       {product.name}
                     </h3>
+                    {/* <p className="text-blue-600 font-medium">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(product.variants.discount_price)}
+                    </p> */}
                     <p className="text-blue-600 font-medium">
                       {new Intl.NumberFormat("vi-VN", {
                         style: "currency",
                         currency: "VND",
-                      }).format(product.price)}
+                      }).format(product.variants[0]?.discount_price || 0)}
                     </p>
                   </Link>
                 </div>
