@@ -71,7 +71,7 @@
         <div class="summary">
             <p><strong>Tạm tính:</strong> {{ number_format($subtotal, 0, ',', '.') }} đ</p>
             <p><strong>Phí vận chuyển:</strong> {{ number_format($order->shipping_fee, 0, ',', '.') }} đ</p>
-            <p><strong>Giảm giá đơn hàng:</strong> {{ number_format($discountAmount, 0, ',', '.') }} đ</p>
+            <p><strong>Giảm giá đơn hàng:</strong> {{ number_format($order->discount_amount, 0, ',', '.') }} đ</p>
             <p><strong>Tổng cộng:</strong> <span class="total">{{ number_format($order->total_price, 0, ',', '.') }} đ</span></p>
         </div>
 

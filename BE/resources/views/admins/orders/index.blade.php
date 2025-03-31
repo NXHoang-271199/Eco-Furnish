@@ -74,7 +74,6 @@
                                                                     $order->order_status === 'Đang Giao' ||
                                                                     $order->order_status === 'Đã Giao' ||
                                                                     $order->order_status === 'Đã Nhận' ||
-                                                                    $order->order_status === 'Thành Công' ||
                                                                     $order->order_status === 'Hoàn Hàng' ||
                                                                     $order->order_status === 'Hủy Đơn' ||
                                                                     $order->payment_status === '2')
@@ -126,9 +125,6 @@
                                                             <option value="Đã Nhận"
                                                                 {{ $order->order_status === 'Đã Nhận' ? 'selected' : '' }}>
                                                                 Đã Nhận</option>
-                                                            <option value="Thành Công"
-                                                                {{ $order->order_status === 'Thành Công' ? 'selected' : '' }}>
-                                                                Thành Công</option>
                                                             <option value="Hoàn Hàng"
                                                                 {{ $order->order_status === 'Hoàn Hàng' ? 'selected disabled' : '' }}>
                                                                 Hoàn Hàng</option>

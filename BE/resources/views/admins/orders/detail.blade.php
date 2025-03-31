@@ -107,7 +107,7 @@
                 <div class="d-flex align-items-center justify-content-end pe-3 text-end border-bottom">
                     <div class="pe-3 fw-bold"><span>Giảm giá</span></div>
                     <div class="w-25 border-start p-3">
-                        <div>{{ number_format($order->voucher->discount_percentage ?? 0, 0) }} %</div>
+                        <div>{{ number_format($order->discount_amount, 0, ',', '.') }} đ</div>
 
 
                     </div>

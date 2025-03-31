@@ -74,4 +74,22 @@ class Product extends Model
     {
         return $this->hasMany(CartItem::class);
     }
+    public function reviews() {
+        return $this->hasMany(Review::class);
+    }
+    public function scopeWithReviewStats($query, $sort = 'desc')
+    {
+        return $query
+            ->withCount(['reviews as total_reviews' => function ($query) {
+                $query->where('is_hidden', false);
+            }])
+            ->withAvg(['reviews as average_rating' => function ($query) {
+                $query->where('is_hidden', false);
+            }], 'rating')
+            ->orderBy('average_rating', $sort)
+            ->orderBy('total_reviews', $sort);
+    }
+    
+
+
 }

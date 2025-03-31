@@ -24,7 +24,7 @@ class OrderNotificationController extends Controller
             $notificationsCount = $notifications->count();
         // Tính số lượng thông báo chưa đọc
         $unreadCount = OrderNotification::where('is_read', false)->count();
-        return view('admins.orders.notification', compact('notifications','unreadCount','notificationsCount'));
+        return view(('admins.orders.notification'), compact('notifications','unreadCount','notificationsCount'));
     }
 
     public function markAsRead($id)

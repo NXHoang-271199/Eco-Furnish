@@ -126,7 +126,8 @@
                 @if (Auth::user()->hasPermission('view-products') ||
                         Auth::user()->hasPermission('create-products') ||
                         Auth::user()->hasPermission('view-categories') ||
-                        Auth::user()->hasPermission('view-variants'))
+                        Auth::user()->hasPermission('view-variants') ||
+                        Auth::user()->hasPermission('view-reviews'))
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="#sidebarSanPham" data-bs-toggle="collapse"
                             role="button" aria-expanded="false" aria-controls="sidebarSanPham">
@@ -159,6 +160,13 @@
                                     <li class="nav-item">
                                         <a href="{{ route('variants.index') }}" class="nav-link">
                                             <i class="ri-layout-grid-line"></i> Quản lý biến thể
+                                        </a>
+                                    </li>
+                                @endif
+                                @if (Auth::user()->hasPermission('view-reviews'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('reviews.index') }}" class="nav-link">
+                                            <i class="ri-star-fill text-warning"></i> Xếp hạng đánh giá
                                         </a>
                                     </li>
                                 @endif
