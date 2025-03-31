@@ -15,7 +15,6 @@ use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
 use App\Http\Controllers\Api\DiscountController;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -99,10 +98,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
     Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
     Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
+    // Route::post('/cart-items/update-quantity', [CartController::class, 'updateCartItemQuantity']); // API mới cập nhật số lượng
 });
 
 // Payment Method routes
 Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+Route::get('/payment-methods/{id}', [PaymentMethodController::class, 'show']);
 Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // FE ko được động tới
 Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']); // FE ko được động tới
 
@@ -119,3 +120,4 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Discount routes
 Route::post('/discounts/verify', [DiscountController::class, 'verify']);
+

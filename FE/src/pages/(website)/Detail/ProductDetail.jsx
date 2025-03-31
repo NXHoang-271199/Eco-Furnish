@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useDispatch } from "react-redux";
-import { addToCart } from "../../../store/cartSlice";
+import { addToCart, updateQuantity } from "../../../store/cartSlice";
 import AddToCartToast from "../../../components/AddToCartToast";
 import { Toaster, toast } from "react-hot-toast";
+import { CiImageOn } from "react-icons/ci";
+import { MdOutlinePayments, MdOutlineInsertComment } from "react-icons/md";
+import { RiShieldKeyholeLine } from "react-icons/ri";
 
 // Hàm phân tích thông tin biến thể từ SKU
 const parseVariantFromSku = (sku) => {
@@ -52,6 +55,7 @@ const parseVariantFromSku = (sku) => {
 };
 
 const ProductDetail = () => {
+  // State quản lý thông tin sản phẩm, bình luận, trạng thái tải, và người dùng
   const [product, setProduct] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,43 +68,41 @@ const ProductDetail = () => {
   const [error, setError] = useState("");
   const [currentPrice, setCurrentPrice] = useState(null);
   const [currentDiscount, setCurrentDiscount] = useState(null);
+
+  // Hook lấy ID sản phẩm từ URL
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
+
+  // State hiển thị thông báo và phản hồi từ hệ thống
   const [showToast, setShowToast] = useState(false);
   const [toastProduct, setToastProduct] = useState(null);
-
-  // State để hiển thị thông báo
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [feedbackType, setFeedbackType] = useState("success"); // "success" hoặc "error"
+  const [feedbackType, setFeedbackType] = useState("success"); // success hoặc error
 
-  // State để lưu thông tin các loại biến thể và giá trị
+  // State quản lý loại biến thể và giá trị của sản phẩm
   const [variantTypes, setVariantTypes] = useState([]);
   const [variantValues, setVariantValues] = useState([]);
 
-  // Thêm state để quản lý tổng tiền trong Order Summary
+  // State quản lý tổng tiền và trạng thái cập nhật số lượng sản phẩm
   const [orderTotal, setOrderTotal] = useState(0);
+  const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false);
+  const [stockError, setStockError] = useState("");
 
-  console.log("ID from useParams:", id);
-
-  // Hàm kiểm tra xác thực và lấy thông tin người dùng
+  // Kiểm tra đăng nhập và lấy thông tin người dùng từ localStorage hoặc API
   const checkAuthentication = async () => {
-    // Thêm độ trễ nhỏ để đảm bảo token đã được lưu trữ
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100)); // Độ trễ để đảm bảo token được lưu
 
-    const token = localStorage.getItem("token");
-    console.log("Current token:", token);
+    const token = localStorage.getItem("authToken");
+    // console.log("Current token:", token);
 
-    // Tạm thời lấy thông tin từ userData trong localStorage nếu có
     const userDataStr = localStorage.getItem("userData");
     if (userDataStr) {
       try {
         const userData = JSON.parse(userDataStr);
-        console.log("Loaded user data from localStorage:", userData);
-
-        // Cập nhật trạng thái người dùng từ localStorage
+        // console.log("Loaded user data from localStorage:", userData);
         setCurrentUser(userData);
         setIsLoggedIn(true);
       } catch (error) {
@@ -108,11 +110,9 @@ const ProductDetail = () => {
       }
     }
 
-    // Vẫn gọi API để cập nhật thông tin mới nhất
     if (token) {
       const success = await fetchCurrentUser(token);
       if (!success) {
-        console.log("Xác thực thất bại, xóa dữ liệu người dùng...");
         localStorage.removeItem("userData");
       }
     } else {
@@ -120,39 +120,38 @@ const ProductDetail = () => {
       setCurrentUser(null);
     }
   };
+  ///////////////////////////////////////////////////////////////////////////
 
+  // useEffect để tải dữ liệu sản phẩm và bình luận khi component mount hoặc khi ID sản phẩm thay đổi
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const productResponse = await axios.get(
           `http://localhost:8000/api/products/${id}`
         );
-        const productResult = productResponse.data.data;
-        console.log("Product Data:", productResult);
+        console.log("Product Data:", productResponse.data.data);
 
-        // Set default price
-        setCurrentPrice(productResult.price);
-        setCurrentDiscount(productResult.discount_price);
+        setCurrentPrice(productResponse.data.data.price);
+        setCurrentDiscount(productResponse.data.data.discount_price);
 
-        // Kiểm tra và xử lý variants từ API
-        if (productResult.variants && Array.isArray(productResult.variants)) {
-          // Lấy biến thể đầu tiên làm mặc định
-          const firstVariant = productResult.variants[0];
-          if (firstVariant) {
-            const variantDetails = firstVariant.variant_details;
-            if (variantDetails) {
-              setSelectedVariants({
-                1: variantDetails[0]?.value, // Màu sắc
-                2: variantDetails[1]?.value, // Kích thước
-              });
-            }
+        // Xử lý biến thể mặc định nếu có
+        if (
+          productResponse.data.variants &&
+          Array.isArray(productResponse.data.variants)
+        ) {
+          const firstVariant = productResponse.data.variants[0];
+          if (firstVariant?.variant_details) {
+            setSelectedVariants({
+              1: firstVariant.variant_details[0]?.value, // Màu sắc
+              2: firstVariant.variant_details[1]?.value, // Kích thước
+            });
           }
         }
 
-        setProduct(productResult);
+        setProduct(productResponse.data.data);
         setLoading(false);
 
-        // Fetch comments
+        // Lấy danh sách bình luận của sản phẩm
         const commentsResponse = await axios.get(
           `http://localhost:8000/api/products/${id}/comments`
         );
@@ -166,6 +165,7 @@ const ProductDetail = () => {
     fetchProduct();
   }, [id]);
 
+  // Kiểm tra xác thực khi thay đổi tab hoặc quay lại trang
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
@@ -175,31 +175,27 @@ const ProductDetail = () => {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [id]);
 
-  // Theo dõi thay đổi của location
+  // Kiểm tra đăng nhập khi thay đổi trang
   useEffect(() => {
     checkAuthentication();
   }, [location]);
 
-  // Theo dõi thay đổi của localStorage để cập nhật trạng thái đăng nhập
+  // Lắng nghe thay đổi của localStorage để cập nhật trạng thái đăng nhập
   useEffect(() => {
     const handleStorageChange = (e) => {
       console.log("Storage changed:", e);
-      if (e.key === "token" || e.key === "userData") {
-        console.log("Token or userData changed, checking authentication");
+      if (e.key === "authToken" || e.key === "userData") {
         setTimeout(() => {
           checkAuthentication();
-        }, 200); // Thêm độ trễ để đảm bảo localStorage đã được cập nhật
+        }, 200);
       }
 
-      // Kiểm tra khi quay lại từ trang đăng nhập
       if (e.key === "returnPath" && e.newValue === location.pathname) {
-        console.log("Quay lại từ trang đăng nhập:", e.newValue);
         setTimeout(() => {
           checkAuthentication();
           localStorage.removeItem("returnPath");
@@ -207,13 +203,9 @@ const ProductDetail = () => {
       }
     };
 
-    // Theo dõi sự kiện storage
     window.addEventListener("storage", handleStorageChange);
-
-    // Sự kiện tùy chỉnh cho cùng cửa sổ/tab
     window.addEventListener("auth-change", checkAuthentication);
 
-    // Kiểm tra khi component được mount
     setTimeout(checkAuthentication, 300);
 
     return () => {
@@ -221,246 +213,63 @@ const ProductDetail = () => {
       window.removeEventListener("auth-change", checkAuthentication);
     };
   }, []);
+  // //////////////////////////////////////////////////////////////////////////////
 
+  // Hàm lấy thông tin người dùng từ API
   const fetchCurrentUser = async (token) => {
     try {
-      console.log("Fetching user with token:", token);
-      const response = await axios.get("http://localhost:8000/api/user", {
+      // console.log("Fetching user with token:", token);
+      const response = await axios.get("http://127.0.0.1:8000/api/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("User profile response:", response.data);
-      if (response.data && response.data.data) {
+
+      if (response.data?.data) {
         setCurrentUser(response.data.data);
         setIsLoggedIn(true);
-        console.log("User logged in successfully:", response.data.data.name);
-        return true;
-      } else if (response.data) {
-        setCurrentUser(response.data);
-        setIsLoggedIn(true);
-        console.log("User logged in successfully:", response.data.name);
         return true;
       } else {
-        console.log("No user data in response");
         setIsLoggedIn(false);
         setCurrentUser(null);
-        localStorage.removeItem("token");
+        localStorage.removeItem("authToken");
         return false;
       }
     } catch (error) {
       console.error("Error fetching user:", error.response || error);
       if (error.response?.status === 401 || error.response?.status === 404) {
-        console.log("Token không hợp lệ hoặc API không tồn tại, đăng xuất...");
         setIsLoggedIn(false);
         setCurrentUser(null);
-        localStorage.removeItem("token");
+        localStorage.removeItem("authToken");
       }
       return false;
     }
   };
 
-  useEffect(() => {
-    // Log biến thể kích thước khi product thay đổi
-    if (product && product.variants) {
-      const sizeVariants = product.variants.filter((v) => v.variant_id === 2);
-      console.log("============= BIẾN THỂ KÍCH THƯỚC =============");
-      console.log("Số lượng biến thể kích thước:", sizeVariants.length);
-      sizeVariants.forEach((variant, index) => {
-        console.log(`Kích thước ${index + 1}:`, {
-          id: variant.id,
-          variant_id: variant.variant_id,
-          variant_name: variant.variant_name,
-          variant_value_id: variant.variant_value_id,
-          variant_value_name: variant.variant_value_name,
-          variant_details: variant.variant_details,
-          sku: variant.sku,
-          price: variant.price,
-          quantity: variant.quantity,
-        });
-      });
-      console.log("==============================================");
-    }
-  }, [product]);
-
-  // Thêm hàm xử lý variant_details
-  const extractVariantTypes = (variants) => {
-    const types = new Set();
-
-    if (variants && variants.length > 0) {
-      variants.forEach((variant) => {
-        if (variant.variant_details) {
-          // Lấy tất cả các loại biến thể từ variant_details
-          Object.keys(variant.variant_details).forEach((typeId) => {
-            types.add(Number(typeId));
-          });
-        }
-      });
-    }
-
-    return Array.from(types).sort();
-  };
-
-  // Trong useEffect khi nhận được dữ liệu
-  useEffect(() => {
-    if (product && product.variants) {
-      // Lấy các loại biến thể
-      const types = extractVariantTypes(product.variants);
-      console.log("Các loại biến thể: ", types); // Sẽ bao gồm cả 1 (màu sắc) và 2 (kích thước)
-
-      // Xử lý hiển thị cho từng loại
-      types.forEach((typeId) => {
-        // Tìm các giá trị biến thể cho từng loại
-        const typeValues = getVariantValuesByType(typeId);
-        console.log(`Giá trị biến thể cho loại ${typeId}:`, typeValues);
-      });
-    }
-  }, [product]);
-
-  // Hàm lấy giá trị biến thể theo loại
-  const getVariantValuesByType = (typeId) => {
-    if (!product || !product.variants) return [];
-
-    const values = new Set();
-    product.variants.forEach((variant) => {
-      if (variant.variant_details && variant.variant_details[typeId]) {
-        const valueId = variant.variant_details[typeId];
-        // Tìm thông tin giá trị
-        const matchingVariant = product.variants.find(
-          (v) =>
-            v.variant_info &&
-            v.variant_info.id === typeId &&
-            v.variant_value &&
-            v.variant_value.id === valueId
-        );
-
-        if (matchingVariant) {
-          values.add({
-            id: valueId,
-            value: matchingVariant.variant_value.value,
-          });
-        }
-      }
-    });
-
-    return Array.from(values);
-  };
-
-  // Sửa lại hàm processVariantDetails
-  const processVariantDetails = (variant) => {
-    if (!variant.variant_details) return null;
-
-    try {
-      // Đảm bảo variant_details là object
-      const details =
-        typeof variant.variant_details === "string"
-          ? JSON.parse(variant.variant_details)
-          : variant.variant_details;
-
-      // Lấy variant_value_id cho màu sắc và kích thước
-      const colorId = details["1"]; // variant type 1 là màu sắc
-      const sizeId = details["2"]; // variant type 2 là kích thước
-
-      // Tìm tên của biến thể
-      const variantName =
-        variant.variant_value_name || variant.variant_value?.value;
-
-      return {
-        colorId: colorId ? String(colorId) : null,
-        sizeId: sizeId ? String(sizeId) : null,
-        variantName,
-      };
-    } catch (error) {
-      console.error("Lỗi xử lý variant_details:", error);
-      return null;
-    }
-  };
-
-  // Sửa lại hàm getVariantsByType
-  const getVariantsByType = (variantTypeId) => {
-    if (!product || !product.variants) return [];
-
-    // Lọc các biến thể có chứa variantTypeId trong variant_details
-    const variants = product.variants.filter((variant) => {
-      const details = processVariantDetails(variant);
-      if (!details) return false;
-
-      // Kiểm tra xem biến thể có chứa loại variant cần tìm không
-      return variantTypeId === 1
-        ? details.colorId !== undefined
-        : details.sizeId !== undefined;
-    });
-
-    // Loại bỏ các biến thể trùng lặp
-    const uniqueVariants = [];
-    const seen = new Set();
-
-    variants.forEach((variant) => {
-      const details = processVariantDetails(variant);
-      if (!details) return;
-
-      const valueId = variantTypeId === 1 ? details.colorId : details.sizeId;
-
-      if (!seen.has(valueId)) {
-        seen.add(valueId);
-        uniqueVariants.push(variant);
-      }
-    });
-
-    return uniqueVariants;
-  };
-
-  useEffect(() => {
-    if (product && product.variants) {
-      console.log("Tất cả biến thể:", product.variants);
-
-      // Log chi tiết từng loại biến thể
-      const colorVariants = getVariantsByType(1);
-      const sizeVariants = getVariantsByType(2);
-
-      console.log(
-        "Biến thể màu sắc:",
-        colorVariants.map((v) => ({
-          variant_details: v.variant_details,
-          sku: v.sku,
-          parsed: parseVariantFromSku(v.sku),
-        }))
-      );
-
-      console.log(
-        "Biến thể kích thước:",
-        sizeVariants.map((v) => ({
-          variant_details: v.variant_details,
-          sku: v.sku,
-          parsed: parseVariantFromSku(v.sku),
-        }))
-      );
-    }
-  }, [product]);
-
+  // Kiểm tra nếu đang tải dữ liệu sản phẩm
   if (loading) {
     return <div className="text-center mt-32">Đang tải...</div>;
   }
 
+  // Hiển thị thông báo khi không tìm thấy sản phẩm
   if (!product) {
     return <div className="text-center mt-32">Không tìm thấy sản phẩm</div>;
   }
 
-  console.log("Product state:", product);
+  // console.log("Product state:", product);
 
+  // hien thi thong tin san pham (gia)
   const formatPrice = (price) => {
     const numericPrice = price ? parseFloat(price) : null;
     return numericPrice && !isNaN(numericPrice)
       ? numericPrice.toLocaleString("vi-VN", { minimumFractionDigits: 0 }) + "đ"
       : "Giá không khả dụng";
   };
-
-  const baseURL = "http://localhost:8000/";
-
+  ///////////////////////////////////////////////////////////////
   const mainImageUrl =
     selectedImage ||
     (product.image_thumnail
       ? product.image_thumnail.startsWith("http")
         ? product.image_thumnail
-        : `${baseURL}storage/${product.image_thumnail}`
+        : `http://localhost:8000/storage/${product.image_thumnail}`
       : "https://via.placeholder.com/400x400?text=No+Image");
 
   console.log("Main Image URL:", mainImageUrl);
@@ -470,7 +279,7 @@ const ProductDetail = () => {
       const galleryImageUrl = item.image_url
         ? item.image_url.startsWith("http")
           ? item.image_url
-          : `${baseURL}storage/${item.image_url}`
+          : `http://localhost:8000/storage/${item.image_url}`
         : "https://via.placeholder.com/100x100?text=No+Image";
 
       console.log(`Gallery Image ${index + 1} URL:`, galleryImageUrl);
@@ -480,6 +289,7 @@ const ProductDetail = () => {
   const handleGalleryImageClick = (imageUrl) => {
     setSelectedImage(imageUrl);
   };
+  ///////////////////////////////////////////////////////////////
 
   // Sửa lại hàm handleVariantSelect để cập nhật giá chính xác
   const handleVariantSelect = (variantType, value) => {
@@ -508,21 +318,7 @@ const ProductDetail = () => {
     }
   };
 
-  const isVariantInStock = (variant) => {
-    if (!variant) return false;
-    return variant.quantity > 0;
-  };
-
-  const hasSelectedAllRequiredVariants = () => {
-    if (!product.variants || product.variants.length === 0) return true;
-
-    const availableVariantTypes = [
-      ...new Set(product.variants.map((v) => v.variant_id)),
-    ];
-
-    return availableVariantTypes.every((type) => selectedVariants[type]);
-  };
-
+  // Hàm thêm sản phẩm vào giỏ hàng
   const handleAddToCart = async () => {
     try {
       // Kiểm tra xem đã chọn đủ biến thể chưa
@@ -572,10 +368,10 @@ const ProductDetail = () => {
         },
         quantity: quantity,
         price: finalPrice * quantity,
-        variant_details: selectedVariant.variant_details,
+        variant_details: selectedVariants.variant_details,
       };
 
-      // Kiểm tra token trong localStorage
+      // Kiểm tra token trong localStorage (DM CAY VL)
       const token = localStorage.getItem("authToken");
       console.log("Current token:", token); // Log để debug
 
@@ -585,23 +381,23 @@ const ProductDetail = () => {
         return;
       }
 
-      console.log(
-        "Sending API request with token:",
-        token.substring(0, 15) + "..."
-      ); // Log token một phần để bảo mật
-      console.log("Request data:", {
-        product_id: product.id,
-        product_variant_id: selectedVariant.id,
-        quantity: quantity,
-      });
+      // console.log(
+      //   "Sending API request with token:",
+      //   token.substring(0, 15) + "..."
+      // ); // Log token một phần để bảo mật
+      // console.log("Request data:", {
+      //   product_id: product.id,
+      //   product_variant_id: selectedVariants.id,
+      //   quantity: quantity,
+      // });
 
-      // Thêm vào Redux store trước (UI thân thiện, có thể rollback nếu API thất bại)
-      dispatch(addToCart(cartItem));
+      // // Thêm vào Redux store trước (UI thân thiện, có thể rollback nếu API thất bại)
+      // dispatch(addToCart(cartItem));
 
       // Hiển thị thông báo đang xử lý
       const toastId = toast.loading("Đang thêm vào giỏ hàng...");
 
-      // Gửi request đến API
+      // Gửi request đến API thêm sản phẩm vào giỏ hàng
       const response = await axios.post(
         "http://localhost:8000/api/cart/add",
         {
@@ -633,11 +429,10 @@ const ProductDetail = () => {
     } catch (error) {
       console.error("Error adding to cart:", error);
 
-      // Log thông tin chi tiết về lỗi
+      //Log thông tin chi tiết về lỗi
       if (error.response) {
         console.log("Error response status:", error.response.status);
         console.log("Error response data:", error.response.data);
-        console.log("Error response headers:", error.response.headers);
       } else if (error.request) {
         console.log("Error request:", error.request);
       } else {
@@ -646,7 +441,7 @@ const ProductDetail = () => {
 
       if (error.response?.status === 401) {
         console.log("Token expired or invalid, redirecting to signin");
-        localStorage.removeItem("token");
+        localStorage.clear();
         toast.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại", {
           duration: 3000,
           style: {
@@ -675,8 +470,79 @@ const ProductDetail = () => {
         },
       });
     }
+
+    // Tính toán giá cuối cùng
+    // const finalPrice =
+    //   selectedVariants.discount_price || selectedVariants.price;
+
+    // Tạo đối tượng cart item với thông tin đầy đủ
+    // const cartItem = {
+    //   product_id: product.id,
+    //   product: {
+    //     ...product,
+    //     price: finalPrice,
+    //   },
+    //   quantity: quantity,
+    //   price: finalPrice * quantity,
+    //   variant_details: selectedVariants.variant_details,
+    // };
+
+    // try {
+    //   // Kiểm tra token trong localStorage
+    //   const token = localStorage.getItem("authToken"); // Thay đổi từ "token" thành "authToken"
+    //   if (!token) {
+    //     navigate("/sign-in", { state: { returnUrl: location.pathname } });
+    //     return;
+    //   }
+
+    //   const response = await axios.post(
+    //     "http://localhost:8000/api/cart/add",
+    //     {
+    //       product_id: product.id,
+    //       product_variant_id: selectedVariants.id,
+    //       quantity: quantity,
+    //     },
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //     }
+    //   );
+
+    //   if (response.data.message === "Thêm vào giỏ hàng thành công") {
+    //     // Thêm vào Redux store
+    //     dispatch(addToCart(cartItem));
+    //     toast.success("Đã thêm vào giỏ hàng", {
+    //       duration: 2000,
+    //       style: {
+    //         background: "#fff",
+    //         color: "#059669",
+    //         border: "1px solid #a7f3d0",
+    //       },
+    //     });
+    //   }
+    // } catch (error) {
+    //   if (error.response?.status === 401) {
+    //     // Token hết hạn hoặc không hợp lệ
+    //     localStorage.removeItem("authToken");
+    //     navigate("/sign-in", { state: { returnUrl: location.pathname } });
+    //     return;
+    //   }
+    //   toast.error(
+    //     error.response?.data?.message || "Có lỗi xảy ra khi thêm vào giỏ hàng",
+    //     {
+    //       duration: 2000,
+    //       style: {
+    //         background: "#fff",
+    //         color: "#e11d48",
+    //         border: "1px solid #fecdd3",
+    //       },
+    //     }
+    //   );
+    // }
   };
 
+  // Hàm tạo đơn hàng mua ngay
   const handleBuyNow = () => {
     // Kiểm tra xem đã chọn đủ biến thể chưa
     if (!selectedVariants[1] || !selectedVariants[2]) {
@@ -692,64 +558,59 @@ const ProductDetail = () => {
     }
 
     handleAddToCart();
-    navigate("/cart");
+    navigate("/payment");
   };
 
+  const handleQuantityChange = (newQuantity) => {
+    if (newQuantity < 1) return;
+
+    setIsUpdatingQuantity(true);
+    setStockError("");
+
+    try {
+      // Tìm biến thể phù hợp
+      if (!product || !product.variants) {
+        setStockError("Không tìm thấy thông tin sản phẩm");
+        return;
+      }
+
+      const selectedVariant = product.variants.find((variant) => {
+        if (!variant.variant_details) return false;
+        const variantDetails = variant.variant_details;
+        return (
+          variantDetails[0]?.value === selectedVariants[1] &&
+          variantDetails[1]?.value === selectedVariants[2]
+        );
+      });
+
+      if (!selectedVariant) {
+        setStockError("Không tìm thấy biến thể phù hợp");
+        return;
+      }
+
+      // Kiểm tra tồn kho cục bộ
+      if (selectedVariant.quantity >= newQuantity) {
+        setQuantity(newQuantity);
+      } else {
+        setStockError(`Chỉ còn ${selectedVariant.quantity} sản phẩm trong kho`);
+      }
+    } catch (error) {
+      console.error("Lỗi xử lý:", error);
+      setStockError("Có lỗi xảy ra khi cập nhật số lượng");
+    } finally {
+      setIsUpdatingQuantity(false);
+    }
+  };
+
+  // Sửa lại hàm increaseQuantity và decreaseQuantity để sử dụng handleQuantityChange mới
   const increaseQuantity = () => {
-    setQuantity((prev) => prev + 1);
+    handleQuantityChange(quantity + 1);
   };
 
   const decreaseQuantity = () => {
     if (quantity > 1) {
-      setQuantity((prev) => prev - 1);
+      handleQuantityChange(quantity - 1);
     }
-  };
-
-  // Hàm lấy tên loại biến thể
-  const getVariantTypeName = (variantId) => {
-    // Kiểm tra trong state trước
-    const typeFromState = variantTypes.find((t) => t.id === variantId);
-    if (typeFromState) return typeFromState.name;
-
-    // Kiểm tra trong các biến thể của sản phẩm
-    const variant = product.variants?.find((v) => v.variant_id === variantId);
-    if (variant && variant.variant_info && variant.variant_info.name) {
-      return variant.variant_info.name;
-    }
-
-    // Fallback tới giá trị mặc định
-    const variantTypeNames = {
-      1: "Màu sắc",
-      2: "Kích thước",
-      3: "Chất liệu",
-      4: "Kiểu dáng",
-    };
-    return variantTypeNames[variantId] || "Biến thể";
-  };
-
-  // Hàm lấy tên giá trị biến thể
-  const getVariantValueName = (variantId, valueId) => {
-    // Tìm trong các giá trị biến thể đã lấy từ API
-    const valueFromState = variantValues.find(
-      (v) => v.id === valueId && v.variant_id === variantId
-    );
-    if (valueFromState) return valueFromState.value;
-
-    // Tìm trong các biến thể của sản phẩm
-    const variant = product.variants?.find(
-      (v) => v.variant_id === variantId && v.variant_value_id === valueId
-    );
-
-    if (variant) {
-      if (variant.variant_value && variant.variant_value.value) {
-        return variant.variant_value.value;
-      }
-      if (variant.variant_value_name) {
-        return variant.variant_value_name;
-      }
-    }
-
-    return "Không xác định";
   };
 
   const handleCommentSubmit = async () => {
@@ -766,7 +627,8 @@ const ProductDetail = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      // Kiểm tra token trong localStorage
+      const token = localStorage.getItem("authToken"); // Thay đổi từ "token" thành "authToken"
       if (!token) {
         setIsLoggedIn(false);
         setCurrentUser(null);
@@ -839,7 +701,7 @@ const ProductDetail = () => {
       }, 3000);
 
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
+        localStorage.removeItem("authToken"); // Sửa lại từ "token" thành "authToken"
         setIsLoggedIn(false);
         setCurrentUser(null);
         navigate("/sign-in", { state: { returnUrl: location.pathname } });
@@ -1250,7 +1112,6 @@ const ProductDetail = () => {
               <div className="relative h-[650px] bg-gray-50 rounded-xl shadow-md flex justify-center items-center p-2 overflow-hidden border border-gray-100">
                 {/* Gradient overlay effect */}
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-100 to-transparent opacity-20"></div>
-
                 <img
                   src={mainImageUrl}
                   alt={product.name || "Sản phẩm"}
@@ -1281,7 +1142,7 @@ const ProductDetail = () => {
                       const galleryImageUrl = item.image_url
                         ? item.image_url.startsWith("http")
                           ? item.image_url
-                          : `${baseURL}storage/${item.image_url}`
+                          : `http://localhost:8000/storage/${item.image_url}`
                         : "https://via.placeholder.com/100x100?text=No+Image";
 
                       return (
@@ -1323,20 +1184,7 @@ const ProductDetail = () => {
                     })
                   ) : (
                     <div className="col-span-5 text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 mx-auto text-gray-400 mb-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                        />
-                      </svg>
+                      <CiImageOn className="h-6 w-6 mx-auto text-gray-400 mb-1" />
                       <span className="text-sm text-gray-500">
                         Không có ảnh bổ sung
                       </span>
@@ -1405,6 +1253,7 @@ const ProductDetail = () => {
                   <button
                     className="bg-gray-200 text-gray-700 px-3 py-1 hover:bg-gray-300 transition"
                     onClick={increaseQuantity}
+                    disabled={isUpdatingQuantity}
                   >
                     +
                   </button>
@@ -1416,7 +1265,7 @@ const ProductDetail = () => {
 
                 <div className="flex gap-4 mt-4">
                   <button
-                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
+                    className="w-full bg-gradient-to-r from-blue-500 to-blue-800 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
                     onClick={handleAddToCart}
                   >
                     THÊM VÀO GIỎ HÀNG
@@ -1424,38 +1273,14 @@ const ProductDetail = () => {
                 </div>
                 <div className="flex gap-4 mt-4">
                   <button
-                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
+                    className="w-full bg-gradient-to-r from-blue-500 to-blue-800 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01] flex items-center justify-center"
                     onClick={handleBuyNow}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
+                    <MdOutlinePayments className="h-5 w-5 mr-2" />
                     MUA NGAY
                   </button>
                 </div>
-
-                {/* Buy Now Button - Below */}
-                {/* <div className="mt-4">
-                <button
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-full font-bold shadow-lg transform transition duration-300 hover:scale-[1.02] hover:shadow-xl hover:from-orange-600 hover:to-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
-                  onClick={handleBuyNow}
-                >
-                  MUA NGAY
-                </button>
-                </div> */}
               </div>
-
               {/* Additional Information */}
               <div className="mt-6">
                 <p className="text-gray-600">
@@ -1476,6 +1301,12 @@ const ProductDetail = () => {
                     : product.quantity || 0}
                 </p>
               </div>
+
+              {stockError && (
+                <p className="text-red-500 text-xs mt-1 text-center">
+                  {stockError}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -1494,34 +1325,11 @@ const ProductDetail = () => {
                 )}
               </button>
             </li>
-            <li className="mr-0">
-              <button className="py-3 px-1 text-gray-500 hover:text-gray-700 transition duration-200">
-                Thông tin thêm
-              </button>
-            </li>
-            <li className="mr-0">
-              <button className="py-3 px-1 text-gray-500 hover:text-gray-700 transition duration-200">
-                Mô tả
-              </button>
-            </li>
           </ul>
 
           <div className="mt-8">
             <h3 className="font-semibold text-xl mb-6 text-gray-800 flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 mr-2 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                />
-              </svg>
+              <MdOutlineInsertComment className="h-6 w-6 mr-2 text-green-600" />
               Bình luận khách hàng
             </h3>
 
@@ -1626,20 +1434,7 @@ const ProductDetail = () => {
               </div>
             ) : (
               <div className="text-center p-8 bg-gray-50 rounded-lg mb-8 border border-gray-100 shadow-sm">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 mx-auto text-gray-400 mb-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
+                <RiShieldKeyholeLine className="h-10 w-10 mx-auto text-gray-400 mb-3" />
                 <p className="text-gray-600 mb-4">
                   Bạn cần đăng nhập để bình luận về sản phẩm này
                 </p>
@@ -1709,20 +1504,7 @@ const ProductDetail = () => {
                 </>
               ) : (
                 <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-14 w-14 mx-auto text-gray-400 mb-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1}
-                      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                    />
-                  </svg>
+                  <MdOutlineInsertComment className="h-14 w-14 mx-auto text-gray-400 mb-3" />
                   <p className="text-gray-500 text-lg mb-2">
                     Chưa có bình luận nào
                   </p>

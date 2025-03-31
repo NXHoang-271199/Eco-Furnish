@@ -31,29 +31,43 @@ const Header = () => {
   return (
     <>
       <header className="bg-white fixed top-0 left-0 w-full z-50">
-        <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
+        <div className="max-w-6xl mx-auto flex justify-between items-center p-4 bg-[#fbfeeb]">
           {/* Logo */}
           <div className="text-2xl font-bold text-black">
             <div>
               <Link to="/">
-                <span className="text-yellow-300">E</span>co-
-                <span className="text-yellow-300">F</span>urnish
+                {/* <span className="text-yellow-300">E</span>co-
+                <span className="text-yellow-300">F</span>urnish */}
+                <img
+                  src="./logoweb5.jpg"
+                  alt=""
+                  className="w-[120px] h-[120px]"
+                />
               </Link>
             </div>
           </div>
 
           {/* Navigation */}
           <nav className="hidden md:flex space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-black">
+            <Link to="/" className="text-gray-700 hover:text-black text-lg">
               Trang chủ
             </Link>
-            <Link to="/products" className="text-gray-700 hover:text-black">
+            <Link
+              to="/products"
+              className="text-gray-700 hover:text-black text-lg"
+            >
               Sản phẩm
             </Link>
-            <Link to="/blogs" className="text-gray-700 hover:text-black">
+            <Link
+              to="/blogs"
+              className="text-gray-700 hover:text-black text-lg"
+            >
               Bài viết
             </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-black">
+            <Link
+              to="/contact"
+              className="text-gray-700 hover:text-black text-lg"
+            >
               Liên hệ
             </Link>
           </nav>

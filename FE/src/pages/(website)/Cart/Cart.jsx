@@ -1,24 +1,50 @@
-import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect } from "react";
 import { FiTrash2 } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { FaCartArrowDown } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  removeFromCart,
-  updateQuantity,
-  applyDiscount,
-  clearCart,
-} from "../../../store/cartSlice";
 import axios from "axios";
 
 const Cart = () => {
-  const dispatch = useDispatch();
-  const cart = useSelector((state) => state.cart);
-  const [discountCode, setDiscountCode] = useState("");
-  const [discountError, setDiscountError] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [selectedItems, setSelectedItems] = useState([]);
+  const navigate = useNavigate(); // Hook để điều hướng giữa các trang trong React Router
+  const [discountCode, setDiscountCode] = useState(""); // State lưu mã giảm giá người dùng nhập
+  const [discountError, setDiscountError] = useState(""); // State lưu lỗi khi áp dụng mã giảm giá
+  const [isVerifying, setIsVerifying] = useState(false); // State kiểm tra xem mã giảm giá đang được xác minh hay không
+  const [localSelectedItems, setLocalSelectedItems] = useState([]); // State lưu danh sách các sản phẩm được chọn trong giỏ hàng
+  const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false); // State kiểm tra xem số lượng đang được cập nhật hay không (hiện bị comment)
+  const [stockError, setStockError] = useState(""); // State lưu lỗi liên quan đến tồn kho
 
+  // code dat
+  const [cart, setCart] = useState({ items: [] });
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
+  // Hàm lấy giỏ hàng
+  const fetchCart = async () => {
+    const token = localStorage.getItem("authToken");
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!token || !userData) {
+      navigate("/sign-in");
+    }
+
+    try {
+      const response = await axios.get("http://localhost:8000/api/cart", {
+        headers: {
+          Authorization: `Bearer ${token}`, // Gửi token trong header
+        },
+      });
+      console.log("cart:", response.data);
+
+      setCart(response.data);
+    } catch (error) {
+      console.error("Lỗi giỏ hàng:", error);
+    }
+  };
+
+  // Hàm định dạng giá tiền sang định dạng tiền tệ Việt Nam (VND)
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -26,124 +52,117 @@ const Cart = () => {
     }).format(price);
   };
 
-  const handleQuantityChange = (productId, variant_details, newQuantity) => {
-    if (newQuantity < 1) return;
-    dispatch(
-      updateQuantity({ productId, quantity: newQuantity, variant_details })
-    );
-  };
-
-  const handleRemoveItem = (productId, variant_details) => {
-    dispatch(removeFromCart({ productId, variant_details }));
-    setSelectedItems(
-      selectedItems.filter(
-        (item) =>
-          !(
-            item.productId === productId &&
-            JSON.stringify(item.variant_details) ===
-              JSON.stringify(variant_details)
-          )
-      )
-    );
-  };
-
-  const handleClearCart = () => {
-    if (window.confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?")) {
-      dispatch(clearCart());
-      setSelectedItems([]);
-    }
-  };
-
-  const handleApplyDiscount = async () => {
-    if (!discountCode) return;
-
-    setIsVerifying(true);
-    setDiscountError("");
-
+  // Hàm xử lý thay đổi số lượng sản phẩm trong giỏ hàng
+  const handleUpdateQuantity = async (item, newQuantity) => {
+    const token = localStorage.getItem("authToken");
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/discounts/verify",
+      const cartData = {
+        quantity: newQuantity,
+      };
+      const response = await axios.put(
+        `http://localhost:8000/api/cart/update/${item.id}`,
+        cartData,
         {
-          code: discountCode,
-          subtotal: cart.subtotal,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
-      if (response.data.success) {
-        dispatch(
-          applyDiscount({
-            code: discountCode,
-            amount: response.data.discount_amount,
-          })
-        );
-        setDiscountError("");
+      if (response.status === 200) {
+        // setMessage(response.data.message);
+        await fetchCart();
       } else {
-        setDiscountError(response.data.message || "Mã giảm giá không hợp lệ");
+        setMessage(response.data.message);
+        alert(response.data.message);
       }
     } catch (error) {
-      setDiscountError(
-        error.response?.data?.message || "Có lỗi xảy ra khi áp dụng mã giảm giá"
-      );
-    } finally {
-      setIsVerifying(false);
+      setMessage(error.message || "Không thể cập nhật số lượng");
     }
   };
 
-  const toggleSelectItem = (productId, variant_details) => {
-    const isSelected = selectedItems.some(
-      (item) =>
-        item.productId === productId &&
-        JSON.stringify(item.variant_details) === JSON.stringify(variant_details)
-    );
-
-    if (isSelected) {
-      setSelectedItems(
-        selectedItems.filter(
-          (item) =>
-            !(
-              item.productId === productId &&
-              JSON.stringify(item.variant_details) ===
-                JSON.stringify(variant_details)
-            )
-        )
+  // Hàm xóa một sản phẩm khỏi giỏ hàng
+  const handleRemoveItem = async (cartId) => {
+    const token = localStorage.getItem("authToken");
+    try {
+      const response = await axios.delete(
+        `http://localhost:8000/api/cart/remove/${cartId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-    } else {
-      setSelectedItems([...selectedItems, { productId, variant_details }]);
-    }
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedItems.length === cart.items.length) {
-      setSelectedItems([]);
-    } else {
-      setSelectedItems(
-        cart.items.map((item) => ({
-          productId: item.product.id,
-          variant_details: item.variant_details,
-        }))
-      );
-    }
-  };
-
-  const isItemSelected = (productId, variant_details) => {
-    return selectedItems.some(
-      (item) =>
-        item.productId === productId &&
-        JSON.stringify(item.variant_details) === JSON.stringify(variant_details)
-    );
-  };
-
-  const calculateSelectedTotal = () => {
-    return cart.items.reduce((total, item) => {
-      if (isItemSelected(item.product.id, item.variant_details)) {
-        return (
-          total +
-          (item.product.discount_price || item.product.price) * item.quantity
-        );
+      if (response.status === 200) {
+        await fetchCart();
       }
-      return total;
+    } catch (error) {
+      console.error("Lỗi xử lý:", error);
+    }
+  };
+  // Hàm xóa toàn bộ giỏ hàng
+  const handleClearCart = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("authToken");
+    try {
+      const response = await axios.delete(
+        "http://localhost:8000/api/cart/clear",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status === 200) {
+        await fetchCart();
+      }
+    } catch (error) {
+      console.error("Lỗi xử lý:", error);
+    }
+  };
+
+  // Hàm tính tổng tất cả giá tiền trong giỏ hàng
+  const calculateTotal = () => {
+    return cart.items.reduce((total, item) => {
+      const price = item.product.discount_price || item.product.price;
+      return total + price * item.quantity;
     }, 0);
   };
+
+  // Hàm tính tổng tiền của các sản phẩm đã chọn trong giỏ hàng
+  const calculateSelectedTotal = () => {
+    return cart.items.reduce((total, item) => {
+      if (!localSelectedItems.includes(item._id)) return total;
+      return total + (Number(item.total_price) || 0);
+    }, 0);
+  };
+
+  // Hàm isItemSelected: Kiểm tra xem một sản phẩm có được chọn hay không
+  const isItemSelected = (itemId) => {
+    return localSelectedItems.includes(itemId);
+  };
+
+  // Hàm toggleItemSelection: Chọn hoặc bỏ chọn một sản phẩm
+  const toggleItemSelection = (itemId) => {
+    setLocalSelectedItems((prev) => {
+      if (prev.includes(itemId)) {
+        return prev.filter((id) => id !== itemId);
+      } else {
+        return [...prev, itemId];
+      }
+    });
+  };
+
+  // Hàm toggleSelectAll: Chọn hoặc bỏ chọn tất cả sản phẩm trong giỏ hàng
+  const toggleSelectAll = () => {
+    if (localSelectedItems.length === cart.items.length) {
+      setLocalSelectedItems([]);
+    } else {
+      setLocalSelectedItems(cart.items.map((item) => item._id));
+    }
+  };
+
+  console.log(cart);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12">
@@ -152,22 +171,10 @@ const Cart = () => {
           Shopping Cart
         </h1>
 
-        {cart.items.length === 0 ? (
+        {!cart?.items || cart.items.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl shadow-lg backdrop-blur-xl bg-white/80">
             <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-              <svg
-                className="w-12 h-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                />
-              </svg>
+              <FaCartArrowDown className="w-12 h-12 text-gray-400" />
             </div>
             <p className="text-gray-500 text-lg mb-6">
               Giỏ hàng của bạn đang trống
@@ -189,7 +196,9 @@ const Cart = () => {
                       <input
                         type="checkbox"
                         className="w-5 h-5 rounded-lg border-gray-300 text-black focus:ring-black transition-all duration-300 hover:border-black"
-                        checked={selectedItems.length === cart.items.length}
+                        checked={
+                          localSelectedItems.length === cart.items.length
+                        }
                         onChange={toggleSelectAll}
                       />
                       <span className="ml-3 text-sm font-medium text-gray-500">
@@ -253,16 +262,16 @@ const Cart = () => {
                             <input
                               type="checkbox"
                               className="w-5 h-5 rounded-lg border-gray-300 text-black focus:ring-black transition-all duration-300 hover:border-black"
-                              checked={isItemSelected(
-                                item.product.id,
-                                item.variant_details
-                              )}
-                              onChange={() =>
-                                toggleSelectItem(
-                                  item.product.id,
-                                  item.variant_details
-                                )
-                              }
+                              // checked={isItemSelected(
+                              //   item.product.id,
+                              //   item.variant_details
+                              // )}
+                              // onChange={() =>
+                              //   toggleSelectItem(
+                              //     item.product.id,
+                              //     item.variant_details
+                              //   )
+                              // }
                             />
                             <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 group/image">
                               <img
@@ -319,11 +328,7 @@ const Cart = () => {
                             <div className="flex items-center justify-center">
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(
-                                    item.product.id,
-                                    item.variant_details,
-                                    item.quantity - 1
-                                  )
+                                  handleUpdateQuantity(item, item.quantity - 1)
                                 }
                                 className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-l-lg hover:bg-gradient-to-r hover:from-gray-900 hover:to-gray-700 hover:text-white hover:border-transparent transition-all duration-300 active:scale-95"
                               >
@@ -334,36 +339,29 @@ const Cart = () => {
                               </div>
                               <button
                                 onClick={() =>
-                                  handleQuantityChange(
-                                    item.product.id,
-                                    item.variant_details,
-                                    item.quantity + 1
-                                  )
+                                  handleUpdateQuantity(item, item.quantity + 1)
                                 }
                                 className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-r-lg hover:bg-gradient-to-r hover:from-gray-900 hover:to-gray-700 hover:text-white hover:border-transparent transition-all duration-300 active:scale-95"
                               >
                                 +
                               </button>
                             </div>
+                            {stockError && (
+                              <p className="text-red-500 text-xs mt-1 text-center">
+                                {stockError}
+                              </p>
+                            )}
                           </div>
 
                           <div className="col-span-2 text-center">
                             <span className="font-medium text-gray-900">
-                              {formatPrice(
-                                (item.product.discount_price ||
-                                  item.product.price) * item.quantity
-                              )}
+                              {formatPrice(item.total_price)}
                             </span>
                           </div>
 
                           <div className="col-span-1 flex justify-center">
                             <button
-                              onClick={() =>
-                                handleRemoveItem(
-                                  item.product.id,
-                                  item.variant_details
-                                )
-                              }
+                              onClick={() => handleRemoveItem(item.id)}
                               className="group/delete relative p-2.5 rounded-xl overflow-hidden transition-all duration-300 hover:bg-red-50"
                             >
                               <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-red-500/20 to-red-600/20 opacity-0 group-hover/delete:opacity-100 transition-all duration-300 rounded-xl transform scale-0 group-hover/delete:scale-100"></span>
@@ -392,14 +390,14 @@ const Cart = () => {
                     <input
                       type="text"
                       value={discountCode}
-                      onChange={(e) => setDiscountCode(e.target.value)}
+                      // onChange={(e) => setDiscountCode(e.target.value)}
                       placeholder="Discount voucher"
                       className="flex-1 px-4 py-2.5 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                       disabled={isVerifying}
                     />
                     <button
-                      onClick={handleApplyDiscount}
-                      disabled={isVerifying || !discountCode}
+                      // onClick={handleApplyDiscount}
+                      // disabled={isVerifying || !discountCode}
                       className="relative px-6 py-2.5 bg-gradient-to-r from-gray-900 to-gray-700 text-white rounded-r-xl overflow-hidden transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       <span className="absolute inset-0 w-full h-full bg-white opacity-0 hover:opacity-10 transition-opacity duration-300"></span>
@@ -445,7 +443,8 @@ const Cart = () => {
                       <div className="flex justify-between text-green-600">
                         <span>
                           Discount (
-                          {Math.round((cart.discount / cart.subtotal) * 100)}%)
+                          {Math.round((cart.discount / cart.subtotal) * 100)}
+                          %)
                         </span>
                         <span>-{formatPrice(cart.discount)}</span>
                       </div>
@@ -453,7 +452,6 @@ const Cart = () => {
 
                     <div className="flex justify-between text-gray-600">
                       <span>Delivery fee</span>
-                      {/* <span>{formatPrice(cart.shipping)}</span> */}
                       <span>Free</span>
                     </div>
 
@@ -461,38 +459,31 @@ const Cart = () => {
                       <div className="flex justify-between text-lg font-medium">
                         <span className="text-gray-900">Total</span>
                         <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                          {formatPrice(
-                            calculateSelectedTotal() - cart.discount
-                            // +
-                            // cart.shipping
-                          )}
+                          {formatPrice(calculateSelectedTotal()) -
+                            cart.discount}
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-6 space-y-4">
-                    <Link
-                      to="/payment"
+                    <button
+                      // onClick={handleCheckout}
                       className={`relative block w-full text-center py-3.5 rounded-xl transform transition-all duration-300 ${
-                        selectedItems.length > 0
+                        localSelectedItems.length > 0
                           ? "bg-gradient-to-r from-gray-900 to-gray-700 text-white hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
                           : "bg-gray-200 text-gray-500 cursor-not-allowed"
                       }`}
-                      onClick={(e) => {
-                        if (selectedItems.length === 0) {
-                          e.preventDefault();
-                        }
-                      }}
+                      disabled={localSelectedItems.length === 0}
                     >
                       <span className="absolute inset-0 w-full h-full bg-white opacity-0 hover:opacity-10 transition-opacity duration-300 rounded-xl"></span>
                       <span className="relative flex items-center justify-center gap-2">
                         <span>Checkout Now</span>
                         <span className="bg-white/20 px-2 py-0.5 rounded-lg text-sm">
-                          {selectedItems.length} items
+                          {localSelectedItems.length} items
                         </span>
                       </span>
-                    </Link>
+                    </button>
 
                     <div className="flex items-start gap-2 text-sm text-gray-500">
                       <span className="mt-0.5">⚬</span>
