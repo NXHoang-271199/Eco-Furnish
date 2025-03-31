@@ -150,6 +150,7 @@ class OrderController extends Controller
                 'order_status' => 'Chưa Xác Nhận',
                 'total_price' => $totalPrice,
                 'voucher_id' => $request->voucher_id ?? null,
+                'discount_amount' => $discountAmount,
             ]);
 
             // ✅ Thêm sản phẩm vào order_items & cập nhật số lượng tồn kho
@@ -210,8 +211,7 @@ class OrderController extends Controller
                     'order_code' => $order->order_code,
                     'total_price' => $totalPrice,
                     'payment_method' => $paymentMethod->name,
-                    'payment_method_id' => $order->payment_method_id,
-                    'discount_amount' => $discountAmount
+                    'payment_method_id' => $order->payment_method_id
                 ]));
 
                 return $paymentResponse;
@@ -219,7 +219,7 @@ class OrderController extends Controller
 
             // ✅ Gửi email xác nhận đơn hàng nếu thanh toán tiền mặt
             if ($paymentMethod->name === 'Tiền mặt') {
-                Mail::to($order->user_email)->send(new OrderConfirmationMail($order, $discountAmount));
+                Mail::to($order->user_email)->send(new OrderConfirmationMail($order));
             }
 
             return response()->json([
@@ -334,7 +334,8 @@ class OrderController extends Controller
                 'payment_status' => $paymentStatus,
                 'order_status' => 'Chưa Xác Nhận',
                 'total_price' => $totalPrice,
-                'voucher_id' => $request->voucher_id ?? null
+                'voucher_id' => $request->voucher_id ?? null,
+                'discount_amount' => $discountAmount
             ]);
 
             // Thêm sản phẩm vào order_items
@@ -376,14 +377,13 @@ class OrderController extends Controller
                     'order_code' => $order->order_code,
                     'total_price' => $totalPrice,
                     'payment_method' => $paymentMethod,
-                    'payment_method_id' => $order->payment_method_id,
-                    'discount_amount' => $discountAmount
+                    'payment_method_id' => $order->payment_method_id
                 ]));
             }
 
             // gửi mail xác nhận đơn hàng
             if ($paymentMethod === 'Tiền mặt') {
-                Mail::to($order->user_email)->send(new OrderConfirmationMail($order, $discountAmount));
+                Mail::to($order->user_email)->send(new OrderConfirmationMail($order));
             }
             return response()->json([
                 'status' => 'success',

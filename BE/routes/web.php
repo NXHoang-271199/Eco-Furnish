@@ -26,6 +26,7 @@ use App\Http\Controllers\BannerController;
 use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SettingController;
 /*
 |--------------------------------------------------------------------------
@@ -94,6 +95,11 @@ Route::prefix('admin')->group(function () {
             Route::prefix('variants/{variant}')->name('variants.')->group(function () {
                 Route::resource('values', VariantValueController::class);
             });
+        });
+
+         // Reviews routes
+         Route::middleware(['permission:view-reviews'])->group(function () {
+            Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
         });
 
         // Users Management

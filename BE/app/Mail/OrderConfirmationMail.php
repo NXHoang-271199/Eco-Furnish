@@ -15,23 +15,20 @@ class OrderConfirmationMail extends Mailable
 {
     use Queueable, SerializesModels;
     public $order;
-    public $discountAmount;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($order, $discountAmount)
+    public function __construct($order)
     {
         $this->order = $order;
-        $this->discountAmount = $discountAmount;
     }
     public function build()
     {
         return $this->subject('Xác nhận đơn hàng')
             ->view('emails.order_confirmation')
             ->with([
-                'order' => $this->order,
-                'discountAmount' => $this->discountAmount
+                'order' => $this->order
             ]);
     }
 }

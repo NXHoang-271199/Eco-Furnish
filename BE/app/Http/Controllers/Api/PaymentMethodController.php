@@ -75,12 +75,9 @@ class PaymentMethodController extends Controller
         $amount = $request->total_price;
         $orderId = $request->order_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5174/order-success";
-        $ipnUrl = $request->notify_url ?? "https://a0f2-42-119-190-38.ngrok-free.app/api/momo/ipn";
+        $ipnUrl = $request->notify_url ?? "https://f8bd-42-119-190-38.ngrok-free.app/api/momo/ipn";
 
-        // ✅ Thêm `discount_amount` vào extraData dưới dạng JSON
-        $extraData = json_encode([
-            'discount_amount' => $request->discount_amount ?? 0
-        ]);
+        $extraData = '';
 
         // ✅ Tạo chữ ký SHA256
         $rawHash = "accessKey={$accessKey}&amount={$amount}&extraData={$extraData}&ipnUrl={$ipnUrl}&orderId={$orderId}&orderInfo={$orderInfo}&partnerCode={$partnerCode}&redirectUrl={$redirectUrl}&requestId=" . time() . "&requestType=payWithATM";
@@ -109,6 +106,7 @@ class PaymentMethodController extends Controller
     {
         try {
             $data = $request->all();
+
             if ($data['resultCode'] == 0) { // Thanh toán thành công
                 $order = Order::where('order_code', $data['orderId'])->first();
 
@@ -116,18 +114,14 @@ class PaymentMethodController extends Controller
                     return response()->json(['status' => 'error', 'message' => 'Không tìm thấy đơn hàng'], 404);
                 }
 
-                // ✅ Lấy `discount_amount` từ `extraData`
-                $extraData = json_decode($data['extraData'], true);
-                $discountAmount = $extraData['discount_amount'] ?? 0;
-
-                // Cập nhật trạng thái đơn hàng
+                // Cập nhật trạng thái đơn hàng và discount_amount nếu có
                 $order->update([
                     'payment_status' => 1,
                     'order_status' => 'Đã Xác Nhận',
                 ]);
 
-                // Gửi email xác nhận đơn hàng với số tiền giảm giá chính xác
-                Mail::to($order->user_email)->send(new OrderConfirmationMail($order, $discountAmount));
+                // Gửi email xác nhận đơn hàng với discount_amount từ order
+                Mail::to($order->user_email)->send(new OrderConfirmationMail($order));
 
                 return response()->json(['status' => 'success', 'message' => 'Thanh toán MoMo thành công'], 200);
             } else {
@@ -141,6 +135,8 @@ class PaymentMethodController extends Controller
             ], 500);
         }
     }
+
+
     // xử lý vnpay
     public function processVNPAYPayment(Request $request)
     {
@@ -161,7 +157,7 @@ class PaymentMethodController extends Controller
         $vnp_TmnCode = $config['vnp_TmnCode']; //Mã website tại VNPAY
         $vnp_HashSecret = $config['vnp_HashSecret']; //Chuỗi bí mật
 
-        $vnp_TxnRef = $request->order_code . '-' . ($request->discount_amount ?? 0);
+        $vnp_TxnRef = $request->order_code;
         $vnp_OrderInfo = "Thanh toán đơn hàng #$vnp_TxnRef qua VNPAY";
         $vnp_OrderType = 'billpayment';
         $vnp_Amount = $request->total_price * 100;
@@ -223,12 +219,8 @@ class PaymentMethodController extends Controller
             $data = $request->query(); // Lấy dữ liệu từ query string
 
             if ($data['vnp_ResponseCode'] == "00") {
-                // Tách order_code và discountAmount từ vnp_TxnRef
-                list($orderCode, $discountAmount) = explode('-', $data['vnp_TxnRef'], 2);
-                $discountAmount = (int) $discountAmount; // Chuyển về số nguyên
-
                 // Tìm đơn hàng bằng orderCode
-                $order = Order::where('order_code', $orderCode)->first();
+                $order = Order::where('order_code', $data['vnp_TxnRef'])->first();
                 if (!$order) {
                     return response()->json(['status' => 'error', 'message' => 'Không tìm thấy đơn hàng'], 404);
                 }
@@ -239,8 +231,8 @@ class PaymentMethodController extends Controller
                     'order_status' => 'Đã Xác Nhận',
                 ]);
 
-                // Gửi email xác nhận với discountAmount
-                Mail::to($order->user_email)->send(new OrderConfirmationMail($order, $discountAmount));
+                // Gửi email xác nhận với discount_amount từ order
+                Mail::to($order->user_email)->send(new OrderConfirmationMail($order));
 
                 return response()->json(['status' => 'success', 'message' => 'Thanh toán VNPAY thành công'], 200);
             } else {
@@ -253,6 +245,5 @@ class PaymentMethodController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-
     }
 }
