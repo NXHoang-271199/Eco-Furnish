@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Requests\QuickOrderRequest;
 
 class OrderController extends Controller
 {
@@ -239,22 +240,9 @@ class OrderController extends Controller
     /**
      * 📌 4. Mua ngay
      */
-    public function quickOrder(Request $request)
+    public function quickOrder(QuickOrderRequest $request)
     {
         $userId = Auth::id();
-
-        // Kiểm tra dữ liệu đầu vào
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'product_variant_id' => 'nullable|exists:product_variants,id',
-            'voucher_id' => 'nullable|exists:vouchers,id',
-            'user_name' => 'required|string',
-            'user_email' => 'required|email',
-            'user_phone' => 'required|string',
-            'user_address' => 'required|string',
-            'payment_method_id' => 'required|exists:payment_methods,id'
-        ]);
 
         DB::beginTransaction();
         try {

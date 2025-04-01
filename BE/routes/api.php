@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
+use App\Http\Controllers\Api\ReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -114,4 +115,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
     Route::post('/orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
 });
-
+// review routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/reviews', [ReviewController::class, 'store']);
+});
+Route::get('/products/{productId}/reviews', [ReviewController::class, 'getProductReviews']);
