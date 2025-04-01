@@ -46,7 +46,7 @@
         .button a {
             display: inline-block;
             padding: 12px 30px;
-            background-color: #4CAF50;
+            background-color: #405189;
             color: #ffffff !important;
             text-decoration: none;
             border-radius: 5px;
@@ -83,7 +83,7 @@
     <div class="container">
         <div class="header">
             <!-- Thêm logo của bạn ở đây -->
-            <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo">
+            {{-- <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo"> --}}
         </div>
         
         <div class="content">
