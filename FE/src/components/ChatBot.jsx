@@ -8,13 +8,20 @@ const ChatBot = () => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const [hasWelcomeMessage, setHasWelcomeMessage] = useState(false);
 
     // Load chat history from localStorage when component mounts
     useEffect(() => {
         const savedMessages = localStorage.getItem('chatHistory');
         if (savedMessages) {
             try {
-                setMessages(JSON.parse(savedMessages));
+                const parsedMessages = JSON.parse(savedMessages);
+                setMessages(parsedMessages);
+                // Kiểm tra xem đã có tin nhắn chào hay chưa
+                const hasWelcome = parsedMessages.some(
+                    msg => msg.sender === 'bot' && msg.type === 'welcome'
+                );
+                setHasWelcomeMessage(hasWelcome);
             } catch (error) {
                 console.error('Error parsing saved messages:', error);
                 localStorage.removeItem('chatHistory');
@@ -29,8 +36,45 @@ const ChatBot = () => {
         }
     }, [messages]);
 
+    // Gửi yêu cầu tin nhắn chào mừng khi mở chatbot và chưa có tin nhắn chào
+    const sendWelcomeMessage = async () => {
+        if (!hasWelcomeMessage && messages.length === 0) {
+            setIsLoading(true);
+            try {
+                const response = await axios.get('/api/chat/welcome', {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.data && response.data.success) {
+                    const welcomeMessage = {
+                        text: response.data.reply,
+                        sender: 'bot',
+                        timestamp: new Date().toISOString(),
+                        type: 'welcome'
+                    };
+
+                    setMessages([welcomeMessage]);
+                    setHasWelcomeMessage(true);
+                }
+            } catch (error) {
+                console.error('Error getting welcome message:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    };
+
     const toggleChat = () => {
-        setIsOpen(!isOpen);
+        const newIsOpen = !isOpen;
+        setIsOpen(newIsOpen);
+
+        // Nếu đang mở chatbot, gửi tin nhắn chào
+        if (newIsOpen) {
+            sendWelcomeMessage();
+        }
     };
 
     const handleInputChange = (e) => {
@@ -47,8 +91,57 @@ const ChatBot = () => {
 
     const clearChat = () => {
         setMessages([]);
+        setHasWelcomeMessage(false);
         localStorage.removeItem('chatHistory');
     };
+
+    // Xử lý thông báo đặt hàng thành công
+    const processOrderSuccess = async (orderId, orderTotal, products) => {
+        setIsLoading(true);
+        try {
+            const response = await axios.post('/api/chat/order-success', {
+                order_id: orderId,
+                order_total: orderTotal,
+                products: products
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.data && response.data.success) {
+                const botMessage = {
+                    text: response.data.reply,
+                    sender: 'bot',
+                    timestamp: new Date().toISOString(),
+                    products: response.data.products || [],
+                    isProductSearch: false,
+                    categories: response.data.categories || [],
+                    type: 'order_success'
+                };
+
+                setMessages(prevMessages => [...prevMessages, botMessage]);
+
+                // Mở chatbot để hiển thị thông báo
+                setIsOpen(true);
+            }
+        } catch (error) {
+            console.error('Error processing order success message:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Gắn hàm processOrderSuccess vào window để có thể gọi từ bên ngoài
+    useEffect(() => {
+        window.chatbotProcessOrderSuccess = processOrderSuccess;
+
+        // Cleanup function
+        return () => {
+            delete window.chatbotProcessOrderSuccess;
+        };
+    }, []);
 
     const sendMessage = async (e) => {
         e.preventDefault();

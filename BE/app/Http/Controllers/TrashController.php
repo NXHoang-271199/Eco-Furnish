@@ -28,7 +28,12 @@ class TrashController extends Controller
         $type = request()->segment(3);
         switch($type) {
             case 'trash-products':
-                $items = Product::onlyTrashed()->latest()->paginate(10);
+                $items = Product::onlyTrashed()
+                    ->with(['variants' => function($query) {
+                        $query->onlyTrashed()->orderBy('price');
+                    }])
+                    ->latest()
+                    ->paginate(10);
                 return view('admins.trash.products', compact('items'));
             case 'trash-categories':
                 $items = Category::onlyTrashed()->latest()->paginate(10);
@@ -51,21 +56,43 @@ class TrashController extends Controller
             switch($type) {
                 case 'trash-products':
                     $item = Product::onlyTrashed()->findOrFail($id);
+                    // Khôi phục sản phẩm
+                    $item->restore();
+                    
+                    // Khôi phục các ảnh gallery của sản phẩm mà vẫn còn tồn tại trong storage
+                    $galleryImages = $item->gallery()->onlyTrashed()->get();
+                    foreach ($galleryImages as $image) {
+                        if (Storage::disk('public')->exists($image->image_url)) {
+                            $image->restore();
+                        } else {
+                            // Nếu ảnh không tồn tại trong storage, xóa vĩnh viễn record
+                            $image->forceDelete();
+                        }
+                    }
+                    
+                    // Khôi phục các biến thể của sản phẩm
+                    $item->variants()->onlyTrashed()->restore();
+                    
+                    // Kiểm tra thêm nếu có relation khác (như ProductVariant)
+                    if (method_exists($item, 'productVariant')) {
+                        $item->productVariant()->onlyTrashed()->restore();
+                    }
                     break;
                 case 'trash-categories':
                     $item = Category::onlyTrashed()->findOrFail($id);
+                    $item->restore();
                     break;
                 case 'trash-variants':
                     $item = Variant::onlyTrashed()->findOrFail($id);
+                    $item->restore();
                     break;
                 case 'trash-variant-values':
                     $item = VariantValue::onlyTrashed()->findOrFail($id);
+                    $item->restore();
                     break;
                 default:
                     abort(404);
             }
-
-            $item->restore();
             
             // Xử lý URL redirect
             $redirectUrl = '/admin/trash/';
@@ -110,14 +137,24 @@ class TrashController extends Controller
                     $item = Product::onlyTrashed()->findOrFail($id);
                     
                     // Xóa các product variants trước
-                    $item->productVariant()->forceDelete();
+                    $item->variants()->onlyTrashed()->forceDelete();
                     
-                    if ($item->image_thumbnail) {
-                        Storage::disk('public')->delete($item->image_thumbnail);
+                    // Xóa ảnh thumbnail khỏi storage
+                    if ($item->image_thumnail) {
+                        Storage::disk('public')->delete($item->image_thumnail);
                     }
-                    foreach ($item->gallery as $image) {
+                    
+                    // Lấy các gallery images trước khi xóa các bản ghi
+                    $galleryImages = $item->gallery()->onlyTrashed()->get();
+                    
+                    // Xóa files ảnh gallery khỏi storage
+                    foreach ($galleryImages as $image) {
                         Storage::disk('public')->delete($image->image_url);
                     }
+                    
+                    // Xóa các bản ghi gallery
+                    $item->gallery()->onlyTrashed()->forceDelete();
+                    
                     break;
                 case 'trash-categories':
                     $item = Category::onlyTrashed()->findOrFail($id);
