@@ -56,6 +56,7 @@ class OrderController extends Controller
             'Đã Nhận' => Order::where('order_status', 'Đã Nhận'),
             'Hoàn Hàng' => Order::where('order_status', 'Hoàn Hàng'),
             'Hủy Đơn' => Order::where('order_status', 'Hủy Đơn'),
+            'Từ Chối Hoàn Hàng' => Order::where('order_status', 'Từ Chối Hoàn Hàng'),
         ];
 
         $groupedOrders = [];
