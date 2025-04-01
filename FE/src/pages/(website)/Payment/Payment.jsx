@@ -3,11 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { clearSelectedItems } from "../../../store/cartSlice";
 import axios from "axios";
+import { useLocation } from "react-router-dom";
 
 const Payment = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { selectedItems, discount } = useSelector((state) => state.cart);
+  const { state } = useLocation(); // Lấy dữ liệu từ state của navigate
+  const selectedProducts = state?.selectedProducts || []; // Lấy selectedProducts từ state
+  const total = state?.total || 0; // Lấy tổng tiền từ state
   const [userName, setUserName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [address, setAddress] = useState({
@@ -21,6 +24,7 @@ const Payment = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
     // Lấy địa chỉ từ localStorage khi component mount
@@ -34,11 +38,11 @@ const Payment = () => {
     const userData = JSON.parse(localStorage.getItem("userData")) || {};
     setUserName(userData.name || "Khách"); // Nếu không có tên thì hiển thị "Khách"
 
-    // Nếu không có sản phẩm được chọn, quay lại trang giỏ hàng
-    // if (!selectedItems || selectedItems.length === 0) {
-    //   navigate("/cart");
-    // }
-  }, [selectedItems, navigate]);
+    // Kiểm tra nếu không có sản phẩm được chọn
+    if (!selectedProducts || selectedProducts.length === 0) {
+      navigate("/cart");
+    }
+  }, [selectedProducts, navigate]);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -48,16 +52,13 @@ const Payment = () => {
   };
 
   const calculateSubtotal = () => {
-    return selectedItems.reduce((total, item) => {
-      return (
-        total +
-        (item.product.discount_price || item.product.price) * item.quantity
-      );
+    return selectedProducts.reduce((total, item) => {
+      return total + (Number(item.total_price) || 0); // Sử dụng total_price từ API
     }, 0);
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() - discount;
+    return calculateSubtotal() - (discount || 0);
   };
 
   const handlePayment = async () => {
@@ -90,15 +91,9 @@ const Payment = () => {
     // tạo order
 
     try {
-      // Chuẩn bị dữ liệu gửi lên, đảm bảo variant_details là mảng
+      const token = localStorage.getItem("authToken");
       const orderData = {
-        // items: selectedItems.map((item) => ({
-        //   product_id: item.product.id,
-        //   quantity: item.quantity,
-        //   variant_details: Array.isArray(item.variant_details)
-        //     ? item.variant_details
-        //     : [],
-        // })),/
+        cart_items: selectedProducts.map((item) => item.id),
         user_name: address.name,
         user_email: address.email,
         user_address: `${address.address}, ${address.ward}, ${address.district}, ${address.province}`,
@@ -106,17 +101,8 @@ const Payment = () => {
         payment_method_id: 1,
       };
 
-      // console.log("Dữ liệu gửi lên:", orderData); // Log để kiểm tra
-
-      // const response_payment_url = await axios.get(
-      //   `http://localhost:8000/api/payment-methods/${orderData.payment_method_id}`
-      // );
-
-      // console.log(response_payment_url);
-
-      const token = localStorage.getItem("authToken");
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/orders",
+        "http://localhost:8000/api/orders",
         orderData,
         {
           headers: {
@@ -126,17 +112,12 @@ const Payment = () => {
         }
       );
 
-      // if (response.data.status === "success") {
-      //   // Xóa các sản phẩm đã chọn khỏi Redux store
-      //   dispatch(clearSelectedItems());
-
-      //   // Nếu thanh toán online, chuyển hướng đến trang thanh toán
-      //   if (["MoMo", "VNPAY"].includes(paymentMethod)) {
-      //     window.location.href = response.data.payment_url;
-      //   } else {
-      //     navigate("/order-success");
-      //   }
-      // }
+      if (response.status === 200 || response.status === 201) {
+        // Xóa các sản phẩm đã chọn khỏi Redux store
+        // dispatch(clearSelectedItems());
+        // Chuyển hướng đến trang thành công
+        navigate("/order-success");
+      }
     } catch (err) {
       console.error(err);
       setError(
@@ -296,7 +277,7 @@ const Payment = () => {
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <h3 className="font-semibold">Đơn hàng của bạn</h3>
           <div className="mt-4 space-y-4">
-            {selectedItems.map((item) => (
+            {selectedProducts.map((item) => (
               <div
                 key={`${item.product.id}-${JSON.stringify(
                   item.variant_details

@@ -5,6 +5,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import {
+  setSelectedItems,
+  setSelectedProducts,
+} from "../../../store/cartSlice";
 
 const Cart = () => {
   const navigate = useNavigate(); // Hook để điều hướng giữa các trang trong React Router
@@ -14,6 +19,7 @@ const Cart = () => {
   const [localSelectedItems, setLocalSelectedItems] = useState([]); // State lưu danh sách các sản phẩm được chọn trong giỏ hàng
   const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false); // State kiểm tra xem số lượng đang được cập nhật hay không (hiện bị comment)
   const [stockError, setStockError] = useState(""); // State lưu lỗi liên quan đến tồn kho
+  const dispatch = useDispatch();
 
   // code dat
   const [cart, setCart] = useState({ items: [] });
@@ -168,66 +174,32 @@ const Cart = () => {
     }
   };
 
-  // Hàm tạo mã giảm giá
-  // const addDiscount = async () => {
-  //   const token = localStorage.getItem("authToken");
-  //   try {
-  //     const response = await axios.post(
-  //       "http://localhost:8000/api/discounts/verify",
-  //       {
-  //         discount_code: discountCode,
-  //       },
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-  //     if (response.status === 200) {
-  //       setDiscount(response.data.discount);
-  //     }
-  //   } catch (error) {
-  //     console.error("Lỗi xử lý:", error);
-  //   }
-  // };
-
   // Hàm tạo đơn hàng
   const handleCheckout = async () => {
-    // Kiểm tra có sản phẩm được chọn không
     if (localSelectedItems.length === 0) {
       toast.error("Vui lòng chọn ít nhất một sản phẩm");
       return;
     }
 
-    // Lấy thông tin các sản phẩm đã chọn từ giỏ hàng
     const selectedProducts = cart.items.filter((item) =>
       localSelectedItems.includes(item.id)
     );
 
-    console.log("Các sản phẩm đã chọn:", selectedProducts); // Kiểm tra dữ liệu
+    console.log("Các sản phẩm đã chọn:", selectedProducts);
 
-    // Kiểm tra xem có lấy được sản phẩm không
     if (!selectedProducts || selectedProducts.length === 0) {
       toast.error("Không thể lấy thông tin sản phẩm đã chọn");
       return;
     }
 
-    try {
-      // Lưu vào localStorage
-      localStorage.setItem(
-        "selectedProducts",
-        JSON.stringify({
-          items: selectedProducts,
-          total: calculateSelectedTotal(),
-        })
-      );
+    const total = calculateSelectedTotal();
 
-      // Chuyển đến trang Payment
-      navigate("/payment");
-    } catch (error) {
-      console.error("Lỗi khi lưu dữ liệu:", error);
-      toast.error("Có lỗi xảy ra, vui lòng thử lại");
-    }
+    navigate("/payment", {
+      state: {
+        selectedProducts: selectedProducts,
+        total: total,
+      },
+    });
   };
 
   return (
