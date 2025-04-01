@@ -100,7 +100,7 @@
                         @endif
 
                         <!-- Nội dung đánh giá -->
-                        <div class="row">
+                        <div class="row mt-3">
                             <div class="col-12">
                                 <div class="form-group">
                                     <label>Nội dung đánh giá:</label>

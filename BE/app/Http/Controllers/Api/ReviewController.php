@@ -33,7 +33,7 @@ class ReviewController extends Controller
             return response()->json(['success' => false, 'message' => 'Đơn hàng không hợp lệ'], 404);
         }
 
-        if (!in_array($order->order_status, ['Đã Nhận', 'Hoàn Hàng'])) {
+        if (!in_array($order->order_status, ['Đã Nhận', 'Hoàn Hàng', 'Từ Chối Hoàn Hàng'])) {
             return response()->json(['success' => false, 'message' => 'Bạn chỉ có thể đánh giá sản phẩm từ những đơn hàng đã hoàn tất'], 403);
         }
 
@@ -88,8 +88,10 @@ class ReviewController extends Controller
      */
     public function getProductReviews($productId)
     {
+        // Lấy đánh giá cho sản phẩm, chỉ lấy những đánh giá không bị ẩn
         $reviews = Review::with('user')
             ->where('product_id', $productId)
+            ->where('is_hidden', false)  // Điều kiện để chỉ lấy đánh giá không bị ẩn
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($review) {
