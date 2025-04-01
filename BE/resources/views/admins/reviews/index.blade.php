@@ -85,7 +85,7 @@
                                             <span class="badge bg-success" style="font-size: 12px">{{ $product->total_reviews }}</span>
                                         </td>
                                         <td>
-                                            <a href="{{ route('comments.product', $product->id) }}"
+                                            <a href="{{ route('reviews.product', $product->id) }}"
                                                 class="btn btn-sm btn-info">
                                                 <i class="ri-star-fill text-warning"></i> Xem đánh giá
                                             </a>

@@ -97,9 +97,12 @@ Route::prefix('admin')->group(function () {
             });
         });
 
-         // Reviews routes
-         Route::middleware(['permission:view-reviews'])->group(function () {
-            Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+        // Reviews routes
+        Route::middleware(['permission:view-reviews'])->group(function () {
+            Route::resource('reviews', ReviewController::class)->only('index', 'show');
+            Route::get('products/{product}/reviews', [ReviewController::class, 'productReviews'])->name('reviews.product');
+            Route::post('reviews/toggle/{reviewId}', [ReviewController::class, 'toggleReviewVisibility'])->name('reviews.toggle');
+            Route::get('user/{user}/info', [ReviewController::class, 'userInfo'])->name('reviews.user-info');
         });
 
         // Users Management
