@@ -85,9 +85,16 @@ const Payment = () => {
     // Lưu địa chỉ vào localStorage
     localStorage.setItem("userAddress", JSON.stringify(address));
 
-    // phương thức thanh toán: MoMo, VNPAY, COD
-
-    // tạo order
+    // Lưu thông tin đơn hàng vào localStorage
+    localStorage.setItem(
+      "orderInfo",
+      JSON.stringify({
+        products: selectedProducts,
+        total: calculateTotal(),
+        payment_method: paymentMethod,
+        order_date: new Date().toISOString(),
+      })
+    );
 
     try {
       const token = localStorage.getItem("authToken");
@@ -97,9 +104,10 @@ const Payment = () => {
         user_email: address.email,
         user_address: `${address.address}, ${address.ward}, ${address.district}, ${address.province}`,
         user_phone: address.phone,
-        payment_method_id: 1,
+        payment_method_id: 1, // Sử dụng ID 1 cho MoMo như trong ảnh
       };
 
+      // Gọi trực tiếp API orders - KHÔNG gọi payment/process
       const response = await axios.post(
         "http://localhost:8000/api/orders",
         orderData,
@@ -111,14 +119,36 @@ const Payment = () => {
         }
       );
 
+      // Kiểm tra response
+      console.log("Order response:", response.data);
+
       if (response.status === 200 || response.status === 201) {
-        // Xóa các sản phẩm đã chọn khỏi Redux store
-        // dispatch(clearSelectedItems());
-        // Chuyển hướng đến trang thành công
-        navigate("/order-success");
+        if (paymentMethod === "MoMo") {
+          // Nếu trong response có payUrl (như hình ảnh của bạn), redirect đến đó
+          if (response.data && response.data.payUrl) {
+            window.location.href = response.data.payUrl;
+          } else {
+            // Nếu không có payUrl, có thể cần kiểm tra cấu trúc response
+            console.error(
+              "Không tìm thấy payUrl trong response:",
+              response.data
+            );
+            setError("Không tìm thấy đường dẫn thanh toán");
+          }
+        } else if (paymentMethod === "VNPAY") {
+          // Xử lý VNPAY nếu cần
+          if (response.data && response.data.data) {
+            window.location.href = response.data.data;
+          } else {
+            setError("Không nhận được đường dẫn thanh toán từ VNPAY");
+          }
+        } else {
+          // Thanh toán COD, chuyển hướng trực tiếp
+          navigate("/order-success");
+        }
       }
     } catch (err) {
-      console.error(err);
+      console.error("Lỗi khi gọi API:", err);
       setError(
         err.response?.data?.message || "Có lỗi xảy ra khi xử lý đơn hàng"
       );
