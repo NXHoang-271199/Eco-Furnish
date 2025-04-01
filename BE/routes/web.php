@@ -149,6 +149,8 @@ Route::prefix('admin')->group(function () {
             Route::resource('orders', OrderController::class);
             Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
             Route::get('orders/{order}/detail', [OrderController::class, 'show'])->name('orders.detail');
+            Route::post('/orders/{orderId}/refund/approve/{refundRequestId}', [OrderController::class, 'approveRefundRequest'])->name('order.refund.approve');
+            Route::post('/orders/{orderId}/refund/reject/{refundRequestId}', [OrderController::class, 'rejectRefundRequest'])->name('order.refund.reject');
         });
 
 

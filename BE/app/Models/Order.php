@@ -40,4 +40,8 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+    public function refundRequest()
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
 }

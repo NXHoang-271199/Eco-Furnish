@@ -82,6 +82,23 @@
                             </div>
                         </div>
 
+                        <!-- Hình ảnh đánh giá -->
+                        @if ($review->images && count($review->images) > 0)
+                            <div class="row">
+                                <div class="col-12">
+                                    <label>Hình ảnh đính kèm:</label>
+                                    <div class="row g-1"> {{-- Thêm g-1 để giảm khoảng cách --}}
+                                        @foreach ($review->images as $image)
+                                            <div class="col-auto"> {{-- Sử dụng col-auto để ảnh không bị dàn trải quá rộng --}}
+                                                <img src="{{ Storage::url($image) }}" alt="Ảnh đánh giá"
+                                                    class="img-fluid rounded shadow-sm" style="max-width: 100px;">
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- Nội dung đánh giá -->
                         <div class="row">
                             <div class="col-12">
@@ -93,24 +110,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Hình ảnh đánh giá -->
-                        @if ($review->images && count($review->images) > 0)
-                            <div class="row">
-                                <div class="col-12">
-                                    <label>Hình ảnh đính kèm:</label>
-                                    <div class="row">
-                                        @foreach ($review->images as $image)
-                                            <div class="col-md-3 col-sm-4 col-6 mb-3">
-                                                <img src="{{ Storage::url($image) }}" alt="Ảnh đánh giá"
-                                                    class="img-fluid rounded shadow-sm">
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-
                     </div>
 
                     <!-- /.card-body -->
