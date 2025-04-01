@@ -8,8 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Review extends Model
 {
     use HasFactory;
-    protected $fillable = ['user_id', 'order_id', 'product_id', 'rating', 'review_text', 'is_hidden'];
-
+    protected $fillable = ['user_id', 'order_id', 'product_id', 'rating', 'review_text', 'is_hidden', 'images'];
+    protected $casts = [
+        'images' => 'array',
+    ];
     public function user() {
         return $this->belongsTo(User::class);
     }
@@ -17,12 +19,7 @@ class Review extends Model
     public function product() {
         return $this->belongsTo(Product::class);
     }
-
-    public function images() {
-        return $this->hasMany(ReviewImage::class);
-    }
-
-    public function replies() {
-        return $this->hasMany(ReviewReply::class);
+    public function order() {
+        return $this->belongsTo(Order::class);
     }
 }

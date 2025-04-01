@@ -14,7 +14,8 @@ use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
-use App\Http\Controllers\Api\DiscountController;
+use App\Http\Controllers\Api\ReviewController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -113,12 +114,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{id}', [OrderController::class, 'show']); // Chi tiết đơn hàng
     Route::post('/orders', [OrderController::class, 'createOrder']); // Tạo đơn hàng
     Route::post('/orders/buy-now', [OrderController::class, 'quickOrder']); // Tạo đơn hàng nhanh
-    Route::post('/orders/{id}/refund', [OrderController::class, 'refundOrder']); // Hoàn hàng
+    Route::post('/orders/{id}/request-refund', [OrderController::class, 'requestRefund']); // Gửi yêu cầu hoàn hàng
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
     Route::post('/orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
 });
-
-
-// Discount routes
-Route::post('/discounts/verify', [DiscountController::class, 'verify']);
-
+// review routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
+});
+Route::get('/products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm

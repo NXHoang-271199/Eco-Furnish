@@ -2,81 +2,104 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Order;
-use App\Models\Review;
-use App\Models\ReviewImage;
-use App\Models\ReviewReply;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReviewRequest;
+use App\Models\Review;
+use App\Models\Order;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ReviewController extends Controller
 {
-    // 1. Đánh giá sản phẩm
-    public function store(Request $request)
+    /**
+     * Tạo đánh giá mới kèm hình ảnh
+     */
+    public function store(ReviewRequest $request)
     {
-        $request->validate([
-            'order_id' => 'required|exists:orders,id',
-            'product_id' => 'required|exists:products,id',
-            'rating' => 'required|integer|min:1|max:5',
-            'review_text' => 'nullable|string',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg|max:2048',
-        ]);
+        $userId = Auth::id();
+        $productId = $request->product_id;
 
-        $order = Order::where('id', $request->order_id)
-            ->where('user_id', auth()->id())
-            ->whereHas('products', function ($query) use ($request) {
-                $query->where('product_id', $request->product_id);
+        // Kiểm tra xem người dùng có đơn hàng chứa sản phẩm không
+        $order = Order::where('user_id', $userId)
+            ->whereHas('orderItems', function ($query) use ($productId) {
+                $query->where('product_id', $productId);
             })
+            ->orderBy('created_at', 'desc') // Lấy đơn mới nhất
             ->first();
 
         if (!$order) {
-            return response()->json(['error' => 'Bạn chưa mua sản phẩm này hoặc đơn hàng không chứa sản phẩm này.'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa mua sản phẩm này.'
+            ], 403);
         }
 
-        if (Review::where('user_id', auth()->id())
-            ->where('order_id', $request->order_id)
-            ->where('product_id', $request->product_id)
-            ->exists()) {
-            return response()->json(['error' => 'Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi.'], 400);
+        // Kiểm tra trạng thái đơn hàng có đủ điều kiện để đánh giá không
+        if (!in_array($order->order_status, ['Đã Nhận', 'Hoàn Hàng', 'Từ Chối Hoàn Hàng'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chỉ có thể đánh giá khi đơn hàng đã hoàn tất.'
+            ], 403);
         }
 
-        $review = Review::create([
-            'user_id' => auth()->id(),
-            'order_id' => $request->order_id,
-            'product_id' => $request->product_id,
-            'rating' => $request->rating,
-            'review_text' => $request->review_text,
-        ]);
+        // Kiểm tra xem người dùng đã đánh giá sản phẩm này chưa
+        $existingReview = Review::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->where('order_id', $order->id)
+            ->exists();
 
-        if ($request->has('images')) {
+        if ($existingReview) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã đánh giá sản phẩm này rồi.'
+            ], 403);
+        }
+
+        // Xử lý upload hình ảnh nếu có
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                $path = $image->store('review_images', 'public');
-                ReviewImage::create([
-                    'review_id' => $review->id,
-                    'image_url' => $path,
-                ]);
+                $path = $image->store('reviews', 'public');
+                $imagePaths[] = $path;
             }
         }
 
-        return response()->json(['success' => 'Đánh giá đã được gửi.', 'review' => $review], 201);
-    }
-
-    public function reply(Request $request, $id)
-    {
-        $request->validate(['reply_text' => 'required|string']);
-
-        $review = Review::findOrFail($id);
-        if ($review->user_id != auth()->id()) {
-            return response()->json(['error' => 'Bạn không thể phản hồi đánh giá này.'], 403);
-        }
-
-        $reply = ReviewReply::create([
-            'review_id' => $id,
-            'user_id' => auth()->id(),
-            'reply_text' => $request->reply_text,
+        // Lưu đánh giá
+        $review = Review::create([
+            'user_id' => $userId,
+            'product_id' => $productId,
+            'order_id' => $order->id,
+            'rating' => $request->rating,
+            'review_text' => $request->review_text,
+            'images' => json_encode($imagePaths),
         ]);
-        return response()->json(['success' => 'Bạn đã phản hồi đánh giá.', 'reply' => $reply], 201);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đánh giá của bạn đã được gửi thành công',
+            'data' => $review
+        ]);
+    }
+    /**
+     * Lấy danh sách đánh giá của sản phẩm
+     */
+    public function getProductReviews($productId)
+    {
+        // Lấy đánh giá cho sản phẩm, chỉ lấy những đánh giá không bị ẩn
+        $reviews = Review::with('user')
+            ->where('product_id', $productId)
+            ->where('is_hidden', false)  // Điều kiện để chỉ lấy đánh giá không bị ẩn
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($review) {
+                $review->images = json_decode($review->images, true); // Giải mã JSON
+                return $review;
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $reviews
+        ]);
     }
 }

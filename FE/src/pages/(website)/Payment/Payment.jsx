@@ -7,7 +7,6 @@ import { useLocation } from "react-router-dom";
 
 const Payment = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { state } = useLocation(); // Lấy dữ liệu từ state của navigate
   const selectedProducts = state?.selectedProducts || []; // Lấy selectedProducts từ state
   const total = state?.total || 0; // Lấy tổng tiền từ state
@@ -269,7 +268,7 @@ const Payment = () => {
               disabled={loading}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? "Đang xử lý..." : "Hoàn tất đơn hàng"}
+              {loading ? "Đang xử lý..." : "Thanh toán đơn hàng"}
             </button>
           </div>
         </div>
@@ -277,53 +276,62 @@ const Payment = () => {
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <h3 className="font-semibold">Đơn hàng của bạn</h3>
           <div className="mt-4 space-y-4">
-            {selectedProducts.map((item) => (
-              <div
-                key={`${item.product.id}-${JSON.stringify(
-                  item.variant_details
-                )}`}
-                className="flex items-center space-x-4"
-              >
-                <div className="relative w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
-                  <img
-                    src={`http://localhost:8000/storage/${item.product.image_thumnail}`}
-                    alt={item.product.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.src =
-                        "https://via.placeholder.com/80x80?text=No+Image";
-                    }}
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{item.product.name}</p>
-                  <div className="mt-1 space-x-2">
-                    {item.variant_details &&
-                      Array.isArray(item.variant_details) &&
-                      item.variant_details.map((variant, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-gray-100"
-                        >
-                          {variant.name}: {variant.value}
-                        </span>
-                      ))}
+            {selectedProducts.map((item) => {
+              const price = item.product_variant
+                ? item.product_variant.discount_price ||
+                  item.product_variant.price
+                : item.product.discount_price || item.product.price;
+
+              return (
+                <div
+                  key={`${item.product.id}-${JSON.stringify(
+                    item.product_variant?.variant_details
+                  )}`}
+                  className="flex items-center space-x-4"
+                >
+                  <div className="relative w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                    <img
+                      src={`http://localhost:8000/storage/${item.product.image_thumnail}`}
+                      alt={item.product.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src =
+                          "https://via.placeholder.com/80x80?text=No+Image";
+                      }}
+                    />
                   </div>
-                  <div className="mt-1 text-sm text-gray-500">
-                    {formatPrice(
-                      item.product.discount_price || item.product.price
-                    )}{" "}
-                    x {item.quantity}
+                  <div className="flex-1">
+                    <p className="font-medium">{item.product.name}</p>
+                    <div className="mt-1 space-x-2">
+                      {item.variant_details &&
+                        Array.isArray(item.variant_details) &&
+                        item.variant_details.map((variant, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-gray-100"
+                          >
+                            {variant.name}: {variant.value}
+                          </span>
+                        ))}
+                    </div>
+                    <div className="mt-1 text-sm text-gray-500">
+                      {/* {formatPrice(
+                        item.product.discount_price || item.product.price
+                      )}{" "}
+                      x {item.quantity} */}
+                      {formatPrice(price)} x {item.quantity}
+                    </div>
+                  </div>
+                  <div className="font-medium">
+                    {/* {formatPrice(
+                      (item.product.discount_price || item.product.price) *
+                        item.quantity
+                    )} */}
+                    {formatPrice(item.total_price)}
                   </div>
                 </div>
-                <div className="font-medium">
-                  {formatPrice(
-                    (item.product.discount_price || item.product.price) *
-                      item.quantity
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-6 border-t pt-4">

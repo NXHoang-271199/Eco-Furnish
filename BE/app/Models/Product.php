@@ -43,8 +43,11 @@ class Product extends Model
      */
     public function variants()
     {
-        return $this->hasMany(ProductVariant::class)->withTrashed();
+        return $this->hasMany(ProductVariant::class)
+            ->select(['id', 'product_id', 'sku', 'price', 'discount_price', 'variant_details', 'quantity', 'status'])
+            ->withTrashed();
     }
+
 
     /**
      * Get the gallery images for the product.
@@ -89,7 +92,4 @@ class Product extends Model
             ->orderBy('average_rating', $sort)
             ->orderBy('total_reviews', $sort);
     }
-    
-
-
 }

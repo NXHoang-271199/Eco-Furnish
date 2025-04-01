@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\Order;
 use App\Models\Review;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -28,31 +30,32 @@ class ReviewController extends Controller
 
         return view('admins.reviews.index', compact('products', 'search', 'sort'));
     }
-
-
-
-
-
-    public function viewProductReviews($productId)
+    public function productReviews(Product $product, Request $request)
     {
-        $productReviews = Review::with(['user', 'images', 'replies'])
-            ->where('product_id', $productId)
-            ->get();
+        $reviews = Review::with(['user', 'product'])
+            ->where('product_id', $product->id)
+            ->when($request->search, function ($query, $search) {
+                return $query->where('review_text', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
-        return view('admin.reviews.detail', compact('productReviews'));
+        return view('admins.reviews.product_reviews', compact('product', 'reviews'));
     }
-    public function replyReview(Request $request, $reviewId)
+
+    public function show($id)
     {
-        $request->validate(['reply_text' => 'required|string']);
+        $review = Review::with('user', 'product')->findOrFail($id);
 
-        $review = Review::findOrFail($reviewId);
+        // Giải mã images nếu cần
+        if (is_string($review->images)) {
+            $review->images = json_decode($review->images, true);
+        }
 
-        $review->replies()->create([
-            'user_id' => auth()->id(),
-            'reply_text' => $request->reply_text
-        ]);
-
-        return back()->with('success', 'Admin đã phản hồi đánh giá!');
+        return view('admins.reviews.show', compact('review'));
     }
 
     public function toggleReviewVisibility($reviewId)
@@ -61,5 +64,15 @@ class ReviewController extends Controller
         $review->update(['is_hidden' => !$review->is_hidden]);
 
         return back()->with('success', $review->is_hidden ? 'Đánh giá đã bị ẩn' : 'Đánh giá đã hiển thị lại');
+    }
+    public function userInfo(User $user)
+    {
+        // Lấy tổng số đánh giá của người dùng
+        $reviewCount = Review::where('user_id', $user->id)->count();  // Giả sử Review là model lưu thông tin đánh giá
+
+        // Lấy tổng số đơn hàng của người dùng
+        $orderCount = Order::where('user_id', $user->id)->count(); // Hoặc $user->orders->count() nếu bạn đã định nghĩa quan hệ orders
+
+        return view('admins.reviews.user_info', compact('user', 'reviewCount', 'orderCount'));
     }
 }

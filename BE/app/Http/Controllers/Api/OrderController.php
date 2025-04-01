@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Models\VoucherUsage;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
+use App\Models\RefundRequest;
 use App\Models\ProductVariant;
 use App\Models\OrderNotification;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ use App\Mail\OrderConfirmationMail;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\QuickOrderRequest;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Api\PaymentMethodController;
@@ -79,7 +81,6 @@ class OrderController extends Controller
             ], 404);
         }
     }
-
     /**
      * 📌 3. Tạo đơn hàng (Checkout) & Trừ số lượng sản phẩm
      */
@@ -239,22 +240,9 @@ class OrderController extends Controller
     /**
      * 📌 4. Mua ngay
      */
-    public function quickOrder(Request $request)
+    public function quickOrder(QuickOrderRequest $request)
     {
         $userId = Auth::id();
-
-        // Kiểm tra dữ liệu đầu vào
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'product_variant_id' => 'nullable|exists:product_variants,id',
-            'voucher_id' => 'nullable|exists:vouchers,id',
-            'user_name' => 'required|string',
-            'user_email' => 'required|email',
-            'user_phone' => 'required|string',
-            'user_address' => 'required|string',
-            'payment_method_id' => 'required|exists:payment_methods,id'
-        ]);
 
         DB::beginTransaction();
         try {
@@ -379,7 +367,6 @@ class OrderController extends Controller
                     'payment_method_id' => $order->payment_method_id
                 ]));
             }
-
             // gửi mail xác nhận đơn hàng
             if ($paymentMethod === 'Tiền mặt') {
                 Mail::to($order->user_email)->send(new OrderConfirmationMail($order));
@@ -420,8 +407,11 @@ class OrderController extends Controller
                 return response()->json(['status' => 'error', 'message' => 'Chỉ có thể xác nhận đơn hàng đã giao'], 400);
             }
 
-            // Cập nhật trạng thái đơn hàng
-            $order->update(['order_status' => 'Đã Nhận']);
+            // Cập nhật trạng thái đơn hàng và trạng thái thanh toán
+            $order->update([
+                'order_status' => 'Đã Nhận',
+                'payment_status' => 1 // Cập nhật trạng thái thanh toán
+            ]);
 
             DB::commit();
             return response()->json([
@@ -438,71 +428,62 @@ class OrderController extends Controller
             ], 500);
         }
     }
-
     /**
      * 📌 6. Hoàn hàng
      */
-    public function refundOrder($orderId, Request $request)
+    public function requestRefund($orderId, Request $request)
     {
-        DB::beginTransaction();
-        try {
-            $order = Order::with('orderItems')->find($orderId);
-            if (!$order) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Không tìm thấy đơn hàng'
-                ], 404);
-            }
+        $userId = Auth::id();
+        // Tìm đơn hàng của người dùng
+        $order = Order::where('id', $orderId)
+            ->where('user_id', $userId)
+            ->first();
 
-            if ($order->order_status !== 'Đã Giao Hàng') {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Chỉ có thể hoàn hàng khi đơn đã giao'
-                ], 400);
-            }
-
-            // Nếu hoàn toàn bộ đơn hàng
-            if ($request->full_refund) {
-                foreach ($order->orderItems as $item) {
-                    if ($item->product_variant_id) {
-                        ProductVariant::where('id', $item->product_variant_id)->increment('quantity', $item->quantity);
-                    } else {
-                        Product::where('id', $item->product_id)->increment('quantity', $item->quantity);
-                    }
-                }
-            } else {
-                // Hoàn từng sản phẩm theo danh sách gửi từ request
-                foreach ($request->items as $itemData) {
-                    $orderItem = OrderItem::where('id', $itemData['order_item_id'])->first();
-                    if ($orderItem) {
-                        if ($orderItem->product_variant_id) {
-                            ProductVariant::where('id', $orderItem->product_variant_id)->increment('quantity', $itemData['quantity']);
-                        } else {
-                            Product::where('id', $orderItem->product_id)->increment('quantity', $itemData['quantity']);
-                        }
-                    }
-                }
-            }
-
-            // Cập nhật trạng thái đơn hàng
-            $order->update(['order_status' => 'Hoàn Hàng']);
-
-            DB::commit();
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Đã hoàn hàng thành công'
-            ], 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
+        // Kiểm tra nếu không tìm thấy đơn hàng
+        if (!$order) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Lỗi khi hoàn hàng',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Không tìm thấy đơn hàng'
+            ], 400);
         }
+        // Kiểm tra nếu trạng thái đơn hàng là 'Hoàn Hàng' hoặc 'Từ Chối Hoàn Hàng', không cho phép gửi yêu cầu hoàn hàng nữa
+        if (in_array($order->order_status, ['Hoàn Hàng', 'Từ Chối Hoàn Hàng'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng trước đó, không thể gửi lại yêu cầu'
+            ], 400);
+        }
+        // Kiểm tra trạng thái của đơn hàng: chỉ cho phép yêu cầu hoàn hàng khi trạng thái là 'Đã Giao'
+        if ($order->order_status !== 'Đã Giao') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Yêu cầu hoàn hàng chỉ có thể gửi khi đơn hàng đã giao'
+            ], 400);
+        }
+        // Kiểm tra nếu đơn hàng đã có yêu cầu hoàn hàng nào đang trong trạng thái "Chờ Duyệt"
+        $existingRefundRequest = RefundRequest::where('order_id', $orderId)
+            ->whereIn('status', ['Chờ Duyệt', 'Đã Duyệt', 'Đã Từ Chối'])
+            ->first();
+
+        if ($existingRefundRequest) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng không thể gửi lại yêu cầu'
+            ], 400);
+        }
+        // Tạo yêu cầu hoàn hàng (Lý do có thể là null)
+        RefundRequest::create([
+            'order_id' => $orderId,
+            'user_id' => $userId,
+            'reason' => $request->reason,
+            'status' => 'Chờ Duyệt',  // Trạng thái mặc định là "Chờ Duyệt"
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Yêu cầu hoàn hàng của bạn đã được gửi, vui lòng chờ xét duyệt'
+        ], 200);
     }
-
-
     /**
      * 📌 7. Hủy đơn hàng
      */
