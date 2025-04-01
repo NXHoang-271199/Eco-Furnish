@@ -61,13 +61,6 @@ class VoucherApiController extends Controller
     {
         try {
             $userId = Auth::id();
-            if (!$userId) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Bạn cần đăng nhập để sử dụng voucher!'
-                ], 401);
-            }
-
             if (!$request->has('voucher_code') || !$request->has('subtotal')) {
                 return response()->json([
                     'status' => 'error',
@@ -85,7 +78,6 @@ class VoucherApiController extends Controller
                 ->where('end_date', '>=', now())
                 ->where('usage_limit', '>', 0)
                 ->first();
-
             if (!$voucher) {
                 return response()->json([
                     'status' => 'error',
