@@ -81,7 +81,6 @@ class OrderController extends Controller
             ], 404);
         }
     }
-
     /**
      * 📌 3. Tạo đơn hàng (Checkout) & Trừ số lượng sản phẩm
      */
@@ -368,7 +367,6 @@ class OrderController extends Controller
                     'payment_method_id' => $order->payment_method_id
                 ]));
             }
-
             // gửi mail xác nhận đơn hàng
             if ($paymentMethod === 'Tiền mặt') {
                 Mail::to($order->user_email)->send(new OrderConfirmationMail($order));
@@ -430,8 +428,6 @@ class OrderController extends Controller
             ], 500);
         }
     }
-
-
     /**
      * 📌 6. Hoàn hàng
      */
@@ -488,14 +484,6 @@ class OrderController extends Controller
             'message' => 'Yêu cầu hoàn hàng của bạn đã được gửi, vui lòng chờ xét duyệt'
         ], 200);
     }
-
-
-
-
-
-
-
-
     /**
      * 📌 7. Hủy đơn hàng
      */
