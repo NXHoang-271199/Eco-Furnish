@@ -1081,5 +1081,192 @@ Câu trả lời của bạn KHÔNG nên dài quá 1-2 câu.";
         }
     }
 
+    /**
+     * Gửi tin nhắn chúc mừng khi đặt hàng thành công và gợi ý sản phẩm
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function sendOrderSuccessMessage(Request $request)
+    {
+        try {
+            // Validate request
+            $request->validate([
+                'order_id' => 'required',
+                'order_total' => 'required',
+                'products' => 'required|array',
+            ]);
+
+            $orderId = $request->input('order_id');
+            $orderTotal = $request->input('order_total');
+            $orderedProducts = $request->input('products');
+
+            // Lấy danh sách sản phẩm được đề xuất dựa trên sản phẩm đã đặt
+            $recommendedProducts = $this->getRecommendedProducts($orderedProducts);
+
+            // Tạo tin nhắn chúc mừng
+            $message = "Cảm ơn bạn đã đặt hàng tại Eco-Furnish! Đơn hàng #$orderId với tổng giá trị " . 
+                       number_format($orderTotal, 0, ',', '.') . "đ đã được xác nhận. Dưới đây là một số sản phẩm bạn có thể quan tâm.";
+
+            return response()->json([
+                'success' => true,
+                'reply' => $message,
+                'has_products' => count($recommendedProducts['products']) > 0,
+                'products' => $recommendedProducts['products'],
+                'categories' => $recommendedProducts['categories'],
+                'type' => 'order_success'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Order Success Message Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.',
+                'error' => $e->getMessage(),
+                'has_products' => false
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy sản phẩm được đề xuất dựa trên sản phẩm đã đặt
+     *
+     * @param  array  $orderedProducts
+     * @return array
+     */
+    private function getRecommendedProducts($orderedProducts)
+    {
+        try {
+            // Lấy các danh mục từ sản phẩm đã đặt
+            $categoryIds = [];
+            foreach ($orderedProducts as $product) {
+                if (isset($product['category_id']) && !in_array($product['category_id'], $categoryIds)) {
+                    $categoryIds[] = $product['category_id'];
+                }
+            }
+
+            // Thu thập ID sản phẩm đã đặt để loại trừ khỏi đề xuất
+            $orderedProductIds = [];
+            foreach ($orderedProducts as $product) {
+                if (isset($product['id'])) {
+                    $orderedProductIds[] = $product['id'];
+                }
+            }
+
+            // Tìm sản phẩm cùng danh mục, loại trừ những sản phẩm đã đặt
+            $query = Product::with(['category', 'gallery', 'variants'])
+                ->whereHas('category', function($q) use ($categoryIds) {
+                    $q->whereIn('id', $categoryIds);
+                })
+                ->whereNotIn('id', $orderedProductIds);
+
+            // Lấy kết quả
+            $products = $query->orderBy('created_at', 'desc')
+                ->limit(6)
+                ->get();
+
+            Log::info('Tìm thấy ' . $products->count() . ' sản phẩm đề xuất');
+
+            // Phân loại sản phẩm theo danh mục
+            $foundCategories = [];
+            
+            // Định dạng lại dữ liệu sản phẩm để hiển thị trong chat
+            $formattedProducts = $products->map(function ($product) use (&$foundCategories) {
+                // Đảm bảo có đường dẫn hình sảnh đúng
+                $imagePath = null;
+                
+                if (!empty($product->image_thumnail)) {
+                    $imagePath = $product->image_thumnail;
+                }
+                
+                $categoryName = $product->category ? $product->category->name : 'N/A';
+                
+                // Thêm thông tin phân loại
+                if (!in_array($categoryName, $foundCategories)) {
+                    $foundCategories[] = $categoryName;
+                }
+                
+                // Xác định giá hiển thị dựa trên việc sản phẩm có biến thể hay không
+                $displayPrice = 0;
+                $productPrice = 0;
+                $productDiscountPrice = null;
+                $hasVariants = $product->variants->isNotEmpty();
+                
+                if ($hasVariants) {
+                    // Nếu có biến thể, lấy biến thể có giá thấp nhất
+                    $lowestPriceVariant = $product->variants->sortBy(function($variant) {
+                        return $variant->discount_price ?? $variant->price;
+                    })->first();
+                    
+                    if ($lowestPriceVariant) {
+                        $productPrice = $lowestPriceVariant->price;
+                        $productDiscountPrice = $lowestPriceVariant->discount_price;
+                        $displayPrice = $productDiscountPrice ?? $productPrice;
+                    }
+                } else {
+                    // Nếu không có biến thể, sử dụng giá của sản phẩm
+                    $productPrice = $product->price;
+                    $productDiscountPrice = $product->discount_price;
+                    $displayPrice = $productDiscountPrice ?? $productPrice;
+                }
+                
+                // Đưa danh mục vào metadata sản phẩm
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'price' => $productPrice,
+                    'discount_price' => $productDiscountPrice,
+                    'image' => $imagePath,
+                    'category' => $categoryName,
+                    'category_group' => $categoryName,
+                    'description' => Str::limit($product->description, 100),
+                    'display_price' => $displayPrice,
+                    'has_variants' => $hasVariants,
+                    'variant_count' => $product->variants->count(),
+                ];
+            });
+            
+            return [
+                'products' => $formattedProducts, 
+                'categories' => $foundCategories,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error getting recommended products: ' . $e->getMessage());
+            return [
+                'products' => [],
+                'categories' => [],
+            ];
+        }
+    }
+
+    /**
+     * Gửi tin nhắn chào khi người dùng mở chatbot
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function sendWelcomeMessage()
+    {
+        try {
+            $welcomeMessage = "Xin chào! Tôi là trợ lý AI của Eco-Furnish. Tôi có thể giúp bạn tìm kiếm sản phẩm nội thất, tư vấn thiết kế không gian sống, hoặc giải đáp các thắc mắc về sản phẩm và dịch vụ của chúng tôi.";
+
+            return response()->json([
+                'success' => true,
+                'reply' => $welcomeMessage,
+                'has_products' => false,
+                'type' => 'welcome'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Welcome Message Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.',
+                'error' => $e->getMessage(),
+                'has_products' => false
+            ], 500);
+        }
+    }
+
 }
 

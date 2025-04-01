@@ -39,6 +39,8 @@ Route::get('/categories/{slug}', [CategoryApiController::class, 'show']);
 
 // Chat routes
 Route::post('/chat', [ChatController::class, 'chat']);
+Route::get('/chat/welcome', [ChatController::class, 'sendWelcomeMessage']);
+Route::post('/chat/order-success', [ChatController::class, 'sendOrderSuccessMessage']);
 
 // User routes
 Route::prefix('users')->group(function () {
