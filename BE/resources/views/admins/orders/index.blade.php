@@ -58,10 +58,10 @@
                                         <div class="card-body">
                                             <div class="d-flex align-items-center border-bottom">
                                                 @if ($order->orderItems->isNotEmpty())
-                                                <div class="col-md">
-                                                    <img src="{{ Storage::url($order->orderItems->first()->image_url) }}"
-                                                    width= "80px" height="80px" alt="Product">
-                                                </div>
+                                                    <div class="col-md">
+                                                        <img src="{{ Storage::url($order->orderItems->first()->image_url) }}"
+                                                            width= "80px" height="80px" alt="Product">
+                                                    </div>
                                                 @endif
 
                                                 <div class="col-md-9">
@@ -74,9 +74,9 @@
                                                                     $order->order_status === 'Đang Giao' ||
                                                                     $order->order_status === 'Đã Giao' ||
                                                                     $order->order_status === 'Đã Nhận' ||
-                                                                    $order->order_status === 'Thành Công' ||
                                                                     $order->order_status === 'Hoàn Hàng' ||
                                                                     $order->order_status === 'Hủy Đơn' ||
+                                                                    $order->order_status === 'Từ Chối Hoàn Hàng' ||
                                                                     $order->payment_status === '2')
                                                                 {{ $order->updated_at ? $order->updated_at->format('d/m/Y H:i') : 'Chưa xác nhận' }}
                                                             @else
@@ -107,7 +107,7 @@
                                                             value="{{ $order->order_status }}">
                                                         <select name="order_status" class="form-control fw-bold"
                                                             onchange="this.form.submit()"
-                                                            {{ $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' ? 'disabled' : '' }}>
+                                                            {{ $order->order_status === 'Đã Nhận' || $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' || $order->order_status === 'Từ Chối Hoàn Hàng' ? 'disabled' : '' }}>
                                                             <option value="Chưa Xác Nhận"
                                                                 {{ $order->order_status === 'Chưa Xác Nhận' ? 'selected' : '' }}>
                                                                 Chưa Xác Nhận</option>
@@ -126,15 +126,15 @@
                                                             <option value="Đã Nhận"
                                                                 {{ $order->order_status === 'Đã Nhận' ? 'selected' : '' }}>
                                                                 Đã Nhận</option>
-                                                            <option value="Thành Công"
-                                                                {{ $order->order_status === 'Thành Công' ? 'selected' : '' }}>
-                                                                Thành Công</option>
                                                             <option value="Hoàn Hàng"
                                                                 {{ $order->order_status === 'Hoàn Hàng' ? 'selected disabled' : '' }}>
                                                                 Hoàn Hàng</option>
                                                             <option value="Hủy Đơn"
                                                                 {{ $order->order_status === 'Hủy Đơn' ? 'selected disabled' : '' }}>
                                                                 Hủy Đơn</option>
+                                                            <option value="Từ Chối Hoàn Hàng"
+                                                                {{ $order->order_status === 'Từ Chối Hoàn Hàng' ? 'selected disabled' : '' }}>
+                                                                Từ Chối Hoàn Hàng</option>
                                                         </select>
                                                     </form>
                                                 </div>
@@ -151,6 +151,38 @@
 
                                                     </div>
                                                 </div>
+                                                @if ($order->refundRequest->isNotEmpty())
+                                                    <div class="mt-3">
+                                                        @foreach ($order->refundRequest as $refund)
+                                                            <p class="fw-bold text-warning">Yêu cầu hoàn hàng:
+                                                                {{ $refund->reason ?? 'Chưa có lý do' }}</p>
+
+                                                            <!-- Hiển thị nút duyệt và từ chối chỉ khi yêu cầu chưa bị từ chối hoặc duyệt -->
+                                                            @if ($order->order_status !== 'Từ Chối Hoàn Hàng' && $order->order_status !== 'Hoàn Hàng')
+                                                                <form
+                                                                    action="{{ route('order.refund.approve', ['orderId' => $order->id, 'refundRequestId' => $refund->id]) }}"
+                                                                    method="POST" style="display:inline-block;">
+                                                                    @csrf
+                                                                    <button type="submit"
+                                                                        class="btn btn-success btn-sm">Duyệt</button>
+                                                                </form>
+                                                                <form
+                                                                    action="{{ route('order.refund.reject', ['orderId' => $order->id, 'refundRequestId' => $refund->id]) }}"
+                                                                    method="POST" style="display:inline-block;">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-danger btn-sm">Từ
+                                                                        Chối</button>
+                                                                </form>
+                                                            @else
+                                                                <!-- Đã duyệt hoặc từ chối hoàn hàng, ẩn nút -->
+                                                                <span class="text-muted">Đã xử lý yêu cầu hoàn hàng</span>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+
+
+
                                             </div>
                                         </div>
                                     </div>

@@ -45,6 +45,9 @@
 
     <!-- ckeditor -->
     <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/44.2.1/ckeditor5.css"/>
+    {{-- font-awesome --}}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
 
     @yield('CSS')
 </head>
@@ -109,6 +112,12 @@
     <script src="{{ asset('assets/admins/libs/choices.js/public/assets/scripts/choices.min.js') }}"></script>
     <!-- Flatpickr -->
     <script src="{{ asset('assets/admins/libs/flatpickr/flatpickr.min.js') }}"></script>
+
+    {{-- rating --}}
+    <script src="{{ asset('assets/admins/libs/rater-js/index.js') }}"></script>
+    <script src="{{ asset('assets/admins/js/pages/rating.init.js') }}"></script>
+
+
 
     <!-- CKEditor -->
     <script type="importmap">

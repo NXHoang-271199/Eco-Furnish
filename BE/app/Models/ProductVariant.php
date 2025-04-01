@@ -43,6 +43,25 @@ class ProductVariant extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+    // public function getVariantDetailsAttribute()
+    // {
+    //     $details = json_decode($this->attributes['variant_details'], true);
+    //     if (!$details) return null;
+
+    //     $formattedDetails = [];
+    //     foreach ($details as $variantId => $variantValueId) {
+    //         $variant = Variant::find($variantId);
+    //         $variantValue = VariantValue::find($variantValueId);
+
+    //         if ($variant && $variantValue) {
+    //             $formattedDetails[] = [
+    //                 'name' => $variant->name,
+    //                 'value' => $variantValue->value
+    //             ];
+    //         }
+    //     }
+    //     return $formattedDetails;
+    // }
     public function getVariantDetailsAttribute()
     {
         try {
