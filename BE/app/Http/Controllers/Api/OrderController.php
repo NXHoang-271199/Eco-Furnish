@@ -122,8 +122,10 @@ class OrderController extends Controller
             // ✅ Kiểm tra & áp dụng mã giảm giá
             $discountAmount = 0;
             if ($request->voucher_id) {
+                // ✅ Lấy thông tin voucher trước
+                $voucher = Voucher::find($request->voucher_id);
                 $voucherResponse = app(VoucherApiController::class)->checkVoucher(new Request([
-                    'voucher_id' => $request->voucher_id,
+                    'voucher_code' => $voucher->code,
                     'subtotal' => $subtotal
                 ]));
 
@@ -280,8 +282,10 @@ class OrderController extends Controller
 
             // Kiểm tra voucher nếu có
             if ($request->voucher_id) {
+                // ✅ Lấy thông tin voucher trước
+                $voucher = Voucher::find($request->voucher_id);
                 $voucherResponse = app(VoucherApiController::class)->checkVoucher(new Request([
-                    'voucher_id' => $request->voucher_id,
+                    'voucher_code' => $voucher->code,
                     'subtotal' => $subtotal
                 ]));
 
