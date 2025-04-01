@@ -117,6 +117,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 // review routes
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/reviews', [ReviewController::class, 'store']);
+    Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
 });
-Route::get('/products/{productId}/reviews', [ReviewController::class, 'getProductReviews']);
+Route::get('/products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
