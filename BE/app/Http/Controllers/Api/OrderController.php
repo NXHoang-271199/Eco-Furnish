@@ -438,21 +438,43 @@ class OrderController extends Controller
     public function requestRefund($orderId, Request $request)
     {
         $userId = Auth::id();
-
-        // Tìm đơn hàng của người dùng, phải có trạng thái 'Đã Giao'
+        // Tìm đơn hàng của người dùng
         $order = Order::where('id', $orderId)
             ->where('user_id', $userId)
-            ->where('order_status', 'Đã Giao')
             ->first();
 
-        // Kiểm tra nếu không tìm thấy đơn hàng hoặc đơn chưa được giao
+        // Kiểm tra nếu không tìm thấy đơn hàng
         if (!$order) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Không tìm thấy đơn hàng hoặc đơn hàng chưa được giao'
+                'message' => 'Không tìm thấy đơn hàng'
             ], 400);
         }
+        // Kiểm tra nếu trạng thái đơn hàng là 'Hoàn Hàng' hoặc 'Từ Chối Hoàn Hàng', không cho phép gửi yêu cầu hoàn hàng nữa
+        if (in_array($order->order_status, ['Hoàn Hàng', 'Từ Chối Hoàn Hàng'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng trước đó, không thể gửi lại yêu cầu'
+            ], 400);
+        }
+        // Kiểm tra trạng thái của đơn hàng: chỉ cho phép yêu cầu hoàn hàng khi trạng thái là 'Đã Giao'
+        if ($order->order_status !== 'Đã Giao') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Yêu cầu hoàn hàng chỉ có thể gửi khi đơn hàng đã giao'
+            ], 400);
+        }
+        // Kiểm tra nếu đơn hàng đã có yêu cầu hoàn hàng nào đang trong trạng thái "Chờ Duyệt"
+        $existingRefundRequest = RefundRequest::where('order_id', $orderId)
+            ->whereIn('status', ['Chờ Duyệt', 'Đã Duyệt', 'Đã Từ Chối'])
+            ->first();
 
+        if ($existingRefundRequest) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng không thể gửi lại yêu cầu'
+            ], 400);
+        }
         // Tạo yêu cầu hoàn hàng (Lý do có thể là null)
         RefundRequest::create([
             'order_id' => $orderId,
@@ -466,6 +488,10 @@ class OrderController extends Controller
             'message' => 'Yêu cầu hoàn hàng của bạn đã được gửi, vui lòng chờ xét duyệt'
         ], 200);
     }
+
+
+
+
 
 
 
