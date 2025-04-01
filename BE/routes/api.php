@@ -79,7 +79,6 @@ Route::prefix('category-posts')->group(function () {
 Route::prefix('vouchers')->group(function () {
     Route::get('/', [VoucherApiController::class, 'index']);
     Route::get('/{code}', [VoucherApiController::class, 'show']);
-    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']);
 });
 
 // Comment routes
@@ -117,6 +116,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{id}/request-refund', [OrderController::class, 'requestRefund']); // Gửi yêu cầu hoàn hàng
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
     Route::post('/orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
+    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
 });
 // review routes
 Route::middleware('auth:sanctum')->group(function () {
