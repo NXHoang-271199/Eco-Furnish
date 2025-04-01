@@ -18,71 +18,69 @@ class ReviewController extends Controller
     public function store(ReviewRequest $request)
     {
         $userId = Auth::id();
+        $productId = $request->product_id;
 
-        // Nếu không có order_id, trả về thông báo yêu cầu người dùng phải mua sản phẩm
-        if (!$request->order_id) {
-            return response()->json(['success' => false, 'message' => 'Bạn phải mua sản phẩm này trước khi đánh giá'], 403);
-        }
-
-        // Kiểm tra xem đơn hàng có tồn tại và có trạng thái "Đã Nhận" hoặc "Hoàn Hàng"
-        $order = Order::where('id', $request->order_id)
-            ->where('user_id', $userId)
+        // Kiểm tra xem người dùng có đơn hàng chứa sản phẩm không
+        $order = Order::where('user_id', $userId)
+            ->whereHas('orderItems', function ($query) use ($productId) {
+                $query->where('product_id', $productId);
+            })
+            ->orderBy('created_at', 'desc') // Lấy đơn mới nhất
             ->first();
 
         if (!$order) {
-            return response()->json(['success' => false, 'message' => 'Đơn hàng không hợp lệ'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa mua sản phẩm này.'
+            ], 403);
         }
 
+        // Kiểm tra trạng thái đơn hàng có đủ điều kiện để đánh giá không
         if (!in_array($order->order_status, ['Đã Nhận', 'Hoàn Hàng', 'Từ Chối Hoàn Hàng'])) {
-            return response()->json(['success' => false, 'message' => 'Bạn chỉ có thể đánh giá sản phẩm từ những đơn hàng đã hoàn tất'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chỉ có thể đánh giá khi đơn hàng đã hoàn tất.'
+            ], 403);
         }
 
-        // Kiểm tra xem người dùng đã mua sản phẩm trong đơn hàng này chưa
-        $hasPurchased = $order->orderItems()->where('product_id', $request->product_id)->exists();
-
-        if (!$hasPurchased) {
-            return response()->json(['success' => false, 'message' => 'Bạn chưa mua sản phẩm này trong đơn hàng nên không thể đánh giá'], 403);
-        }
-
-        // Kiểm tra xem người dùng đã đánh giá sản phẩm này trong đơn hàng này chưa
+        // Kiểm tra xem người dùng đã đánh giá sản phẩm này chưa
         $existingReview = Review::where('user_id', $userId)
-            ->where('product_id', $request->product_id)
-            ->where('order_id', $request->order_id)
-            ->first();
+            ->where('product_id', $productId)
+            ->where('order_id', $order->id)
+            ->exists();
 
         if ($existingReview) {
-            return response()->json(['success' => false, 'message' => 'Bạn chỉ có thể đánh giá sản phẩm này một lần trên mỗi đơn hàng'], 409);
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã đánh giá sản phẩm này rồi.'
+            ], 403);
         }
 
-        // Xử lý upload hình ảnh
+        // Xử lý upload hình ảnh nếu có
         $imagePaths = [];
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
-                // Lưu ảnh vào thư mục reviews trong public disk
-                $path = $image->store('reviews', 'public'); // Lưu vào storage/app/public/reviews
-                $imagePaths[] = $path; // Lưu đường dẫn tương đối
+                $path = $image->store('reviews', 'public');
+                $imagePaths[] = $path;
             }
         }
 
-        // Tạo đánh giá mới
+        // Lưu đánh giá
         $review = Review::create([
             'user_id' => $userId,
-            'product_id' => $request->product_id,
-            'order_id' => $request->order_id,
+            'product_id' => $productId,
+            'order_id' => $order->id,
             'rating' => $request->rating,
             'review_text' => $request->review_text,
-            'images' => json_encode($imagePaths), // Lưu ảnh dưới dạng JSON
+            'images' => json_encode($imagePaths),
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Đánh giá của bạn đã được gửi',
+            'message' => 'Đánh giá của bạn đã được gửi thành công',
             'data' => $review
         ]);
     }
-
-
-
     /**
      * Lấy danh sách đánh giá của sản phẩm
      */
