@@ -17,19 +17,31 @@ class ReviewController extends Controller
      */
     public function store(ReviewRequest $request)
     {
-        // Lấy ID người dùng hiện tại
-        $userId = Auth::id();  // Hoặc auth()->id()
+        $userId = Auth::id();
+
+        // Nếu không có order_id, trả về thông báo yêu cầu người dùng phải mua sản phẩm
+        if (!$request->order_id) {
+            return response()->json(['success' => false, 'message' => 'Bạn phải mua sản phẩm này trước khi đánh giá'], 403);
+        }
+
+        // Kiểm tra xem đơn hàng có tồn tại và có trạng thái "Đã Nhận" hoặc "Hoàn Hàng"
+        $order = Order::where('id', $request->order_id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$order) {
+            return response()->json(['success' => false, 'message' => 'Đơn hàng không hợp lệ'], 404);
+        }
+
+        if (!in_array($order->order_status, ['Đã Nhận', 'Hoàn Hàng'])) {
+            return response()->json(['success' => false, 'message' => 'Đơn hàng phải có trạng thái "Đã Nhận" hoặc "Hoàn Hàng" mới được phép đánh giá'], 403);
+        }
 
         // Kiểm tra xem người dùng đã mua sản phẩm trong đơn hàng này chưa
-        $hasPurchased = Order::where('id', $request->order_id)
-            ->where('user_id', $userId)
-            ->whereHas('orderItems', function ($query) use ($request) {
-                $query->where('product_id', $request->product_id);
-            })
-            ->exists();
+        $hasPurchased = $order->orderItems()->where('product_id', $request->product_id)->exists();
 
         if (!$hasPurchased) {
-            return response()->json(['success' => false, 'message' => 'Bạn chưa mua sản phẩm này nên không thể đánh giá'], 403);
+            return response()->json(['success' => false, 'message' => 'Bạn chưa mua sản phẩm này trong đơn hàng nên không thể đánh giá'], 403);
         }
 
         // Kiểm tra xem người dùng đã đánh giá sản phẩm này trong đơn hàng này chưa
@@ -46,14 +58,15 @@ class ReviewController extends Controller
         $imagePaths = [];
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
+                // Lưu ảnh vào thư mục reviews trong public disk
                 $path = $image->store('reviews', 'public'); // Lưu vào storage/app/public/reviews
-                $imagePaths[] = Storage::url($path); // Lưu đường dẫn file
+                $imagePaths[] = $path; // Lưu đường dẫn tương đối
             }
         }
 
         // Tạo đánh giá mới
         $review = Review::create([
-            'user_id' => $userId, // Sử dụng $userId thay vì Auth::user()->id
+            'user_id' => $userId,
             'product_id' => $request->product_id,
             'order_id' => $request->order_id,
             'rating' => $request->rating,
@@ -67,6 +80,7 @@ class ReviewController extends Controller
             'data' => $review
         ]);
     }
+
 
 
     /**

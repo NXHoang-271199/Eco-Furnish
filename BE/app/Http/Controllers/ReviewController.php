@@ -49,8 +49,15 @@ class ReviewController extends Controller
     public function show($id)
     {
         $review = Review::with('user', 'product')->findOrFail($id);
+
+        // Giải mã images nếu cần
+        if (is_string($review->images)) {
+            $review->images = json_decode($review->images, true);
+        }
+
         return view('admins.reviews.show', compact('review'));
     }
+
     public function toggleReviewVisibility($reviewId)
     {
         $review = Review::findOrFail($reviewId);
