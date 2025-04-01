@@ -147,7 +147,43 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    button.closest('form').submit();
+                    const form = button.closest('form');
+                    const formData = new FormData(form);
+                    
+                    // Thực hiện AJAX request
+                    $.ajax({
+                        url: form.action,
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Thành công!',
+                                    text: 'Xóa sản phẩm thành công',
+                                    icon: 'success',
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                }).then(() => {
+                                    window.location.href = '/admin/products';
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Lỗi!',
+                                    text: response.message || 'Có lỗi xảy ra khi xóa sản phẩm',
+                                    icon: 'error'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                title: 'Lỗi!',
+                                text: 'Có lỗi xảy ra khi xóa sản phẩm',
+                                icon: 'error'
+                            });
+                        }
+                    });
                 }
             });
         }

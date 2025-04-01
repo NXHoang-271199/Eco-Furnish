@@ -508,21 +508,13 @@ class ProductController extends Controller
         try {
             DB::beginTransaction();
 
-            // Xóa ảnh thumbnail
-            if ($product->image_thumnail) {
-                Storage::disk('public')->delete($product->image_thumnail);
-            }
-
-            // Xóa gallery images
-            foreach ($product->gallery as $image) {
-                Storage::disk('public')->delete($image->image_url);
-            }
+            // Chỉ soft delete các gallery images - không xóa các file ảnh vật lý
             $product->gallery()->delete();
 
-            // Xóa product variants
+            // Soft delete các product variants
             $product->variants()->delete();
 
-            // Xóa sản phẩm
+            // Soft delete sản phẩm
             $product->delete();
 
             DB::commit();

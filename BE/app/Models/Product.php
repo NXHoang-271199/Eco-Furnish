@@ -54,7 +54,7 @@ class Product extends Model
      */
     public function gallery()
     {
-        return $this->hasMany(GalleryImage::class);
+        return $this->hasMany(GalleryImage::class)->withTrashed();
     }
 
     public function orderItems()

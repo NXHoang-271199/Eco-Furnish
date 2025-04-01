@@ -100,13 +100,7 @@
                                                 {{ $comment->status === 'Hiển thị' ? 'Ẩn' : 'Hiển thị' }}
                                             </button>
                                         </form>
-                                        <!-- <form action="{{ route('comments.destroy', $comment->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bình luận này?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-trash"></i> Xóa
-                                            </button>
-                                        </form> -->
+                                      
                                     </div>
                                 </td>
                             </tr>
