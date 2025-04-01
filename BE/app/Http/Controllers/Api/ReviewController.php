@@ -34,7 +34,7 @@ class ReviewController extends Controller
         }
 
         if (!in_array($order->order_status, ['Đã Nhận', 'Hoàn Hàng'])) {
-            return response()->json(['success' => false, 'message' => 'Đơn hàng phải có trạng thái "Đã Nhận" hoặc "Hoàn Hàng" mới được phép đánh giá'], 403);
+            return response()->json(['success' => false, 'message' => 'Bạn chỉ có thể đánh giá sản phẩm từ những đơn hàng đã hoàn tất'], 403);
         }
 
         // Kiểm tra xem người dùng đã mua sản phẩm trong đơn hàng này chưa
