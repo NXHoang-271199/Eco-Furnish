@@ -159,9 +159,7 @@
                     isAddingVariant = true;
                     
                     // Ẩn trường số lượng, giá gốc và giá khuyến mãi khi bật biến thể
-                    quantitySection.hide();
-                    priceSection.hide();
-                    discountPriceSection.hide();
+                    $('#base-price-discount-quantity').hide();
                     
                     // Ẩn thông báo lỗi của trường số lượng và reset validation state
                     clearValidation($('#quantity'));
@@ -174,9 +172,7 @@
                     isAddingVariant = false;
                     
                     // Hiển thị trường số lượng, giá gốc và giá khuyến mãi khi tắt biến thể
-                    quantitySection.show();
-                    priceSection.show();
-                    discountPriceSection.show();
+                    $('#base-price-discount-quantity').show();
                     
                     // Hiển thị thông báo xác nhận nếu đã có biến thể
                     if (selectedTypes.length > 0 || selectedVariants.length > 0) {
@@ -192,6 +188,10 @@
                             if (result.isConfirmed) {
                                 // Xóa tất cả biến thể
                                 resetVariantForm();
+                                // Đảm bảo phần variant đã bị ẩn
+                                variantSection.hide();
+                                // Đảm bảo phần giá, số lượng đã hiện
+                                $('#base-price-discount-quantity').show();
                             } else {
                                 // Bật lại toggle
                                 variantToggle.prop('checked', true);
@@ -200,9 +200,7 @@
                                 isAddingVariant = true;
                                 
                                 // Ẩn lại trường số lượng, giá gốc và giá khuyến mãi
-                                quantitySection.hide();
-                                priceSection.hide();
-                                discountPriceSection.hide();
+                                $('#base-price-discount-quantity').hide();
                             }
                         });
                     }
@@ -237,18 +235,14 @@
                 isAddingVariant = false;
                 
                 // Hiển thị trường số lượng, giá gốc và giá khuyến mãi khi không có biến thể
-                $('#quantitySection').show();
-                $('#priceSection').show();
-                $('#discountPriceSection').show();
+                $('#base-price-discount-quantity').show();
             } else {
                 variantSection.show();
                 hasVariantsInput.val('1');
                 isAddingVariant = true;
                 
                 // Ẩn trường số lượng, giá gốc và giá khuyến mãi khi có biến thể
-                $('#quantitySection').hide();
-                $('#priceSection').hide();
-                $('#discountPriceSection').hide();
+                $('#base-price-discount-quantity').hide();
             }
 
             // Load biến thể hiện có
