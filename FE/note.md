@@ -12,13 +12,32 @@ http://localhost:8000/api/users/login -> Login
 - products/{id}
 - products/search
   http://localhost:8000/api/posts/ -> Post
-- {slug}
-- {/category/{categorySlug}
+- {slug} (lấy chi tiết bài viết theo slug)
+- posts?category={category_slug} (lấy tất cả bài viết không lọc theo danh mục)
   http://localhost:8000/api/category-posts/ -> CategoryPost
-- /{slug}
+- Lấy danh sách các danh mục bài viết
   http://localhost:8000/api/vouchers/ -> Vouchers
 
+
 - /{code}
+
+# Lưu ý khi lọc bài viết theo danh mục
+
+Để lọc bài viết theo danh mục:
+
+1. Lấy danh sách tất cả bài viết qua API `/posts`
+2. Với mỗi bài viết, gọi API `/posts/{slug}` để lấy chi tiết bài viết
+3. Kiểm tra trường `category_id` trong chi tiết bài viết
+4. Lọc các bài viết có `category_id` trùng với ID của danh mục đang xem
+
+# Lưu ý khi lọc bài viết theo danh mục
+
+Để lọc bài viết theo danh mục:
+
+1. Lấy danh sách tất cả bài viết qua API `/posts`
+2. Với mỗi bài viết, gọi API `/posts/{slug}` để lấy chi tiết bài viết
+3. Kiểm tra trường `category_id` trong chi tiết bài viết
+4. Lọc các bài viết có `category_id` trùng với ID của danh mục đang xem
 
 // Kiểm tra cách lấy ID từ URL
 import { useParams } from 'react-router-dom';

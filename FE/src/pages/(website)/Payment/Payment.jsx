@@ -1,402 +1,393 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { clearSelectedItems } from "../../../store/cartSlice";
+import axios from "axios";
+import { useLocation } from "react-router-dom";
 
 const Payment = () => {
+  const navigate = useNavigate();
+  const { state } = useLocation(); // Lấy dữ liệu từ state của navigate
+  const selectedProducts = state?.selectedProducts || []; // Lấy selectedProducts từ state
+  const total = state?.total || 0; // Lấy tổng tiền từ state
+  const [userName, setUserName] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [address, setAddress] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    province: "",
+    district: "",
+    ward: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [discount, setDiscount] = useState(0);
+
+  useEffect(() => {
+    // Lấy địa chỉ từ localStorage khi component mount
+    const savedAddress = JSON.parse(localStorage.getItem("userAddress")) || {};
+    setAddress((prev) => ({
+      ...prev,
+      ...savedAddress,
+    }));
+
+    // Lấy thông tin người dùng từ localStorage
+    const userData = JSON.parse(localStorage.getItem("userData")) || {};
+    setUserName(userData.name || "Khách"); // Nếu không có tên thì hiển thị "Khách"
+
+    // Kiểm tra nếu không có sản phẩm được chọn
+    if (!selectedProducts || selectedProducts.length === 0) {
+      navigate("/cart");
+    }
+  }, [selectedProducts, navigate]);
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(price);
+  };
+
+  const calculateSubtotal = () => {
+    return selectedProducts.reduce((total, item) => {
+      return total + (Number(item.total_price) || 0); // Sử dụng total_price từ API
+    }, 0);
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() - (discount || 0);
+  };
+
+  const handlePayment = async () => {
+    if (!paymentMethod) {
+      setError("Vui lòng chọn phương thức thanh toán");
+      return;
+    }
+
+    if (
+      !address.name ||
+      !address.email ||
+      !address.phone ||
+      !address.address ||
+      !address.province ||
+      !address.district ||
+      !address.ward
+    ) {
+      setError("Vui lòng điền đầy đủ thông tin giao hàng");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    // Lưu địa chỉ vào localStorage
+    localStorage.setItem("userAddress", JSON.stringify(address));
+
+    // Lưu thông tin đơn hàng vào localStorage
+    localStorage.setItem(
+      "orderInfo",
+      JSON.stringify({
+        products: selectedProducts,
+        total: calculateTotal(),
+        payment_method: paymentMethod,
+        order_date: new Date().toISOString(),
+      })
+    );
+
+    try {
+      const token = localStorage.getItem("authToken");
+      const orderData = {
+        cart_items: selectedProducts.map((item) => item.id),
+        user_name: address.name,
+        user_email: address.email,
+        user_address: `${address.address}, ${address.ward}, ${address.district}, ${address.province}`,
+        user_phone: address.phone,
+        payment_method_id: 1, // Sử dụng ID 1 cho MoMo như trong ảnh
+      };
+
+      // Gọi trực tiếp API orders - KHÔNG gọi payment/process
+      const response = await axios.post(
+        "http://localhost:8000/api/orders",
+        orderData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Kiểm tra response
+      console.log("Order response:", response.data);
+
+      if (response.status === 200 || response.status === 201) {
+        if (paymentMethod === "MoMo") {
+          // Nếu trong response có payUrl (như hình ảnh của bạn), redirect đến đó
+          if (response.data && response.data.payUrl) {
+            window.location.href = response.data.payUrl;
+          } else {
+            // Nếu không có payUrl, có thể cần kiểm tra cấu trúc response
+            console.error(
+              "Không tìm thấy payUrl trong response:",
+              response.data
+            );
+            setError("Không tìm thấy đường dẫn thanh toán");
+          }
+        } else if (paymentMethod === "VNPAY") {
+          // Xử lý VNPAY nếu cần
+          if (response.data && response.data.data) {
+            window.location.href = response.data.data;
+          } else {
+            setError("Không nhận được đường dẫn thanh toán từ VNPAY");
+          }
+        } else {
+          // Thanh toán COD, chuyển hướng trực tiếp
+          navigate("/order-success");
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi khi gọi API:", err);
+      setError(
+        err.response?.data?.message || "Có lỗi xảy ra khi xử lý đơn hàng"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="my-20">
-      <div class="max-w-6xl mx-auto py-10 px-6 grid grid-cols-1 lg:grid-cols-3 gap-6 ">
-        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md border">
-          <h2 class="text-xl font-bold">Eco-Furnish</h2>
-          {/* <p class="text-gray-600">Giỏ hàng - Thông tin giao hàng</p> */}
+      <div className="max-w-6xl mx-auto py-10 px-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md border">
+          <h2 className="text-xl font-bold">Eco-Furnish</h2>
+          {/* <p className="text-gray-600">Giỏ hàng - Thông tin giao hàng</p> */}
 
-          <div class="mt-4 border-b pb-4">
-            <h3 class="font-semibold">Thông tin giao hàng</h3>
-            <p class="text-sm text-gray-600">
-              Đinh Tấn Đạt
-              {/* (dinhtandat11112003@gmail.com) */}
-            </p>
-            <div class="mt-2">
+          <div className="mt-4 border-b pb-4">
+            <h3 className="font-semibold">Thông tin giao hàng</h3>
+            {/* <p className="text-sm text-gray-600">{userName}</p> */}
+            <div className="mt-2">
               <input
                 type="text"
-                class="w-full border rounded-lg p-2"
-                placeholder="Thêm địa chỉ mới..."
+                className="w-full border rounded-lg p-2"
+                placeholder="Tên người nhận"
+                value={address.name}
+                onChange={(e) =>
+                  setAddress({ ...address, name: e.target.value })
+                }
               />
             </div>
-            <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="mt-2">
               <input
-                type="text"
-                class="w-full border rounded-lg p-2"
+                type="email"
+                className="w-full border rounded-lg p-2"
+                placeholder="Email nguoi nhan"
+                value={address.email}
+                onChange={(e) =>
+                  setAddress({ ...address, email: e.target.value })
+                }
+              />
+            </div>
+            <div className="mt-2">
+              <input
+                type="phone"
+                className="w-full border rounded-lg p-2"
                 placeholder="Số điện thoại"
+                value={address.phone}
+                onChange={(e) =>
+                  setAddress({ ...address, phone: e.target.value })
+                }
               />
+            </div>
+            <div className="mt-2">
               <input
                 type="text"
-                class="w-full border rounded-lg p-2"
+                className="w-full border rounded-lg p-2"
                 placeholder="Địa chỉ"
+                value={address.address}
+                onChange={(e) =>
+                  setAddress({ ...address, address: e.target.value })
+                }
               />
             </div>
-            <div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
               <select
-                class="field-input w-full border rounded-lg p-2"
-                id="customer_shipping_province"
-                name="customer_shipping_province"
-                fdprocessedid="bvzjxy"
+                className="w-full border rounded-lg p-2"
+                value={address.province}
+                onChange={(e) =>
+                  setAddress({ ...address, province: e.target.value })
+                }
               >
-                <option data-code="null" value="null" selected="">
-                  Chọn tỉnh/ thành{" "}
-                </option>
-
-                <option data-code="HC" value="50">
-                  Hồ Chí Minh
-                </option>
-
-                <option data-code="HI" value="1">
-                  Hà Nội
-                </option>
-
-                <option data-code="DA" value="32">
-                  Đà Nẵng
-                </option>
-
-                <option data-code="AG" value="57">
-                  An Giang
-                </option>
-
-                <option data-code="BV" value="49">
-                  Bà Rịa - Vũng Tàu
-                </option>
-
-                <option data-code="BI" value="47">
-                  Bình Dương
-                </option>
-
-                <option data-code="BP" value="45">
-                  Bình Phước
-                </option>
-
-                <option data-code="BU" value="39">
-                  Bình Thuận
-                </option>
-
-                <option data-code="BD" value="35">
-                  Bình Định
-                </option>
-
-                <option data-code="BL" value="62">
-                  Bạc Liêu
-                </option>
-
-                <option data-code="BG" value="15">
-                  Bắc Giang
-                </option>
-
-                <option data-code="BK" value="4">
-                  Bắc Kạn
-                </option>
-
-                <option data-code="BN" value="18">
-                  Bắc Ninh
-                </option>
-
-                <option data-code="BT" value="53">
-                  Bến Tre
-                </option>
-
-                <option data-code="CB" value="3">
-                  Cao Bằng
-                </option>
-
-                <option data-code="CM" value="63">
-                  Cà Mau
-                </option>
-
-                <option data-code="CN" value="59">
-                  Cần Thơ
-                </option>
-
-                <option data-code="GL" value="41">
-                  Gia Lai
-                </option>
-
-                <option data-code="HG" value="2">
-                  Hà Giang
-                </option>
-
-                <option data-code="HM" value="23">
-                  Hà Nam
-                </option>
-
-                <option data-code="HT" value="28">
-                  Hà Tĩnh
-                </option>
-
-                <option data-code="HO" value="11">
-                  Hòa Bình
-                </option>
-
-                <option data-code="HY" value="21">
-                  Hưng Yên
-                </option>
-
-                <option data-code="HD" value="19">
-                  Hải Dương
-                </option>
-
-                <option data-code="HP" value="20">
-                  Hải Phòng
-                </option>
-
-                <option data-code="HU" value="60">
-                  Hậu Giang
-                </option>
-
-                <option data-code="KH" value="37">
-                  Khánh Hòa
-                </option>
-
-                <option data-code="KG" value="58">
-                  Kiên Giang
-                </option>
-
-                <option data-code="KT" value="40">
-                  Kon Tum
-                </option>
-
-                <option data-code="LI" value="8">
-                  Lai Châu
-                </option>
-
-                <option data-code="LA" value="51">
-                  Long An
-                </option>
-
-                <option data-code="LO" value="6">
-                  Lào Cai
-                </option>
-
-                <option data-code="LD" value="44">
-                  Lâm Đồng
-                </option>
-
-                <option data-code="LS" value="13">
-                  Lạng Sơn
-                </option>
-
-                <option data-code="ND" value="24">
-                  Nam Định
-                </option>
-
-                <option data-code="NA" value="27">
-                  Nghệ An
-                </option>
-
-                <option data-code="NB" value="25">
-                  Ninh Bình
-                </option>
-
-                <option data-code="NT" value="38">
-                  Ninh Thuận
-                </option>
-
-                <option data-code="PT" value="16">
-                  Phú Thọ
-                </option>
-
-                <option data-code="PY" value="36">
-                  Phú Yên
-                </option>
-
-                <option data-code="QB" value="29">
-                  Quảng Bình
-                </option>
-
-                <option data-code="QM" value="33">
-                  Quảng Nam
-                </option>
-
-                <option data-code="QG" value="34">
-                  Quảng Ngãi
-                </option>
-
-                <option data-code="QN" value="14">
-                  Quảng Ninh
-                </option>
-
-                <option data-code="QT" value="30">
-                  Quảng Trị
-                </option>
-
-                <option data-code="ST" value="61">
-                  Sóc Trăng
-                </option>
-
-                <option data-code="SL" value="9">
-                  Sơn La
-                </option>
-
-                <option data-code="TH" value="26">
-                  Thanh Hóa
-                </option>
-
-                <option data-code="TB" value="22">
-                  Thái Bình
-                </option>
-
-                <option data-code="TY" value="12">
-                  Thái Nguyên
-                </option>
-
-                <option data-code="TT" value="31">
-                  Thừa Thiên Huế
-                </option>
-
-                <option data-code="TG" value="52">
-                  Tiền Giang
-                </option>
-
-                <option data-code="TV" value="54">
-                  Trà Vinh
-                </option>
-
-                <option data-code="TQ" value="5">
-                  Tuyên Quang
-                </option>
-
-                <option data-code="TN" value="46">
-                  Tây Ninh
-                </option>
-
-                <option data-code="VL" value="55">
-                  Vĩnh Long
-                </option>
-
-                <option data-code="VT" value="17">
-                  Vĩnh Phúc
-                </option>
-
-                <option data-code="YB" value="10">
-                  Yên Bái
-                </option>
-
-                <option data-code="DB" value="7">
-                  Điện Biên
-                </option>
-
-                <option data-code="DC" value="42">
-                  Đắk Lắk
-                </option>
-
-                <option data-code="DO" value="43">
-                  Đắk Nông
-                </option>
-
-                <option data-code="DN" value="48">
-                  Đồng Nai
-                </option>
-
-                <option data-code="DT" value="56">
-                  Đồng Tháp
-                </option>
+                <option value="">Chọn tỉnh/thành</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="TP.HCM">TP.HCM</option>
+                {/* Thêm các tỉnh/thành khác */}
               </select>
-              <select class="w-full border rounded-lg p-2">
-                <option>Chọn quận/huyện</option>
+              <select
+                className="w-full border rounded-lg p-2"
+                value={address.district}
+                onChange={(e) =>
+                  setAddress({ ...address, district: e.target.value })
+                }
+              >
+                <option value="">Chọn quận/huyện</option>
+                <option value="Quận 1">Quận 1</option>
+                <option value="Quận 2">Quận 2</option>
+                {/* Thêm các quận/huyện khác */}
               </select>
-              <select class="w-full border rounded-lg p-2">
-                <option>Chọn phường/xã</option>
+              <select
+                className="w-full border rounded-lg p-2"
+                value={address.ward}
+                onChange={(e) =>
+                  setAddress({ ...address, ward: e.target.value })
+                }
+              >
+                <option value="">Chọn phường/xã</option>
+                <option value="Phường 1">Phường 1</option>
+                <option value="Phường 2">Phường 2</option>
+                {/* Thêm các phường/xã khác */}
               </select>
             </div>
           </div>
 
-          <div class="mt-4 border-b pb-4">
-            <h3 class="font-semibold">Phương thức vận chuyển</h3>
-            <p class="text-gray-600 text-sm">
-              Vui lòng chọn quận / huyện để có danh sách phương thức vận chuyển.
-            </p>
-          </div>
-
-          <div class="mt-4">
-            <h3 class="font-semibold">Phương thức thanh toán</h3>
-            <div class="mt-2 space-y-2">
-              <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
-                <input type="radio" name="payment" />
-                <span>Thanh toán chuyển khoản qua ngân hàng</span>
+          <div className="mt-4">
+            <h3 className="font-semibold">Phương thức thanh toán</h3>
+            <div className="mt-2 space-y-2">
+              <label className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="COD"
+                  checked={paymentMethod === "COD"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
+                <span>Thanh toán khi nhận hàng (COD)</span>
               </label>
-              <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
-                <input type="radio" name="payment" />
-                <span>Thanh toán quẹt thẻ khi giao hàng (POS)</span>
-              </label>
-              <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
-                <input type="radio" name="payment" />
+              <label className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="VNPAY"
+                  checked={paymentMethod === "VNPAY"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
                 <span>Thanh toán online qua VNPAY</span>
               </label>
-              <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
-                <input type="radio" name="payment" />
+              <label className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
+                <input
+                  type="radio"
+                  name="payment"
+                  value="MoMo"
+                  checked={paymentMethod === "MoMo"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
                 <span>Ví MoMo</span>
               </label>
             </div>
           </div>
 
-          <div class="mt-4 flex justify-between">
-            <button class="text-gray-600">
-              <a href="cart">Giỏ hàng</a>
-            </button>
-            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg">
-              Hoàn tất đơn hàng
+          {error && <div className="mt-4 text-red-500 text-sm">{error}</div>}
+
+          <div className="mt-4 flex justify-between">
+            <Link to="/cart" className="text-gray-600 hover:text-gray-900">
+              Giỏ hàng
+            </Link>
+            <button
+              onClick={handlePayment}
+              disabled={loading}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? "Đang xử lý..." : "Thanh toán đơn hàng"}
             </button>
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-md border">
-          <h3 class="font-semibold">Giỏ hàng</h3>
-          <div class="mt-2 space-y-4">
-            <div class="flex items-center space-x-4">
-              <div class="w-16 h-16 bg-gray-200"></div>
-              <div>
-                <p>Ghế Ăn Gỗ Cao Su Tự Nhiên MOHO SORO 661</p>
-                <p class="text-gray-600">1,490,000đ</p>
-              </div>
-            </div>
-            <div class="flex items-center space-x-4">
-              <div class="w-16 h-16 bg-gray-200"></div>
-              <div>
-                <p>Bàn Ăn Gỗ Cao Su Tự Nhiên MOHO VLINE 601 90cm</p>
-                <p class="text-gray-600">2,199,000đ</p>
-              </div>
-            </div>
-            <div class="flex items-center space-x-4">
-              <div class="w-16 h-16 bg-gray-200"></div>
-              <div>
-                <p>Bàn Làm Việc Gỗ Cao Su MOHO VLINE 602 Màu Nâu</p>
-                <p class="text-gray-600">1,499,000đ</p>
-              </div>
-            </div>
+        <div className="bg-white p-6 rounded-lg shadow-md border">
+          <h3 className="font-semibold">Đơn hàng của bạn</h3>
+          <div className="mt-4 space-y-4">
+            {selectedProducts.map((item) => {
+              const price = item.product_variant
+                ? item.product_variant.discount_price ||
+                  item.product_variant.price
+                : item.product.discount_price || item.product.price;
+
+              return (
+                <div
+                  key={`${item.product.id}-${JSON.stringify(
+                    item.product_variant?.variant_details
+                  )}`}
+                  className="flex items-center space-x-4"
+                >
+                  <div className="relative w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                    <img
+                      src={`http://localhost:8000/storage/${item.product.image_thumnail}`}
+                      alt={item.product.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src =
+                          "https://via.placeholder.com/80x80?text=No+Image";
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{item.product.name}</p>
+                    <div className="mt-1 space-x-2">
+                      {item.variant_details &&
+                        Array.isArray(item.variant_details) &&
+                        item.variant_details.map((variant, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-gray-100"
+                          >
+                            {variant.name}: {variant.value}
+                          </span>
+                        ))}
+                    </div>
+                    <div className="mt-1 text-sm text-gray-500">
+                      {/* {formatPrice(
+                        item.product.discount_price || item.product.price
+                      )}{" "}
+                      x {item.quantity} */}
+                      {formatPrice(price)} x {item.quantity}
+                    </div>
+                  </div>
+                  <div className="font-medium">
+                    {/* {formatPrice(
+                      (item.product.discount_price || item.product.price) *
+                        item.quantity
+                    )} */}
+                    {formatPrice(item.total_price)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* <div class="mt-4">
-            <label class="block text-sm font-semibold">Mã giảm giá</label>
-            <div class="flex mt-1">
-              <input
-                type="text"
-                class="w-full border p-2 rounded-l-lg"
-                placeholder="Nhập mã"
-              />
-              <button class="bg-gray-300 px-4 py-2 rounded-r-lg">
-                Sử dụng
-              </button>
+          <div className="mt-6 border-t pt-4">
+            <div className="flex justify-between text-gray-600">
+              <span>Tạm tính</span>
+              <span>{formatPrice(calculateSubtotal())}</span>
             </div>
-          </div> */}
-
-          <div class="mt-4 border-t pt-4">
-            <p class="flex justify-between">
-              <span>Tạm tính</span> <span>5,188,000đ</span>
-            </p>
-            <p class="flex justify-between font-bold text-lg">
-              <span>Tổng cộng</span> <span>5,188,000đ</span>
-            </p>
+            {discount > 0 && (
+              <div className="flex justify-between text-green-600 mt-2">
+                <span>Giảm giá</span>
+                <span>-{formatPrice(discount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-gray-600 mt-2">
+              <span>Phí vận chuyển</span>
+              <span>free</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t">
+              <span>Tổng cộng</span>
+              <span>{formatPrice(calculateTotal())}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
-
 };
 
 export default Payment;

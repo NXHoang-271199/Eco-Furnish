@@ -1,276 +1,969 @@
-import React from "react";
-import { FaArrowRight } from "react-icons/fa";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  useMotionValue,
+  useInView,
+  useAnimation,
+} from "framer-motion";
+import api from "../../../service/api";
 import Banner from "../../../components/Banner";
+import { IoCartOutline, IoStar } from "react-icons/io5";
+import { HiOutlineArrowNarrowRight } from "react-icons/hi";
+import { FaLeaf, FaTree, FaSeedling } from "react-icons/fa";
+
 const Homes = () => {
+  const [products, setProducts] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const bannerRef = useRef(null);
+  const bannerInView = useInView(bannerRef, { once: false, amount: 0.5 });
+  const bannerControls = useAnimation();
+  const { scrollY } = useScroll();
+
+  // Hiệu ứng parallax cho banner
+  const y = useTransform(scrollY, [0, 1000], [0, 300]);
+  const opacity = useTransform(scrollY, [0, 300], [1, 0.3]);
+  const scale = useTransform(scrollY, [0, 500], [1, 1.2]);
+  const springY = useSpring(y, { stiffness: 50, damping: 15 });
+  const springOpacity = useSpring(opacity, { stiffness: 50, damping: 15 });
+  const springScale = useSpring(scale, { stiffness: 50, damping: 15 });
+
+  // Hiệu ứng vị trí mặt trời (gradient)
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const rotateX = useTransform(mouseY, [-300, 300], [5, -5]);
+  const rotateY = useTransform(mouseX, [-300, 300], [-5, 5]);
+  const gradientX = useTransform(mouseX, [-300, 300], ["30%", "70%"]);
+  const gradientY = useTransform(mouseY, [-300, 300], ["30%", "70%"]);
+
+  useEffect(() => {
+    if (bannerInView) {
+      bannerControls.start({
+        scale: 1,
+        opacity: 1,
+        transition: {
+          type: "spring",
+          stiffness: 60,
+          damping: 20,
+          delay: 0.2,
+        },
+      });
+    }
+  }, [bannerInView, bannerControls]);
+
+  const handleMouseMove = (e) => {
+    const { clientX, clientY } = e;
+    const boundingRect = e.currentTarget.getBoundingClientRect();
+    const centerX = boundingRect.width / 2;
+    const centerY = boundingRect.height / 2;
+    mouseX.set(clientX - boundingRect.left - centerX);
+    mouseY.set(clientY - boundingRect.top - centerY);
+  };
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await api.get("products");
+        if (
+          response.data.status === "success" &&
+          Array.isArray(response.data.data.data)
+        ) {
+          setProducts(response.data.data.data);
+        } else {
+          console.log("Dữ liệu không phải là mảng hoặc API trả về lỗi");
+        }
+      } catch (error) {
+        console.log("Lỗi khi gọi API sản phẩm:", error);
+      }
+    };
+
+    const fetchPosts = async () => {
+      try {
+        const response = await api.get("posts");
+        if (
+          response.data.status === "success" &&
+          Array.isArray(response.data.data)
+        ) {
+          console.log("Dữ liệu bài viết:", response.data.data);
+          setPosts(response.data.data);
+        } else {
+          console.log(
+            "Dữ liệu bài viết không phải là mảng hoặc API trả về lỗi"
+          );
+        }
+      } catch (error) {
+        console.log("Lỗi khi gọi API bài viết:", error);
+      }
+    };
+
+    fetchProducts();
+    fetchPosts();
+  }, []);
+
+  // Animation variants
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 60 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 1.2,
+        ease: [0.22, 0.03, 0.21, 1], // chuyển động cực kỳ mượt
+      },
+    },
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.5,
+        delayChildren: 0.6,
+      },
+    },
+  };
+
+  const scaleIn = {
+    hidden: { scale: 0.92, opacity: 0 },
+    visible: {
+      scale: 1,
+      opacity: 1,
+      transition: {
+        duration: 1.2,
+        ease: [0.22, 1.2, 0.36, 1], // easeOutBack với nhẹ hơn
+      },
+    },
+  };
+
+  // Banner text variants
+  const bannerTextVariants = {
+    hidden: {
+      opacity: 0,
+      y: 100,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 1.5,
+        ease: "easeOut",
+        delay: 0.3,
+      },
+    },
+  };
+
+  // Hiệu ứng shine cho banner texture
+  const shineVariants = {
+    initial: {
+      background:
+        "linear-gradient(45deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 75%, rgba(255,255,255,0.5) 90%, rgba(255,255,255,0) 100%)",
+      backgroundSize: "200% 200%",
+      backgroundPosition: "0% 0%",
+    },
+    animate: {
+      backgroundPosition: "200% 200%",
+      transition: {
+        duration: 15,
+        ease: "linear",
+        repeat: Infinity,
+      },
+    },
+  };
+
   return (
     <>
-      <Banner />
+      {/* Banner chính */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
+        <Banner />
+      </motion.div>
 
-      <section>
-        <div className="max-w-6xl mx-auto mt-20 my-5">
-          <div className="grid grid-rows-6 grid-cols-3 ">
-            <div className="row-span-4">
-              <div>
-                <a href="">
-                  <img
-                    src=".\src\assets\img\banners\banner-homepage2_1.png"
-                    alt=""
-                  />
-                </a>
-              </div>
-            </div>
-            <div className="col-span-2 row-span-2">
-              <div>
-                <a href="">
-                  <img
-                    src=".\src\assets\img\banners\banner-homepage2_3.png"
-                    alt=""
-                  />
-                </a>
-              </div>
-            </div>
-            <div className=" col-span-2 row-span-4">
-              <div className="pt-3">
-                <a href="">
-                  <img
-                    src=".\src\assets\img\banners\banner-homepage2_4.png"
-                    alt=""
-                  />
-                </a>
-              </div>
-            </div>
-            <div className=" row-span-2">
-              <div>
-                <a href="">
-                  <img
-                    src=".\src\assets\img\banners\banner-homepage2_2.png"
-                    alt=""
-                  />
-                </a>
-              </div>
-            </div>
+      {/* Giới thiệu nhiệm vụ - Mở đầu trang chủ */}
+      <motion.section
+        className="py-16 bg-gradient-to-b from-amber-50 to-white"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.3 }}
+      >
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <motion.div
+              className="flex justify-center mb-5"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+            >
+              <span className="p-3 bg-amber-100 rounded-full text-amber-600">
+                <FaLeaf size={28} />
+              </span>
+            </motion.div>
+            <motion.h2
+              className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+            >
+              Nội thất bền vững cho ngôi nhà của bạn
+            </motion.h2>
+            <motion.p
+              className="text-gray-600 text-lg"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+            >
+              Tại Eco-Furnish, chúng tôi cam kết cung cấp sản phẩm nội thất được
+              làm từ nguyên liệu tự nhiên, thân thiện với môi trường và mang đến
+              không gian sống xanh, bền vững cho mọi gia đình.
+            </motion.p>
+          </div>
+
+          {/* Các đặc điểm */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <FaTree className="text-green-600 mb-1" size={24} />,
+                title: "Nguyên liệu bền vững",
+                description:
+                  "Sử dụng gỗ từ các khu rừng được quản lý bền vững, đảm bảo nguồn tài nguyên dài hạn.",
+              },
+              {
+                icon: <FaLeaf className="text-green-600 mb-1" size={24} />,
+                title: "Thân thiện môi trường",
+                description:
+                  "Quy trình sản xuất thân thiện với môi trường, giảm thiểu khí thải và chất thải.",
+              },
+              {
+                icon: <FaSeedling className="text-green-600 mb-1" size={24} />,
+                title: "Không gian sống xanh",
+                description:
+                  "Thiết kế hiện đại kết hợp với chất liệu tự nhiên tạo nên không gian sống xanh mát.",
+              },
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                className="bg-white p-8 rounded-2xl shadow-sm text-center border border-gray-100"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
+                viewport={{ once: true }}
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 mb-5">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-gray-800">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* list products */}
-
-      <section>
-        <div className="max-w-6xl mx-auto mt-20 my-5">
-          <div>
-            <div>
-              <div className="text-center m-auto">
-                <h2 className="mb-6 text-4xl font-semibold">New Product</h2>
-                <p className="w-[65%] m-auto">
-                  Our traditional dining tables, chairs, case pieces and other
-                  traditional dining furniture are geared toward those who
-                  appreciate the simplicity and true craftsmanship.
-                </p>
-              </div>
+      {/* Sản phẩm mới */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
+        variants={fadeInUp}
+        className="py-20"
+      >
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
+            <div className="max-w-2xl">
+              <motion.div
+                className="inline-block px-4 py-1 bg-amber-100 rounded-full text-amber-700 font-medium text-sm mb-4"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                NEW ARRIVALS
+              </motion.div>
+              <motion.h2
+                className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                viewport={{ once: true }}
+              >
+                Khám phá bộ sưu tập{" "}
+                <span className="text-amber-500">mới nhất</span>
+              </motion.h2>
+              <motion.p
+                className="text-gray-600"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                Các sản phẩm nội thất được thiết kế hiện đại, tinh tế và chất
+                lượng cao, mang đến không gian sống tiện nghi và sang trọng.
+              </motion.p>
             </div>
-            <div className="grid grid-cols-4 grid-rows-1 gap-4 my-12 ">
-              <div>
-                <Link to={"product"}>
-                  <div className="mb-2">
-                    <img
-                      src="https://picsum.photos/291/301"
-                      alt="sanpham"
-                      className="rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="mb-2 font-semibold ">Name Product</h3>
-                    <p className="font-medium">1.000.000</p>
-                  </div>
-                </Link>
-              </div>
-              <div>
-                <Link to={"product"}>
-                  <div className="mb-2">
-                    <img
-                      src="https://picsum.photos/291/301"
-                      alt="sanpham"
-                      className="rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="mb-2 font-semibold ">Name Product</h3>
-                    <p className="font-medium">1.000.000</p>
-                  </div>
-                </Link>
-              </div>
-              <div>
-                <Link to={"product"}>
-                  <div className="mb-2">
-                    <img
-                      src="https://picsum.photos/291/301"
-                      alt="sanpham"
-                      className="rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="mb-2 font-semibold ">Name Product</h3>
-                    <p className="font-medium">1.000.000</p>
-                  </div>
-                </Link>
-              </div>
-              <div>
-                <Link to={"product"}>
-                  <div className="mb-2">
-                    <img
-                      src="https://picsum.photos/291/301"
-                      alt="sanpham"
-                      className="rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="mb-2 font-semibold ">Name Product</h3>
-                    <p className="font-medium">1.000.000</p>
-                  </div>
-                </Link>
-              </div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <Link
+                to="/products"
+                className="inline-flex items-center text-amber-600 font-medium hover:text-amber-700 group mt-6 md:mt-0"
+              >
+                <span>Xem tất cả sản phẩm</span>
+                <HiOutlineArrowNarrowRight className="ml-2 group-hover:translate-x-1 transition-transform w-5 h-5" />
+              </Link>
+            </motion.div>
           </div>
+
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.1 }}
+          >
+            {products.length > 0 ? (
+              products.slice(0, 4).map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  variants={fadeInUp}
+                  custom={index}
+                  whileHover={{
+                    y: -12,
+                    transition: { duration: 0.3, ease: "easeOut" },
+                  }}
+                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
+                >
+                  <Link to={`product/${product.id}`} className="block">
+                    <div className="relative overflow-hidden">
+                      <div className="aspect-square overflow-hidden">
+                        <motion.img
+                          src={`http://localhost:8000/storage/${product.image_thumnail}`}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                          initial={{ scale: 1.2, y: 20 }}
+                          animate={{ scale: 1, y: 0 }}
+                          transition={{ duration: 0.8, delay: index * 0.1 }}
+                        />
+                      </div>
+
+                      {/* Nhãn mới */}
+                      <motion.div
+                        className="absolute top-3 right-3 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          delay: 0.5 + index * 0.1,
+                        }}
+                      >
+                        MỚI
+                      </motion.div>
+
+                      {/* Nút mua nhanh */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <motion.button
+                          className="bg-white text-amber-500 p-3 rounded-full shadow-md hover:bg-amber-500 hover:text-white transition-all duration-300"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <IoCartOutline className="text-xl" />
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      {/* Sao đánh giá */}
+                      <div className="flex items-center mb-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <IoStar
+                            key={star}
+                            className={`${
+                              star <= 4 ? "text-amber-400" : "text-gray-300"
+                            } w-4 h-4`}
+                          />
+                        ))}
+                        <span className="text-gray-500 text-sm ml-2">
+                          (4.0)
+                        </span>
+                      </div>
+
+                      <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-amber-500 transition-colors">
+                        {product.name}
+                      </h3>
+
+                      <p className="text-gray-500 text-sm mb-3 line-clamp-2">
+                        Sản phẩm nội thất cao cấp, bền đẹp
+                      </p>
+
+                      <p className="font-semibold text-amber-600 text-lg">
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(product.price || 0)}
+                      </p>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))
+            ) : (
+              <>
+                {[1, 2, 3, 4].map((index) => (
+                  <motion.div
+                    key={index}
+                    variants={fadeInUp}
+                    custom={index}
+                    className="bg-white rounded-xl shadow-sm overflow-hidden animate-pulse"
+                  >
+                    <div className="aspect-square bg-gray-200"></div>
+                    <div className="p-5">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full mb-3"></div>
+                      <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                    </div>
+                  </motion.div>
+                ))}
+              </>
+            )}
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
-      {/*  */}
-      <section>
-        <div className="max-w-6xl mx-auto mt-20 mb-20">
-          <div>
-            <div className="text-center m-auto">
-              <h2 className="mb-6 text-4xl font-semibold">From Our Blog</h2>
-            </div>
-          </div>
-          <div className="flex ">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <img src=".\src\assets\img\blog\blog-1.jpg" alt="" />
-                <div>
-                  <h3 className="mt-3 mb-1">
-                    <a href="">Blog name</a>
+      {/* Danh mục bộ sưu tập */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
+        variants={fadeInUp}
+        className="py-20 bg-gray-50"
+      >
+        <div className="max-w-6xl mx-auto px-4 relative">
+          <motion.h2
+            className="text-3xl md:text-4xl font-bold mb-8 text-center text-gray-800"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            Bộ sưu tập <span className="text-amber-500">nổi bật</span>
+          </motion.h2>
+
+          <motion.div
+            className="grid grid-cols-12 grid-rows-12 gap-6 h-[900px]"
+            variants={staggerContainer}
+          >
+            {/* Hình 1 - Lớn nhất */}
+            <motion.div
+              className="col-span-8 row-span-8 rounded-2xl overflow-hidden"
+              variants={scaleIn}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Link
+                to="/products"
+                className="block h-full w-full relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
+                <motion.div
+                  className="absolute bottom-8 left-8 text-white z-10 transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
+                  whileHover={{ x: 5 }}
+                >
+                  <h3 className="text-2xl font-bold mb-2">
+                    Phòng khách hiện đại
                   </h3>
-                  <p className="flex items-center gap-1 text-center">
-                    <a href="" className="underline">
-                      Read more
-                    </a>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="size-5 pt-1"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"
-                      />
-                    </svg>
+                  <p className="text-white/80 mb-4">
+                    Không gian thoáng đãng, sang trọng
                   </p>
-                </div>
-              </div>
-              <div>
-                <img src=".\src\assets\img\blog\blog-1.jpg" alt="" />
-                <div>
-                  <h3 className="mt-3 mb-1">
-                    <a href="">Blog name</a>
+                  <span className="flex items-center text-amber-300 font-medium">
+                    Xem bộ sưu tập{" "}
+                    <HiOutlineArrowNarrowRight className="ml-2" />
+                  </span>
+                </motion.div>
+                <img
+                  src=".\src\assets\img\banners\banner-homepage2_4.png"
+                  alt="Phòng khách hiện đại"
+                  className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                />
+              </Link>
+            </motion.div>
+
+            {/* Hình 2 */}
+            <motion.div
+              className="col-span-4 row-span-5 rounded-2xl overflow-hidden"
+              variants={scaleIn}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Link
+                to="/products"
+                className="block h-full w-full relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
+                <motion.div
+                  className="absolute bottom-6 left-6 text-white z-10 transform translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
+                  whileHover={{ x: 5 }}
+                >
+                  <h3 className="text-xl font-bold mb-1">Thiết kế cổ điển</h3>
+                  <span className="flex items-center text-amber-300 font-medium text-sm">
+                    Xem bộ sưu tập{" "}
+                    <HiOutlineArrowNarrowRight className="ml-2" />
+                  </span>
+                </motion.div>
+                <img
+                  src=".\src\assets\img\banners\banner-homepage2_1.png"
+                  alt="Thiết kế cổ điển"
+                  className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                />
+              </Link>
+            </motion.div>
+
+            {/* Hình 3 */}
+            <motion.div
+              className="col-span-4 row-span-3 rounded-2xl overflow-hidden"
+              variants={scaleIn}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Link
+                to="/products"
+                className="block h-full w-full relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
+                <motion.div
+                  className="absolute bottom-4 left-4 text-white z-10 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
+                  whileHover={{ x: 5 }}
+                >
+                  <h3 className="text-lg font-bold mb-1">Phòng ngủ</h3>
+                  <span className="flex items-center text-amber-300 font-medium text-sm">
+                    Xem ngay <HiOutlineArrowNarrowRight className="ml-1" />
+                  </span>
+                </motion.div>
+                <img
+                  src=".\src\assets\img\banners\banner-homepage2_2.png"
+                  alt="Phòng ngủ"
+                  className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                />
+              </Link>
+            </motion.div>
+
+            {/* Hình 4 */}
+            <motion.div
+              className="col-span-8 row-span-4 rounded-2xl overflow-hidden"
+              variants={scaleIn}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Link
+                to="/products"
+                className="block h-full w-full relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
+                <motion.div
+                  className="absolute bottom-6 left-6 text-white z-10 transform translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
+                  whileHover={{ x: 5 }}
+                >
+                  <h3 className="text-xl font-bold mb-1">
+                    Không gian làm việc
                   </h3>
-                  <p className="flex items-center gap-1 text-center">
-                    <a href="" className="underline">
-                      Read more
-                    </a>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="size-5 pt-1"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"
-                      />
-                    </svg>
-                  </p>
-                </div>
-              </div>
-              <div>
-                <img src=".\src\assets\img\blog\blog-1.jpg" alt="" />
-                <div>
-                  <h3 className="mt-3 mb-1">
-                    <a href="">Blog name</a>
-                  </h3>
-                  <p className="flex items-center gap-1 text-center">
-                    <a href="" className="underline">
-                      Read more
-                    </a>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="size-5 pt-1"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"
-                      />
-                    </svg>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+                  <span className="flex items-center text-amber-300 font-medium">
+                    Xem bộ sưu tập{" "}
+                    <HiOutlineArrowNarrowRight className="ml-2" />
+                  </span>
+                </motion.div>
+                <img
+                  src=".\src\assets\img\banners\banner-homepage2_3.png"
+                  alt="Không gian làm việc"
+                  className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                />
+              </Link>
+            </motion.div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
+
+      {/* Phần bài viết */}
+      <motion.section
+        className="py-20 bg-white relative overflow-hidden"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
+        variants={fadeInUp}
+      >
+        {/* Decorative Elements */}
+        <motion.div
+          className="absolute top-0 right-0 w-72 h-72 rounded-full bg-amber-200 filter blur-3xl opacity-20"
+          animate={{
+            x: [50, -50, 50],
+            y: [20, -20, 20],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-0 left-20 w-64 h-64 rounded-full bg-amber-400 filter blur-3xl opacity-10"
+          animate={{
+            x: [-30, 30, -30],
+            y: [30, 0, 30],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
+          <motion.div className="mb-16 text-center" variants={fadeInUp}>
+            <motion.span
+              className="text-amber-500 font-medium mb-2 block"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, delay: 0.3 }}
+              viewport={{ once: true }}
+            >
+              Tin tức & ý tưởng
+            </motion.span>
+            <motion.h2
+              className="text-3xl md:text-4xl font-bold mb-6 relative inline-block"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, delay: 0.6 }}
+              viewport={{ once: true }}
+            >
+              Bài Viết Mới Nhất
+              <motion.span
+                className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-amber-600"
+                initial={{ width: 0 }}
+                whileInView={{ width: "100%" }}
+                transition={{ duration: 1.2, delay: 1.2 }}
+                viewport={{ once: true }}
+              />
+            </motion.h2>
+            <motion.p
+              className="text-gray-600 max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, delay: 0.9 }}
+              viewport={{ once: true }}
+            >
+              Khám phá những ý tưởng thiết kế nội thất mới nhất và các bí quyết
+              để tạo nên không gian sống hoàn hảo cho ngôi nhà của bạn.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            variants={staggerContainer}
+          >
+            {posts.length > 0 ? (
+              posts.slice(0, 3).map((post, index) => (
+                <motion.div
+                  key={post.id}
+                  className="group"
+                  variants={fadeInUp}
+                  custom={index}
+                  whileHover={{ y: -10 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <Link
+                    to={`/blog-detail/${post.slug}`}
+                    className="block h-full"
+                  >
+                    <motion.article
+                      className="bg-white rounded-2xl overflow-hidden shadow-lg h-full transform transition-all duration-300 border border-gray-100"
+                      initial={{
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      }}
+                      whileHover={{
+                        y: -5,
+                        boxShadow:
+                          "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                      }}
+                      transition={{ duration: 0.6 }}
+                    >
+                      <div className="relative overflow-hidden aspect-[16/10]">
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-purple-600/30 z-10 opacity-0 mix-blend-overlay"
+                          whileHover={{ opacity: 1 }}
+                          transition={{ duration: 0.5 }}
+                        />
+                        <motion.img
+                          src={
+                            post.thumbnail
+                              ? post.thumbnail.startsWith("http")
+                                ? post.thumbnail
+                                : post.thumbnail.startsWith("/")
+                                ? `http://localhost:8000${post.thumbnail}`
+                                : `http://localhost:8000/${post.thumbnail}`
+                              : "http://localhost:5173/src/assets/img/blog/blog-1.jpg"
+                          }
+                          alt={post.title}
+                          className="w-full h-full object-cover"
+                          whileHover={{ scale: 1.08 }}
+                          transition={{ duration: 1.8 }}
+                          onError={(e) => {
+                            console.log("Lỗi khi tải ảnh:", post.thumbnail);
+                            e.target.src =
+                              "http://localhost:5173/src/assets/img/blog/blog-1.jpg";
+                          }}
+                        />
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          initial={{ opacity: 0 }}
+                          whileHover={{ opacity: 1 }}
+                          transition={{ duration: 1.2 }}
+                        ></motion.div>
+
+                        {/* Thẻ danh mục */}
+                        <motion.div
+                          className="absolute top-4 left-4 z-20"
+                          initial={{ opacity: 0, x: -20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.4 + index * 0.2 }}
+                        >
+                          <span className="bg-amber-500 text-white text-xs font-medium px-3 py-1 rounded-full shadow-lg backdrop-blur-sm bg-opacity-80">
+                            {post.category?.title || "Nội thất"}
+                          </span>
+                        </motion.div>
+                      </div>
+
+                      <div className="p-6 relative">
+                        {/* Background decorative element */}
+                        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-16 h-16 bg-amber-50 rounded-full opacity-70" />
+
+                        {/* Thông tin thời gian */}
+                        <div className="flex items-center text-gray-500 text-sm mb-3 relative z-10">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 mr-1 text-amber-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          <span>{post.created_at}</span>
+                        </div>
+
+                        {/* Tiêu đề */}
+                        <motion.h3
+                          className="font-bold text-xl mb-3 text-gray-800 group-hover:text-amber-600 transition-colors duration-200 line-clamp-2 relative z-10"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.8,
+                            delay: 0.2 + index * 0.1,
+                          }}
+                        >
+                          {post.title}
+                        </motion.h3>
+
+                        {/* Mô tả ngắn */}
+                        <motion.p
+                          className="text-gray-600 mb-5 line-clamp-3 relative z-10"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            duration: 0.8,
+                            delay: 0.3 + index * 0.1,
+                          }}
+                        >
+                          {post.short_content}
+                        </motion.p>
+
+                        {/* Nút đọc thêm */}
+                        <motion.div
+                          className="flex items-center text-amber-500 font-medium transition-all duration-200 group-hover:text-amber-600 relative z-10"
+                          whileHover={{ x: 5 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          <span>Đọc tiếp</span>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 ml-2 transform transition-transform duration-300 group-hover:translate-x-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M17 8l4 4m0 0l-4 4m4-4H3"
+                            />
+                          </svg>
+                        </motion.div>
+                      </div>
+                    </motion.article>
+                  </Link>
+                </motion.div>
+              ))
+            ) : (
+              <>
+                {[1, 2, 3].map((index) => (
+                  <motion.div
+                    key={index}
+                    className="animate-pulse bg-white rounded-xl overflow-hidden shadow-sm"
+                    variants={fadeInUp}
+                    custom={index}
+                  >
+                    <div className="bg-gray-300 aspect-[16/10]"></div>
+                    <div className="p-6">
+                      <div className="h-4 bg-gray-300 rounded w-1/4 mb-3"></div>
+                      <div className="h-6 bg-gray-300 rounded w-3/4 mb-3"></div>
+                      <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
+                      <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
+                      <div className="h-4 bg-gray-300 rounded w-2/3 mb-4"></div>
+                      <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+                    </div>
+                  </motion.div>
+                ))}
+              </>
+            )}
+          </motion.div>
+
+          {/* Nút xem tất cả bài viết */}
+          <motion.div
+            className="text-center mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, delay: 1 }}
+            viewport={{ once: true }}
+          >
+            <Link
+              to="/blogs"
+              className="relative inline-flex items-center bg-amber-500 hover:bg-amber-600 text-white font-medium py-3 px-8 rounded-full transition-all duration-300 overflow-hidden group"
+            >
+              <motion.span
+                className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-amber-600 to-amber-400 opacity-0 group-hover:opacity-100"
+                transition={{ duration: 0.5 }}
+              />
+              <span className="relative z-10">Xem tất cả bài viết</span>
+              <motion.svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 ml-2 relative z-10"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                whileHover={{ x: 5 }}
+                transition={{ duration: 0.3 }}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
+              </motion.svg>
+            </Link>
+          </motion.div>
+        </div>
+      </motion.section>
       {/* end blog */}
 
-      {/* brand */}
-      <section className="">
-        <div className="w-full bg-gray-200">
-          <div class="w-full mx-auto py-12 px-6">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center">
-              <img
-                src=".\src\assets\img\brands\brand-2.png"
-                alt="Brand 1"
-                class="mx-auto"
-              />
-              <img
-                src=".\src\assets\img\brands\brand-3.png"
-                alt="Brand 2"
-                class="mx-auto"
-              />
-              <img
-                src=".\src\assets\img\brands\brand-4.png"
-                alt="Brand 3"
-                class="mx-auto"
-              />
-              <img
-                src=".\src\assets\img\brands\brand-6.png"
-                alt="Brand 4"
-                class="mx-auto"
-              />
-              <img
-                src=".\src\assets\img\brands\brand-7.png"
-                alt="Brand 5"
-                class="mx-auto"
-              />
-              <img
-                src=".\src\assets\img\brands\brand-11.png"
-                alt="Brand 6"
-                class="mx-auto"
-              />
-            </div>
-          </div>
+      {/* Thương hiệu đối tác */}
+      <motion.section
+        className="py-20 bg-gray-50"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
+        variants={fadeInUp}
+      >
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <motion.span
+              className="inline-block px-4 py-1 bg-amber-100 rounded-full text-amber-700 font-medium text-sm mb-4"
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              ĐỐI TÁC TIN CẬY
+            </motion.span>
+            <motion.h2
+              className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              Thương hiệu <span className="text-amber-500">đồng hành</span>
+            </motion.h2>
+            <motion.p
+              className="text-gray-600 max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              viewport={{ once: true }}
+            >
+              Chúng tôi hợp tác với các thương hiệu hàng đầu để đảm bảo chất
+              lượng và tính bền vững cho từng sản phẩm.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, staggerChildren: 0.1 }}
+            viewport={{ once: true }}
+          >
+            {[2, 3, 4, 6, 7, 11].map((num, index) => (
+              <motion.div
+                key={num}
+                variants={fadeInUp}
+                custom={index * 0.1}
+                whileHover={{
+                  y: -5,
+                  boxShadow: "0 10px 30px -15px rgba(0,0,0,0.1)",
+                }}
+                className="bg-white p-6 rounded-xl shadow-sm flex items-center justify-center h-24 border border-gray-100 transition-all duration-300"
+              >
+                <img
+                  src={`.\\src\\assets\\img\\brands\\brand-${num}.png`}
+                  alt={`Brand ${index + 1}`}
+                  className="max-h-12 w-auto filter grayscale hover:grayscale-0 transition-all duration-300"
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div
+            className="text-center mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <Link
+              to="/about"
+              className="inline-flex items-center text-amber-600 font-medium hover:text-amber-700 group"
+            >
+              <span>Tìm hiểu thêm về chúng tôi</span>
+              <HiOutlineArrowNarrowRight className="ml-2 group-hover:translate-x-1 transition-transform w-5 h-5" />
+            </Link>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
     </>
   );
 };

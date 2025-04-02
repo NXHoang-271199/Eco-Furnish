@@ -36,6 +36,7 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/search', [ProductController::class, 'search']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
+
 // Category routes
 Route::get('/categories', [CategoryApiController::class, 'index']);
 Route::get('/categories/{slug}', [CategoryApiController::class, 'show']);
@@ -80,7 +81,6 @@ Route::prefix('category-posts')->group(function () {
 Route::prefix('vouchers')->group(function () {
     Route::get('/', [VoucherApiController::class, 'index']);
     Route::get('/{code}', [VoucherApiController::class, 'show']);
-    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']);
 });
 
 // Comment routes
@@ -100,10 +100,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
     Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
     Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
+    // Route::post('/cart-items/update-quantity', [CartController::class, 'updateCartItemQuantity']); // API mới cập nhật số lượng
 });
 
 // Payment Method routes
 Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+Route::get('/payment-methods/{id}', [PaymentMethodController::class, 'show']);
 Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // FE ko được động tới
 Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']); // FE ko được động tới
 
@@ -116,6 +118,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{id}/request-refund', [OrderController::class, 'requestRefund']); // Gửi yêu cầu hoàn hàng
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
     Route::post('/orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
+    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
 });
 // review routes
 Route::middleware('auth:sanctum')->group(function () {

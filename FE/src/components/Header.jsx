@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { IoCartOutline } from "react-icons/io5";
 import { AiOutlineUser, AiOutlineSearch, AiOutlineHeart } from "react-icons/ai";
+import CartBadge from "./CartBadge";
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -29,121 +30,59 @@ const Header = () => {
 
   return (
     <>
-      <header class="bg-white fixed top-0 left-0 w-full z-50">
-        <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
-          {/* <!-- Logo --> */}
-          <div class="text-2xl font-bold text-black">
+      <header className="bg-white fixed top-0 left-0 w-full z-50">
+        <div className="max-w-6xl mx-auto flex justify-between items-center p-4 bg-[#fbfeeb]">
+          {/* Logo */}
+          <div className="text-2xl font-bold text-black">
             <div>
-              <a href="/">
-                <span className="text-yellow-300">E</span>co-
-                <span className="text-yellow-300">F</span>urnish
-              </a>
+              <Link to="/">
+                {/* <span className="text-yellow-300">E</span>co-
+                <span className="text-yellow-300">F</span>urnish */}
+                <img
+                  src="./logoweb5.jpg"
+                  alt=""
+                  className="w-[120px] h-[120px]"
+                />
+              </Link>
             </div>
           </div>
 
-          {/* <!-- Navigation --> */}
-          <nav class="hidden md:flex space-x-6">
-            <ul className="flex justify-center space-x-6 ">
-              <li>
-                <Link to="/" className="hover:text-yellow-400">
-                  Trang chủ
-                </Link>
-              </li>
-              <li className="relative group">
-                <Link to="/products" className="hover:text-yellow-400">
-                  Sản phẩm
-                </Link>
-                <div class="absolute hidden group-hover:flex bg-white shadow-lg rounded-lg w-[600px] p-6 md\:w-auto">
-                  <ul class="grid grid-cols-2 gap-6 w-full">
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phòng khách
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Không gian tiếp đón khách...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phòng ngủ
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Nơi nghỉ ngơi thư giãn...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phòng bếp
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Trang bị đầy đủ tiện nghi...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phòng làm việc
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Không gian làm việc hiệu quả...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Trang trí nội thất
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Thêm màu sắc phong cách...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Đồ nội thất ngoài trời
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Thư giãn với bộ bàn ghế...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Thảm và Rèm cửa
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Làm mới không gian sống...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phụ kiện nội thất
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Những chi tiết tinh tế...
-                      </p>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-
-              <li>
-                <Link to="/contact" className="hover:text-yellow-400">
-                  Liên hệ
-                </Link>
-              </li>
-              <li>
-                <Link to="/blogs" className="hover:text-yellow-400">
-                  Bài viết
-                </Link>
-              </li>
-            </ul>
+          {/* Navigation */}
+          <nav className="hidden md:flex space-x-8">
+            <Link to="/" className="text-gray-700 hover:text-black text-lg">
+              Trang chủ
+            </Link>
+            <Link
+              to="/products"
+              className="text-gray-700 hover:text-black text-lg"
+            >
+              Sản phẩm
+            </Link>
+            <Link
+              to="/blogs"
+              className="text-gray-700 hover:text-black text-lg"
+            >
+              Bài viết
+            </Link>
+            <Link
+              to="/contact"
+              className="text-gray-700 hover:text-black text-lg"
+            >
+              Liên hệ
+            </Link>
           </nav>
 
-          {/* <!-- Icons --> */}
-          <div class="flex items-center space-x-4">
-            <Link to="/search">
-              <AiOutlineSearch />
+          {/* Icons */}
+          <div className="flex items-center space-x-6">
+            <Link to="/search" className="text-gray-700 hover:text-black">
+              <AiOutlineSearch size={20} />
             </Link>
-
-            <Link to="/cart">
-              <IoCartOutline />
+            <Link
+              to="/cart"
+              className="text-gray-700 hover:text-black relative"
+            >
+              <IoCartOutline size={20} />
+              <CartBadge />
             </Link>
             {isLoggedIn ? (
               <Link
@@ -154,7 +93,7 @@ const Header = () => {
               </Link>
             ) : (
               <Link
-                to="/signin"
+                to="/sign-in"
                 className="text-gray-700 hidden md:block hover:text-black"
               >
                 <AiOutlineUser className="inline mr-1" />

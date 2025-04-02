@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { FaRegEyeSlash, FaEye } from "react-icons/fa";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { motion } from "framer-motion"; // npm install framer-motion để chạy hiệu ứng
 import { useForm } from "react-hook-form";
@@ -7,6 +8,7 @@ import axios from "axios";
 
 const SignIn = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const {
     register,
     handleSubmit,
@@ -17,101 +19,59 @@ const SignIn = () => {
   const location = useLocation();
 
   const onSubmit = async (data) => {
-    // console.log(data);
-
     try {
       const response = await axios.post(
-        `http://localhost:8000/api/users/login`,
-        data
+        `http://127.0.0.1:8000/api/users/login`,
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
       );
 
-      console.log("Response từ API đăng nhập:", response.data);
-
-      // Kiểm tra cấu trúc response và lấy token đúng cách
-      let token = null;
-      let userData = null;
-
-      if (response.data.data && response.data.data.access_token) {
-        // Nếu token nằm trong response.data.data.access_token
-        token = response.data.data.access_token;
-
-        // Tạo đối tượng userData từ data
-        userData = {
-          id: response.data.data.id,
-          name: response.data.data.name,
-          email: response.data.data.email,
-          role: response.data.data.role,
-          avatar: response.data.data.avatar,
-          // Tạo slug từ name nếu cần
-          slug:
-            response.data.data.name?.toLowerCase().replace(/\s+/g, "-") || "",
-        };
-      } else if (response.data.accessToken) {
-        // Nếu token nằm trực tiếp trong response.data.accessToken
-        token = response.data.accessToken;
-        userData = response.data.user;
-      } else {
-        // Trường hợp khác, hiển thị lỗi
-        console.error("Không tìm thấy token trong response:", response.data);
-        alert("Đăng nhập không thành công: Không tìm thấy token");
-        return;
+      if (response.data.status === "success") {
+        // Lưu token và thông tin user
+        localStorage.setItem("authToken", response.data.data.access_token);
+        localStorage.setItem("refreshToken", response.data.data.refresh_token);
+        localStorage.setItem("userData", JSON.stringify(response.data.data));
+        navigate("/");
       }
-
-      // Lưu token và userData vào localStorage
-      localStorage.setItem("token", token);
-      localStorage.setItem("userData", JSON.stringify(userData));
-
-      // Kiểm tra xem đã lưu token thành công chưa
-      console.log("Token đã lưu:", localStorage.getItem("token"));
-      console.log("User data đã lưu:", localStorage.getItem("userData"));
-
-      // Phát sự kiện để thông báo đăng nhập thành công cho các tab khác
-      const authChangeEvent = new Event("auth-change");
-      window.dispatchEvent(authChangeEvent);
-
-      // Phát sự kiện storage để cập nhật các tab khác
-      try {
-        const storageEvent = new StorageEvent("storage", {
-          key: "token",
-          newValue: token,
-        });
-        window.dispatchEvent(storageEvent);
-
-        // Thêm sự kiện cho userData
-        const userDataEvent = new StorageEvent("storage", {
-          key: "userData",
-          newValue: JSON.stringify(userData),
-        });
-        window.dispatchEvent(userDataEvent);
-      } catch (error) {
-        console.error("Lỗi khi phát sự kiện storage:", error);
-      }
-
-      // Kiểm tra xem có returnUrl trong state không
-      const returnUrl = location.state?.returnUrl || "/";
-
-      // Thêm dữ liệu để chuyển về trang chi tiết
-      if (location.state?.returnUrl) {
-        localStorage.setItem("returnPath", location.state.returnUrl);
-      }
-
-      navigate(returnUrl, { replace: true });
     } catch (error) {
-      // Hiển thị lỗi validation cụ thể nếu có
-      if (error.response && error.response.data && error.response.data.errors) {
-        console.error("Lỗi validation:", error.response.data.errors);
-        // Hiển thị lỗi cho người dùng
-        alert(
-          "Đăng nhập không thành công: " +
-            Object.values(error.response.data.errors).flat().join(", ")
-        );
+      if (error.response?.status === 403) {
+        alert("Vui lòng xác thực email trước khi đăng nhập");
+      } else if (error.response?.data?.message) {
+        alert(error.response.data.message);
       } else {
-        console.error("Lỗi đăng nhập:", error);
-        alert(
-          "Đăng nhập không thành công: " +
-            (error.response?.data?.message || "Lỗi kết nối")
-        );
+        alert("Đã có lỗi xảy ra khi đăng nhập");
       }
+    }
+  };
+
+  // phải thông qua email-vẻ
+  const refreshToken = async () => {
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:8000/api/users/refresh-token`,
+        {
+          refresh_token: localStorage.getItem("refreshToken"), // Lưu refresh token trong localStorage
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.data.status === "success") {
+        localStorage.setItem("authToken", response.data.data.access_token);
+        console.log("Token đã được làm mới:", response.data.data.access_token);
+        return response.data.data.access_token;
+      }
+    } catch (error) {
+      console.error("Lỗi làm mới token:", error);
     }
   };
 
@@ -137,7 +97,7 @@ const SignIn = () => {
         <h2 className="text-2xl font-bold mb-2">Đăng Nhập</h2>
         <p className="mb-4">
           Chưa có tài khoản?{" "}
-          <a href="/signup" className="text-green-500">
+          <a href="/sign-up" className="text-green-500">
             Đăng Ký
           </a>
         </p>
@@ -158,7 +118,7 @@ const SignIn = () => {
           </div>
           <div className="mb-4 relative">
             <input
-              type="password"
+              type={isPasswordVisible ? "text" : "password"}
               placeholder="Mật khẩu"
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               name="password"
@@ -169,7 +129,16 @@ const SignIn = () => {
             {errors?.password && (
               <p className="text-red-400">{errors?.password?.message}</p>
             )}
-            <i className="fas fa-eye absolute right-3 top-3 text-gray-500 cursor-pointer"></i>
+            <button
+              type="button"
+              onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+            >
+              {isPasswordVisible ? (
+                <FaEye className="absolute right-3 top-3 text-gray-500 cursor-pointer" />
+              ) : (
+                <FaRegEyeSlash className="absolute right-3 top-3 text-gray-500 cursor-pointer" />
+              )}
+            </button>
           </div>
           <div className="flex items-center mb-4">
             <input type="checkbox" id="remember" className="mr-2" />
