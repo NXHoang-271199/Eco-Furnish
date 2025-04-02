@@ -311,7 +311,6 @@ class OrderController extends Controller
                 ], 400);
             }
             $paymentMethod = $paymentMethodId->name;
-            $paymentStatus = 0;
 
             // Tạo đơn hàng
             $order = Order::create([
@@ -322,7 +321,7 @@ class OrderController extends Controller
                 'user_phone' => $request->user_phone,
                 'user_address' => $request->user_address,
                 'payment_method_id' => $request->payment_method_id,
-                'payment_status' => $paymentStatus,
+                'payment_status' => $paymentMethod === 'Tiền mặt' ? 0 : 2, // 2 = Đang chờ thanh toán,
                 'order_status' => 'Chưa Xác Nhận',
                 'total_price' => $totalPrice,
                 'voucher_id' => $request->voucher_id ?? null,
@@ -451,7 +450,7 @@ class OrderController extends Controller
             ], 400);
         }
         // Kiểm tra nếu trạng thái đơn hàng là 'Hoàn Hàng' hoặc 'Từ Chối Hoàn Hàng', không cho phép gửi yêu cầu hoàn hàng nữa
-        if (in_array($order->order_status, ['Hoàn Hàng', 'Từ Chối Hoàn Hàng'])) {
+        if (in_array($order->order_status, ['Hoàn Hàng'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng trước đó, không thể gửi lại yêu cầu'
@@ -466,7 +465,7 @@ class OrderController extends Controller
         }
         // Kiểm tra nếu đơn hàng đã có yêu cầu hoàn hàng nào đang trong trạng thái "Chờ Duyệt"
         $existingRefundRequest = RefundRequest::where('order_id', $orderId)
-            ->whereIn('status', ['Chờ Duyệt', 'Đã Duyệt', 'Đã Từ Chối'])
+            ->whereIn('status', ['Chờ Duyệt', 'Đã Duyệt', 'Từ Chối'])
             ->first();
 
         if ($existingRefundRequest) {

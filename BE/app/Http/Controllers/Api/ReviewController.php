@@ -25,6 +25,7 @@ class ReviewController extends Controller
             ->whereHas('orderItems', function ($query) use ($productId) {
                 $query->where('product_id', $productId);
             })
+            ->whereNotIn('order_status', ['Hoàn Hàng', 'Hủy Đơn'])
             ->orderBy('created_at', 'desc') // Lấy đơn mới nhất
             ->first();
 
@@ -36,7 +37,7 @@ class ReviewController extends Controller
         }
 
         // Kiểm tra trạng thái đơn hàng có đủ điều kiện để đánh giá không
-        if (!in_array($order->order_status, ['Đã Nhận', 'Hoàn Hàng', 'Từ Chối Hoàn Hàng'])) {
+        if ($order->order_status !== 'Đã Nhận') {
             return response()->json([
                 'success' => false,
                 'message' => 'Bạn chỉ có thể đánh giá khi đơn hàng đã hoàn tất.'

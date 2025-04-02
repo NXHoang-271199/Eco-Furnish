@@ -100,7 +100,10 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Payment Method routes
-Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+    Route::post('/payment-method/retry/{orderId}', [PaymentMethodController::class, 'retryPayment']);
+});
 Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // FE ko được động tới
 Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']); // FE ko được động tới
 

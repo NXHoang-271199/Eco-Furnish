@@ -110,7 +110,7 @@
                         <td>{{ $index++ }}</td>
                         <td>{{ $item->product_name }}</td>
                         <td>
-                            @if ($item->productVariant->variant_details && count($item->productVariant->variant_details) > 0)
+                            @if ($item->productVariant && $item->productVariant->variant_details && count($item->productVariant->variant_details) > 0)
                                 @foreach ($item->productVariant->variant_details as $details)
                                     <p>
                                         <strong>{{ $details['name'] }}:</strong> {{ $details['value'] }}<br>
