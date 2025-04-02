@@ -120,23 +120,23 @@ const Account = () => {
   }
 
   return (
-    <main class="w-full md:w-3/4 p-6">
-      <h2 class="text-xl font-semibold mb-4">Chi tiết tài khoản</h2>
+    <main class="w-full ml-32 md:w-3/4 p-6">
+      <h2 class=" font-semibold mb-4 text-2xl">Chi tiết tài khoản</h2>
       <form>
         <div class="mb-4">
-          <label class="block text-gray-600">Tên</label>
+          <label class="block text-gray-600 text-xl">Tên</label>
           <input
             type="text"
             value={user.name || "Chưa cập nhật"}
-            class="w-full border-gray-300 rounded p-2"
+            class="w-full text-xl border-gray-300 rounded p-2"
           />
         </div>
         <div class="mb-4">
-          <label class="block text-gray-600">Email</label>
+          <label class="block text-gray-600 text-xl">Email</label>
           <input
             type="email"
             value={user.email || "Chưa cập nhật"}
-            class="w-full border-gray-300 rounded p-2"
+            class="w-full text-xl border-gray-300 rounded p-2"
           />
         </div>
         {/* <div class="mb-4">

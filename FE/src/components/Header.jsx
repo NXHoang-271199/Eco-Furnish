@@ -6,6 +6,8 @@ import CartBadge from "./CartBadge";
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showSearchInput, setShowSearchInput] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
     // Kiểm tra trạng thái đăng nhập khi component được tải
@@ -74,8 +76,41 @@ const Header = () => {
 
           {/* Icons */}
           <div className="flex items-center space-x-6">
-            <Link to="/search" className="text-gray-700 hover:text-black">
+            <div className="relative">
+              {showSearchInput ? (
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  placeholder="Tìm kiếm..."
+                  className="border rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  // Bạn có thể xử lý submit hoặc blur để ẩn input nếu cần
+                  onBlur={() => setShowSearchInput(false)}
+                  autoFocus
+                />
+              ) : (
+                <Link
+                  to="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowSearchInput(true);
+                  }}
+                  className="text-gray-700 hover:text-black"
+                >
+                  <AiOutlineSearch size={20} />
+                </Link>
+              )}
+            </div>
+            {/* <Link to="/search" className="text-gray-700 hover:text-black">
               <AiOutlineSearch size={20} />
+            </Link>
+            <Link
+              to="/cart"
+              className="text-gray-700 hover:text-black relative"
+            >
+            </Link> */}
+            <Link to="/wishlist" className="text-gray-700 hover:text-black">
+              <AiOutlineHeart size={20} />
             </Link>
             <Link
               to="/cart"

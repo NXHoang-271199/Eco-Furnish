@@ -88,7 +88,7 @@ const Aside = () => {
           </li>
           <li className="py-2 border-b">
             <Link
-              to="/account/list_order"
+              to="/account/order-history"
               className="text-gray-700 hover:text-black"
             >
               Đơn hàng
