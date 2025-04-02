@@ -46,10 +46,23 @@ const ChatRealTime = () => {
             
             if (response.data && Array.isArray(response.data)) {
                 console.log("📜 Lịch sử tin nhắn:", response.data);
-                setMessages(response.data);
+                
+                // Đảm bảo tất cả tin nhắn có trạng thái is_read
+                const messagesWithReadStatus = response.data.map(msg => {
+                    // Nếu là tin nhắn từ người dùng (sender_id === userId), cần đảm bảo có trạng thái is_read
+                    if (msg.sender_id === userId) {
+                        return {
+                            ...msg,
+                            is_read: typeof msg.is_read === 'boolean' ? msg.is_read : false
+                        };
+                    }
+                    return msg;
+                });
+                
+                setMessages(messagesWithReadStatus);
                 
                 // Đếm tin nhắn chưa đọc
-                const unread = response.data.filter(msg => 
+                const unread = messagesWithReadStatus.filter(msg => 
                     msg.receiver_id === userId && !msg.is_read
                 ).length;
                 
@@ -246,6 +259,34 @@ const ChatRealTime = () => {
         };
     }, []);
 
+    // Thêm useEffect để lắng nghe sự kiện messagesMarkedAsRead
+    useEffect(() => {
+        if (socket) {
+            socket.on("messagesMarkedAsRead", (data) => {
+                console.log("📬 Nhận sự kiện messagesMarkedAsRead:", data);
+                if (data.success) {
+                    // Cập nhật trạng thái đã đọc cho tất cả tin nhắn
+                    setMessages(prevMessages => 
+                        prevMessages.map(msg => {
+                            // Nếu là tin nhắn của người dùng hiện tại (từ sender_id), đánh dấu là đã đọc
+                            if (msg.sender_id === userData?.id) {
+                                return { ...msg, is_read: true };
+                            }
+                            return msg;
+                        })
+                    );
+                    console.log("✅ Đã cập nhật trạng thái tin nhắn thành đã đọc");
+                }
+            });
+        }
+        
+        return () => {
+            if (socket) {
+                socket.off("messagesMarkedAsRead");
+            }
+        };
+    }, [socket, userData]);
+
     // Hàm đánh dấu tin nhắn đã đọc
     const markMessagesAsRead = async () => {
         if (!isAuthenticated || !userData?.id) return;
@@ -300,7 +341,7 @@ const ChatRealTime = () => {
                     
                     // Thông báo âm thanh nếu có thể
                     const audio = new Audio('/notification.mp3');
-                    audio.play().catch(e => console.log("Không thể phát âm thanh"));
+                    audio.play().catch(() => console.log("Không thể phát âm thanh"));
                 } else {
                     // Nếu chat box đang mở, đánh dấu là đã đọc
                     markMessagesAsRead();
@@ -352,7 +393,8 @@ const ChatRealTime = () => {
                 text: message,
                 sender_id: userData?.id,
                 sent_at: new Date().toISOString(),
-                isCurrentUser: true
+                isCurrentUser: true,
+                is_read: false // Tin nhắn mới gửi luôn ở trạng thái chưa đọc
             };
             
             setMessages((prev) => [...prev, displayMessage]);
