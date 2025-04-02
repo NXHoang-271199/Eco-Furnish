@@ -34,6 +34,7 @@ const cartSlice = createSlice({
   initialState: {
     ...initialState,
     selectedItems: [],
+    selectedProducts: [],
   },
   reducers: {
     addToCart: (state, action) => {
@@ -132,12 +133,14 @@ const cartSlice = createSlice({
     },
     setSelectedItems: (state, action) => {
       state.selectedItems = action.payload;
-      localStorage.setItem("cart", JSON.stringify(state));
+    },
+    setSelectedProducts: (state, action) => {
+      state.selectedProducts = action.payload;
     },
     clearSelectedItems: (state) => {
       state.selectedItems = [];
-      localStorage.setItem("cart", JSON.stringify(state));
-    },
+      state.selectedProducts = [];
+    }
   },
 });
 
@@ -148,7 +151,8 @@ export const {
   applyDiscount,
   clearCart,
   setSelectedItems,
-  clearSelectedItems,
+  setSelectedProducts,
+  clearSelectedItems
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

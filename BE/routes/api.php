@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\CommentController;
-use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserApiController;
@@ -15,7 +14,7 @@ use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
-use App\Http\Controllers\Api\DiscountController;
+use App\Http\Controllers\Api\ReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +43,8 @@ Route::get('/categories/{slug}', [CategoryApiController::class, 'show']);
 
 // Chat routes
 Route::post('/chat', [ChatController::class, 'chat']);
+Route::get('/chat/welcome', [ChatController::class, 'sendWelcomeMessage']);
+Route::post('/chat/order-success', [ChatController::class, 'sendOrderSuccessMessage']);
 
 // User routes
 Route::prefix('users')->group(function () {
@@ -80,7 +81,6 @@ Route::prefix('category-posts')->group(function () {
 Route::prefix('vouchers')->group(function () {
     Route::get('/', [VoucherApiController::class, 'index']);
     Route::get('/{code}', [VoucherApiController::class, 'show']);
-    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']);
 });
 
 // Comment routes
@@ -100,22 +100,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng 
     Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
     Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
-    Route::post('/cart-items/update-quantity', [CartController::class, 'updateCartItemQuantity']); // API mới cập nhật số lượng
+    // Route::post('/cart-items/update-quantity', [CartController::class, 'updateCartItemQuantity']); // API mới cập nhật số lượng
 });
 
 // Payment Method routes
 Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
-Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động 
+Route::get('/payment-methods/{id}', [PaymentMethodController::class, 'show']);
+Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // FE ko được động tới
+Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']); // FE ko được động tới
 
 // Order routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']); // Danh sách đơn hàng
     Route::get('/orders/{id}', [OrderController::class, 'show']); // Chi tiết đơn hàng
     Route::post('/orders', [OrderController::class, 'createOrder']); // Tạo đơn hàng
-    Route::post('/orders/{id}/refund', [OrderController::class, 'refundOrder']); // Hoàn hàng
+    Route::post('/orders/buy-now', [OrderController::class, 'quickOrder']); // Tạo đơn hàng nhanh
+    Route::post('/orders/{id}/request-refund', [OrderController::class, 'requestRefund']); // Gửi yêu cầu hoàn hàng
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
+    Route::post('/orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
+    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
 });
-
-
-// Discount routes
-Route::post('/discounts/verify', [DiscountController::class, 'verify']);
+// review routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
+});
+Route::get('/products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm

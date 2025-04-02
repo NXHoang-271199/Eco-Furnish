@@ -20,6 +20,7 @@ class Order extends Model
         'order_status',
         'voucher_id',
         'total_price',
+        'discount_amount',
     ];
     public function user()
     {
@@ -38,5 +39,13 @@ class Order extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+    public function refundRequest()
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
     }
 }

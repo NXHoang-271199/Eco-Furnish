@@ -23,31 +23,39 @@ class AdminAuthController extends Controller
     }
 
     public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+{
+    $credentials = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+    ]);
 
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            
-            // Kiểm tra role
-            if (!in_array($user->role->slug, ['admin', 'staff'])) {
-                Auth::logout();
-                return back()->withErrors([
-                    'email' => 'Bạn không có quyền truy cập vào trang quản trị.',
-                ]);
-            }
-
-            $request->session()->regenerate();
-            return redirect()->intended(route('dashboard'));
+    if (Auth::attempt($credentials)) {
+        $user = Auth::user();
+        
+        // Kiểm tra is_active
+        if (!$user->is_active) {
+            Auth::logout();
+            return back()->withErrors([
+                'email' => 'Tài khoản của bạn chưa được kích hoạt.',
+            ]);
+        }
+        
+        // Kiểm tra role
+        if (!in_array($user->role->slug, ['admin', 'staff'])) {
+            Auth::logout();
+            return back()->withErrors([
+                'email' => 'Bạn không có quyền truy cập vào trang quản trị.',
+            ]);
         }
 
-        return back()->withErrors([
-            'email' => 'Thông tin đăng nhập không chính xác.',
-        ]);
+        $request->session()->regenerate();
+        return redirect()->intended(route('dashboard'));
     }
+
+    return back()->withErrors([
+        'email' => 'Thông tin đăng nhập không chính xác.',
+    ]);
+}
 
     public function logout(Request $request)
     {

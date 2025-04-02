@@ -11,6 +11,10 @@ import {
 } from "framer-motion";
 import { BsStarFill, BsStarHalf, BsStar } from "react-icons/bs";
 import api from "../../../service/api";
+import Banner from "../../../components/Banner";
+import { IoCartOutline, IoStar } from "react-icons/io5";
+import { HiOutlineArrowNarrowRight } from "react-icons/hi";
+import { FaLeaf, FaTree, FaSeedling } from "react-icons/fa";
 
 const Homes = () => {
   const [products, setProducts] = useState([]);
@@ -192,449 +196,425 @@ const Homes = () => {
 
   return (
     <>
+      {/* Banner chính */}
       <motion.div
-        ref={bannerRef}
-        className="relative w-full overflow-hidden h-[90vh]"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={bannerControls}
-        onMouseMove={handleMouseMove}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
       >
-        {/* Parallax banner image */}
-        <motion.div
-          className="absolute inset-0 w-full h-full"
-          style={{
-            y: springY,
-            scale: springScale,
-            opacity: springOpacity,
-          }}
-        >
-          <img
-            src=".\src\assets\img\slider-banner\homepage01-slide1.jpg"
-            alt="Eco-Furnish Banner"
-            className="w-full h-full object-cover"
-          />
-        </motion.div>
-
-        {/* Overlay gradient effect */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"
-          style={{
-            rotateX,
-            rotateY,
-            background: `radial-gradient(circle at ${gradientX} ${gradientY}, rgba(255,200,64,0.4) 0%, rgba(0,0,0,0.4) 70%)`,
-          }}
-        />
-
-        {/* Shine effect layer */}
-        <motion.div
-          className="absolute inset-0 z-10 opacity-30"
-          variants={shineVariants}
-          initial="initial"
-          animate="animate"
-        />
-
-        {/* Banner content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 px-4">
-          <motion.div
-            className="text-center text-white"
-            variants={bannerTextVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.h1
-              className="text-6xl font-bold mb-6 text-white drop-shadow-lg"
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, delay: 0.3 }}
-            >
-              Eco-Furnish
-            </motion.h1>
-            <motion.p
-              className="text-xl mb-8 max-w-2xl mx-auto text-white/90 drop-shadow-md"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, delay: 0.5 }}
-            >
-              Không gian sống xanh - Thiết kế hiện đại - Chất liệu bền vững
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, delay: 0.7 }}
-            >
-              <Link
-                to="/products"
-                className="inline-flex items-center bg-amber-300 hover:bg-amber-400 text-white font-medium py-3 px-8 rounded-full transition-all duration-300 shadow-lg hover:shadow-amber-500/30 transform hover:translate-y-[-3px]"
-              >
-                <span>Khám phá ngay</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 ml-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 8l4 4m0 0l-4 4m4-4H3"
-                  />
-                </svg>
-              </Link>
-            </motion.div>
-          </motion.div>
-        </div>
-
-        {/* Decorative elements */}
-        <motion.div
-          className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white to-transparent z-20"
-          animate={{
-            opacity: [0.5, 0.8, 0.5],
-            y: [0, -5, 0],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
+        <Banner />
       </motion.div>
 
+      {/* Giới thiệu nhiệm vụ - Mở đầu trang chủ */}
       <motion.section
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.05 }}
-        variants={fadeInUp}
+        className="py-16 bg-gradient-to-b from-amber-50 to-white"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.3 }}
       >
-        <div className="max-w-6xl mx-auto mt-20 my-5">
-          <div>
-            <div>
-              <motion.div className="text-center m-auto" variants={fadeInUp}>
-                <motion.h2
-                  className="mb-6 text-4xl font-semibold"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 1.2, ease: "easeOut" }}
-                >
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-300 to-amber-500">
-                    New Product
-                  </span>
-                </motion.h2>
-                <motion.p
-                  className="w-[65%] m-auto"
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  transition={{ duration: 1.2, delay: 0.2 }}
-                >
-                  Our traditional dining tables, chairs, case pieces and other
-                  traditional dining furniture are geared toward those who
-                  appreciate the simplicity and true craftsmanship.
-                </motion.p>
-              </motion.div>
-            </div>
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center max-w-3xl mx-auto mb-12">
             <motion.div
-              className="grid grid-cols-4 grid-rows-1 gap-4 my-12"
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.1 }}
+              className="flex justify-center mb-5"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
             >
-              {products.length > 0 ? (
-                products.slice(0, 4).map((product, index) => (
-                  <motion.div
-                    key={index} 
-                    variants={fadeInUp}
-                    custom={index}
-                    whileHover={{
-                      scale: 1.03,
-                      y: -10,
-                      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 20,
-                    }}
-                    className="rounded-xl overflow-hidden bg-white p-2"
-                  >
-                    <Link to={`product/${product.id}`}>
-                      <motion.div
-                        className="mb-2 relative overflow-hidden rounded-lg"
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ duration: 0.8 }}
-                      >
-                        <motion.div
-                          className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 z-10"
-                          whileHover={{ opacity: 1 }}
-                          transition={{ duration: 0.5 }}
-                        />
-                        <motion.img
-                          src={`http://localhost:8000/storage/${product.image_thumnail}`}
-                          alt={product.name}
-                          className="rounded-lg w-full object-cover aspect-[2/3]"
-                          initial={{ scale: 1.2, y: 20 }}
-                          animate={{ scale: 1, y: 0 }}
-                          transition={{ duration: 0.8, delay: index * 0.1 }}
-                        />
-                        <motion.div
-                          className="absolute top-2 right-2 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full z-20"
-                          initial={{ opacity: 0, scale: 0.5 }}
-                          whileInView={{ opacity: 1, scale: 1 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 500,
-                            delay: 0.5 + index * 0.1,
-                          }}
-                        >
-                          NEW
-                        </motion.div>
-                      </motion.div>
-                      <div className="px-3 py-2">
-                        <motion.h3
-                          className="text-lg font-semibold truncate mb-1"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            duration: 0.5,
-                            delay: 0.2 + index * 0.1,
-                          }}
-                        >
-                          {product.name}
-                          
-                        </motion.h3>
-
-                        {/* Hiển thị đánh giá sao */}
-                        <motion.div
-                          className="flex items-center mb-2"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            duration: 0.5,
-                            delay: 0.25 + index * 0.1,
-                          }}
-                        >
-                          {product.rating ? (
-                            <>
-                              {renderStars(product.rating)}
-                              <span className="text-xs text-gray-500 ml-1">
-                                ({product.rating_count || 0})
-                              </span>
-                            </>
-                          ) : (
-                            <div className="flex text-gray-300">
-                              {Array(5)
-                                .fill()
-                                .map((_, i) => (
-                                  <BsStar key={i} className="text-xs" />
-                                ))}
-                              <span className="text-xs text-gray-400 ml-1">
-                                (0)
-                              </span>
-                            </div>
-                          )}
-                        </motion.div>
-
-                        <motion.p
-                          className="text-sm text-gray-500 mb-2 line-clamp-2 min-h-[40px]"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            duration: 0.5,
-                            delay: 0.3 + index * 0.1,
-                          }}
-                        >
-                          Sản phẩm nội thất chất lượng cao
-                        </motion.p>
-                        <motion.p
-                          className="font-medium text-amber-600 text-lg"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            duration: 0.5,
-                            delay: 0.4 + index * 0.1,
-                          }}
-                        >
-                          {new Intl.NumberFormat("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                          }).format(product.price)}
-                        </motion.p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))
-              ) : (
-                <>
-                  {[1, 2, 3, 4].map((index) => (
-                    <motion.div
-                      key={index}
-                      variants={fadeInUp}
-                      custom={index}
-                      className="bg-white p-3 rounded-xl"
-                    >
-                      <div className="mb-2">
-                        <div className="bg-gray-300 w-full rounded-lg animate-pulse aspect-[1/2]"></div>
-                      </div>
-                      <div>
-                        <div className="h-4 bg-gray-300 rounded w-3/4 mb-2 animate-pulse"></div>
-                        <div className="h-4 bg-gray-300 rounded w-full mb-2 animate-pulse"></div>
-                        <div className="h-4 bg-gray-300 rounded w-1/2 animate-pulse"></div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </>
-              )}
+              <span className="p-3 bg-amber-100 rounded-full text-amber-600">
+                <FaLeaf size={28} />
+              </span>
             </motion.div>
+            <motion.h2
+              className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+            >
+              Nội thất bền vững cho ngôi nhà của bạn
+            </motion.h2>
+            <motion.p
+              className="text-gray-600 text-lg"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+            >
+              Tại Eco-Furnish, chúng tôi cam kết cung cấp sản phẩm nội thất được
+              làm từ nguyên liệu tự nhiên, thân thiện với môi trường và mang đến
+              không gian sống xanh, bền vững cho mọi gia đình.
+            </motion.p>
+          </div>
+
+          {/* Các đặc điểm */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <FaTree className="text-green-600 mb-1" size={24} />,
+                title: "Nguyên liệu bền vững",
+                description:
+                  "Sử dụng gỗ từ các khu rừng được quản lý bền vững, đảm bảo nguồn tài nguyên dài hạn.",
+              },
+              {
+                icon: <FaLeaf className="text-green-600 mb-1" size={24} />,
+                title: "Thân thiện môi trường",
+                description:
+                  "Quy trình sản xuất thân thiện với môi trường, giảm thiểu khí thải và chất thải.",
+              },
+              {
+                icon: <FaSeedling className="text-green-600 mb-1" size={24} />,
+                title: "Không gian sống xanh",
+                description:
+                  "Thiết kế hiện đại kết hợp với chất liệu tự nhiên tạo nên không gian sống xanh mát.",
+              },
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                className="bg-white p-8 rounded-2xl shadow-sm text-center border border-gray-100"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
+                viewport={{ once: true }}
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 mb-5">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-gray-800">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600">{feature.description}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </motion.section>
 
+      {/* Sản phẩm mới */}
       <motion.section
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
         variants={fadeInUp}
+        className="py-20"
       >
-        <div className="max-w-6xl mx-auto mt-20 my-5 relative">
-          {/* Bỏ bớt decorative elements */}
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
+            <div className="max-w-2xl">
+              <motion.div
+                className="inline-block px-4 py-1 bg-amber-100 rounded-full text-amber-700 font-medium text-sm mb-4"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                NEW ARRIVALS
+              </motion.div>
+              <motion.h2
+                className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                viewport={{ once: true }}
+              >
+                Khám phá bộ sưu tập{" "}
+                <span className="text-amber-500">mới nhất</span>
+              </motion.h2>
+              <motion.p
+                className="text-gray-600"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                Các sản phẩm nội thất được thiết kế hiện đại, tinh tế và chất
+                lượng cao, mang đến không gian sống tiện nghi và sang trọng.
+              </motion.p>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <Link
+                to="/products"
+                className="inline-flex items-center text-amber-600 font-medium hover:text-amber-700 group mt-6 md:mt-0"
+              >
+                <span>Xem tất cả sản phẩm</span>
+                <HiOutlineArrowNarrowRight className="ml-2 group-hover:translate-x-1 transition-transform w-5 h-5" />
+              </Link>
+            </motion.div>
+          </div>
 
           <motion.div
-            className="grid grid-rows-6 grid-cols-3 gap-4 relative z-10"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.1 }}
+          >
+            {products.length > 0 ? (
+              products.slice(0, 4).map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  variants={fadeInUp}
+                  custom={index}
+                  whileHover={{
+                    y: -12,
+                    transition: { duration: 0.3, ease: "easeOut" },
+                  }}
+                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
+                >
+                  <Link to={`product/${product.id}`} className="block">
+                    <div className="relative overflow-hidden">
+                      <div className="aspect-square overflow-hidden">
+                        <motion.img
+                          src={`http://localhost:8000/storage/${product.image_thumnail}`}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                          initial={{ scale: 1.2, y: 20 }}
+                          animate={{ scale: 1, y: 0 }}
+                          transition={{ duration: 0.8, delay: index * 0.1 }}
+                        />
+                      </div>
+
+                      {/* Nhãn mới */}
+                      <motion.div
+                        className="absolute top-3 right-3 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          delay: 0.5 + index * 0.1,
+                        }}
+                      >
+                        MỚI
+                      </motion.div>
+
+                      {/* Nút mua nhanh */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <motion.button
+                          className="bg-white text-amber-500 p-3 rounded-full shadow-md hover:bg-amber-500 hover:text-white transition-all duration-300"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <IoCartOutline className="text-xl" />
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      {/* Sao đánh giá */}
+                      <div className="flex items-center mb-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <IoStar
+                            key={star}
+                            className={`${
+                              star <= 4 ? "text-amber-400" : "text-gray-300"
+                            } w-4 h-4`}
+                          />
+                        ))}
+                        <span className="text-gray-500 text-sm ml-2">
+                          (4.0)
+                        </span>
+                      </div>
+
+                      <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-amber-500 transition-colors">
+                        {product.name}
+                      </h3>
+
+                      <p className="text-gray-500 text-sm mb-3 line-clamp-2">
+                        Sản phẩm nội thất cao cấp, bền đẹp
+                      </p>
+
+                      <p className="font-semibold text-amber-600 text-lg">
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(product.price || 0)}
+                      </p>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))
+            ) : (
+              <>
+                {[1, 2, 3, 4].map((index) => (
+                  <motion.div
+                    key={index}
+                    variants={fadeInUp}
+                    custom={index}
+                    className="bg-white rounded-xl shadow-sm overflow-hidden animate-pulse"
+                  >
+                    <div className="aspect-square bg-gray-200"></div>
+                    <div className="p-5">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full mb-3"></div>
+                      <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                    </div>
+                  </motion.div>
+                ))}
+              </>
+            )}
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Danh mục bộ sưu tập */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
+        variants={fadeInUp}
+        className="py-20 bg-gray-50"
+      >
+        <div className="max-w-6xl mx-auto px-4 relative">
+          <motion.h2
+            className="text-3xl md:text-4xl font-bold mb-8 text-center text-gray-800"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            Bộ sưu tập <span className="text-amber-500">nổi bật</span>
+          </motion.h2>
+
+          <motion.div
+            className="grid grid-cols-12 grid-rows-12 gap-6 h-[900px]"
             variants={staggerContainer}
           >
+            {/* Hình 1 - Lớn nhất */}
             <motion.div
-              className="row-span-4 overflow-hidden rounded-2xl"
+              className="col-span-8 row-span-8 rounded-2xl overflow-hidden"
               variants={scaleIn}
-              whileHover={{
-                scale: 1.02,
-              }}
+              whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="h-full w-full relative">
-                <motion.a
-                  href=""
-                  className="block h-full w-full relative overflow-hidden rounded-2xl"
+              <Link
+                to="/products"
+                className="block h-full w-full relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
+                <motion.div
+                  className="absolute bottom-8 left-8 text-white z-10 transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
+                  whileHover={{ x: 5 }}
                 >
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 z-10 flex items-end p-6"
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <h3 className="text-white text-xl font-bold">
-                      Thiết kế cổ điển
-                    </h3>
-                  </motion.div>
-                  <img
-                    src=".\src\assets\img\banners\banner-homepage2_1.png"
-                    alt="Thiết kế cổ điển"
-                    className="h-full w-full object-cover rounded-2xl"
-                  />
-                </motion.a>
-              </div>
+                  <h3 className="text-2xl font-bold mb-2">
+                    Phòng khách hiện đại
+                  </h3>
+                  <p className="text-white/80 mb-4">
+                    Không gian thoáng đãng, sang trọng
+                  </p>
+                  <span className="flex items-center text-amber-300 font-medium">
+                    Xem bộ sưu tập{" "}
+                    <HiOutlineArrowNarrowRight className="ml-2" />
+                  </span>
+                </motion.div>
+                <img
+                  src=".\src\assets\img\banners\banner-homepage2_4.png"
+                  alt="Phòng khách hiện đại"
+                  className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                />
+              </Link>
             </motion.div>
 
+            {/* Hình 2 */}
             <motion.div
-              className="col-span-2 row-span-2 overflow-hidden rounded-2xl"
+              className="col-span-4 row-span-5 rounded-2xl overflow-hidden"
               variants={scaleIn}
-              whileHover={{
-                scale: 1.02,
-              }}
+              whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="h-full w-full relative">
-                <motion.a
-                  href=""
-                  className="block h-full w-full relative overflow-hidden rounded-2xl"
+              <Link
+                to="/products"
+                className="block h-full w-full relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
+                <motion.div
+                  className="absolute bottom-6 left-6 text-white z-10 transform translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
+                  whileHover={{ x: 5 }}
                 >
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 z-10 flex items-end p-6"
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <h3 className="text-white text-xl font-bold">
-                      Không gian sống hiện đại
-                    </h3>
-                  </motion.div>
-                  <img
-                    src=".\src\assets\img\banners\banner-homepage2_3.png"
-                    alt="Không gian sống hiện đại"
-                    className="h-full w-full object-cover rounded-2xl"
-                  />
-                </motion.a>
-              </div>
+                  <h3 className="text-xl font-bold mb-1">Thiết kế cổ điển</h3>
+                  <span className="flex items-center text-amber-300 font-medium text-sm">
+                    Xem bộ sưu tập{" "}
+                    <HiOutlineArrowNarrowRight className="ml-2" />
+                  </span>
+                </motion.div>
+                <img
+                  src=".\src\assets\img\banners\banner-homepage2_1.png"
+                  alt="Thiết kế cổ điển"
+                  className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                />
+              </Link>
             </motion.div>
 
+            {/* Hình 3 */}
             <motion.div
-              className="col-span-2 row-span-4 overflow-hidden rounded-2xl"
+              className="col-span-4 row-span-3 rounded-2xl overflow-hidden"
               variants={scaleIn}
-              whileHover={{
-                scale: 1.02,
-              }}
+              whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="h-full w-full relative pt-3">
-                <motion.a
-                  href=""
-                  className="block h-full w-full relative overflow-hidden rounded-2xl"
+              <Link
+                to="/products"
+                className="block h-full w-full relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
+                <motion.div
+                  className="absolute bottom-4 left-4 text-white z-10 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
+                  whileHover={{ x: 5 }}
                 >
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 z-10 flex items-end p-6"
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <h3 className="text-white text-xl font-bold">
-                      Phòng khách sang trọng
-                    </h3>
-                  </motion.div>
-                  <img
-                    src=".\src\assets\img\banners\banner-homepage2_4.png"
-                    alt="Phòng khách sang trọng"
-                    className="h-full w-full object-cover rounded-2xl"
-                  />
-                </motion.a>
-              </div>
+                  <h3 className="text-lg font-bold mb-1">Phòng ngủ</h3>
+                  <span className="flex items-center text-amber-300 font-medium text-sm">
+                    Xem ngay <HiOutlineArrowNarrowRight className="ml-1" />
+                  </span>
+                </motion.div>
+                <img
+                  src=".\src\assets\img\banners\banner-homepage2_2.png"
+                  alt="Phòng ngủ"
+                  className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                />
+              </Link>
             </motion.div>
 
+            {/* Hình 4 */}
             <motion.div
-              className="row-span-2 overflow-hidden rounded-2xl"
+              className="col-span-8 row-span-4 rounded-2xl overflow-hidden"
               variants={scaleIn}
-              whileHover={{
-                scale: 1.02,
-              }}
+              whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="h-full w-full relative">
-                <motion.a
-                  href=""
-                  className="block h-full w-full relative overflow-hidden rounded-2xl"
+              <Link
+                to="/products"
+                className="block h-full w-full relative group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
+                <motion.div
+                  className="absolute bottom-6 left-6 text-white z-10 transform translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500"
+                  whileHover={{ x: 5 }}
                 >
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 z-10 flex items-end p-6"
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <h3 className="text-white text-xl font-bold">
-                      Thiết kế phòng ngủ
-                    </h3>
-                  </motion.div>
-                  <img
-                    src=".\src\assets\img\banners\banner-homepage2_2.png"
-                    alt="Thiết kế phòng ngủ"
-                    className="h-full w-full object-cover rounded-2xl"
-                  />
-                </motion.a>
-              </div>
+                  <h3 className="text-xl font-bold mb-1">
+                    Không gian làm việc
+                  </h3>
+                  <span className="flex items-center text-amber-300 font-medium">
+                    Xem bộ sưu tập{" "}
+                    <HiOutlineArrowNarrowRight className="ml-2" />
+                  </span>
+                </motion.div>
+                <img
+                  src=".\src\assets\img\banners\banner-homepage2_3.png"
+                  alt="Không gian làm việc"
+                  className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                />
+              </Link>
             </motion.div>
           </motion.div>
         </div>
       </motion.section>
 
-      {/* list products */}
-
-      {/*  */}
+      {/* Phần bài viết */}
       <motion.section
-        className="py-16 bg-gray-50 relative overflow-hidden"
+        className="py-20 bg-white relative overflow-hidden"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
@@ -661,46 +641,42 @@ const Homes = () => {
         />
 
         <div className="max-w-6xl mx-auto px-4 relative z-10">
-          <motion.div className="mb-16" variants={fadeInUp}>
-            <div className="text-center">
+          <motion.div className="mb-16 text-center" variants={fadeInUp}>
+            <motion.span
+              className="text-amber-500 font-medium mb-2 block"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, delay: 0.3 }}
+              viewport={{ once: true }}
+            >
+              Tin tức & ý tưởng
+            </motion.span>
+            <motion.h2
+              className="text-3xl md:text-4xl font-bold mb-6 relative inline-block"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, delay: 0.6 }}
+              viewport={{ once: true }}
+            >
+              Bài Viết Mới Nhất
               <motion.span
-                className="text-amber-500 font-medium mb-2 block"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.3 }}
+                className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-amber-600"
+                initial={{ width: 0 }}
+                whileInView={{ width: "100%" }}
+                transition={{ duration: 1.2, delay: 1.2 }}
                 viewport={{ once: true }}
-              >
-                Tin tức & ý tưởng
-              </motion.span>
-              <motion.h2
-                className="text-4xl font-bold mb-4 relative"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.6 }}
-                viewport={{ once: true }}
-              >
-                <span className="relative inline-block">
-                  Bài Viết Mới Nhất
-                  <motion.span
-                    className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-amber-600"
-                    initial={{ width: 0 }}
-                    whileInView={{ width: "100%" }}
-                    transition={{ duration: 1.2, delay: 1.2 }}
-                    viewport={{ once: true }}
-                  />
-                </span>
-              </motion.h2>
-              <motion.p
-                className="text-gray-600 max-w-2xl mx-auto"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.9 }}
-                viewport={{ once: true }}
-              >
-                Khám phá những ý tưởng thiết kế nội thất mới nhất và các bí
-                quyết để tạo nên không gian sống hoàn hảo cho ngôi nhà của bạn.
-              </motion.p>
-            </div>
+              />
+            </motion.h2>
+            <motion.p
+              className="text-gray-600 max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, delay: 0.9 }}
+              viewport={{ once: true }}
+            >
+              Khám phá những ý tưởng thiết kế nội thất mới nhất và các bí quyết
+              để tạo nên không gian sống hoàn hảo cho ngôi nhà của bạn.
+            </motion.p>
           </motion.div>
 
           <motion.div
@@ -774,7 +750,7 @@ const Homes = () => {
                           transition={{ delay: 0.4 + index * 0.2 }}
                         >
                           <span className="bg-amber-500 text-white text-xs font-medium px-3 py-1 rounded-full shadow-lg backdrop-blur-sm bg-opacity-80">
-                            {post.category.title}
+                            {post.category?.title || "Nội thất"}
                           </span>
                         </motion.div>
                       </div>
@@ -832,7 +808,7 @@ const Homes = () => {
                         <motion.div
                           className="flex items-center text-amber-500 font-medium transition-all duration-200 group-hover:text-amber-600 relative z-10"
                           whileHover={{ x: 5 }}
-                          transition={{ duration: 0.8 }}
+                          transition={{ duration: 0.5 }}
                         >
                           <span>Đọc tiếp</span>
                           <svg
@@ -864,7 +840,7 @@ const Homes = () => {
                     variants={fadeInUp}
                     custom={index}
                   >
-                    <div className="bg-gray-300 h-48 w-full"></div>
+                    <div className="bg-gray-300 aspect-[16/10]"></div>
                     <div className="p-6">
                       <div className="h-4 bg-gray-300 rounded w-1/4 mb-3"></div>
                       <div className="h-6 bg-gray-300 rounded w-3/4 mb-3"></div>
@@ -889,10 +865,10 @@ const Homes = () => {
           >
             <Link
               to="/blogs"
-              className="relative inline-flex items-center bg-amber-300 hover:bg-amber-400 text-white font-medium py-3 px-8 rounded-full transition-all duration-300 overflow-hidden group"
+              className="relative inline-flex items-center bg-amber-500 hover:bg-amber-600 text-white font-medium py-3 px-8 rounded-full transition-all duration-300 overflow-hidden group"
             >
               <motion.span
-                className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-amber-400 to-amber-600 opacity-0 group-hover:opacity-100"
+                className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-amber-600 to-amber-400 opacity-0 group-hover:opacity-100"
                 transition={{ duration: 0.5 }}
               />
               <span className="relative z-10">Xem tất cả bài viết</span>
@@ -918,44 +894,94 @@ const Homes = () => {
       </motion.section>
       {/* end blog */}
 
-      {/* brand */}
+      {/* Thương hiệu đối tác */}
       <motion.section
-        className="bg-gray-100 py-20"
+        className="py-20 bg-gray-50"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
         variants={fadeInUp}
       >
-        <div className="w-full max-w-6xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6">
           <motion.div
             className="text-center mb-12"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2 }}
+            transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-2xl font-semibold mb-2">
-              Các thương hiệu đối tác
-            </h3>
-            <div className="h-1 w-20 bg-amber-500 mx-auto rounded-full" />
+            <motion.span
+              className="inline-block px-4 py-1 bg-amber-100 rounded-full text-amber-700 font-medium text-sm mb-4"
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              ĐỐI TÁC TIN CẬY
+            </motion.span>
+            <motion.h2
+              className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              Thương hiệu <span className="text-amber-500">đồng hành</span>
+            </motion.h2>
+            <motion.p
+              className="text-gray-600 max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              viewport={{ once: true }}
+            >
+              Chúng tôi hợp tác với các thương hiệu hàng đầu để đảm bảo chất
+              lượng và tính bền vững cho từng sản phẩm.
+            </motion.p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center">
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, staggerChildren: 0.1 }}
+            viewport={{ once: true }}
+          >
             {[2, 3, 4, 6, 7, 11].map((num, index) => (
               <motion.div
                 key={num}
                 variants={fadeInUp}
                 custom={index * 0.1}
-                className="bg-white p-5 rounded-lg shadow-sm flex items-center justify-center h-20"
+                whileHover={{
+                  y: -5,
+                  boxShadow: "0 10px 30px -15px rgba(0,0,0,0.1)",
+                }}
+                className="bg-white p-6 rounded-xl shadow-sm flex items-center justify-center h-24 border border-gray-100 transition-all duration-300"
               >
                 <img
                   src={`.\\src\\assets\\img\\brands\\brand-${num}.png`}
                   alt={`Brand ${index + 1}`}
-                  className="max-h-10 w-auto filter grayscale hover:grayscale-0 transition-all duration-300"
+                  className="max-h-12 w-auto filter grayscale hover:grayscale-0 transition-all duration-300"
                 />
               </motion.div>
             ))}
-          </div>
+          </motion.div>
+
+          <motion.div
+            className="text-center mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <Link
+              to="/about"
+              className="inline-flex items-center text-amber-600 font-medium hover:text-amber-700 group"
+            >
+              <span>Tìm hiểu thêm về chúng tôi</span>
+              <HiOutlineArrowNarrowRight className="ml-2 group-hover:translate-x-1 transition-transform w-5 h-5" />
+            </Link>
+          </motion.div>
         </div>
       </motion.section>
     </>

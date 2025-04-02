@@ -3,15 +3,18 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { clearSelectedItems } from "../../../store/cartSlice";
 import axios from "axios";
+import { useLocation } from "react-router-dom";
 
 const Payment = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { selectedItems, shipping, discount } = useSelector(
-    (state) => state.cart
-  );
+  const { state } = useLocation(); // Lấy dữ liệu từ state của navigate
+  const selectedProducts = state?.selectedProducts || []; // Lấy selectedProducts từ state
+  const total = state?.total || 0; // Lấy tổng tiền từ state
+  const [userName, setUserName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [address, setAddress] = useState({
+    name: "",
+    email: "",
     phone: "",
     address: "",
     province: "",
@@ -30,88 +33,25 @@ const Payment = () => {
   const [wards, setWards] = useState([]);
   const [shippingMethods, setShippingMethods] = useState([]);
   const [selectedShipping, setSelectedShipping] = useState("");
+  const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
-    // Nếu không có sản phẩm được chọn, quay lại trang giỏ hàng
-    if (!selectedItems || selectedItems.length === 0) {
+    // Lấy địa chỉ từ localStorage khi component mount
+    const savedAddress = JSON.parse(localStorage.getItem("userAddress")) || {};
+    setAddress((prev) => ({
+      ...prev,
+      ...savedAddress,
+    }));
+
+    // Lấy thông tin người dùng từ localStorage
+    const userData = JSON.parse(localStorage.getItem("userData")) || {};
+    setUserName(userData.name || "Khách"); // Nếu không có tên thì hiển thị "Khách"
+
+    // Kiểm tra nếu không có sản phẩm được chọn
+    if (!selectedProducts || selectedProducts.length === 0) {
       navigate("/cart");
     }
-
-    // Lấy danh sách tỉnh/thành phố khi component được mount
-    fetchProvinces();
-  }, [selectedItems, navigate]);
-
-  // Theo dõi thay đổi tỉnh/thành để lấy quận/huyện
-  useEffect(() => {
-    if (address.province) {
-      fetchDistricts(address.province);
-    } else {
-      setDistricts([]);
-      setAddress((prev) => ({ ...prev, district: "", ward: "" }));
-    }
-  }, [address.province]);
-
-  // Theo dõi thay đổi quận/huyện để lấy phường/xã
-  useEffect(() => {
-    if (address.district) {
-      fetchWards(address.district);
-      // Lấy phương thức vận chuyển dựa trên quận/huyện đã chọn
-      fetchShippingMethods(address.district);
-    } else {
-      setWards([]);
-      setAddress((prev) => ({ ...prev, ward: "" }));
-      setShippingMethods([]);
-    }
-  }, [address.district]);
-
-  // Hàm lấy danh sách tỉnh/thành phố từ API
-  const fetchProvinces = async () => {
-    try {
-      const response = await axios.get("https://provinces.open-api.vn/api/p/");
-      setProvinces(response.data);
-    } catch (error) {
-      console.error("Lỗi khi lấy danh sách tỉnh/thành:", error);
-    }
-  };
-
-  // Hàm lấy danh sách quận/huyện từ API
-  const fetchDistricts = async (provinceCode) => {
-    try {
-      const response = await axios.get(
-        `https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`
-      );
-      setDistricts(response.data.districts);
-    } catch (error) {
-      console.error("Lỗi khi lấy danh sách quận/huyện:", error);
-    }
-  };
-
-  // Hàm lấy danh sách phường/xã từ API
-  const fetchWards = async (districtCode) => {
-    try {
-      const response = await axios.get(
-        `https://provinces.open-api.vn/api/d/${districtCode}?depth=2`
-      );
-      setWards(response.data.wards);
-    } catch (error) {
-      console.error("Lỗi khi lấy danh sách phường/xã:", error);
-    }
-  };
-
-  // Hàm lấy phương thức vận chuyển
-  const fetchShippingMethods = async (districtCode) => {
-    // Mô phỏng lấy phương thức vận chuyển dựa trên quận/huyện
-    // Trong thực tế, bạn sẽ gọi API từ backend để lấy các phương thức vận chuyển có sẵn
-    setShippingMethods([
-      { id: 1, name: "Giao hàng tiêu chuẩn", price: 30000, days: "3-5 ngày" },
-      { id: 2, name: "Giao hàng nhanh", price: 45000, days: "1-2 ngày" },
-    ]);
-
-    // Mặc định chọn phương thức đầu tiên
-    if (!selectedShipping && setShippingMethods.length > 0) {
-      setSelectedShipping("1");
-    }
-  };
+  }, [selectedProducts, navigate]);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -121,16 +61,13 @@ const Payment = () => {
   };
 
   const calculateSubtotal = () => {
-    return selectedItems.reduce((total, item) => {
-      return (
-        total +
-        (item.product.discount_price || item.product.price) * item.quantity
-      );
+    return selectedProducts.reduce((total, item) => {
+      return total + (Number(item.total_price) || 0); // Sử dụng total_price từ API
     }, 0);
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() - discount + shipping;
+    return calculateSubtotal() - (discount || 0);
   };
 
   const handlePayment = async () => {
@@ -141,6 +78,8 @@ const Payment = () => {
 
     if (
       !address.name ||
+      !address.name ||
+      !address.email ||
       !address.phone ||
       !address.address ||
       !address.province ||
@@ -159,55 +98,77 @@ const Payment = () => {
     setLoading(true);
     setError("");
 
+    // Lưu địa chỉ vào localStorage
+    localStorage.setItem("userAddress", JSON.stringify(address));
+
+    // Lưu thông tin đơn hàng vào localStorage
+    localStorage.setItem(
+      "orderInfo",
+      JSON.stringify({
+        products: selectedProducts,
+        total: calculateTotal(),
+        payment_method: paymentMethod,
+        order_date: new Date().toISOString(),
+      })
+    );
+
     try {
-      // Lấy tên tỉnh/huyện/xã từ mã
-      const provinceName =
-        provinces.find((p) => p.code == address.province)?.name || "";
-      const districtName =
-        districts.find((d) => d.code == address.district)?.name || "";
-      const wardName = wards.find((w) => w.code == address.ward)?.name || "";
-
-      // Chuẩn bị dữ liệu tối giản theo OrderRequest
-      const miniOrderData = {
-        // Thông tin bắt buộc theo OrderRequest
-        user_name: address.name,
-        user_email: "customer@example.com", // giá trị mặc định
-        user_phone: address.phone,
-        user_address: `${address.address}, ${wardName}, ${districtName}, ${provinceName}`,
-        payment_method_id: 1, // mặc định là COD (1)
-
-        // Thêm các trường đơn hàng cơ bản
-        items: selectedItems.map((item) => ({
-          product_id: item.product.id,
-          quantity: item.quantity,
-        })),
-      };
-
-      console.log("Dữ liệu gửi đi tối giản:", miniOrderData);
-
       const token = localStorage.getItem("authToken");
 
       // Gọi API với dữ liệu tối giản
+      const orderData = {
+        cart_items: selectedProducts.map((item) => item.id),
+        user_name: address.name,
+        user_email: address.email,
+        user_address: `${address.address}, ${address.ward}, ${address.district}, ${address.province}`,
+        user_phone: address.phone,
+        payment_method_id: 1, // Sử dụng ID 1 cho MoMo như trong ảnh
+      };
+
+      // Gọi trực tiếp API orders - KHÔNG gọi payment/process
       const response = await axios.post(
         "http://localhost:8000/api/orders",
-        miniOrderData,
+        orderData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }
       );
 
       console.log("Phản hồi từ server:", response.data);
 
-      if (response.data.status === "success") {
-        // Xóa các sản phẩm đã chọn khỏi Redux store
-        dispatch(clearSelectedItems());
+      // Kiểm tra response
+      console.log("Order response:", response.data);
 
-        // Chuyển đến trang thành công
-        navigate("/order-success");
+      if (response.status === 200 || response.status === 201) {
+        if (paymentMethod === "MoMo") {
+          // Nếu trong response có payUrl (như hình ảnh của bạn), redirect đến đó
+          if (response.data && response.data.payUrl) {
+            window.location.href = response.data.payUrl;
+          } else {
+            // Nếu không có payUrl, có thể cần kiểm tra cấu trúc response
+            console.error(
+              "Không tìm thấy payUrl trong response:",
+              response.data
+            );
+            setError("Không tìm thấy đường dẫn thanh toán");
+          }
+        } else if (paymentMethod === "VNPAY") {
+          // Xử lý VNPAY nếu cần
+          if (response.data && response.data.data) {
+            window.location.href = response.data.data;
+          } else {
+            setError("Không nhận được đường dẫn thanh toán từ VNPAY");
+          }
+        } else {
+          // Thanh toán COD, chuyển hướng trực tiếp
+          navigate("/order-success");
+        }
       }
     } catch (err) {
+      console.error("Lỗi khi gọi API:", err);
       console.error("Lỗi chi tiết:", err);
 
       // Hiển thị thông báo lỗi
@@ -233,6 +194,7 @@ const Payment = () => {
 
           <div className="mt-4 border-b pb-4">
             <h3 className="font-semibold">Thông tin giao hàng</h3>
+            {/* <p className="text-sm text-gray-600">{userName}</p> */}
             <div className="mt-2">
               <input
                 type="text"
@@ -248,6 +210,28 @@ const Payment = () => {
             <div className="mt-2">
               <input
                 type="text"
+                className="w-full border rounded-lg p-2"
+                placeholder="Tên người nhận"
+                value={address.name}
+                onChange={(e) =>
+                  setAddress({ ...address, name: e.target.value })
+                }
+              />
+            </div>
+            <div className="mt-2">
+              <input
+                type="email"
+                className="w-full border rounded-lg p-2"
+                placeholder="Email nguoi nhan"
+                value={address.email}
+                onChange={(e) =>
+                  setAddress({ ...address, email: e.target.value })
+                }
+              />
+            </div>
+            <div className="mt-2">
+              <input
+                type="phone"
                 className="w-full border rounded-lg p-2"
                 placeholder="Số điện thoại"
                 value={address.phone}
@@ -276,6 +260,9 @@ const Payment = () => {
                 }
               >
                 <option value="">Chọn tỉnh/thành</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="TP.HCM">TP.HCM</option>
+                {/* Thêm các tỉnh/thành khác */}
                 {provinces.map((province) => (
                   <option key={province.code} value={province.code}>
                     {province.name}
@@ -291,11 +278,9 @@ const Payment = () => {
                 disabled={!address.province}
               >
                 <option value="">Chọn quận/huyện</option>
-                {districts.map((district) => (
-                  <option key={district.code} value={district.code}>
-                    {district.name}
-                  </option>
-                ))}
+                <option value="Quận 1">Quận 1</option>
+                <option value="Quận 2">Quận 2</option>
+                {/* Thêm các quận/huyện khác */}
               </select>
               <select
                 className="w-full border rounded-lg p-2"
@@ -306,6 +291,9 @@ const Payment = () => {
                 disabled={!address.district}
               >
                 <option value="">Chọn phường/xã</option>
+                <option value="Phường 1">Phường 1</option>
+                <option value="Phường 2">Phường 2</option>
+                {/* Thêm các phường/xã khác */}
                 {wards.map((ward) => (
                   <option key={ward.code} value={ward.code}>
                     {ward.name}
@@ -401,7 +389,7 @@ const Payment = () => {
               disabled={loading}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? "Đang xử lý..." : "Hoàn tất đơn hàng"}
+              {loading ? "Đang xử lý..." : "Thanh toán đơn hàng"}
             </button>
           </div>
         </div>
@@ -409,68 +397,63 @@ const Payment = () => {
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <h3 className="font-semibold">Đơn hàng của bạn</h3>
           <div className="mt-4 space-y-4">
-            {selectedItems.map((item) => (
-              <div
-                key={`${item.product.id}-${JSON.stringify(
-                  item.variant_details
-                )}`}
-                className="flex items-center space-x-4"
-              >
-                <div className="relative w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
-                  <img
-                    src={`http://localhost:8000/storage/${item.product.image_thumnail}`}
-                    alt={item.product.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.src =
-                        "https://via.placeholder.com/80x80?text=No+Image";
-                    }}
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{item.product.name}</p>
-                  <div className="mt-1 space-x-2">
-                    {item.variant_details &&
-                      Array.isArray(item.variant_details) &&
-                      item.variant_details.map((variant, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-gray-100"
-                        >
-                          {variant.name}: {variant.value}
-                        </span>
-                      ))}
-                  </div>
-                  <div className="mt-1 text-sm text-gray-500">
-                    {formatPrice(
-                      item.product.discount_price || item.product.price
-                    )}{" "}
-                    x {item.quantity}
-                  </div>
-                </div>
-                <div className="font-medium">
-                  {formatPrice(
-                    (item.product.discount_price || item.product.price) *
-                      item.quantity
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+            {selectedProducts.map((item) => {
+              const price = item.product_variant
+                ? item.product_variant.discount_price ||
+                  item.product_variant.price
+                : item.product.discount_price || item.product.price;
 
-          {/* <div className="mt-4">
-            <label className="block text-sm font-semibold">Mã giảm giá</label>
-            <div className="flex mt-1">
-              <input
-                type="text"
-                className="w-full border p-2 rounded-l-lg"
-                placeholder="Nhập mã"
-              />
-              <button className="bg-gray-300 px-4 py-2 rounded-r-lg">
-                Sử dụng
-              </button>
-            </div>
-          </div> */}
+              return (
+                <div
+                  key={`${item.product.id}-${JSON.stringify(
+                    item.product_variant?.variant_details
+                  )}`}
+                  className="flex items-center space-x-4"
+                >
+                  <div className="relative w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                    <img
+                      src={`http://localhost:8000/storage/${item.product.image_thumnail}`}
+                      alt={item.product.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src =
+                          "https://via.placeholder.com/80x80?text=No+Image";
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{item.product.name}</p>
+                    <div className="mt-1 space-x-2">
+                      {item.variant_details &&
+                        Array.isArray(item.variant_details) &&
+                        item.variant_details.map((variant, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-gray-100"
+                          >
+                            {variant.name}: {variant.value}
+                          </span>
+                        ))}
+                    </div>
+                    <div className="mt-1 text-sm text-gray-500">
+                      {/* {formatPrice(
+                        item.product.discount_price || item.product.price
+                      )}{" "}
+                      x {item.quantity} */}
+                      {formatPrice(price)} x {item.quantity}
+                    </div>
+                  </div>
+                  <div className="font-medium">
+                    {/* {formatPrice(
+                      (item.product.discount_price || item.product.price) *
+                        item.quantity
+                    )} */}
+                    {formatPrice(item.total_price)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
           <div className="mt-6 border-t pt-4">
             <div className="flex justify-between text-gray-600">
@@ -485,7 +468,7 @@ const Payment = () => {
             )}
             <div className="flex justify-between text-gray-600 mt-2">
               <span>Phí vận chuyển</span>
-              <span>{formatPrice(shipping)}</span>
+              <span>free</span>
             </div>
             <div className="flex justify-between font-bold text-lg mt-4 pt-4 border-t">
               <span>Tổng cộng</span>
