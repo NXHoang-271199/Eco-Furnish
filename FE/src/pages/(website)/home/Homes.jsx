@@ -181,8 +181,11 @@ const Homes = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
+        className="max-w-[1600px] mx-auto px-4 mt-4"
       >
-        <Banner />
+        <div className="rounded-2xl overflow-hidden">
+          <Banner />
+        </div>
       </motion.div>
 
       {/* Giới thiệu nhiệm vụ - Mở đầu trang chủ */}
@@ -388,9 +391,8 @@ const Homes = () => {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <IoStar
                             key={star}
-                            className={`${
-                              star <= 4 ? "text-amber-400" : "text-gray-300"
-                            } w-4 h-4`}
+                            className={`${star <= 4 ? "text-amber-400" : "text-gray-300"
+                              } w-4 h-4`}
                           />
                         ))}
                         <span className="text-gray-500 text-sm ml-2">
@@ -701,8 +703,8 @@ const Homes = () => {
                               ? post.thumbnail.startsWith("http")
                                 ? post.thumbnail
                                 : post.thumbnail.startsWith("/")
-                                ? `http://localhost:8000${post.thumbnail}`
-                                : `http://localhost:8000/${post.thumbnail}`
+                                  ? `http://localhost:8000${post.thumbnail}`
+                                  : `http://localhost:8000/${post.thumbnail}`
                               : "http://localhost:5173/src/assets/img/blog/blog-1.jpg"
                           }
                           alt={post.title}
