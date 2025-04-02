@@ -68,7 +68,10 @@ class ProductController extends Controller
             $data['product_code'] = 'SP' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
 
             // Tạo sản phẩm
-            $product = Product::create($data);
+            $product = Product::create([
+                ...$data,
+                'quantity' => $request->has('quantity') ? $request->quantity : null
+            ]);
 
             // Xử lý ảnh đại diện
             if ($request->hasFile('image_thumnail')) {
