@@ -27,6 +27,8 @@ const Payment = () => {
   const [discountError, setDiscountError] = useState(""); // State lưu lỗi khi áp dụng mã giảm giá
   const [isVerifying, setIsVerifying] = useState(false); // State kiểm tra xem mã giảm giá đang được xác minh hay không
   const [discountAmount, setDiscountAmount] = useState(0); // Lưu giá trị giảm giá (số)
+  const [voucherId, setVoucherId] = useState(null); // Lưu ID của voucher được áp dụng
+  const [paymentMethods, setPaymentMethods] = useState([]);
   useEffect(() => {
     // Lấy địa chỉ từ localStorage khi component mount
     const savedAddress = JSON.parse(localStorage.getItem("userAddress")) || {};
@@ -43,6 +45,8 @@ const Payment = () => {
     if (!selectedProducts || selectedProducts.length === 0) {
       navigate("/cart");
     }
+
+    getPaymentMethod();
   }, [selectedProducts, navigate]);
 
   const formatPrice = (price) => {
@@ -54,12 +58,71 @@ const Payment = () => {
 
   const calculateSubtotal = () => {
     return selectedProducts.reduce((total, item) => {
-      return total + (Number(item.total_price) || 0); // Sử dụng total_price từ API
+      return total + (Number(item.total_price) || 0);
     }, 0);
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() * (discountCode || 0);
+    return calculateSubtotal() - discountAmount;
+  };
+
+  const handleApplyDiscount = async () => {
+    try {
+      setIsVerifying(true);
+      setDiscountError("");
+
+      const token = localStorage.getItem("authToken");
+      const response = await axios.post(
+        "http://localhost:8000/api/check-voucher",
+        {
+          voucher_code: discountCode,
+          subtotal: calculateSubtotal(),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.status === "success") {
+        setDiscountAmount(response.data.discount_amount);
+        setVoucherId(response.data.voucher_id);
+      } else {
+        setDiscountError(response.data.message || "Mã giảm giá không hợp lệ");
+        setDiscountAmount(0);
+        setVoucherId(null);
+      }
+    } catch (err) {
+      console.error("Lỗi khi áp dụng mã giảm giá:", err);
+      setDiscountError(
+        err.response?.data?.message || "Có lỗi xảy ra khi áp dụng mã giảm giá"
+      );
+      setDiscountAmount(0);
+      setVoucherId(null);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const getPaymentMethod = async () => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      try {
+        const response = await axios.get(
+          `http://localhost:8000/api/payment-methods`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setPaymentMethods(response.data.data);
+      } catch (error) {
+        console.error("Lỗi khi lấy phương thức thanh toán:", error);
+      }
+    }
   };
 
   const handlePayment = async () => {
@@ -106,8 +169,13 @@ const Payment = () => {
         user_email: address.email,
         user_address: `${address.address}, ${address.ward}, ${address.district}, ${address.province}`,
         user_phone: address.phone,
-        payment_method_id: 1, // Sử dụng ID 1 cho MoMo như trong ảnh
+        payment_method_id: Number(paymentMethod), // Sử dụng ID 1 cho MoMo như trong ảnh
       };
+
+      // Thêm voucher_id nếu đã áp dụng mã giảm giá
+      if (voucherId && discountAmount > 0) {
+        orderData.voucher_id = voucherId;
+      }
 
       // Gọi trực tiếp API orders - KHÔNG gọi payment/process
       const response = await axios.post(
@@ -125,27 +193,22 @@ const Payment = () => {
       console.log("Order response:", response.data);
 
       if (response.status === 200 || response.status === 201) {
-        if (paymentMethod === "MoMo") {
-          // Nếu trong response có payUrl (như hình ảnh của bạn), redirect đến đó
+        const selectedMethod = paymentMethods.find(
+          (method) => method.id === Number(paymentMethod)
+        );
+        if (selectedMethod.name === "MoMo") {
           if (response.data && response.data.payUrl) {
             window.location.href = response.data.payUrl;
           } else {
-            // Nếu không có payUrl, có thể cần kiểm tra cấu trúc response
-            console.error(
-              "Không tìm thấy payUrl trong response:",
-              response.data
-            );
             setError("Không tìm thấy đường dẫn thanh toán");
           }
-        } else if (paymentMethod === "VNPAY") {
-          // Xử lý VNPAY nếu cần
+        } else if (selectedMethod.name === "VNPAY") {
           if (response.data && response.data.data) {
             window.location.href = response.data.data;
           } else {
             setError("Không nhận được đường dẫn thanh toán từ VNPAY");
           }
         } else {
-          // Thanh toán COD, chuyển hướng trực tiếp
           navigate("/order-success");
         }
       }
@@ -256,36 +319,30 @@ const Payment = () => {
           <div className="mt-4">
             <h3 className="font-semibold">Phương thức thanh toán</h3>
             <div className="mt-2 space-y-2">
-              <label className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
-                <input
-                  type="radio"
-                  name="payment"
-                  value="COD"
-                  checked={paymentMethod === "COD"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <span>Thanh toán khi nhận hàng (COD)</span>
-              </label>
-              <label className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
-                <input
-                  type="radio"
-                  name="payment"
-                  value="VNPAY"
-                  checked={paymentMethod === "VNPAY"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <span>Thanh toán online qua VNPAY</span>
-              </label>
-              <label className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer">
-                <input
-                  type="radio"
-                  name="payment"
-                  value="MoMo"
-                  checked={paymentMethod === "MoMo"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                />
-                <span>Ví MoMo</span>
-              </label>
+              {paymentMethods.length > 0 ? (
+                paymentMethods.map((method) => (
+                  <label
+                    key={method.id}
+                    className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value={method.id} // Sử dụng ID từ API
+                      checked={paymentMethod === method.id.toString()} // So sánh với ID
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                    />
+                    <span>
+                      {method.name === "Tiền mặt"
+                        ? "Thanh toán khi nhận hàng"
+                        : method.name}
+                    </span>{" "}
+                    {/* Giả sử API trả về field "name" */}
+                  </label>
+                ))
+              ) : (
+                <p>Đang tải phương thức thanh toán...</p>
+              )}
             </div>
           </div>
 
@@ -318,7 +375,7 @@ const Payment = () => {
                 disabled={isVerifying}
               />
               <button
-                onClick={() => toast.error("Tính năng đang được phát triển")}
+                onClick={handleApplyDiscount}
                 disabled={isVerifying || !discountCode}
                 className="relative px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-r-xl overflow-hidden transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
@@ -347,6 +404,9 @@ const Payment = () => {
                 </span>
               </button>
             </div>
+            {discountError && (
+              <div className="text-red-500 text-sm mt-2">{discountError}</div>
+            )}
           </div>
           <div className="mt-4 space-y-4">
             {selectedProducts.map((item) => {
@@ -412,7 +472,7 @@ const Payment = () => {
               <span>Tạm tính</span>
               <span>{formatPrice(calculateSubtotal())}</span>
             </div>
-            {discountCode.length > 0 && (
+            {discountAmount > 0 && (
               <div className="flex justify-between text-green-600 mt-2">
                 <span>Giảm giá</span>
                 <span>-{formatPrice(discountAmount)}</span>
