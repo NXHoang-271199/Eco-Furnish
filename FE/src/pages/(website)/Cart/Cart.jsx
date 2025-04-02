@@ -495,7 +495,7 @@ const Cart = () => {
                 </h2>
 
                 <div className="space-y-4">
-                  <div className="flex items-center">
+                  {/* <div className="flex items-center">
                     <input
                       type="text"
                       value={discountCode}
@@ -542,7 +542,7 @@ const Cart = () => {
 
                   {discountError && (
                     <p className="text-red-500 text-sm">{discountError}</p>
-                  )}
+                  )} */}
 
                   <div className="border-t border-gray-100 pt-4 space-y-3">
                     <div className="flex justify-between text-gray-600">
@@ -552,7 +552,7 @@ const Cart = () => {
                       <span>{formatPrice(calculateSelectedTotal())}</span>
                     </div>
 
-                    {cart.discount > 0 && (
+                    {/* {cart.discount > 0 && (
                       <div className="flex justify-between text-green-600">
                         <span>
                           Giảm giá (
@@ -561,7 +561,7 @@ const Cart = () => {
                         </span>
                         <span>-{formatPrice(cart.discount)}</span>
                       </div>
-                    )}
+                    )} */}
 
                     <div className="flex justify-between text-gray-600">
                       <span>Phí vận chuyển</span>

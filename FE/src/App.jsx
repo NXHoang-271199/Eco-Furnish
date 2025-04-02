@@ -28,6 +28,7 @@ import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
 import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
 import ChatBot from "./components/ChatBot";
 import OrderSuccess from "./pages/(website)/OrderSuccess/OrderSuccess";
+import OrderHistory from "./pages/(website)/UserAccount/OrderHistory/OrderHistory";
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
             <Route index element={<Account />} />
             <Route path="address" element={<Address />} />
             <Route path="password" element={<Edit_Pass />} />
+            <Route path="list_order" element={<OrderHistory />} />
           </Route>
         </Route>
         <Route path="/sign-in" element={<SignIn />} />

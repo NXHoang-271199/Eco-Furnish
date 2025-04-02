@@ -23,8 +23,10 @@ const Payment = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [discount, setDiscount] = useState(0);
-
+  const [discountCode, setDiscountCode] = useState(""); // State lưu mã giảm giá người dùng nhập
+  const [discountError, setDiscountError] = useState(""); // State lưu lỗi khi áp dụng mã giảm giá
+  const [isVerifying, setIsVerifying] = useState(false); // State kiểm tra xem mã giảm giá đang được xác minh hay không
+  const [discountAmount, setDiscountAmount] = useState(0); // Lưu giá trị giảm giá (số)
   useEffect(() => {
     // Lấy địa chỉ từ localStorage khi component mount
     const savedAddress = JSON.parse(localStorage.getItem("userAddress")) || {};
@@ -57,7 +59,7 @@ const Payment = () => {
   };
 
   const calculateTotal = () => {
-    return calculateSubtotal() - (discount || 0);
+    return calculateSubtotal() * (discountCode || 0);
   };
 
   const handlePayment = async () => {
@@ -305,6 +307,47 @@ const Payment = () => {
 
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <h3 className="font-semibold">Đơn hàng của bạn</h3>
+          <div className="mt-4">
+            <div className="flex item-center">
+              <input
+                type="text"
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value)}
+                placeholder="Mã giảm giá"
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-300"
+                disabled={isVerifying}
+              />
+              <button
+                onClick={() => toast.error("Tính năng đang được phát triển")}
+                disabled={isVerifying || !discountCode}
+                className="relative px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-r-xl overflow-hidden transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                <span className="absolute inset-0 w-full h-full bg-white opacity-0 hover:opacity-10 transition-opacity duration-300"></span>
+                <span className="relative flex items-center gap-2">
+                  {isVerifying ? (
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  ) : (
+                    "Áp dụng"
+                  )}
+                </span>
+              </button>
+            </div>
+          </div>
           <div className="mt-4 space-y-4">
             {selectedProducts.map((item) => {
               const price = item.product_variant
@@ -369,10 +412,10 @@ const Payment = () => {
               <span>Tạm tính</span>
               <span>{formatPrice(calculateSubtotal())}</span>
             </div>
-            {discount > 0 && (
+            {discountCode.length > 0 && (
               <div className="flex justify-between text-green-600 mt-2">
                 <span>Giảm giá</span>
-                <span>-{formatPrice(discount)}</span>
+                <span>-{formatPrice(discountAmount)}</span>
               </div>
             )}
             <div className="flex justify-between text-gray-600 mt-2">

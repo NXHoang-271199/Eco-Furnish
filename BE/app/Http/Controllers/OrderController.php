@@ -9,7 +9,9 @@ use App\Models\VariantValue;
 use Illuminate\Http\Request;
 use App\Models\RefundRequest;
 use App\Models\ProductVariant;
+use App\Mail\RefundRequestMail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
 {
@@ -56,7 +58,6 @@ class OrderController extends Controller
             'Đã Nhận' => Order::where('order_status', 'Đã Nhận'),
             'Hoàn Hàng' => Order::where('order_status', 'Hoàn Hàng'),
             'Hủy Đơn' => Order::where('order_status', 'Hủy Đơn'),
-            'Từ Chối Hoàn Hàng' => Order::where('order_status', 'Từ Chối Hoàn Hàng'),
         ];
 
         $groupedOrders = [];
@@ -193,64 +194,61 @@ class OrderController extends Controller
     }
 
     public function approveRefundRequest($orderId, $refundRequestId, Request $request)
-{
-    DB::beginTransaction();
-    try {
-        // Tìm yêu cầu hoàn hàng
-        $refundRequest = RefundRequest::where('id', $refundRequestId)->where('order_id', $orderId)->first();
+    {
+        DB::beginTransaction();
+        try {
+            $refundRequest = RefundRequest::where('id', $refundRequestId)
+                ->where('order_id', $orderId)
+                ->first();
 
-        if (!$refundRequest) {
-            return back()->with('error', 'Yêu cầu hoàn hàng không tồn tại.');
-        }
-
-        // Kiểm tra xem yêu cầu hoàn hàng có trạng thái 'Chờ Duyệt'
-        if ($refundRequest->status !== 'Chờ Duyệt') {
-            return back()->with('error', 'Yêu cầu hoàn hàng không thể duyệt vì đã được xử lý hoặc không còn trong trạng thái chờ duyệt.');
-        }
-
-        // Duyệt yêu cầu hoàn hàng
-        $refundRequest->update(['status' => 'Đã Duyệt']);
-
-        // Cập nhật trạng thái đơn hàng (nếu cần)
-        $order = $refundRequest->order;
-        if ($order) {
-            $order->update(['order_status' => 'Hoàn Hàng']);
-        }
-
-        // Nếu cần hoàn lại sản phẩm vào kho
-        foreach ($order->orderItems as $item) {
-            if ($item->product_variant_id) {
-                ProductVariant::where('id', $item->product_variant_id)->increment('quantity', $item->quantity);
-            } else {
-                Product::where('id', $item->product_id)->increment('quantity', $item->quantity);
+            if (!$refundRequest) {
+                return back()->with('error', 'Yêu cầu hoàn hàng không tồn tại.');
             }
+
+            if ($refundRequest->status !== 'Chờ Duyệt') {
+                return back()->with('error', 'Yêu cầu hoàn hàng không thể duyệt.');
+            }
+
+            $refundRequest->update(['status' => 'Đã Duyệt']);
+
+            $order = $refundRequest->order;
+            if ($order) {
+                $order->update(['order_status' => 'Hoàn Hàng']);
+            }
+
+            // Hoàn lại số lượng sản phẩm
+            foreach ($order->orderItems as $item) {
+                if ($item->product_variant_id) {
+                    ProductVariant::where('id', $item->product_variant_id)->increment('quantity', $item->quantity);
+                } else {
+                    Product::where('id', $item->product_id)->increment('quantity', $item->quantity);
+                }
+            }
+
+            DB::commit();
+
+            // Gửi mail
+            Mail::to($order->user->email)->send(new RefundRequestMail($refundRequest, $order, 'đã được duyệt.'));
+
+            return back()->with('success', 'Yêu cầu hoàn hàng đã được duyệt.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Lỗi khi duyệt yêu cầu hoàn hàng: ' . $e->getMessage());
         }
-
-        DB::commit();
-        return back()->with('success', 'Yêu cầu hoàn hàng đã được duyệt và trạng thái đơn hàng đã được cập nhật.');
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return back()->with('error', 'Lỗi khi duyệt yêu cầu hoàn hàng: ' . $e->getMessage());
     }
-}
 
-public function rejectRefundRequest($orderId, $refundRequestId)
-{
-    $order = Order::findOrFail($orderId);
-    $refundRequest = RefundRequest::findOrFail($refundRequestId);
+    public function rejectRefundRequest($orderId, $refundRequestId)
+    {
+        $order = Order::findOrFail($orderId);
+        $refundRequest = RefundRequest::findOrFail($refundRequestId);
 
-    // Cập nhật trạng thái đơn hàng
-    $order->update([
-        'order_status' => 'Từ Chối Hoàn Hàng',  // Đặt trạng thái "Hoàn Hàng Từ Chối"
-    ]);
+        $refundRequest->update([
+            'status' => 'Từ Chối',
+        ]);
 
-    // Cập nhật trạng thái yêu cầu hoàn hàng
-    $refundRequest->update([
-        'status' => 'Từ Chối',  // Nếu có cột "status" trong bảng refund_requests
-    ]);
+        // Gửi mail thông báo từ chối
+        Mail::to($order->user->email)->send(new RefundRequestMail($refundRequest, $order, 'đã bị từ chối.'));
 
-    return redirect()->route('orders.index')->with('success', 'Yêu cầu hoàn hàng đã bị từ chối.');
-}
-
-
+        return redirect()->route('orders.index')->with('success', 'Yêu cầu hoàn hàng đã bị từ chối.');
+    }
 }
