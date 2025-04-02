@@ -28,8 +28,9 @@ class DatabaseSeeder extends Seeder
             // TopBuyersSeeder::class,
             CartSeeder::class,
             CartItemSeeder::class,
+            ReviewSeeder::class,
         ]);
-        
+
         // Tạo tài khoản admin
         User::create([
             'name' => 'Admin',

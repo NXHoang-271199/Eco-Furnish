@@ -225,32 +225,31 @@ class ProductController extends Controller
                 $existingVariants = $product->variants()
                     ->whereNull('deleted_at')
                     ->get()
-                    ->map(function($variant) use ($variants) {
+                    ->map(function($variant) {
+                        // Đảm bảo variant_details được định dạng đúng
+                        $variantDetails = $variant->variant_details;
                         $variantDetailsDisplay = [];
                         
-                        if ($variant->variant_details && is_array($variant->variant_details)) {
-                            foreach ($variant->variant_details as $attrKey => $attrValue) {
-                                // Tìm tên thuộc tính dựa vào key (slug)
-                                $displayName = $attrKey;
-                                foreach ($variants as $v) {
-                                    if ($this->slugify($v->name) === $attrKey) {
-                                        $displayName = $v->name;
-                                        break;
-                                    }
+                        if (is_array($variantDetails)) {
+                            foreach ($variantDetails as $detail) {
+                                if (isset($detail['name']) && isset($detail['value'])) {
+                                    $variantDetailsDisplay[] = $detail['name'] . ': ' . $detail['value'];
                                 }
-                                $variantDetailsDisplay[] = $displayName . ': ' . $attrValue;
                             }
                         }
                         
+                        $displayText = implode(' - ', $variantDetailsDisplay);
+                        
                         return [
                             'id' => $variant->id,
-                            'variant_details' => $variant->variant_details,
-                            'variant_details_display' => implode(' - ', $variantDetailsDisplay),
+                            'variant_details' => $variantDetails,
+                            'variant_details_display' => $displayText,
                             'sku' => $variant->sku,
                             'price' => $variant->price,
                             'discount_price' => $variant->discount_price,
                             'quantity' => $variant->quantity,
-                            'status' => $variant->status
+                            'status' => $variant->status,
+                            'variant_info' => $displayText
                         ];
                     })
                     ->toArray();
@@ -417,9 +416,22 @@ class ProductController extends Controller
 
                     if ($existingVariant) {
                         // Cập nhật biến thể hiện có
+                        $variantDetails = [];
+                        foreach ($variantData['values'] as $variantId => $valueId) {
+                            $variant = Variant::find($variantId);
+                            $variantValue = VariantValue::find($valueId);
+                            
+                            if ($variant && $variantValue) {
+                                $variantDetails[] = [
+                                    'name' => $variant->name,
+                                    'value' => $variantValue->value
+                                ];
+                            }
+                        }
+
                         $existingVariant->update([
                             'sku' => $variantData['sku'],
-                            'variant_details' => isset($variantData['variant_details']) ? json_decode($variantData['variant_details'], true) : [],
+                            'variant_details' => $variantDetails,
                             'price' => $variantData['price'],
                             'discount_price' => $variantData['discount_price'],
                             'quantity' => $variantData['quantity']
@@ -429,9 +441,22 @@ class ProductController extends Controller
                         $existingVariantIds = array_diff($existingVariantIds, [$existingVariant->id]);
                     } else {
                         // Tạo biến thể mới
+                        $variantDetails = [];
+                        foreach ($variantData['values'] as $variantId => $valueId) {
+                            $variant = Variant::find($variantId);
+                            $variantValue = VariantValue::find($valueId);
+                            
+                            if ($variant && $variantValue) {
+                                $variantDetails[] = [
+                                    'name' => $variant->name,
+                                    'value' => $variantValue->value
+                                ];
+                            }
+                        }
+
                         $newVariant = new ProductVariant([
                             'product_id' => $product->id,
-                            'variant_details' => isset($variantData['variant_details']) ? json_decode($variantData['variant_details'], true) : [],
+                            'variant_details' => $variantDetails,
                             'sku' => $variantData['sku'],
                             'price' => $variantData['price'],
                             'discount_price' => $variantData['discount_price'],
@@ -483,21 +508,13 @@ class ProductController extends Controller
         try {
             DB::beginTransaction();
 
-            // Xóa ảnh thumbnail
-            if ($product->image_thumnail) {
-                Storage::disk('public')->delete($product->image_thumnail);
-            }
-
-            // Xóa gallery images
-            foreach ($product->gallery as $image) {
-                Storage::disk('public')->delete($image->image_url);
-            }
+            // Chỉ soft delete các gallery images - không xóa các file ảnh vật lý
             $product->gallery()->delete();
 
-            // Xóa product variants
+            // Soft delete các product variants
             $product->variants()->delete();
 
-            // Xóa sản phẩm
+            // Soft delete sản phẩm
             $product->delete();
 
             DB::commit();
@@ -598,9 +615,9 @@ class ProductController extends Controller
                     ->map(function($variant) {
                         $variantDetailsDisplay = [];
                         
-                        if ($variant->variant_details && is_array($variant->variant_details)) {
-                            foreach ($variant->variant_details as $attrName => $attrValue) {
-                                $variantDetailsDisplay[] = $attrName . ': ' . $attrValue;
+                        if ($variant->variant_details) {
+                            foreach ($variant->variant_details as $detail) {
+                                $variantDetailsDisplay[] = $detail['name'] . ': ' . $detail['value'];
                             }
                         }
                         
@@ -627,12 +644,10 @@ class ProductController extends Controller
                 
                 // Tạo mảng variant_details
                 foreach ($combination as $attr) {
-                    // Lấy tên variant và giá trị variant
-                    $variantName = $attr['variant_name'];
-                    $variantValue = $attr['value'];
-                    
-                    // Sử dụng tên variant làm key
-                    $variantDetails[$this->slugify($variantName)] = $variantValue;
+                    $variantDetails[] = [
+                        'name' => $attr['variant_name'],
+                        'value' => $attr['value']
+                    ];
                 }
                 
                 $variantData = [

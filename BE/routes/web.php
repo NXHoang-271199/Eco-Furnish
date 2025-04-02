@@ -24,10 +24,13 @@ use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\Admin\AdminAuthController;
-use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\OrderNotificationController;
 use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\ReviewController;
+
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -97,6 +100,14 @@ Route::prefix('admin')->group(function () {
             });
         });
 
+        // Reviews routes
+        Route::middleware(['permission:view-reviews'])->group(function () {
+            Route::resource('reviews', ReviewController::class)->only('index', 'show');
+            Route::get('products/{product}/reviews', [ReviewController::class, 'productReviews'])->name('reviews.product');
+            Route::post('reviews/toggle/{reviewId}', [ReviewController::class, 'toggleReviewVisibility'])->name('reviews.toggle');
+            Route::get('user/{user}/info', [ReviewController::class, 'userInfo'])->name('reviews.user-info');
+        });
+
         // Users Management
         Route::middleware(['permission:view-users'])->group(function () {
             Route::resource('users', UserController::class);
@@ -141,6 +152,8 @@ Route::prefix('admin')->group(function () {
             Route::resource('orders', OrderController::class);
             Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
             Route::get('orders/{order}/detail', [OrderController::class, 'show'])->name('orders.detail');
+            Route::post('/orders/{orderId}/refund/approve/{refundRequestId}', [OrderController::class, 'approveRefundRequest'])->name('order.refund.approve');
+            Route::post('/orders/{orderId}/refund/reject/{refundRequestId}', [OrderController::class, 'rejectRefundRequest'])->name('order.refund.reject');
         });
 
 

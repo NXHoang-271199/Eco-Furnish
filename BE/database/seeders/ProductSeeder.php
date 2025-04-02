@@ -181,7 +181,7 @@ class ProductSeeder extends Seeder
                     'price' => $variantData['price'],
                     'quantity' => $variantData['quantity'],
                     'variant_details' => $variantData['variant_details'],
-                    'status' => 1
+
                 ]);
             }
         }

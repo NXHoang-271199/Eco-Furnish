@@ -39,6 +39,10 @@ const io = socketIo(server, {
 // Lưu trữ danh sách user & admin đang online
 const onlineUsers = new Map();
 const onlineAdmins = new Map();
+// Thêm map để theo dõi userId đang online và socket.id tương ứng
+const userIdToSocketMap = new Map();
+// Map lưu trữ cả mảng socketIds cho mỗi userId (cho phép quản lý nhiều tab)
+const userIdToSocketsMap = new Map();
 
 // Route test
 app.get("/", (req, res) => {
@@ -55,6 +59,13 @@ const authenticateToken = async (socket, next) => {
         }
 
         console.log("🔑 Đang xác thực token...");
+
+        // Lấy sessionId từ handshake nếu có
+        const sessionId = socket.handshake.auth.sessionId || null;
+        if (sessionId) {
+            socket.sessionId = sessionId;
+            console.log(`🔑 Phiên kết nối: ${sessionId}`);
+        }
 
         // Xác định origin của kết nối
         let origin = socket.handshake.headers.origin || '';
@@ -120,6 +131,9 @@ const authenticateToken = async (socket, next) => {
             console.warn("⚠️ Không thể lấy thêm thông tin người dùng:", userError.message);
         }
 
+        // Lưu userId vào socket để dễ theo dõi
+        socket.userId = result.user.id;
+
         next();
     } catch (error) {
         console.error("❌ Lỗi xác thực:", error.message);
@@ -180,10 +194,55 @@ io.on("connection", (socket) => {
                 socketId: socket.id,
                 userId: socket.user.id,
                 name: socket.user.name,
-                avatar: socket.user.avatar || null
+                avatar: socket.user.avatar || null,
+                sessionId: socket.sessionId || null
             };
 
+            // Kiểm tra xem userId này đã online chưa
+            const existingSocketId = userIdToSocketMap.get(socket.user.id);
+
+            if (existingSocketId) {
+                // Nếu đã online, kiểm tra xem socket cũ có còn hoạt động không
+                const existingSocket = Array.from(io.sockets.sockets).find(
+                    ([id]) => id === existingSocketId
+                );
+
+                if (existingSocket) {
+                    // Nếu sessionId giống nhau, thay thế socket cũ mà không thông báo
+                    const [, existingSocketObj] = existingSocket;
+                    if (socket.sessionId && existingSocketObj.sessionId === socket.sessionId) {
+                        console.log(`⚠️ Phát hiện kết nối trùng lặp từ cùng một phiên cho user ${socket.user.name}`);
+                        console.log(`⚠️ Thay thế kết nối cũ ${existingSocketId} bằng kết nối mới ${socket.id}`);
+
+                        // Xóa kết nối cũ khỏi danh sách online nhưng không thông báo
+                        onlineUsers.delete(existingSocketId);
+                    } else {
+                        console.log(`⚠️ User ${socket.user.name} đã có kết nối trước đó với socketId: ${existingSocketId}`);
+                        console.log(`⚠️ Phiên khác nhau: hiện tại=${socket.sessionId}, cũ=${existingSocketObj.sessionId || 'không có'}`);
+
+                        // Xóa kết nối cũ khỏi danh sách online
+                        onlineUsers.delete(existingSocketId);
+
+                        // Thông báo cho admin biết có sự thay đổi kết nối
+                        io.to("admin_room").emit("clientDisconnected", { userId: socket.user.id });
+                    }
+                }
+            }
+
+            // Lưu thông tin mới
             onlineUsers.set(socket.id, userData);
+            userIdToSocketMap.set(socket.user.id, socket.id);
+
+            // Cập nhật mảng socketIds cho userId này
+            let userSockets = userIdToSocketsMap.get(socket.user.id) || [];
+            // Lọc bỏ các socketId không còn tồn tại
+            userSockets = userSockets.filter(id =>
+                Array.from(io.sockets.sockets).some(([socketId]) => socketId === id)
+            );
+            // Thêm socketId mới
+            userSockets.push(socket.id);
+            userIdToSocketsMap.set(socket.user.id, userSockets);
+
             socket.join(`user_${socket.user.id}`); // Room riêng cho user
 
             // Gửi danh sách client mới cho admin
@@ -191,7 +250,11 @@ io.on("connection", (socket) => {
             io.to("admin_room").emit("newClientConnected", userData);
 
             console.log(`👤 Client ${socket.id} (${socket.user.name}) đã kết nối và được đăng ký với ID ${socket.user.id}`);
+            if (socket.sessionId) {
+                console.log(`👤 SessionId: ${socket.sessionId}`);
+            }
             console.log(`📊 Tổng số client online hiện tại: ${onlineUsers.size}`);
+            console.log(`📊 Số lượng kết nối cho user ${socket.user.name}: ${userSockets.length}`);
 
             // Log danh sách người dùng online để debug
             console.log(`📊 Danh sách người dùng online:`, Array.from(onlineUsers.values()));
@@ -276,10 +339,14 @@ io.on("connection", (socket) => {
             const savedMessage = await response.json();
             console.log("✅ Tin nhắn đã được lưu vào DB:", savedMessage.id);
 
+            // Đảm bảo trạng thái is_read luôn là false cho tin nhắn mới từ client
+            savedMessage.is_read = false;
+
             // Chuẩn bị dữ liệu tin nhắn để gửi cho admin
             const messageForAdmin = {
                 ...savedMessage,
-                senderName: socket.user.name
+                senderName: socket.user.name,
+                is_read: false
             };
 
             // Gửi tin nhắn đến tất cả admin
@@ -361,7 +428,28 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         if (onlineUsers.has(socket.id)) {
             const userData = onlineUsers.get(socket.id);
-            io.to("admin_room").emit("clientDisconnected", { userId: userData.userId });
+
+            // Cập nhật mảng socketIds cho userId này
+            let userSockets = userIdToSocketsMap.get(userData.userId) || [];
+            userSockets = userSockets.filter(id => id !== socket.id);
+
+            if (userSockets.length === 0) {
+                // Nếu không còn kết nối nào, xóa khỏi map
+                userIdToSocketsMap.delete(userData.userId);
+                // Chỉ xóa khỏi userIdToSocketMap khi không còn kết nối nào
+                userIdToSocketMap.delete(userData.userId);
+
+                // Thông báo cho admin biết người dùng đã offline
+                io.to("admin_room").emit("clientDisconnected", { userId: userData.userId });
+                console.log(`👤 Client ${socket.user.name} đã ngắt kết nối hoàn toàn`);
+            } else {
+                // Cập nhật lại mảng socketIds
+                userIdToSocketsMap.set(userData.userId, userSockets);
+                // Cập nhật socketId chính cho userId (lấy cái đầu tiên trong mảng)
+                userIdToSocketMap.set(userData.userId, userSockets[0]);
+                console.log(`👤 Client ${socket.user.name} còn ${userSockets.length} kết nối khác`);
+            }
+
             onlineUsers.delete(socket.id);
             console.log(`👤 Client ${socket.id} (${userData.name}) disconnected`);
             console.log(`📊 Tổng số client online còn lại: ${onlineUsers.size}`);
@@ -398,9 +486,16 @@ io.on("connection", (socket) => {
                 throw new Error(`API error: ${response.status}`);
             }
 
+            const result = await response.json();
+            console.log(`📬 Kết quả đánh dấu đã đọc:`, result);
+
             // Thông báo cho admin biết rằng tin nhắn đã được đọc
             io.to("admin_room").emit("messagesRead", { userId: data.userId });
             console.log(`📣 Đã thông báo admin rằng tin nhắn của user ${data.userId} đã được đọc`);
+
+            // Thông báo cho client rằng tin nhắn đã được cập nhật
+            io.to(`user_${data.userId}`).emit("messagesMarkedAsRead", { success: true });
+            console.log(`📣 Đã thông báo client ${data.userId} rằng tin nhắn đã được đánh dấu đã đọc`);
 
             callback({ success: true });
         } catch (error) {
