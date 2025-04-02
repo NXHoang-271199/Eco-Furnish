@@ -38,10 +38,14 @@ const Products = () => {
     sortBy: "",
   });
 
-  // Các dữ liệu mẫu
-  const colorOptions = ["Trắng", "Đen", "Nâu", "Xám", "Xanh", "Đỏ"];
-  const categoryOptions = ["Bàn", "Ghế", "Giường", "Tủ", "Kệ", "Đèn"];
+  // Dữ liệu bộ lọc màu sắc và kích thước sản phẩm trên giao diện người dùng
+  // Có thể thay đổi theo yêu cầu của bạn, màu sắc hiện đúng với sản phẩm trong API
+
+  const colorOptions = ["Nâu gỗ", "Trắng", "Đen", "Xám", "Kem", "Nâu đậm"];
+
+  const categoryOptions = ["Bàn", "Ghế", "Giường", "Tủ", "Kệ sách", "Đèn trang trí", "Thảm", "Gương"];
   const sizeOptions = ["Nhỏ", "Vừa", "Lớn"];
+  // Các tùy chọn cho bộ lọc giá
   const sortOptions = [
     { value: "newest", label: "Mới nhất" },
     { value: "bestselling", label: "Bán chạy" },
@@ -88,6 +92,7 @@ const Products = () => {
 
   // Xử lý khi thay đổi bộ lọc
   useEffect(() => {
+    // Kiểm tra xem có bộ lọc nào đang hoạt động không
     applyFilters();
   }, [filters, searchTerm, products]);
 
@@ -206,6 +211,9 @@ const Products = () => {
 
   // Áp dụng tất cả bộ lọc
   const applyFilters = () => {
+    // Nếu không có sản phẩm nào, không cần lọc
+    if (products.length === 0) return;
+    // Nếu không có bộ lọc nào, hiển thị tất cả sản phẩm
     let result = [...products];
 
     // Tìm kiếm theo tên
@@ -216,20 +224,32 @@ const Products = () => {
     }
 
     // Lọc theo màu sắc
-    if (filters.colors.length > 0) {
-      // Thêm logic lọc màu thực tế dựa trên dữ liệu API
-      // Giả định: mỗi product có thuộc tính color
-      result = result.filter(
-        (product) =>
-          filters.colors.includes(product.color) ||
-          // Xử lý tạm cho demo - cho qua nếu không có thuộc tính color
-          !product.color
-      );
+  // Lọc theo màu sắc theo variant_detail
+if (filters.colors.length > 0) {
+  result = result.filter((product) => {
+    // Nếu product có variants, lấy tất cả màu sắc từ variant_details[0]
+    if (product.variants && product.variants.length > 0) {
+      const variantColors = product.variants
+        .map((v) => v.variant_details?.[0]?.value)
+        .filter(Boolean); // loại bỏ giá trị null/undefined
+      // Nếu ít nhất một màu trong variantColors nằm trong bộ lọc
+      return variantColors.some((color) => filters.colors.includes(color));
     }
+    // Nếu không có variants, có thể fallback về thuộc tính product.color (nếu có)
+    if (product.color) {
+      return filters.colors.includes(product.color);
+    }
+    return false;
+  });
+}
+
 
     // Lọc theo danh mục
     if (filters.categories.length > 0) {
       // Giả định: mỗi product có thuộc tính category (có thể là object hoặc string)
+      // Nếu category là object, lấy tên category
+      // Nếu category là string, so sánh trực tiếp
+      
       result = result.filter(
         (product) =>
           (typeof product.category === "object" &&
@@ -480,7 +500,7 @@ const Products = () => {
             {/* Lọc màu sắc */}
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-3">Màu sắc</h3>
-              <div className="space-y-2 flex flex-wrap gap-2">
+              <div className="space-y flex flex-wrap gap-2">
                 {colorOptions.map((color) => (
                   <label
                     key={color}
@@ -501,7 +521,7 @@ const Products = () => {
             {/* Lọc danh mục */}
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-3">Danh mục</h3>
-              <div className="space-y-2 flex flex-wrap gap-2">
+              <div className="space-y flex flex-wrap gap-2">
                 {categoryOptions.map((category) => (
                   <label
                     key={category}

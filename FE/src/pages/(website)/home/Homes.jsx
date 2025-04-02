@@ -136,6 +136,7 @@ const Homes = () => {
     },
   };
 
+  console.log("Sản phẩm:", products);
   // Banner text variants
   const bannerTextVariants = {
     hidden: {
@@ -342,7 +343,7 @@ const Homes = () => {
               {products.length > 0 ? (
                 products.slice(0, 4).map((product, index) => (
                   <motion.div
-                    key={product.id}
+                    key={index} 
                     variants={fadeInUp}
                     custom={index}
                     whileHover={{
@@ -400,6 +401,7 @@ const Homes = () => {
                           }}
                         >
                           {product.name}
+                          
                         </motion.h3>
 
                         {/* Hiển thị đánh giá sao */}

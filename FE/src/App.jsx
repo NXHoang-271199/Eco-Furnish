@@ -23,6 +23,7 @@ import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
 import ChatBot from "./components/ChatBot";
 import OrderSuccess from "./pages/(website)/OrderSuccess/OrderSuccess";
 import { useEffect } from "react";
+import OrderHistory from "./pages/(website)/UserAccount/OrderHistory/OrderHistory";
 
 function App() {
   // Đồng bộ token khi ứng dụng khởi động
@@ -57,6 +58,7 @@ function App() {
           <Route path="payment" element={<Payment />} />
           <Route path="order-success" element={<OrderSuccess />} />
           <Route path="account" element={<LayoutAccount />}>
+            <Route path="order-history" element={<OrderHistory />} />
             <Route index element={<Account />} />
             <Route path="address" element={<Address />} />
             <Route path="password" element={<Edit_Pass />} />
