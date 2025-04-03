@@ -19,6 +19,7 @@ class Product extends Model
         'description',
         'price',
         'discount_price',
+        'quantity',
         'status'
     ];
 
@@ -43,24 +44,23 @@ class Product extends Model
      */
     public function variants()
     {
-        return $this->hasMany(ProductVariant::class)->withTrashed();
+        return $this->hasMany(ProductVariant::class)
+            ->select(['id', 'product_id', 'sku', 'price', 'discount_price', 'variant_details', 'quantity', 'status'])
+            ->withTrashed();
     }
+
 
     /**
      * Get the gallery images for the product.
      */
     public function gallery()
     {
-        return $this->hasMany(GalleryImage::class);
+        return $this->hasMany(GalleryImage::class)->withTrashed();
     }
 
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
-    }
-
-    public function productVariant(){
-        return $this->hasMany(ProductVariant::class);
     }
 
     /**
@@ -73,5 +73,20 @@ class Product extends Model
     public function cartItems()
     {
         return $this->hasMany(CartItem::class);
+    }
+    public function reviews() {
+        return $this->hasMany(Review::class);
+    }
+    public function scopeWithReviewStats($query, $sort = 'desc')
+    {
+        return $query
+            ->withCount(['reviews as total_reviews' => function ($query) {
+                $query->where('is_hidden', false);
+            }])
+            ->withAvg(['reviews as average_rating' => function ($query) {
+                $query->where('is_hidden', false);
+            }], 'rating')
+            ->orderBy('average_rating', $sort)
+            ->orderBy('total_reviews', $sort);
     }
 }

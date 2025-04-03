@@ -1,65 +1,53 @@
-import React from "react";
-const EmailVerification = () => {
-  return (
-    <div className="flex items-center justify-center flex-col mt-1 mb-1">
-      <section className=" mx-auto bg-white">
-        {/* max-w-2xl */}
+import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 
-        <main className="mt-8 px-5 sm:px-10">
-          <h2 className="text-gray-700 ">Hello John Deo,</h2>
-          <p className="mt-2 leading-loose text-gray-600 ">
-            Please use the following One Time Password(OTP)
-          </p>
-          <div className="flex items-center mt-4 gap-x-4">
-            <input type="text" className="flex items-center justify-center w-10 h-10 text-2xl font-medium text-[#365CCE] border border-[#365CCE] rounded-md" />
-            <i className="flex items-center justify-center w-10 h-10 text-2xl font-medium text-[#365CCE] border border-[#365CCE] rounded-md">
-              8
-            </i>
-            <p className="flex items-center justify-center w-10 h-10 text-2xl font-medium text-[#365CCE] border border-[#365CCE] rounded-md">
-              8
-            </p>
-            <p className="flex items-center justify-center w-10 h-10 text-2xl font-medium text-[#365CCE] border border-[#365CCE] rounded-md">
-              7
-            </p>
-            <p className="flex items-center justify-center w-10 h-10 text-2xl font-medium text-[#365CCE] border border-[#365CCE] rounded-md">
-              8
-            </p>
-          </div>
-          <p className="mt-4 leading-loose text-gray-600">
-            This passcode will only be valid for the next
-            <span className="font-bold"> 2 minutes</span> . If the passcode does
-            not work, you can use this login verification link:
-          </p>
-          <button className="px-6 py-2 mt-6 text-sm font-bold tracking-wider text-white capitalize transition-colors duration-300 transform bg-orange-600 rounded-lg hover:bg-orange-500 focus:outline-none focus:ring focus:ring-orange-300 focus:ring-opacity-80">
-            Verify email
-          </button>
-          <p className="mt-8 text-gray-600">
-            Thank you, <br />
-            Infynno Team
-          </p>
-        </main>
-        <p className="text-gray-500  px-5 sm:px-10 mt-8">
-          This email was sent from{" "}
-          <a
-            href="mailto:sales@infynno.com"
-            className="text-[#365CCE] hover:underline"
-            alt="sales@infynno.com"
-            target="_blank"
-          >
-            sales@infynno.com
-          </a>
-          . If you&apos;d rather not receive this kind of email, you can{" "}
-          <a href="#" className="text-[#365CCE] hover:underline">
-            unsubscribe
-          </a>{" "}
-          or{" "}
-          <a href="#" className="text-[#365CCE] hover:underline">
-            manage your email preferences
-          </a>
-          .
-        </p>
-      </section>
-    </div>
-  );
+const EmailVerification = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [verifying, setVerifying] = useState(true);
+
+  useEffect(() => {
+    const verifyEmail = async () => {
+      try {
+        const token = searchParams.get("token");
+        const email = decodeURIComponent(searchParams.get("email"));
+        console.log("Token:", token);
+        console.log("Email:", email);
+
+        if (!token || !email) {
+          alert("Link xác thực không hợp lệ");
+          navigate("/sign-in");
+          return;
+        }
+
+        const response = await axios.post(
+          `http://127.0.0.1:8000/api/users/verify-email`,
+          {
+            verify_token: token,
+            email: email,
+          }
+        );
+
+        if (response.data.status === "success") {
+          alert("Xác thực email thành công! Vui lòng đăng nhập.");
+          navigate("/sign-in");
+        }
+      } catch (error) {
+        console.error("Lỗi xác thực:", error);
+        alert("Xác thực email thất bại. Vui lòng thử lại sau.");
+        navigate("/sign-in");
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyEmail();
+  }, [searchParams, navigate]);
+
+  if (verifying) {
+    return <div>Đang xác thực email...</div>;
+  }
+  return null;
 };
 export default EmailVerification;

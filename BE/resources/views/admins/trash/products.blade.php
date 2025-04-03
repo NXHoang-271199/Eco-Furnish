@@ -37,7 +37,21 @@
                                     <td>{{ ($items->currentPage() - 1) * $items->perPage() + $loop->iteration }}</td>
                                     <td>{{ $item->product_code }}</td>
                                     <td>{{ $item->name }}</td>
-                                    <td>{{ number_format($item->price) }} VNĐ</td>
+                                    <td>
+                                        @if(count($item->variants) > 0)
+                                            @php
+                                                $minPrice = $item->variants->min('price');
+                                                $maxPrice = $item->variants->max('price');
+                                            @endphp
+                                            @if($minPrice == $maxPrice)
+                                                {{ number_format($minPrice) }} VNĐ
+                                            @else
+                                                {{ number_format($minPrice) }} - {{ number_format($maxPrice) }} VNĐ
+                                            @endif
+                                        @else
+                                            {{ number_format($item->price) }} VNĐ
+                                        @endif
+                                    </td>
                                     <td>{{ Carbon\Carbon::parse($item->deleted_at)->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i:s') }}</td>
                                     <td>
                                         <div class="d-flex gap-2">

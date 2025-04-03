@@ -184,17 +184,30 @@
                                                                 @php
                                                                     $firstVariant = $variants->first();
                                                                     $variantDetails = [];
+                                                                    
                                                                     if (!empty($firstVariant->variant_details)) {
-                                                                        foreach ($firstVariant->variant_details as $variantId => $valueId) {
-                                                                            $variantInfo = DB::table('variants')
-                                                                                ->where('id', $variantId)
-                                                                                ->first();
-                                                                            $variantValueInfo = DB::table('variant_values')
-                                                                                ->where('id', $valueId)
-                                                                                ->first();
+                                                                        // Kiểm tra nếu variant_details là mảng các đối tượng có name và value
+                                                                        if (is_array($firstVariant->variant_details) && isset($firstVariant->variant_details[0]) && 
+                                                                            isset($firstVariant->variant_details[0]['name']) && 
+                                                                            isset($firstVariant->variant_details[0]['value'])) {
                                                                             
-                                                                            if ($variantInfo && $variantValueInfo) {
-                                                                                $variantDetails[] = $variantInfo->name . ': ' . $variantValueInfo->value;
+                                                                            foreach ($firstVariant->variant_details as $detail) {
+                                                                                $variantDetails[] = $detail['name'] . ': ' . $detail['value'];
+                                                                            }
+                                                                        }
+                                                                        // Kiểm tra nếu là đối tượng với cặp khóa-giá trị
+                                                                        else {
+                                                                            foreach ($firstVariant->variant_details as $variantId => $valueId) {
+                                                                                $variantInfo = DB::table('variants')
+                                                                                    ->where('id', $variantId)
+                                                                                    ->first();
+                                                                                $variantValueInfo = DB::table('variant_values')
+                                                                                    ->where('id', $valueId)
+                                                                                    ->first();
+                                                                                
+                                                                                if ($variantInfo && $variantValueInfo) {
+                                                                                    $variantDetails[] = $variantInfo->name . ': ' . $variantValueInfo->value;
+                                                                                }
                                                                             }
                                                                         }
                                                                     }

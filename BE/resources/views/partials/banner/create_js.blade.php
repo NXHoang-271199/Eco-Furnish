@@ -38,6 +38,18 @@
         // Modern toggle switch functionality
         const toggleSwitch = document.querySelector('.toggle-switch-modern input');
         if (toggleSwitch) {
+            // Khởi tạo trạng thái text ban đầu
+            const statusOn = document.querySelector('.toggle-switch-modern .status-on');
+            const statusOff = document.querySelector('.toggle-switch-modern .status-off');
+            
+            if (toggleSwitch.checked) {
+                statusOn.style.display = 'inline-block';
+                statusOff.style.display = 'none';
+            } else {
+                statusOn.style.display = 'none'; 
+                statusOff.style.display = 'inline-block';
+            }
+
             toggleSwitch.addEventListener('change', function() {
                 const statusOn = document.querySelector('.toggle-switch-modern .status-on');
                 const statusOff = document.querySelector('.toggle-switch-modern .status-off');

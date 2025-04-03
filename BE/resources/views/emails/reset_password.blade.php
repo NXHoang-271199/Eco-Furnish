@@ -87,21 +87,28 @@
         </div>
         
         <div class="content">
-            <h1>Xin chào {{ $user->name }}!</h1>
+            <h1>Xin chào {{ $user->name }},</h1>
             
-            <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại Eco Furnish.</p>
+            <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
             
-            <p>Để đặt lại mật khẩu, vui lòng nhấp vào nút bên dưới:</p>
+            <p>Vui lòng click vào nút bên dưới để đặt lại mật khẩu:</p>
             
             <div class="button">
-                <a href="{{ $resetUrl }}">ĐẶT LẠI MẬT KHẨU</a>
+                <a href="{{ $resetUrl }}" 
+                   style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    Đặt lại mật khẩu
+                </a>
             </div>
             
-            <div class="warning">
-                <strong>Lưu ý:</strong> Liên kết này sẽ hết hạn sau 60 phút kể từ khi bạn nhận được email này.
-            </div>
+            <p>Nếu bạn không yêu cầu đặt lại mật khẩu, bạn có thể bỏ qua email này.</p>
             
-            <p>Nếu bạn không yêu cầu đặt lại mật khẩu, bạn có thể bỏ qua email này. Tài khoản của bạn vẫn an toàn.</p>
+            <p>Link đặt lại mật khẩu sẽ hết hạn sau 60 phút.</p>
+            
+            <hr style="border: none; border-top: 1px solid #eaeaea; margin: 30px 0;">
+            
+            <p style="color: #666; font-size: 12px;">
+                Đây là email tự động, vui lòng không trả lời email này.
+            </p>
         </div>
         
         <div class="footer">
