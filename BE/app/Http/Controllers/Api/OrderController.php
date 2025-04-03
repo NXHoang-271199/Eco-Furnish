@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\QuickOrderRequest;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
-use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PaymentMethodController;
 
 class OrderController extends Controller
 {

@@ -39,6 +39,37 @@ class PaymentMethodController extends Controller
             ], 500);
         }
     }
+    public function show($id)
+{
+    try {
+        // Tìm phương thức thanh toán theo id và chỉ lấy các trường cần thiết
+        $paymentMethod = PaymentMethod::where('id', $id)
+                                      ->where('is_connected', true)
+                                      ->first(['id', 'name', 'image']);
+
+        // Kiểm tra nếu không tìm thấy phương thức thanh toán
+        if (!$paymentMethod) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Phương thức thanh toán không tồn tại hoặc không được kết nối!'
+            ], 404);
+        }
+
+        // Trả về kết quả dưới dạng JSON
+        return response()->json([
+            'status' => true,
+            'data' => $paymentMethod
+        ], 200);
+    } catch (\Exception $e) {
+        // Xử lý lỗi và trả về thông báo lỗi
+        return response()->json([
+            'status' => false,
+            'message' => 'Đã xảy ra lỗi khi lấy thông tin phương thức thanh toán!',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
     public function processPayment(Request $request)
     {
         $paymentMethod = $request->payment_method;

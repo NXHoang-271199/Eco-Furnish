@@ -106,7 +106,6 @@ class RolesAndPermissionsSeeder extends Seeder
             // Comment permissions
             ['name' => 'Xem Bình Luận', 'slug' => 'view-comments', 'model' => 'App\Models\Comment'],
             ['name' => 'Cập Nhật Bình Luận', 'slug' => 'update-comments', 'model' => 'App\Models\Comment'],
-            ['name' => 'Xóa Bình Luận', 'slug' => 'delete-comments', 'model' => 'App\Models\Comment'],
 
             // Voucher permissions
             ['name' => 'Xem Mã Giảm Giá', 'slug' => 'view-vouchers', 'model' => 'App\Models\Voucher'],

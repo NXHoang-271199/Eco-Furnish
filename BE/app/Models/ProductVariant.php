@@ -69,12 +69,12 @@ class ProductVariant extends Model
             if (!$details || !is_array($details)) return [];
 
             $formattedDetails = [];
-
+            
             // Kiểm tra nếu đã là mảng các đối tượng có name và value
             if (isset($details[0]) && isset($details[0]['name']) && isset($details[0]['value'])) {
                 return $details;
             }
-
+            
             // Nếu là đối tượng với cặp khóa-giá trị {variantId: variantValueId}
             foreach ($details as $variantId => $variantValueId) {
                 $variant = Variant::find($variantId);

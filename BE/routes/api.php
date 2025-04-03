@@ -36,12 +36,15 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/search', [ProductController::class, 'search']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
+
 // Category routes
 Route::get('/categories', [CategoryApiController::class, 'index']);
 Route::get('/categories/{slug}', [CategoryApiController::class, 'show']);
 
 // Chat routes
 Route::post('/chat', [ChatController::class, 'chat']);
+Route::get('/chat/welcome', [ChatController::class, 'sendWelcomeMessage']);
+Route::post('/chat/order-success', [ChatController::class, 'sendOrderSuccessMessage']);
 
 // User routes
 Route::prefix('users')->group(function () {
@@ -99,6 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
     Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
     Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
+    // Route::post('/cart-items/update-quantity', [CartController::class, 'updateCartItemQuantity']); // API mới cập nhật số lượng
 });
 
 // Payment Method routes

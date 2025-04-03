@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { IoCartOutline } from "react-icons/io5";
 import { AiOutlineUser, AiOutlineSearch, AiOutlineHeart } from "react-icons/ai";
+import CartBadge from "./CartBadge";
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -29,140 +30,83 @@ const Header = () => {
 
   return (
     <>
-      <header class="bg-white fixed top-0 left-0 w-full z-50">
-        <div class="max-w-6xl mx-auto flex justify-between items-center p-4">
-          {/* <!-- Logo --> */}
-          <div class="text-2xl font-bold text-black">
+      <header className="bg-white/95 fixed top-0 left-0 w-full z-50 shadow-md border-b backdrop-blur-md">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-8 h-20">
+          {/* Logo */}
+          <div className="text-2xl font-bold text-black transition-transform hover:scale-105 duration-300">
             <div>
-              <a href="/">
-                <span className="text-yellow-300">E</span>co-
-                <span className="text-yellow-300">F</span>urnish
-              </a>
+              <Link to="/">
+                <img
+                  src="./logoweb5.png"
+                  alt="Eco-Furnish Logo"
+                  className="w-[70px] h-[70px] rounded-xl object-contain hover:shadow-lg transition-all duration-300"
+                />
+              </Link>
             </div>
           </div>
 
-          {/* <!-- Navigation --> */}
-          <nav class="hidden md:flex space-x-6">
-            <ul className="flex justify-center space-x-6 ">
-              <li>
-                <Link to="/" className="hover:text-yellow-400">
-                  Trang chủ
-                </Link>
-              </li>
-              <li className="relative group">
-                <Link to="/products" className="hover:text-yellow-400">
-                  Sản phẩm
-                </Link>
-                <div class="absolute hidden group-hover:flex bg-white shadow-lg rounded-lg w-[600px] p-6 md\:w-auto">
-                  <ul class="grid grid-cols-2 gap-6 w-full">
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phòng khách
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Không gian tiếp đón khách...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phòng ngủ
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Nơi nghỉ ngơi thư giãn...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phòng bếp
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Trang bị đầy đủ tiện nghi...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phòng làm việc
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Không gian làm việc hiệu quả...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Trang trí nội thất
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Thêm màu sắc phong cách...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Đồ nội thất ngoài trời
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Thư giãn với bộ bàn ghế...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Thảm và Rèm cửa
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Làm mới không gian sống...
-                      </p>
-                    </li>
-                    <li>
-                      <a href="#" class="block font-semibold">
-                        Phụ kiện nội thất
-                      </a>
-                      <p class="text-sm text-gray-500">
-                        Những chi tiết tinh tế...
-                      </p>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-
-              <li>
-                <Link to="/contact" className="hover:text-yellow-400">
-                  Liên hệ
-                </Link>
-              </li>
-              <li>
-                <Link to="/blogs" className="hover:text-yellow-400">
-                  Bài viết
-                </Link>
-              </li>
-            </ul>
+          {/* Navigation */}
+          <nav className="hidden md:flex space-x-12">
+            <Link
+              to="/"
+              className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Trang chủ
+            </Link>
+            <Link
+              to="/products"
+              className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Sản phẩm
+            </Link>
+            <Link
+              to="/blogs"
+              className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Bài viết
+            </Link>
+            <Link
+              to="/contact"
+              className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Liên hệ
+            </Link>
           </nav>
 
-          {/* <!-- Icons --> */}
-          <div class="flex items-center space-x-4">
-            <Link to="/search">
-              <AiOutlineSearch />
+          {/* Icons */}
+          <div className="flex items-center space-x-6">
+            <Link
+              to="/search"
+              className="text-gray-600 hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full"
+            >
+              <AiOutlineSearch size={20} className="transition-transform" />
             </Link>
-
-            <Link to="/cart">
-              <IoCartOutline />
+            <Link
+              to="/cart"
+              className="text-gray-600 hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full relative"
+            >
+              <IoCartOutline size={20} className="transition-transform" />
+              <CartBadge />
             </Link>
             {isLoggedIn ? (
               <Link
                 to="/account"
-                className="text-gray-700 hidden md:block hover:text-black"
+                className="text-gray-600 hidden md:block hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full"
               >
-                <AiOutlineUser className="inline mr-1" />
+                <AiOutlineUser size={20} className="transition-transform" />
               </Link>
             ) : (
               <Link
-                to="/signin"
-                className="text-gray-700 hidden md:block hover:text-black"
+                to="/sign-in"
+                className="text-gray-600 hidden md:block hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full"
               >
-                <AiOutlineUser className="inline mr-1" />
+                <AiOutlineUser size={20} className="transition-transform" />
               </Link>
             )}
           </div>
         </div>
       </header>
+      <div className="h-20"></div> {/* Spacer để tránh content bị đẩy lên */}
     </>
   );
 };
