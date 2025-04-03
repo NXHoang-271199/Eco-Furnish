@@ -410,22 +410,47 @@ const Payment = () => {
           </div>
           <div className="mt-4 space-y-4">
             {selectedProducts.map((item) => {
-              const price = item.product_variant
-                ? item.product_variant.discount_price ||
-                item.product_variant.price
-                : item.product.discount_price || item.product.price;
+              // Kiểm tra cấu trúc dữ liệu để xác định giá sản phẩm một cách an toàn
+              let price = 0;
+
+              // Kiểm tra nếu có product_variant và có thuộc tính discount_price hoặc price
+              if (
+                item.product_variant &&
+                (item.product_variant.discount_price !== undefined ||
+                  item.product_variant.price !== undefined)
+              ) {
+                price =
+                  item.product_variant.discount_price ||
+                  item.product_variant.price;
+              }
+              // Nếu không có product_variant hoặc không có giá, kiểm tra product
+              else if (
+                item.product &&
+                (item.product.discount_price !== undefined ||
+                  item.product.price !== undefined)
+              ) {
+                price = item.product.discount_price || item.product.price;
+              }
+              // Nếu không thể xác định giá từ cấu trúc trên, lấy từ total_price
+              else {
+                price = item.price || item.total_price / (item.quantity || 1);
+              }
 
               return (
                 <div
-                  key={`${item.product.id}-${JSON.stringify(
-                    item.product_variant?.variant_details
+                  key={`${item.product?.id || item.id}-${JSON.stringify(
+                    item.product_variant?.variant_details ||
+                      item.variant_details ||
+                      {}
                   )}`}
                   className="flex items-center space-x-4"
                 >
                   <div className="relative w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                     <img
-                      src={`http://localhost:8000/storage/${item.product.image_thumnail}`}
-                      alt={item.product.name}
+                      src={`http://localhost:8000/storage/${
+                        item.product?.image_thumnail || item.image_thumnail
+                      }`}
+                      alt={item.product?.name || item.name || "Sản phẩm"}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.src =
@@ -434,11 +459,20 @@ const Payment = () => {
                     />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium">{item.product.name}</p>
+                    <p className="font-medium">
+                      {item.product?.name || item.name || "Sản phẩm"}
+                    </p>
                     <div className="mt-1 space-x-2">
-                      {item.variant_details &&
-                        Array.isArray(item.variant_details) &&
-                        item.variant_details.map((variant, index) => (
+                      {(item.variant_details ||
+                        item.product_variant?.variant_details) &&
+                        Array.isArray(
+                          item.variant_details ||
+                            item.product_variant?.variant_details
+                        ) &&
+                        (
+                          item.variant_details ||
+                          item.product_variant?.variant_details
+                        ).map((variant, index) => (
                           <span
                             key={index}
                             className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-gray-100"
@@ -448,18 +482,10 @@ const Payment = () => {
                         ))}
                     </div>
                     <div className="mt-1 text-sm text-gray-500">
-                      {/* {formatPrice(
-                        item.product.discount_price || item.product.price
-                      )}{" "}
-                      x {item.quantity} */}
                       {formatPrice(price)} x {item.quantity}
                     </div>
                   </div>
                   <div className="font-medium">
-                    {/* {formatPrice(
-                      (item.product.discount_price || item.product.price) *
-                        item.quantity
-                    )} */}
                     {formatPrice(item.total_price)}
                   </div>
                 </div>
