@@ -64,4 +64,11 @@ git reset --hard HEAD~1 => reset code đến lần commit gần nhất
 -   choco install ngrok
 # chạy ngrok
 -   ngrok http 8000 => chạy ngrok trên port 8000
+** Lưu ý mỗi lần chạy ngrok là phải thay lại link ipn
+** Cấu hình MoMo
+{
+    "access_key": "klm05TvNBzhg7h7j",
+    "secret_key": "at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa",
+    "partner_code": "MOMOBKUN20180529"
+}
 

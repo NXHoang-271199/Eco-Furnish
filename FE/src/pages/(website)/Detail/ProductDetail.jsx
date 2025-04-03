@@ -585,7 +585,7 @@ const ProductDetail = () => {
                 })()}
 
                 {/* Hiển thị danh sách các biến thể sản phẩm */}
-                <div className="mt-4 bg-gray-50 p-3 rounded-lg">
+                {/* <div className="mt-4 bg-gray-50 p-3 rounded-lg">
                   <h4 className="font-medium text-gray-700 mb-2">
                     Thông tin chi tiết biến thể:
                   </h4>
@@ -638,7 +638,7 @@ const ProductDetail = () => {
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
 

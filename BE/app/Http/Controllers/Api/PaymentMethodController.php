@@ -106,7 +106,7 @@ class PaymentMethodController extends Controller
         $amount = $request->total_price;
         $orderId = $request->order_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5173/order-success";
-        $ipnUrl = $request->notify_url ?? "https://f33b-116-104-67-184.ngrok-free.app/api/momo/ipn";
+        $ipnUrl = $request->notify_url ?? "https://2348-202-93-156-66.ngrok-free.app/api/momo/ipn";
 
         $extraData = '';
 
