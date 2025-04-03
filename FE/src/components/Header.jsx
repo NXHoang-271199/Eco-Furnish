@@ -6,6 +6,8 @@ import CartBadge from "./CartBadge";
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showSearchInput, setShowSearchInput] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
     // Kiểm tra trạng thái đăng nhập khi component được tải

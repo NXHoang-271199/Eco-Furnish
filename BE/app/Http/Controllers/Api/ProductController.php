@@ -96,19 +96,19 @@ class ProductController extends Controller
                 $product->total_quantity = $totalQuantity;
                 $product->makeVisible(['total_quantity', 'price_range']);
                 
+                // Lấy tất cả dữ liệu variant và variant_value một lần
+                $variantData = DB::table('variants')->get()->keyBy('id');
+                $variantValueData = DB::table('variant_values')->get()->keyBy('id');
+                
                 // Xử lý dữ liệu biến thể để thêm thông tin chi tiết
-                $product->variants->transform(function ($variant) {
+                $product->variants->transform(function ($variant) use ($variantData, $variantValueData) {
                     $variantDetailsDisplay = [];
                     
                     if (!empty($variant->variant_details)) {
                         foreach ($variant->variant_details as $variantId => $valueId) {
-                            // Lấy thông tin về variant và variant_value
-                            $variantInfo = DB::table('variants')
-                                ->where('id', $variantId)
-                                ->first();
-                            $variantValueInfo = DB::table('variant_values')
-                                ->where('id', $valueId)
-                                ->first();
+                            // Lấy thông tin về variant và variant_value từ dữ liệu đã cached
+                            $variantInfo = $variantData->get($variantId);
+                            $variantValueInfo = $variantValueData->get($valueId);
                             
                             if ($variantInfo && $variantValueInfo) {
                                 $variantDetailsDisplay[] = [

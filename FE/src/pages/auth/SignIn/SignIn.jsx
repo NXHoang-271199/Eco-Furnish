@@ -35,8 +35,16 @@ const SignIn = () => {
       if (response.data.status === "success") {
         // Lưu token và thông tin user
         localStorage.setItem("authToken", response.data.data.access_token);
+        localStorage.setItem("access_token", response.data.data.access_token); // Lưu cả access_token để đồng bộ
         localStorage.setItem("refreshToken", response.data.data.refresh_token);
         localStorage.setItem("userData", JSON.stringify(response.data.data));
+
+        // Kích hoạt sự kiện storage để các tab khác biết có thay đổi
+        window.dispatchEvent(new Event("storage"));
+
+        // Kích hoạt sự kiện tùy chỉnh để thông báo đã đăng nhập
+        window.dispatchEvent(new CustomEvent("auth-change"));
+
 
         // Khởi động lại socket connection
         setTimeout(() => {
@@ -91,8 +99,32 @@ const SignIn = () => {
     }
   };
 
-  // Lưu ý: Chức năng refresh token đã được chuyển sang AuthContext để xử lý tập trung
-  
+  // phải thông qua email-vẻ
+  const refreshToken = async () => {
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:8000/api/users/refresh-token`,
+        {
+          refresh_token: localStorage.getItem("refreshToken"), // Lưu refresh token trong localStorage
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.data.status === "success") {
+        localStorage.setItem("authToken", response.data.data.access_token);
+        console.log("Token đã được làm mới:", response.data.data.access_token);
+        return response.data.data.access_token;
+      }
+    } catch (error) {
+      console.error("Lỗi làm mới token:", error);
+    }
+  };
+
   return (
     <div className="flex w-full bg-white shadow-lg">
       {/* đang chạy hiệu ứng ảnh */}

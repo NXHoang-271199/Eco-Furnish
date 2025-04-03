@@ -4,6 +4,10 @@ const http = require("http");
 const socketIo = require("socket.io");
 const fetch = require("node-fetch");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const cors = require("cors");
 
 // Các cài đặt từ biến môi trường
 const API_URL = process.env.API_URL || 'http://127.0.0.1:8000';
@@ -16,6 +20,89 @@ console.log('📌 Cài đặt cổng socket:', {
 });
 
 const app = express();
+app.use(express.json());
+
+// Cấu hình CORS cho tất cả các routes
+app.use(cors({
+    origin: "*", // Cho phép tất cả các origins
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+    credentials: true
+}));
+
+// Tạo thư mục uploads nếu chưa tồn tại
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Cấu hình multer để lưu file upload
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, uploadDir)
+    },
+    filename: function(req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const fileExt = path.extname(file.originalname);
+        cb(null, 'chat-image-' + uniqueSuffix + fileExt);
+    }
+});
+
+// Lọc file ảnh
+const fileFilter = (req, file, cb) => {
+    // Chỉ chấp nhận các loại file ảnh
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Chỉ chấp nhận file ảnh'), false);
+    }
+};
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // giới hạn 5MB
+    },
+    fileFilter: fileFilter
+});
+
+// Phục vụ file tĩnh từ thư mục uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Thêm API route để upload ảnh
+app.post('/upload', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Không có file được tải lên' });
+        }
+
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Không có token xác thực' });
+        }
+
+        // Tạo URL cho ảnh đã upload
+        const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+        res.json({
+            success: true,
+            file: {
+                filename: req.file.filename,
+                path: req.file.path,
+                url: imageUrl
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi khi xử lý upload file:', error);
+        res.status(500).json({ success: false, message: 'Lỗi server khi xử lý upload' });
+    }
+});
+
+// Thêm route để server kiểm tra tình trạng kết nối
+app.get("/", (req, res) => {
+    res.send("🚀 Socket.IO Server is running!");
+});
+
 const server = http.createServer(app);
 
 // Thêm xử lý lỗi cho server
@@ -43,11 +130,6 @@ const onlineAdmins = new Map();
 const userIdToSocketMap = new Map();
 // Map lưu trữ cả mảng socketIds cho mỗi userId (cho phép quản lý nhiều tab)
 const userIdToSocketsMap = new Map();
-
-// Route test
-app.get("/", (req, res) => {
-    res.send("🚀 Socket.IO Server is running!");
-});
 
 // Middleware xác thực token
 const authenticateToken = async (socket, next) => {
@@ -314,7 +396,8 @@ io.on("connection", (socket) => {
 
             // Tạo dữ liệu tin nhắn để lưu vào DB
             const messageData = {
-                text: data.text,
+                text: data.text || null,
+                image: data.image || null,
                 sender_id: socket.user.id,
                 receiver_id: null, // Mặc định là null, admin sẽ nhận
                 sent_at: new Date()
@@ -376,11 +459,12 @@ io.on("connection", (socket) => {
                 return callback({ success: false, error: "Thiếu userId của người nhận" });
             }
 
-            console.log(`📨 Admin ${socket.user.name} gửi tin nhắn đến user ${data.userId}:`, data.text);
+            console.log(`📨 Admin ${socket.user.name} gửi tin nhắn đến user ${data.userId}:`, data.text || data.image);
 
             // Tạo dữ liệu tin nhắn để lưu vào DB
             const messageData = {
-                text: data.text,
+                text: data.text || null,
+                image: data.image || null,
                 sender_id: socket.user.id,
                 receiver_id: data.userId,
                 sent_at: new Date()
@@ -418,6 +502,134 @@ io.on("connection", (socket) => {
             callback({ success: true, message: savedMessage });
         } catch (error) {
             console.error("❌ Lỗi khi xử lý adminMessage:", error);
+            callback({ success: false, error: error.message });
+        }
+    });
+
+    // Thêm xử lý upload ảnh từ client
+    socket.on("clientImageUpload", async (data, callback = () => {}) => {
+        try {
+            // Kiểm tra xem người dùng có tồn tại không
+            if (socket.user.role === 'admin') {
+                return callback({ success: false, error: "Admin không thể gửi tin nhắn như client" });
+            }
+
+            if (!data.image) {
+                return callback({ success: false, error: "Không có dữ liệu ảnh" });
+            }
+
+            console.log(`📸 Nhận ảnh từ client: ${socket.user.name} (${socket.id})`);
+
+            // Tạo dữ liệu tin nhắn để lưu vào DB
+            const messageData = {
+                text: null,
+                image: data.image,
+                sender_id: socket.user.id,
+                receiver_id: null, // Mặc định là null, admin sẽ nhận
+                sent_at: new Date()
+            };
+
+            // Gọi API để lưu tin nhắn
+            const response = await fetch(`${API_URL}/api/messages`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${socket.handshake.auth.token}`
+                },
+                body: JSON.stringify(messageData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || "Không thể lưu tin nhắn ảnh");
+            }
+
+            const savedMessage = await response.json();
+            console.log("✅ Tin nhắn ảnh đã được lưu vào DB:", savedMessage.id);
+
+            // Đảm bảo trạng thái is_read luôn là false cho tin nhắn mới từ client
+            savedMessage.is_read = false;
+
+            // Chuẩn bị dữ liệu tin nhắn để gửi cho admin
+            const messageForAdmin = {
+                ...savedMessage,
+                senderName: socket.user.name,
+                is_read: false
+            };
+
+            // Gửi tin nhắn đến tất cả admin
+            console.log(`📣 Phát tin nhắn ảnh đến phòng admin_room. Admins online: ${onlineAdmins.size}`);
+            io.to("admin_room").emit("newClientMessage", messageForAdmin);
+
+            callback({ success: true, message: savedMessage });
+        } catch (error) {
+            console.error("❌ Lỗi khi xử lý clientImageUpload:", error);
+            callback({ success: false, error: error.message });
+        }
+    });
+
+    // Thêm xử lý upload ảnh từ admin
+    socket.on("adminImageUpload", async (data, callback = () => {}) => {
+        try {
+            // Kiểm tra xem người dùng có phải là admin không
+            if (socket.user.role !== 'admin') {
+                console.error(`⚠️ User ${socket.user.name} (${socket.id}) cố gửi ảnh admin nhưng không có quyền`);
+                return callback({ success: false, error: "Unauthorized: Admin role required" });
+            }
+
+            if (!data.userId) {
+                console.error("❌ Thiếu userId của người nhận trong adminImageUpload");
+                return callback({ success: false, error: "Thiếu userId của người nhận" });
+            }
+
+            if (!data.image) {
+                return callback({ success: false, error: "Không có dữ liệu ảnh" });
+            }
+
+            console.log(`📸 Admin ${socket.user.name} gửi ảnh đến user ${data.userId}`);
+
+            // Tạo dữ liệu tin nhắn để lưu vào DB
+            const messageData = {
+                text: null,
+                image: data.image,
+                sender_id: socket.user.id,
+                receiver_id: data.userId,
+                sent_at: new Date()
+            };
+
+            // Gọi API để lưu tin nhắn
+            const response = await fetch(`${API_URL}/api/messages`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${socket.handshake.auth.token}`
+                },
+                body: JSON.stringify(messageData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || "Không thể lưu tin nhắn ảnh");
+            }
+
+            const savedMessage = await response.json();
+            console.log("✅ Tin nhắn ảnh admin đã được lưu vào DB:", savedMessage.id);
+
+            // Gửi tin nhắn đến client cụ thể
+            const messageForClient = {
+                ...savedMessage,
+                senderName: socket.user.name,
+                is_read: false // Thêm trạng thái chưa đọc
+            };
+
+            io.to(`user_${data.userId}`).emit("adminResponse", messageForClient);
+            console.log(`📣 Đã gửi tin nhắn ảnh đến user_${data.userId}`);
+
+            callback({ success: true, message: savedMessage });
+        } catch (error) {
+            console.error("❌ Lỗi khi xử lý adminImageUpload:", error);
             callback({ success: false, error: error.message });
         }
     });

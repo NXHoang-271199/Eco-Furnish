@@ -9,6 +9,7 @@ import {
   useInView,
   useAnimation,
 } from "framer-motion";
+import { BsStarFill, BsStarHalf, BsStar } from "react-icons/bs";
 import api from "../../../service/api";
 import Banner from "../../../components/Banner";
 import { IoCartOutline, IoStar } from "react-icons/io5";
@@ -139,6 +140,7 @@ const Homes = () => {
     },
   };
 
+  console.log("Sản phẩm:", products);
   // Banner text variants
   const bannerTextVariants = {
     hidden: {
@@ -172,6 +174,24 @@ const Homes = () => {
         repeat: Infinity,
       },
     },
+  };
+
+  // Render sao đánh giá
+  const renderStars = (rating) => {
+    const stars = [];
+    const totalStars = 5;
+
+    for (let i = 1; i <= totalStars; i++) {
+      if (i <= rating) {
+        stars.push(<BsStarFill key={i} className="text-yellow-500" />);
+      } else if (i - 0.5 <= rating) {
+        stars.push(<BsStarHalf key={i} className="text-yellow-500" />);
+      } else {
+        stars.push(<BsStar key={i} className="text-yellow-500" />);
+      }
+    }
+
+    return <div className="flex space-x-1">{stars}</div>;
   };
 
   return (

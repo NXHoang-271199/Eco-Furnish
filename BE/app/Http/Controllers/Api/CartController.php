@@ -194,4 +194,129 @@ class CartController extends Controller
 
         return response()->json(['message' => 'Đã xóa toàn bộ giỏ hàng'], 200);
     }
+
+    /**
+     * Cập nhật số lượng sản phẩm trong giỏ hàng theo variant_details
+     * API được gọi từ frontend thông qua axios
+     */
+    // public function updateCartItemQuantity(Request $request)
+    // {
+    //     // Validate request
+    //     $request->validate([
+    //         'product_id' => 'required|exists:products,id',
+    //         'quantity' => 'required|integer|min:1',
+    //     ]);
+
+    //     $userId = Auth::id();
+    //     $cart = Cart::where('user_id', $userId)->first();
+
+    //     if (!$cart) {
+    //         return response()->json(['success' => false, 'message' => 'Không tìm thấy giỏ hàng'], 404);
+    //     }
+
+    //     $productId = $request->product_id;
+    //     $productVariantId = $request->product_variant_id;
+    //     $newQuantity = $request->quantity;
+    //     $variantDetails = $request->variant_details;
+
+    //     // Tìm kiếm item trong giỏ hàng
+    //     $query = CartItem::where('cart_id', $cart->id)
+    //                      ->where('product_id', $productId);
+
+    //     // Nếu có product_variant_id, thêm điều kiện tìm kiếm
+    //     if ($productVariantId) {
+    //         $query->where('product_variant_id', $productVariantId);
+    //     }
+
+    //     $cartItem = $query->first();
+
+    //     // Nếu không tìm thấy item theo variant_id, thử tìm kiếm bằng cách so sánh variant_details
+    //     if (!$cartItem && $variantDetails) {
+    //         // Lấy tất cả các cart item của sản phẩm này
+    //         $cartItems = CartItem::where('cart_id', $cart->id)
+    //                             ->where('product_id', $productId)
+    //                             ->get();
+
+    //         // Duyệt qua từng cart item để so sánh variant_details
+    //         foreach ($cartItems as $item) {
+    //             // Nếu item có thông tin variant_details khớp với request
+    //             if ($this->compareVariantDetails($item, $variantDetails)) {
+    //                 $cartItem = $item;
+    //                 break;
+    //             }
+    //         }
+    //     }
+
+    //     if (!$cartItem) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Không tìm thấy sản phẩm trong giỏ hàng'
+    //         ], 404);
+    //     }
+
+    //     // Kiểm tra tồn kho
+    //     $maxQuantity = $cartItem->product_variant_id
+    //         ? $cartItem->productVariant->quantity
+    //         : $cartItem->product->quantity;
+
+    //     if ($newQuantity > $maxQuantity) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => "Số lượng tối đa có thể thêm là $maxQuantity sản phẩm."
+    //         ], 400);
+    //     }
+
+    //     // Cập nhật số lượng
+    //     $cartItem->quantity = $newQuantity;
+    //     $cartItem->save();
+
+    //     // Tính giá
+    //     $price = $cartItem->product_variant_id
+    //         ? ($cartItem->productVariant->discount_price ?? $cartItem->productVariant->price)
+    //         : ($cartItem->product->discount_price ?? $cartItem->product->price);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Cập nhật số lượng thành công',
+    //         'data' => [
+    //             'cart_item' => $cartItem,
+    //             'total_price' => $price * $cartItem->quantity
+    //         ]
+    //     ], 200);
+    // }
+
+    /**
+     * So sánh variant_details giữa cart item và request
+     */
+    private function compareVariantDetails($cartItem, $requestVariantDetails)
+    {
+        // Nếu cart item không có variant_details hoặc không phải dạng JSON, trả về false
+        if (!$cartItem->variant_details) {
+            return false;
+        }
+
+        try {
+            // Chuyển đổi variant_details của cart item sang array nếu là chuỗi JSON
+            $itemVariantDetails = is_string($cartItem->variant_details)
+                ? json_decode($cartItem->variant_details, true)
+                : $cartItem->variant_details;
+
+            // Chuyển đổi variant_details từ request sang array nếu là chuỗi JSON
+            $requestVariantArray = is_string($requestVariantDetails)
+                ? json_decode($requestVariantDetails, true)
+                : $requestVariantDetails;
+
+            // So sánh các phần tử chính
+            if (is_array($itemVariantDetails) && is_array($requestVariantArray)) {
+                // So sánh đơn giản theo cấu trúc
+                return json_encode(array_map('ksort', $itemVariantDetails)) ===
+                       json_encode(array_map('ksort', $requestVariantArray));
+            }
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi so sánh variant_details: ' . $e->getMessage());
+            return false;
+        }
+
+        return false;
+    }
 }
