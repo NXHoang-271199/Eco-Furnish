@@ -158,7 +158,7 @@ class OrderController extends Controller
                 'user_phone' => $request->user_phone,
                 'user_address' => $request->user_address,
                 'payment_method_id' => $request->payment_method_id,
-                'payment_status' => 0, // Chưa thanh toán
+                'payment_status' => $paymentMethod === 'Tiền mặt' ? 0 : 2, // 2 = Đang chờ thanh toán,
                 'order_status' => 'Chưa Xác Nhận',
                 'total_price' => $totalPrice,
                 'voucher_id' => $request->voucher_id ?? null,

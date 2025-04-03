@@ -66,8 +66,6 @@ const OrderHistory = () => {
       returned: "returned",
     };
 
-    
-
     return orderData.filter((order) => order.status === statusMap[activeTab]);
   };
 
