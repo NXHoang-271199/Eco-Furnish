@@ -412,7 +412,7 @@ const Payment = () => {
             {selectedProducts.map((item) => {
               const price = item.product_variant
                 ? item.product_variant.discount_price ||
-                  item.product_variant.price
+                item.product_variant.price
                 : item.product.discount_price || item.product.price;
 
               return (

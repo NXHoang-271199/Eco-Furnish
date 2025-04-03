@@ -11,9 +11,15 @@ import About from "./pages/(website)/About/About";
 import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
+
+// import CursorGlow from "./CursorGlow";
+// import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
 import EmailVerification from "./pages/EmailVerification/EmailVerification";
 import ResetPassword from "./pages/auth/ResetPassword/ResetPassword";
 import ConfirmPassword from "./pages/ConfirmPassword/ConfirmPassword";
+
+// import ForgotPasswordModal from "./pages/SignIn/ForgotPasswordModal";
+
 import Payment from "./pages/(website)/Payment/Payment";
 import LayoutAccount from "./pages/(website)/UserAccount/LayoutAccount";
 import Account from "./pages/(website)/UserAccount/Account/Account";
@@ -25,25 +31,9 @@ import OrderSuccess from "./pages/(website)/OrderSuccess/OrderSuccess";
 import OrderHistory from "./pages/(website)/UserAccount/OrderHistory/OrderHistory";
 
 function App() {
-  // Đồng bộ token khi ứng dụng khởi động
-  useEffect(() => {
-    // Đồng bộ token giữa access_token và authToken
-    const accessToken = localStorage.getItem("access_token");
-    const authToken = localStorage.getItem("authToken");
-
-    if (accessToken && !authToken) {
-      // Nếu có access_token nhưng không có authToken, sao chép sang authToken
-      localStorage.setItem("authToken", accessToken);
-      console.log("Đã đồng bộ từ access_token sang authToken");
-    } else if (!accessToken && authToken) {
-      // Nếu có authToken nhưng không có access_token, sao chép sang access_token
-      localStorage.setItem("access_token", authToken);
-      console.log("Đã đồng bộ từ authToken sang access_token");
-    }
-  }, []);
-
   return (
     <>
+      {/* <CursorGlow /> */}
       <Routes>
         <Route path="/" element={<LayoutWebsite />}>
           <Route index element={<Homes />} />
@@ -57,7 +47,6 @@ function App() {
           <Route path="payment" element={<Payment />} />
           <Route path="order-success" element={<OrderSuccess />} />
           <Route path="account" element={<LayoutAccount />}>
-            <Route path="order-history" element={<OrderHistory />} />
             <Route index element={<Account />} />
             <Route path="address" element={<Address />} />
             <Route path="password" element={<Edit_Pass />} />

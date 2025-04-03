@@ -12,12 +12,10 @@ import { motion } from "framer-motion";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [imageLoadError, setImageLoadError] = useState({});
   const [filterOpen, setFilterOpen] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 10000000]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
@@ -59,12 +57,9 @@ const Products = () => {
           //   console.log("gia", product.variants?.discount_price);
           // });
           setProducts(response.data.data.data);
-          setFilteredProducts(response.data.data.data);
         }
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -293,16 +288,237 @@ const Products = () => {
                     variants={fadeIn}
                     whileHover={{ y: -8 }}
                   >
-                    <Link to={`/product-detail/${product.id}`}>
-                      {/* Product content */}
+                    <Link
+                      to={`/product-detail/${product.id}`}
+                      className="block"
+                    >
+                      <div className="relative overflow-hidden">
+                        <div className="aspect-square overflow-hidden">
+                          <img
+                            src={
+                              product.image_thumnail
+                                ? product.image_thumnail.startsWith("http")
+                                  ? product.image_thumnail
+                                  : `http://localhost:8000/storage/${product.image_thumnail}`
+                                : "https://via.placeholder.com/300x300?text=No+Image"
+                            }
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                            onError={(e) => {
+                              const productId = product.id;
+                              if (!imageLoadError[productId]) {
+                                setImageLoadError((prev) => ({
+                                  ...prev,
+                                  [productId]: true,
+                                }));
+                                e.target.src = "/images/no-image.png";
+                              }
+                            }}
+                          />
+                        </div>
+
+                        {/* Nhãn mới */}
+                        <div className="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                          MỚI
+                        </div>
+
+                        {/* Nút mua nhanh */}
+                        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <motion.button
+                            className="bg-white text-amber-500 p-3 rounded-full shadow-md hover:bg-amber-500 hover:text-white transition-all duration-300"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <IoCartOutline className="text-xl" />
+                          </motion.button>
+                        </div>
+                      </div>
+
+                      <div className="p-5">
+                        {/* Sao đánh giá */}
+                        <div className="flex items-center mb-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <IoStar
+                              key={star}
+                              className={`${
+                                star <= 4 ? "text-amber-400" : "text-gray-300"
+                              } w-4 h-4`}
+                            />
+                          ))}
+                          <span className="text-gray-500 text-sm ml-2">
+                            (4.0)
+                          </span>
+                        </div>
+
+                        <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-amber-500 transition-colors">
+                          {product.name}
+                        </h3>
+
+                        <div className="text-gray-500 text-sm mb-3 line-clamp-2">
+                          {product.description ||
+                            "Sản phẩm nội thất cao cấp, bền đẹp và thân thiện với môi trường"}
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <p className="text-amber-600 font-semibold text-lg">
+                            {new Intl.NumberFormat("vi-VN", {
+                              style: "currency",
+                              currency: "VND",
+                            }).format(
+                              product.discount_price ||
+                                product.variants?.[0]?.discount_price ||
+                                product.price ||
+                                0
+                            )}
+                          </p>
+                          {product.original_price && (
+                            <p className="text-gray-400 line-through text-sm">
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(product.original_price)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </Link>
                   </motion.div>
                 ))
               ) : (
-                <div>No products found</div>
+                <>
+                  {[1, 2, 3, 4, 5, 6].map((index) => (
+                    <motion.div
+                      key={index}
+                      className="bg-white rounded-xl shadow-sm overflow-hidden h-[400px] animate-pulse"
+                      variants={fadeIn}
+                    >
+                      <div className="aspect-square bg-gray-200"></div>
+                      <div className="p-5">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full mb-3"></div>
+                        <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </>
               )}
             </motion.div>
+
+            {/* Hiển thị nếu không có sản phẩm */}
+            {products.length === 0 && !products.loading && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="text-amber-500 mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-16 w-16"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold mb-2">
+                  Không tìm thấy sản phẩm
+                </h3>
+                <p className="text-gray-500 text-center mb-6">
+                  Không có sản phẩm nào phù hợp với tiêu chí tìm kiếm của bạn
+                </p>
+                <button className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-full transition-colors">
+                  Xem tất cả sản phẩm
+                </button>
+              </div>
+            )}
           </motion.div>
+        </div>
+      </section>
+
+      {/* Phân trang */}
+      <motion.div
+        className="flex justify-center space-x-3 my-12"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.8 }}
+      >
+        {[1, 2, 3, "...", 10].map((item, index) => (
+          <button
+            key={index}
+            className={`${
+              item === 1
+                ? "bg-amber-500 text-white"
+                : "bg-white text-gray-700 hover:bg-amber-100"
+            } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
+          >
+            {item}
+          </button>
+        ))}
+        <button className="bg-white text-gray-700 hover:bg-amber-100 border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 font-medium flex items-center">
+          <span>Tiếp</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 ml-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+      </motion.div>
+
+      {/* Footer benefits */}
+      <section className="bg-amber-50 py-16">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4">
+          {[
+            {
+              title: "Chất lượng cao cấp",
+              description: "Vật liệu bền vững thân thiện môi trường",
+              icon: <LiaTrophySolid className="w-10 h-10 text-amber-500" />,
+            },
+            {
+              title: "Hỗ trợ 24/7",
+              description: "Đội ngũ tư vấn chuyên nghiệp",
+              icon: <FaUserAstronaut className="w-10 h-10 text-amber-500" />,
+            },
+            {
+              title: "Bảo hành 12 tháng",
+              description: "Cam kết chất lượng sản phẩm",
+              icon: <LiaTrophySolid className="w-10 h-10 text-amber-500" />,
+            },
+            {
+              title: "Miễn phí vận chuyển",
+              description: "Cho đơn hàng trên 5 triệu đồng",
+              icon: <FaShippingFast className="w-10 h-10 text-amber-500" />,
+            },
+          ].map((item, idx) => (
+            <motion.div
+              key={idx}
+              className="flex items-start space-x-4 bg-white p-6 rounded-xl shadow-sm border border-amber-100"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+              viewport={{ once: true }}
+            >
+              <div className="p-3 bg-amber-100 rounded-full">{item.icon}</div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {item.title}
+                </h2>
+                <p className="text-gray-600">{item.description}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </section>
     </>
