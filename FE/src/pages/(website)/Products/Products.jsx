@@ -12,6 +12,11 @@ import { motion } from "framer-motion";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [variants, setVariants] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedVariants, setSelectedVariants] = useState([]);
   const [imageLoadError, setImageLoadError] = useState({});
   const [filterOpen, setFilterOpen] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 10000000]);
@@ -46,25 +51,138 @@ const Products = () => {
         );
         console.log("API Response:", response.data);
 
-        if (
-          response.data.status === "success" &&
-          Array.isArray(response.data.data.data)
-        ) {
-          // Log từng sản phẩm để kiểm tra đường dẫn ảnh
-          // response.data.data.data.forEach((product) => {
-          //   console.log("Tên sản phẩm:", product.name);
-          //   console.log("Đường dẫn ảnh:", product.image_thumnail);
-          //   console.log("gia", product.variants?.discount_price);
-          // });
+        if (response.data.status === "success") {
           setProducts(response.data.data.data);
+          setFilteredProducts(response.data.data.data);
         }
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu:", error);
       }
     };
 
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/categories`
+        );
+        console.log("Categories Response:", response.data);
+        if (response.data.success) {
+          setCategories(response.data.data);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy danh mục:", error);
+      }
+    };
+
+    const fetchVariants = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/variants`
+        );
+        if (response.data.status === "success") {
+          setVariants(response.data.data);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy biến thể:", error);
+      }
+    };
+
     fetchProducts();
+    fetchCategories();
+    fetchVariants();
   }, []);
+
+  useEffect(() => {
+    filterProducts();
+  }, [selectedCategories, selectedVariants, priceRange, searchTerm, products]);
+
+  const filterProducts = () => {
+    let filtered = [...products];
+
+    // Nếu không có filter nào được chọn và không có từ khóa tìm kiếm, hiển thị tất cả sản phẩm
+    if (
+      selectedCategories.length === 0 &&
+      selectedVariants.length === 0 &&
+      priceRange[0] === 0 &&
+      priceRange[1] === 10000000 &&
+      !searchTerm
+    ) {
+      setFilteredProducts(products);
+      return;
+    }
+
+    // Lọc theo danh mục
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(product =>
+        selectedCategories.includes(product.category_id)
+      );
+    }
+
+    // Lọc theo biến thể
+    if (selectedVariants.length > 0) {
+      filtered = filtered.filter(product => {
+        if (!product.variants || product.variants.length === 0) return false;
+
+        return product.variants.some(variant => {
+          if (!variant.variant_details || !Array.isArray(variant.variant_details)) return false;
+
+          // Kiểm tra xem có bất kỳ giá trị nào trong selectedVariants khớp với variant_details
+          return selectedVariants.some(selectedValueId => {
+            return variant.variant_details.some(detail => {
+              const selectedVariantValue = variants
+                .flatMap(v => v.values)
+                .find(val => val.id === selectedValueId);
+
+              if (!selectedVariantValue) return false;
+
+              return detail.value === selectedVariantValue.value;
+            });
+          });
+        });
+      });
+    }
+
+    // Lọc theo khoảng giá
+    if (priceRange[0] !== 0 || priceRange[1] !== 10000000) {
+      filtered = filtered.filter(product => {
+        let price;
+        if (product.has_variants) {
+          const variantPrices = product.variants.map(v => v.discount_price || v.price);
+          price = Math.min(...variantPrices);
+        } else {
+          price = product.discount_price || product.price;
+        }
+        return price >= priceRange[0] && price <= priceRange[1];
+      });
+    }
+
+    // Lọc theo từ khóa tìm kiếm
+    if (searchTerm) {
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredProducts(filtered);
+  };
+
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategories(prev => {
+      const newCategories = prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId];
+      return newCategories;
+    });
+  };
+
+  const handleVariantValueChange = (valueId) => {
+    setSelectedVariants(prev => {
+      const newVariants = prev.includes(valueId)
+        ? prev.filter(id => id !== valueId)
+        : [...prev, valueId];
+      return newVariants;
+    });
+  };
 
   const toggleFilter = () => {
     setFilterOpen(!filterOpen);
@@ -74,6 +192,13 @@ const Products = () => {
     const newPriceRange = [...priceRange];
     newPriceRange[index] = parseInt(e.target.value);
     setPriceRange(newPriceRange);
+  };
+
+  const resetFilters = () => {
+    setSelectedCategories([]);
+    setSelectedVariants([]);
+    setPriceRange([0, 10000000]);
+    setSearchTerm("");
   };
 
   return (
@@ -153,9 +278,8 @@ const Products = () => {
         <div className="flex gap-6 relative">
           {/* Bộ lọc */}
           <motion.div
-            className={`${
-              filterOpen ? "flex" : "hidden"
-            } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4 h-fit transition-all duration-300`}
+            className={`${filterOpen ? "flex" : "hidden"
+              } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4 h-fit transition-all duration-300`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
@@ -170,51 +294,51 @@ const Products = () => {
                 Danh mục
               </h4>
               <div className="space-y-3 text-gray-600">
-                {[
-                  "Phòng khách",
-                  "Phòng ngủ",
-                  "Phòng bếp",
-                  "Văn phòng",
-                  "Ngoài trời",
-                ].map((category) => (
+                {categories.map((category) => (
                   <label
-                    key={category}
+                    key={category.id}
                     className="flex items-center space-x-3 cursor-pointer group"
                   >
                     <input
                       type="checkbox"
+                      checked={selectedCategories.includes(category.id)}
+                      onChange={() => handleCategoryChange(category.id)}
                       className="form-checkbox h-5 w-5 rounded text-amber-500 border-gray-300 focus:ring-amber-500 transition-all"
                     />
                     <span className="group-hover:text-amber-500 transition-colors">
-                      {category}
+                      {category.name}
                     </span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="mb-8">
-              <h4 className="text-base font-medium mb-4 flex items-center">
-                <span className="w-2 h-5 bg-amber-500 rounded-full mr-2 inline-block"></span>
-                Kích cỡ
-              </h4>
-              <div className="space-y-3 text-gray-600">
-                {["Nhỏ", "Vừa", "Lớn"].map((size) => (
-                  <label
-                    key={size}
-                    className="flex items-center space-x-3 cursor-pointer group"
-                  >
-                    <input
-                      type="checkbox"
-                      className="form-checkbox h-5 w-5 rounded text-amber-500 border-gray-300 focus:ring-amber-500"
-                    />
-                    <span className="group-hover:text-amber-500 transition-colors">
-                      {size}
-                    </span>
-                  </label>
-                ))}
+            {variants.map((variant) => (
+              <div key={variant.id} className="mb-8">
+                <h4 className="text-base font-medium mb-4 flex items-center">
+                  <span className="w-2 h-5 bg-amber-500 rounded-full mr-2 inline-block"></span>
+                  {variant.name}
+                </h4>
+                <div className="space-y-3 text-gray-600">
+                  {variant.values.map((value) => (
+                    <label
+                      key={value.id}
+                      className="flex items-center space-x-3 cursor-pointer group"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedVariants.includes(value.id)}
+                        onChange={() => handleVariantValueChange(value.id)}
+                        className="form-checkbox h-5 w-5 rounded text-amber-500 border-gray-300 focus:ring-amber-500"
+                      />
+                      <span className="group-hover:text-amber-500 transition-colors">
+                        {value.value}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            ))}
 
             {/* Lọc giá */}
             <div className="mb-8">
@@ -257,14 +381,6 @@ const Products = () => {
                 />
               </div>
             </div>
-
-            <motion.button
-              className="bg-amber-500 hover:bg-amber-600 text-white py-3 px-6 rounded-full font-medium transition-all duration-300 mt-4"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              Áp dụng bộ lọc
-            </motion.button>
           </motion.div>
 
           {/* Danh sách sản phẩm */}
@@ -280,8 +396,8 @@ const Products = () => {
               initial="hidden"
               animate="visible"
             >
-              {products.length > 0 ? (
-                products.map((product) => (
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
                   <motion.div
                     key={product.id}
                     className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
@@ -340,9 +456,8 @@ const Products = () => {
                           {[1, 2, 3, 4, 5].map((star) => (
                             <IoStar
                               key={star}
-                              className={`${
-                                star <= 4 ? "text-amber-400" : "text-gray-300"
-                              } w-4 h-4`}
+                              className={`${star <= 4 ? "text-amber-400" : "text-gray-300"
+                                } w-4 h-4`}
                             />
                           ))}
                           <span className="text-gray-500 text-sm ml-2">
@@ -360,24 +475,76 @@ const Products = () => {
                         </div>
 
                         <div className="flex justify-between items-center">
-                          <p className="text-amber-600 font-semibold text-lg">
-                            {new Intl.NumberFormat("vi-VN", {
-                              style: "currency",
-                              currency: "VND",
-                            }).format(
-                              product.discount_price ||
-                                product.variants?.[0]?.discount_price ||
-                                product.price ||
-                                0
-                            )}
-                          </p>
-                          {product.original_price && (
-                            <p className="text-gray-400 line-through text-sm">
-                              {new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                              }).format(product.original_price)}
-                            </p>
+                          {product.has_variants ? (
+                            // Sản phẩm có biến thể
+                            <div className="flex-1">
+                              {product.price_range?.min_discount ? (
+                                // Có giá khuyến mãi
+                                <div className="flex flex-col">
+                                  <p className="text-amber-600 font-semibold text-lg">
+                                    {new Intl.NumberFormat("vi-VN", {
+                                      style: "currency",
+                                      currency: "VND",
+                                    }).format(product.price_range.min_discount)}
+                                    {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                      ` - ${new Intl.NumberFormat("vi-VN", {
+                                        style: "currency",
+                                        currency: "VND",
+                                      }).format(product.price_range.max_discount)}`
+                                    }
+                                  </p>
+                                  <p className="text-gray-400 line-through text-sm">
+                                    {new Intl.NumberFormat("vi-VN", {
+                                      style: "currency",
+                                      currency: "VND",
+                                    }).format(product.price_range.min)}
+                                  </p>
+                                </div>
+                              ) : (
+                                // Không có khuyến mãi
+                                <p className="text-amber-600 font-semibold text-lg">
+                                  {new Intl.NumberFormat("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                  }).format(product.price_range?.min || 0)}
+                                  {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                                    ` - ${new Intl.NumberFormat("vi-VN", {
+                                      style: "currency",
+                                      currency: "VND",
+                                    }).format(product.price_range.max)}`
+                                  }
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            // Sản phẩm thường
+                            <div className="flex-1">
+                              {product.discount_price ? (
+                                // Có giá khuyến mãi
+                                <div className="flex flex-col">
+                                  <p className="text-amber-600 font-semibold text-lg">
+                                    {new Intl.NumberFormat("vi-VN", {
+                                      style: "currency",
+                                      currency: "VND",
+                                    }).format(product.discount_price)}
+                                  </p>
+                                  <p className="text-gray-400 line-through text-sm">
+                                    {new Intl.NumberFormat("vi-VN", {
+                                      style: "currency",
+                                      currency: "VND",
+                                    }).format(product.price)}
+                                  </p>
+                                </div>
+                              ) : (
+                                // Không có khuyến mãi
+                                <p className="text-amber-600 font-semibold text-lg">
+                                  {new Intl.NumberFormat("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                  }).format(product.price || 0)}
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -406,7 +573,7 @@ const Products = () => {
             </motion.div>
 
             {/* Hiển thị nếu không có sản phẩm */}
-            {products.length === 0 && !products.loading && (
+            {filteredProducts.length === 0 && !products.loading && (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="text-amber-500 mb-4">
                   <svg
@@ -449,11 +616,10 @@ const Products = () => {
         {[1, 2, 3, "...", 10].map((item, index) => (
           <button
             key={index}
-            className={`${
-              item === 1
-                ? "bg-amber-500 text-white"
-                : "bg-white text-gray-700 hover:bg-amber-100"
-            } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
+            className={`${item === 1
+              ? "bg-amber-500 text-white"
+              : "bg-white text-gray-700 hover:bg-amber-100"
+              } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
           >
             {item}
           </button>

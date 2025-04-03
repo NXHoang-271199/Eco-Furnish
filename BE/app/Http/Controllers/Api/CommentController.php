@@ -21,32 +21,6 @@ class CommentController extends Controller
         ]);
 
         $userId = Auth::id();
-        $productId = $request->product_id;
-
-        // Kiểm tra xem người dùng có đơn hàng chứa sản phẩm không
-        $order = Order::where('user_id', $userId)
-            ->whereHas('orderItems', function ($query) use ($productId) {
-                $query->where('product_id', $productId);
-            })
-            ->whereNotIn('order_status', ['Hoàn Hàng', 'Hủy Đơn'])
-            ->orderBy('created_at', 'desc') // Lấy đơn mới nhất
-            ->first();
-
-        if (!$order) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn chưa mua sản phẩm này.'
-            ], 403);
-        }
-
-        // Kiểm tra trạng thái đơn hàng có đủ điều kiện để bình luận không
-        if ($order->order_status !== 'Đã Nhận') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn chỉ có thể bình luận khi đơn hàng đã hoàn tất.'
-            ], 403);
-        }
-
         $comment = Comment::create([
             'product_id' => $request->product_id,
             'user_id' => $userId,
