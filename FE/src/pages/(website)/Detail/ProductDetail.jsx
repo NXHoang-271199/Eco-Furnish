@@ -276,7 +276,6 @@ const ProductDetail = () => {
             key={star}
             className="cursor-pointer"
             onClick={() => setSelectedRating(star)}
-            onMouseEnter={() => setSelectedRating(star)}
           >
             {star <= selectedRating ? (
               <IoStar className="text-amber-400 w-6 h-6 transition-all hover:scale-110" />
