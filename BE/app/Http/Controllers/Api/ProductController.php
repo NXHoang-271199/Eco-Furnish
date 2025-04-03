@@ -15,7 +15,9 @@ class ProductController extends Controller
     public function index()
     {
         try {
-            $products = Product::with(['category', 'gallery', 'variants'])
+            $products = Product::with(['category', 'gallery', 'variants' => function($query) {
+                $query->whereNull('deleted_at');
+            }])
                 ->orderBy('created_at', 'desc')
                 ->paginate(12);
 
@@ -68,8 +70,9 @@ class ProductController extends Controller
     public function show($id)
     {
         try {
-            // Eager loading tất cả các mối quan hệ cần thiết
-            $product = Product::with(['category', 'gallery', 'variants'])
+            $product = Product::with(['category', 'gallery', 'variants' => function($query) {
+                $query->whereNull('deleted_at');
+            }])
                 ->findOrFail($id);
 
             // Xử lý thông tin giá và số lượng
@@ -146,7 +149,9 @@ class ProductController extends Controller
     public function search(Request $request)
     {
         try {
-            $query = Product::query()->with(['category', 'gallery', 'variants']);
+            $query = Product::query()->with(['category', 'gallery', 'variants' => function($query) {
+                $query->whereNull('deleted_at');
+            }]);
 
             if ($request->has('keyword')) {
                 $query->where('name', 'like', '%' . $request->keyword . '%');

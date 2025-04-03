@@ -146,38 +146,81 @@
 
             // Xử lý toggle biến thể
             variantToggle.on('change', function() {
-                // Ẩn/hiện trường số lượng
-                const quantitySection = $('#quantitySection');
-                // Lấy các phần giá cơ bản và giá khuyến mãi
-                const priceSection = $('#priceSection');
-                const discountPriceSection = $('#discountPriceSection');
+                const basePriceQuantitySection = $('#base-price-discount-quantity');
+                
+                function showBasePriceQuantityFields() {
+                    console.log('Hiển thị các trường cơ bản');
+                    basePriceQuantitySection.removeClass('d-none').show();
+                }
+                
+                function hideBasePriceQuantityFields() {
+                    console.log('Ẩn các trường cơ bản');
+                    basePriceQuantitySection.addClass('d-none').hide();
+                }
+
+                function handleVariantDisable() {
+                    console.log('Xử lý tắt biến thể');
+                    
+                    // Đặt giá trị cho các biến điều khiển
+                    hasVariantsInput.val('0');
+                    isAddingVariant = false;
+                    
+                    // Ẩn phần biến thể
+                    variantSection.slideUp(300);
+                    
+                    // Xóa biến thể
+                    resetVariantForm();
+                    
+                    // Xóa tất cả trạng thái validation trước
+                    clearAllValidationStates();
+                    clearPriceValidation();
+                    
+                    // Hiển thị các trường cơ bản
+                    showBasePriceQuantityFields();
+                    
+                    // Xóa lại validation sau khi hoàn thành
+                    setTimeout(function() {
+                        clearAllValidationStates();
+                        clearPriceValidation();
+                    }, 300);
+                }
                 
                 if (this.checked) {
+                    console.log('Toggle được bật');
                     // Hiển thị phần biến thể
                     variantSection.slideDown(300);
                     hasVariantsInput.val('1');
                     isAddingVariant = true;
                     
                     // Ẩn trường số lượng, giá gốc và giá khuyến mãi khi bật biến thể
-                    quantitySection.hide();
-                    priceSection.hide();
-                    discountPriceSection.hide();
+                    hideBasePriceQuantityFields();
+                    
+                    // Xóa giá trị của các trường giá và số lượng
+                    $('#price').val('');
+                    $('#discount_price').val('');
+                    $('#quantity').val('');
                     
                     // Ẩn thông báo lỗi của trường số lượng và reset validation state
                     clearValidation($('#quantity'));
+                    clearValidation($('#price'));
+                    clearValidation($('#discount_price'));
                     $('#quantity-error').hide();
-                    $('#quantity').val(''); // Xóa giá trị số lượng
+                    
+                    // Reset lại trạng thái thuộc tính và biến thể khi bật toggle
+                    selectedTypes = [];
+                    selectedVariants = [];
+                    selectedVariantTypes.empty();
+                    variantsContainer.empty();
+                    $('#generate-variants-container').hide();
+                    $('#generate-variants-btn').hide();
+                    $('#variantForm').addClass('d-none');
+                    variantValuesContainer.addClass('d-none');
+                    
+                    // Cập nhật UI và danh sách select
+                    updateSelectedVariantTypesUI();
+                    updateVariantTypeSelect();
                 } else {
-                    // Ẩn phần biến thể
-                    variantSection.slideUp(300);
-                    hasVariantsInput.val('0');
-                    isAddingVariant = false;
-                    
-                    // Hiển thị trường số lượng, giá gốc và giá khuyến mãi khi tắt biến thể
-                    quantitySection.show();
-                    priceSection.show();
-                    discountPriceSection.show();
-                    
+                    console.log('Toggle được tắt');
                     // Hiển thị thông báo xác nhận nếu đã có biến thể
                     if (selectedTypes.length > 0 || selectedVariants.length > 0) {
                         Swal.fire({
@@ -187,30 +230,54 @@
                             showCancelButton: true,
                             confirmButtonText: 'Đồng ý',
                             cancelButtonText: 'Hủy',
-                            confirmButtonColor: '#3b5998'
+                            confirmButtonColor: '#3b5998',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            preConfirm: () => {
+                                console.log('Xác nhận trước khi đóng dialog');
+                                clearAllValidationStates();
+                                clearPriceValidation();
+                                return true;
+                            }
                         }).then((result) => {
+                            console.log('Kết quả dialog:', result);
                             if (result.isConfirmed) {
-                                // Xóa tất cả biến thể
-                                resetVariantForm();
+                                console.log('Người dùng đã xác nhận');
+                                // Đảm bảo toggle được tắt
+                                variantToggle.prop('checked', false);
+                                
+                                // Xử lý tắt biến thể - đã di chuyển vào hàm riêng
+                                handleVariantDisable();
+                                
+                                // Xóa lại validation ngay sau khi dialog đóng
+                                clearAllValidationStates();
+                                clearPriceValidation();
+                                
+                                // Và một lần nữa sau một thời gian ngắn
+                                setTimeout(function() {
+                                    clearAllValidationStates();
+                                    clearPriceValidation();
+                                }, 500);
                             } else {
-                                // Bật lại toggle
+                                console.log('Người dùng đã hủy');
+                                // Khôi phục trạng thái toggle
                                 variantToggle.prop('checked', true);
                                 variantSection.slideDown(300);
                                 hasVariantsInput.val('1');
                                 isAddingVariant = true;
-                                
-                                // Ẩn lại trường số lượng, giá gốc và giá khuyến mãi
-                                quantitySection.hide();
-                                priceSection.hide();
-                                discountPriceSection.hide();
+                                hideBasePriceQuantityFields();
                             }
                         });
+                    } else {
+                        console.log('Không có biến thể, tắt bình thường');
+                        handleVariantDisable();
                     }
                 }
             });
 
-            // Hàm reset form biến thể
+            // Reset form biến thể
             function resetVariantForm() {
+                console.log('Đang reset form biến thể');
                 // Xóa tất cả biến thể đã chọn
                 selectedTypes = [];
                 selectedVariants = [];
@@ -227,6 +294,29 @@
                 updateSelectedVariantTypesUI();
             }
 
+            // Khởi tạo trạng thái ban đầu
+            $(document).ready(function() {
+                console.log('Khởi tạo trạng thái ban đầu');
+                const basePriceQuantitySection = $('#base-price-discount-quantity');
+                
+                // Kiểm tra nếu có biến thể
+                if (selectedTypes.length > 0 || selectedVariants.length > 0) {
+                    console.log('Có biến thể, ẩn các trường cơ bản');
+                    variantToggle.prop('checked', true);
+                    hasVariantsInput.val('1');
+                    isAddingVariant = true;
+                    basePriceQuantitySection.addClass('d-none').hide();
+                    variantSection.show();
+                } else {
+                    console.log('Không có biến thể, hiện các trường cơ bản');
+                    variantToggle.prop('checked', false);
+                    hasVariantsInput.val('0');
+                    isAddingVariant = false;
+                    basePriceQuantitySection.removeClass('d-none').show();
+                    variantSection.hide();
+                }
+            });
+
             // Cập nhật giao diện nút tạo biến thể tự động
             $('#generate-variants-btn').html('<i class="fas fa-magic me-2"></i>Tạo biến thể tự động');
 
@@ -237,18 +327,14 @@
                 isAddingVariant = false;
                 
                 // Hiển thị trường số lượng, giá gốc và giá khuyến mãi khi không có biến thể
-                $('#quantitySection').show();
-                $('#priceSection').show();
-                $('#discountPriceSection').show();
+                $('#base-price-discount-quantity').show();
             } else {
                 variantSection.show();
                 hasVariantsInput.val('1');
                 isAddingVariant = true;
                 
                 // Ẩn trường số lượng, giá gốc và giá khuyến mãi khi có biến thể
-                $('#quantitySection').hide();
-                $('#priceSection').hide();
-                $('#discountPriceSection').hide();
+                $('#base-price-discount-quantity').hide();
             }
 
             // Load biến thể hiện có
@@ -1253,59 +1339,44 @@
                 // Hiển thị số lượng biến thể sẽ được tạo
                 console.log(`Tạo ${combinations.length} biến thể...`);
                 
-                // Hiển thị thông báo loading
-                let timerInterval;
-                Swal.fire({
-                    title: 'Đang tạo biến thể',
-                    html: `Đang tạo <b>${combinations.length}</b> biến thể, vui lòng đợi...`,
-                    timer: 2000,
-                    timerProgressBar: true,
-                    didOpen: () => {
-                        Swal.showLoading();
-                        timerInterval = setInterval(() => {}, 100);
-                    },
-                    willClose: () => {
-                        clearInterval(timerInterval);
-                    }
-                }).then(() => {
-                    // Tạo các biến thể
-                    $('#variants-container').empty();
-                    
-                    // Tạo biến thể cho mỗi tổ hợp
-                    combinations.forEach((combination, index) => {
-                        // Thu thập dữ liệu variant_details
-                        const variantDetails = {};
-                        combination.forEach(item => {
-                            variantDetails[item.variantId] = item.valueId;
-                        });
-                        
-                        // Tạo đối tượng biến thể mới
-                        const variant = {
-                            sku: `SKU-${index + 1}`,
-                            price: $('#price').val() || '0',
-                            quantity: '0',
-                            variant_details: variantDetails,
-                            values: variantDetails  // Giữ lại để tương thích với code cũ
-                        };
-                        
-                        // Thêm vào mảng biến thể
-                        selectedVariants.push(variant);
-                        
-                        // Hiển thị biến thể mới
-                        displayVariant(variant, index);
+                // Tạo các biến thể
+                $('#variants-container').empty();
+                
+                // Tạo biến thể cho mỗi tổ hợp
+                combinations.forEach((combination, index) => {
+                    // Thu thập dữ liệu variant_details
+                    const variantDetails = {};
+                    combination.forEach(item => {
+                        variantDetails[item.variantId] = item.valueId;
                     });
                     
-                    // Gắn sự kiện cho các biến thể đã tạo
-                    attachEventsToGeneratedVariants();
+                    // Tạo đối tượng biến thể mới
+                    const variant = {
+                        sku: `SKU-${index + 1}`,
+                        price: '',
+                        discount_price: '',
+                        quantity: '',
+                        variant_details: variantDetails,
+                        values: variantDetails  // Giữ lại để tương thích với code cũ
+                    };
                     
-                    // Thông báo thành công
+                    // Thêm vào mảng biến thể
+                    selectedVariants.push(variant);
+                    
+                    // Hiển thị biến thể mới
+                    displayVariant(variant, index);
+                });
+                
+                // Gắn sự kiện cho các biến thể đã tạo
+                attachEventsToGeneratedVariants();
+                
+                // Thông báo thành công
                 Swal.fire({
                     title: 'Thành công!',
-                        text: `Đã tạo ${combinations.length} biến thể sản phẩm`,
+                    text: `Đã tạo ${combinations.length} biến thể sản phẩm`,
                     icon: 'success',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#405189'
-                    });
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#405189'
                 });
             }
 
@@ -1584,6 +1655,30 @@
                 removeAllFeedbackMessages(discountPriceInput);
             }
 
+            // Thêm hàm mới để xóa tất cả validation state
+            function clearAllValidationStates() {
+                resetValidationState();
+                
+                // Xóa các class validation cho tất cả các input
+                $('input, select, textarea').removeClass('is-invalid is-valid');
+                
+                // Ẩn tất cả các thông báo lỗi
+                $('.invalid-feedback').hide();
+                
+                // Xóa các thông báo lỗi
+                $('#quantity-error').hide();
+            }
+            
+            // Thêm hàm mới để xóa validation của trường giá
+            function clearPriceValidation() {
+                // Xóa validation classes
+                $('#price, #discount_price').removeClass('is-invalid is-valid');
+                
+                // Xóa thông báo lỗi
+                removeAllFeedbackMessages($('#price'));
+                removeAllFeedbackMessages($('#discount_price'));
+            }
+
             // Thêm hàm mới để xóa tất cả các thông báo lỗi cho một trường
             function removeAllFeedbackMessages(field) {
                 // Tìm tất cả feedback elements liên quan đến field này
@@ -1801,17 +1896,25 @@
                             formData.append(`variants[${index}][variant_details]`, JSON.stringify(variant.variant_details));
                             
                             // Xử lý values từ variant_details
-                            variant.variant_details.forEach(detail => {
-                                const variantOption = variantTypeSelect.find(`option:contains('${detail.name}')`);
-                                if (variantOption.length) {
-                                    const variantId = variantOption.val();
-                                    const variantValues = JSON.parse(variantOption.attr('data-values'));
-                                    const valueObj = variantValues.find(v => v.value === detail.value);
-                                    if (valueObj) {
-                                        formData.append(`variants[${index}][values][${variantId}]`, valueObj.id);
+                            if (Array.isArray(variant.variant_details)) {
+                                // Nếu variant_details là mảng (format cũ)
+                                variant.variant_details.forEach(detail => {
+                                    const variantOption = variantTypeSelect.find(`option:contains('${detail.name}')`);
+                                    if (variantOption.length) {
+                                        const variantId = variantOption.val();
+                                        const variantValues = JSON.parse(variantOption.attr('data-values'));
+                                        const valueObj = variantValues.find(v => v.value === detail.value);
+                                        if (valueObj) {
+                                            formData.append(`variants[${index}][values][${variantId}]`, valueObj.id);
+                                        }
                                     }
-                                }
-                            });
+                                });
+                            } else if (typeof variant.variant_details === 'object') {
+                                // Nếu variant_details là đối tượng (format mới)
+                                Object.entries(variant.variant_details).forEach(([variantId, valueId]) => {
+                                    formData.append(`variants[${index}][values][${variantId}]`, valueId);
+                                });
+                            }
                         }
                     });
                 } else {
@@ -2547,5 +2650,86 @@
                 // Ẩn form chỉnh sửa
                 variantElement.find('.variant-edit').hide();
             });
+
+            // Khởi tạo trạng thái ban đầu
+            function initializeVariantState() {
+                // Kiểm tra nếu sản phẩm có biến thể
+                if (existingVariants && existingVariants.length > 0) {
+                    // Bật toggle biến thể
+                    variantToggle.prop('checked', true);
+                    hasVariantsInput.val('1');
+                    isAddingVariant = true;
+                    
+                    // Ẩn các trường cơ bản
+                    $('#base-price-discount-quantity').hide();
+                    
+                    // Hiển thị phần biến thể
+                    variantSection.show();
+                } else {
+                    // Tắt toggle biến thể
+                    variantToggle.prop('checked', false);
+                    hasVariantsInput.val('0');
+                    isAddingVariant = false;
+                    
+                    // Hiển thị các trường cơ bản
+                    $('#base-price-discount-quantity').show();
+                    
+                    // Ẩn phần biến thể
+                    variantSection.hide();
+                }
+            }
+
+            // Gọi hàm khởi tạo
+            initializeVariantState();
+
+            // Thêm hàm mới để xóa tất cả trạng thái validation
+            function clearAllValidationStates() {
+                resetValidationState();
+                
+                // Xóa các class validation cho tất cả các input
+                $('input, select, textarea').removeClass('is-invalid is-valid');
+                
+                // Ẩn tất cả các thông báo lỗi
+                $('.invalid-feedback').hide();
+                
+                // Xóa các thông báo lỗi
+                $('#quantity-error').hide();
+            }
+
+            // Thêm vào jQuery document ready
+            $(document).ready(function() {
+                // ... existing code ...
+                
+                // Vô hiệu hóa validation tự động khi trang tải lần đầu
+                clearAllValidationStates();
+                
+                // Vô hiệu hóa validation tự động khi trường giá gốc nhận focus
+                $('#price').on('focus', function() {
+                    console.log('Trường giá gốc nhận focus');
+                    clearPriceValidation();
+                });
+                
+                // Khi tắt dialog, xóa tất cả validation
+                $(document).on('hidden.bs.modal', '.modal', function() {
+                    clearAllValidationStates();
+                });
+                
+                // Khi swal fire đóng, xóa tất cả validation
+                $(document).on('click', '.swal2-confirm', function() {
+                    setTimeout(function() {
+                        clearAllValidationStates();
+                    }, 300);
+                });
+            });
+            
+            // Hàm riêng để xóa validation của trường giá
+            function clearPriceValidation() {
+                // Xóa validation classes
+                $('#price, #discount_price').removeClass('is-invalid is-valid');
+                
+                // Xóa thông báo lỗi
+                removeAllFeedbackMessages($('#price'));
+                removeAllFeedbackMessages($('#discount_price'));
+            }
         });
     </script>
