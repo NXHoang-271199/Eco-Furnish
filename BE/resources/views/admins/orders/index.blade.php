@@ -76,7 +76,6 @@
                                                                     $order->order_status === 'Đã Nhận' ||
                                                                     $order->order_status === 'Hoàn Hàng' ||
                                                                     $order->order_status === 'Hủy Đơn' ||
-                                                                    $order->order_status === 'Từ Chối Hoàn Hàng' ||
                                                                     $order->payment_status === '2')
                                                                 {{ $order->updated_at ? $order->updated_at->format('d/m/Y H:i') : 'Chưa xác nhận' }}
                                                             @else
@@ -91,8 +90,9 @@
                                                     <p class="mb-1 ms-3">
                                                         Trạng thái thanh toán:
                                                         <span
-                                                            class="fw-bold {{ $order->payment_status == 1 ? 'text-success' : 'text-danger' }}">
-                                                            {{ $order->payment_status == 1 ? 'Đã thanh toán' : 'Chưa thanh toán' }}
+                                                            class="fw-bold
+                                                            {{ $order->payment_status == 1 ? 'text-success' : ($order->payment_status == 2 ? 'text-warning' : 'text-danger') }}">
+                                                            {{ $order->payment_status == 1 ? 'Đã thanh toán' : ($order->payment_status == 2 ? 'Chờ thanh toán' : 'Chưa thanh toán') }}
                                                         </span>
                                                     </p>
                                                     <p class="mb-1 ms-3 text-danger fw-600"><strong>Tổng tiền:
@@ -107,7 +107,7 @@
                                                             value="{{ $order->order_status }}">
                                                         <select name="order_status" class="form-control fw-bold"
                                                             onchange="this.form.submit()"
-                                                            {{ $order->order_status === 'Đã Nhận' || $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' || $order->order_status === 'Từ Chối Hoàn Hàng' ? 'disabled' : '' }}>
+                                                            {{ $order->order_status === 'Đã Nhận' || $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' ? 'disabled' : '' }}>
                                                             <option value="Chưa Xác Nhận"
                                                                 {{ $order->order_status === 'Chưa Xác Nhận' ? 'selected' : '' }}>
                                                                 Chưa Xác Nhận</option>
@@ -132,9 +132,6 @@
                                                             <option value="Hủy Đơn"
                                                                 {{ $order->order_status === 'Hủy Đơn' ? 'selected disabled' : '' }}>
                                                                 Hủy Đơn</option>
-                                                            <option value="Từ Chối Hoàn Hàng"
-                                                                {{ $order->order_status === 'Từ Chối Hoàn Hàng' ? 'selected disabled' : '' }}>
-                                                                Từ Chối Hoàn Hàng</option>
                                                         </select>
                                                     </form>
                                                 </div>
@@ -158,7 +155,7 @@
                                                                 {{ $refund->reason ?? 'Chưa có lý do' }}</p>
 
                                                             <!-- Hiển thị nút duyệt và từ chối chỉ khi yêu cầu chưa bị từ chối hoặc duyệt -->
-                                                            @if ($order->order_status !== 'Từ Chối Hoàn Hàng' && $order->order_status !== 'Hoàn Hàng')
+                                                            @if ($refund->status === 'Chờ Duyệt')
                                                                 <form
                                                                     action="{{ route('order.refund.approve', ['orderId' => $order->id, 'refundRequestId' => $refund->id]) }}"
                                                                     method="POST" style="display:inline-block;">
@@ -174,12 +171,16 @@
                                                                         Chối</button>
                                                                 </form>
                                                             @else
-                                                                <!-- Đã duyệt hoặc từ chối hoàn hàng, ẩn nút -->
-                                                                <span class="text-muted">Đã xử lý yêu cầu hoàn hàng</span>
+                                                                <!-- Nếu đã duyệt hoặc từ chối, ẩn nút và hiển thị trạng thái -->
+                                                                <strong
+                                                                    style="color: {{ $refund->status == 'Đã Duyệt' ? 'green' : 'red' }};">
+                                                                    {{ $refund->status }} Yêu Cầu Hoàn Hàng
+                                                                </strong>
                                                             @endif
                                                         @endforeach
                                                     </div>
                                                 @endif
+
 
 
 

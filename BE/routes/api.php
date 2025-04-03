@@ -86,7 +86,9 @@ Route::prefix('vouchers')->group(function () {
     Route::get('/', [VoucherApiController::class, 'index']);
     Route::get('/{code}', [VoucherApiController::class, 'show']);
 });
-
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
+});
 // Comment routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comments', [CommentController::class, 'store']);
@@ -195,8 +197,10 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Payment Method routes
-Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
-Route::get('/payment-methods/{id}', [PaymentMethodController::class, 'show']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/payment-methods', [PaymentMethodController::class, 'index']); // đổ danh sách thanh toán
+    Route::post('/payment-method/retry/{orderId}', [PaymentMethodController::class, 'retryPayment']); // api gọi lại trang thanh toán
+});
 Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // FE ko được động tới
 Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']); // FE ko được động tới
 

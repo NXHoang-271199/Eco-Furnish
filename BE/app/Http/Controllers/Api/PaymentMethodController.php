@@ -167,7 +167,6 @@ class PaymentMethodController extends Controller
         }
     }
 
-
     // xử lý vnpay
     public function processVNPAYPayment(Request $request)
     {
@@ -276,5 +275,29 @@ class PaymentMethodController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    // xử lý thanh toán lại
+    public function retryPayment($orderId)
+    {
+        // Tìm đơn hàng theo order_id và payment_status = 2
+        $order = Order::where('id', $orderId)->where('payment_status', 2)->first();
+
+        if (!$order) {
+            return response()->json(['status' => 'error', 'message' => 'Không tìm thấy đơn hàng hoặc đơn hàng không thể thanh toán lại'], 400);
+        }
+        $newOrderCode = 'ORD' . time() . rand(1000, 9999);
+        // Cập nhật order với order_code mới
+        $order->update([
+            'order_code' => $newOrderCode,
+        ]);
+        // Gọi đến phương thức processPayment để xử lý thanh toán lại
+        return $this->processPayment(new Request([
+            'order_id' => $orderId,
+            'order_code' => $newOrderCode,
+            'total_price' => intval($order->total_price),
+            'payment_method_id' => $order->payment_method_id,
+            'payment_method' => $order->paymentMethod->name // Lấy phương thức thanh toán của đơn hàng
+        ]));
     }
 }

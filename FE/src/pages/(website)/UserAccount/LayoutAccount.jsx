@@ -18,7 +18,6 @@ const LayoutAccount = () => {
           <Outlet />
         </div>
       </div>
-      <Footer />
     </>
   );
 };
