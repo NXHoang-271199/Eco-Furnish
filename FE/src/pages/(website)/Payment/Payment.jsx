@@ -20,7 +20,6 @@ const Payment = () => {
     province: "",
     district: "",
     ward: "",
-    name: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -134,7 +133,6 @@ const Payment = () => {
 
     if (
       !address.name ||
-      !address.name ||
       !address.email ||
       !address.phone ||
       !address.address ||
@@ -143,11 +141,6 @@ const Payment = () => {
       !address.ward
     ) {
       setError("Vui lòng điền đầy đủ thông tin giao hàng");
-      return;
-    }
-
-    if (!selectedShipping) {
-      setError("Vui lòng chọn phương thức vận chuyển");
       return;
     }
 
@@ -170,8 +163,6 @@ const Payment = () => {
 
     try {
       const token = localStorage.getItem("authToken");
-
-      // Gọi API với dữ liệu tối giản
       const orderData = {
         cart_items: selectedProducts.map((item) => item.id),
         user_name: address.name,
@@ -198,8 +189,6 @@ const Payment = () => {
         }
       );
 
-      console.log("Phản hồi từ server:", response.data);
-
       // Kiểm tra response
       console.log("Order response:", response.data);
 
@@ -225,17 +214,9 @@ const Payment = () => {
       }
     } catch (err) {
       console.error("Lỗi khi gọi API:", err);
-      console.error("Lỗi chi tiết:", err);
-
-      // Hiển thị thông báo lỗi
-      if (err.response) {
-        console.log("Response data:", err.response.data);
-        console.log("Response status:", err.response.status);
-
-        setError(err.response.data?.message || "Không thể hoàn tất đơn hàng");
-      } else {
-        setError("Có lỗi xảy ra khi xử lý đơn hàng. Vui lòng thử lại sau");
-      }
+      setError(
+        err.response?.data?.message || "Có lỗi xảy ra khi xử lý đơn hàng"
+      );
     } finally {
       setLoading(false);
     }
@@ -251,18 +232,6 @@ const Payment = () => {
           <div className="mt-4 border-b pb-4">
             <h3 className="font-semibold">Thông tin giao hàng</h3>
             {/* <p className="text-sm text-gray-600">{userName}</p> */}
-            <div className="mt-2">
-              <input
-                type="text"
-                className="w-full border rounded-lg p-2"
-                placeholder="Họ tên người nhận"
-                value={address.name}
-                onChange={(e) =>
-                  setAddress({ ...address, name: e.target.value })
-                }
-                required
-              />
-            </div>
             <div className="mt-2">
               <input
                 type="text"
@@ -319,11 +288,6 @@ const Payment = () => {
                 <option value="Hà Nội">Hà Nội</option>
                 <option value="TP.HCM">TP.HCM</option>
                 {/* Thêm các tỉnh/thành khác */}
-                {provinces.map((province) => (
-                  <option key={province.code} value={province.code}>
-                    {province.name}
-                  </option>
-                ))}
               </select>
               <select
                 className="w-full border rounded-lg p-2"
@@ -331,7 +295,6 @@ const Payment = () => {
                 onChange={(e) =>
                   setAddress({ ...address, district: e.target.value })
                 }
-                disabled={!address.province}
               >
                 <option value="">Chọn quận/huyện</option>
                 <option value="Quận 1">Quận 1</option>
@@ -344,58 +307,13 @@ const Payment = () => {
                 onChange={(e) =>
                   setAddress({ ...address, ward: e.target.value })
                 }
-                disabled={!address.district}
               >
                 <option value="">Chọn phường/xã</option>
                 <option value="Phường 1">Phường 1</option>
                 <option value="Phường 2">Phường 2</option>
                 {/* Thêm các phường/xã khác */}
-                {wards.map((ward) => (
-                  <option key={ward.code} value={ward.code}>
-                    {ward.name}
-                  </option>
-                ))}
               </select>
             </div>
-          </div>
-
-          <div className="mt-4 border-b pb-4">
-            <h3 className="font-semibold">Phương thức vận chuyển</h3>
-            {address.district ? (
-              <div className="mt-2 space-y-2">
-                {shippingMethods.map((method) => (
-                  <label
-                    key={method.id}
-                    className="flex items-center justify-between border p-3 rounded-lg cursor-pointer hover:bg-gray-50"
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="shipping"
-                        value={method.id}
-                        checked={selectedShipping == method.id}
-                        onChange={(e) => setSelectedShipping(e.target.value)}
-                        className="mr-2"
-                      />
-                      <div>
-                        <p className="font-medium">{method.name}</p>
-                        <p className="text-sm text-gray-600">
-                          Giao hàng trong {method.days}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-medium">
-                      {formatPrice(method.price)}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600 text-sm">
-                Vui lòng chọn quận / huyện để có danh sách phương thức vận
-                chuyển.
-              </p>
-            )}
           </div>
 
           <div className="mt-4">
