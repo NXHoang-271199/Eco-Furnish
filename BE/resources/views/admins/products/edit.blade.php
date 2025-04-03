@@ -77,7 +77,7 @@
                                 </div>
 
                                 <div class="row mb-4" id="base-price-discount-quantity" @if($product->variants->count() > 0) style="display: none;" @endif>
-                                    <div class="col-lg-4">
+                                    <div class="col-12" id="priceSection">
                                         <div class="mb-3">
                                             <label for="price" class="form-label">Giá gốc <span class="text-danger">*</span></label>
                                             <div class="input-group">
@@ -89,7 +89,7 @@
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-lg-4">
+                                    <div class="col-12" id="discountPriceSection">
                                         <div class="mb-3">
                                             <label for="discount_price" class="form-label">Giá khuyến mãi</label>
                                             <div class="input-group">
@@ -101,7 +101,7 @@
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-lg-4">
+                                    <div class="col-12" id="quantitySection">
                                         <div class="mb-3">
                                             <label for="quantity" class="form-label">Số lượng <span class="text-danger">*</span></label>
                                             <input type="number" class="form-control" name="quantity" id="quantity" placeholder="Nhập số lượng" min="0" value="{{ old('quantity', $product->quantity) }}">

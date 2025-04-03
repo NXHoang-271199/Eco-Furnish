@@ -29,8 +29,6 @@ use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\ReviewController;
-
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
