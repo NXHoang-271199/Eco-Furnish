@@ -8,3 +8,6 @@ npm-debug.log*
 
 # Environment
 .env
+
+/uploads
+/public/uploads
