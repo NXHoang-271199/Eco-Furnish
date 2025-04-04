@@ -58,7 +58,7 @@ VD:
 # Tìm hiểu factory
 
 # Câu lệnh git
-git reset --hard HEAD~1 => reset code đến lần commit gần nhất
+git reset --hard HEAD => reset code đến lần commit gần nhất
 
 # cài ngrok
 -   choco install ngrok

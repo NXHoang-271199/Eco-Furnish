@@ -32,7 +32,44 @@
                         </div>
                         <div class="input-group">
                             <input type="text" id="messageInput" class="form-control" placeholder="Nhập tin nhắn..." disabled>
+                            <button id="imageUploadBtn" class="btn btn-outline-secondary" type="button" disabled>
+                                <i class="fas fa-image"></i>
+                            </button>
                             <button id="sendMessageBtn" class="btn btn-primary" disabled>Gửi</button>
+
+                            <!-- Thêm input ẩn để upload ảnh -->
+                            <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                        </div>
+
+                        <!-- Thêm phần hiển thị trạng thái upload -->
+                        <div id="upload-progress-container" class="mt-2" style="display: none;">
+                            <div class="progress">
+                                <div id="upload-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+                                    role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                                    0%
+                                </div>
+                            </div>
+                            <div id="upload-status" class="small text-muted mt-1"></div>
+                        </div>
+
+                        <!-- Thêm phần preview ảnh -->
+                        <div id="image-preview-container" class="mt-2" style="display: none;">
+                            <div class="card">
+                                <div class="card-body p-2">
+                                    <div id="preview-list" class="d-flex flex-wrap gap-2 mb-2">
+                                        <div class="preview-item d-flex align-items-center">
+                                            <img id="image-preview" src="" alt="Preview" style="max-height: 60px; max-width: 60px;">
+                                            <span id="image-name" class="ms-2 small text-truncate"></span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span id="selected-count" class="text-muted small">1 ảnh được chọn</span>
+                                        <button id="cancel-upload" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-times"></i> Hủy
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -42,6 +79,9 @@
 </div>
 
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/js/lightbox.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css" rel="stylesheet" />
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const connectionStatus = document.getElementById('connection-status');
@@ -51,11 +91,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const sendMessageBtn = document.getElementById('sendMessageBtn');
     const chattingWith = document.getElementById('chatting-with');
 
+    // Elements for image upload
+    const imageUploadBtn = document.getElementById('imageUploadBtn');
+    const imageInput = document.getElementById('imageInput');
+    const uploadProgressContainer = document.getElementById('upload-progress-container');
+    const uploadProgressBar = document.getElementById('upload-progress-bar');
+    const uploadStatus = document.getElementById('upload-status');
+    const imagePreviewContainer = document.getElementById('image-preview-container');
+    const imagePreview = document.getElementById('image-preview');
+    const imageName = document.getElementById('image-name');
+    const cancelUpload = document.getElementById('cancel-upload');
+
     let currentUserId = null;
     let socket = null;
     let connectionAttempts = 0;
     const maxConnectionAttempts = 3;
     let adminToken = null;
+    let selectedImageFiles = [];
 
     // Lấy admin token ngay khi trang tải xong
     adminToken = "{{ Auth::user()->createToken('admin-token')->plainTextToken }}";
@@ -422,23 +474,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                // Hiển thị tin nhắn
-                messages.forEach(msg => {
-                    // Phân biệt tin nhắn của admin và client
-                    const isSentByAdmin = msg.sender_id.toString() === "{{ Auth::id() }}";
-                    const messageType = isSentByAdmin ? 'admin' : 'client';
+                // Nhóm các tin nhắn của cùng người gửi theo thời gian
+                const groupedMessages = groupMessagesForDisplay(messages);
 
-                    addMessageToChat({
-                        text: msg.text,
-                        sent_at: new Date(msg.sent_at).toLocaleString(),
-                        sender: msg.sender
-                    }, messageType);
+                // Hiển thị các nhóm tin nhắn
+                groupedMessages.forEach(group => {
+                    displayMessageGroup(group);
                 });
 
                 // Cuộn xuống dưới cùng
                 chatBox.scrollTop = chatBox.scrollHeight;
 
                 addDebugInfo(`✅ Đã tải ${messages.length} tin nhắn thành công`);
+
+                // Log dữ liệu tin nhắn để debug
+                console.log("Dữ liệu tin nhắn:", messages);
 
             } catch (error) {
                 console.error('Lỗi khi tải tin nhắn:', error);
@@ -462,17 +512,135 @@ document.addEventListener('DOMContentLoaded', function() {
         await tryLoadMessages();
     }
 
+    // Nhóm tin nhắn để hiển thị
+    function groupMessagesForDisplay(messages) {
+        // Sắp xếp tin nhắn theo thời gian
+        const sortedMessages = [...messages].sort((a, b) =>
+            new Date(a.sent_at) - new Date(b.sent_at)
+        );
+
+        const groups = [];
+        let currentGroup = null;
+
+        sortedMessages.forEach(msg => {
+            const isSentByAdmin = msg.sender_id.toString() === "{{ Auth::id() }}";
+            const messageType = isSentByAdmin ? 'admin' : 'client';
+
+            // Nếu chưa có nhóm hoặc nhóm mới khác loại với nhóm hiện tại
+            if (!currentGroup || currentGroup.type !== messageType) {
+                // Tạo nhóm mới
+                currentGroup = {
+                    type: messageType,
+                    sender: msg.sender,
+                    messages: [msg],
+                    lastTime: new Date(msg.sent_at)
+                };
+                groups.push(currentGroup);
+            } else {
+                // Thêm tin nhắn vào nhóm hiện tại
+                currentGroup.messages.push(msg);
+                currentGroup.lastTime = new Date(msg.sent_at);
+            }
+        });
+
+        return groups;
+    }
+
+    // Hiển thị nhóm tin nhắn
+    function displayMessageGroup(group) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${group.type}-message mb-3`;
+
+        let allContent = '';
+
+        // Phần text
+        const textMessages = group.messages.filter(msg => msg.text);
+        if (textMessages.length > 0) {
+            textMessages.forEach(msg => {
+                allContent += `<div class="message-text mb-1">${msg.text}</div>`;
+            });
+        }
+
+        // Phần ảnh - hiển thị thành một khối
+        const imageMessages = group.messages.filter(msg => msg.image);
+        if (imageMessages.length > 0) {
+            if (imageMessages.length === 1) {
+                // Nếu chỉ có 1 ảnh thì hiển thị bình thường
+                allContent += `<div class="message-image mb-2">
+                    <a href="${imageMessages[0].image}" target="_blank">
+                        <img src="${imageMessages[0].image}" alt="Hình ảnh" class="img-fluid rounded" style="max-height: 200px;">
+                    </a>
+                </div>`;
+            } else {
+                // Nếu có nhiều ảnh thì hiển thị dạng lưới
+                allContent += `<div class="message-images-grid mb-2">
+                    <div class="d-flex flex-wrap">`;
+
+                imageMessages.forEach(msg => {
+                    allContent += `
+                        <div class="image-item m-1">
+                            <a href="${msg.image}" target="_blank">
+                                <img src="${msg.image}" alt="Hình ảnh" class="rounded" style="height: 100px; object-fit: cover;">
+                            </a>
+                        </div>`;
+                });
+
+                allContent += `</div>
+                </div>`;
+            }
+        }
+
+        if (group.type === 'client') {
+            messageDiv.innerHTML = `
+                <div class="d-flex">
+                    <div class="message-bubble bg-light p-2 rounded">
+                        <div class="message-sender text-muted small">${group.sender?.name || 'Khách hàng'}</div>
+                        ${allContent}
+                        <div class="message-time text-muted small">${group.lastTime.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="d-flex justify-content-end">
+                    <div class="message-bubble bg-primary text-white p-2 rounded">
+                        <div class="message-sender text-white-50 small">Admin</div>
+                        ${allContent}
+                        <div class="message-time text-white-50 small">${group.lastTime.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        chatBox.appendChild(messageDiv);
+    }
+
     // Thêm tin nhắn vào khung chat
     function addMessageToChat(message, sender) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}-message mb-3`;
+
+        let messageContent = '';
+        // Kiểm tra nếu có ảnh thì hiển thị ảnh
+        if (message.image) {
+            messageContent += `<div class="message-image mb-2">
+                <a href="${message.image}" target="_blank">
+                    <img src="${message.image}" alt="Hình ảnh" class="img-fluid rounded" style="max-height: 200px;">
+                </a>
+            </div>`;
+        }
+
+        // Nếu có văn bản thì hiển thị văn bản
+        if (message.text) {
+            messageContent += `<div class="message-text">${message.text}</div>`;
+        }
 
         if (sender === 'client') {
             messageDiv.innerHTML = `
                 <div class="d-flex">
                     <div class="message-bubble bg-light p-2 rounded">
                         <div class="message-sender text-muted small">${message.sender?.name || 'Khách hàng'}</div>
-                        <div class="message-text">${message.text}</div>
+                        ${messageContent}
                         <div class="message-time text-muted small">${message.sent_at || new Date().toLocaleString()}</div>
                     </div>
                 </div>
@@ -482,7 +650,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="d-flex justify-content-end">
                     <div class="message-bubble bg-primary text-white p-2 rounded">
                         <div class="message-sender text-white-50 small">Admin</div>
-                        <div class="message-text">${message.text}</div>
+                        ${messageContent}
                         <div class="message-time text-white-50 small">${message.sent_at || new Date().toLocaleString()}</div>
                     </div>
                 </div>
@@ -497,6 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function enableChat() {
         messageInput.disabled = false;
         sendMessageBtn.disabled = false;
+        imageUploadBtn.disabled = false;
         messageInput.focus();
     }
 
@@ -504,6 +673,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function disableChat() {
         messageInput.disabled = true;
         sendMessageBtn.disabled = true;
+        imageUploadBtn.disabled = true;
         currentUserId = null;
         chattingWith.textContent = "Chưa chọn người dùng";
     }
@@ -511,8 +681,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gửi tin nhắn
     function sendMessage() {
         const text = messageInput.value.trim();
-        if (!text || !currentUserId) return;
 
+        // Nếu không có text và không có ảnh được chọn, không làm gì cả
+        if (!text && !selectedImageFiles.length) return;
+
+        // Nếu không có người dùng được chọn, không làm gì cả
+        if (!currentUserId) return;
+
+        // Nếu có ảnh được chọn, xử lý cả ảnh và text
+        if (selectedImageFiles.length > 0) {
+            uploadAndSendImagesWithText(text);
+            return;
+        }
+
+        // Nếu chỉ có text, xử lý gửi tin nhắn text
         const messageData = {
             text: text,
             userId: currentUserId
@@ -541,6 +723,357 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Xử lý upload và gửi nhiều ảnh kèm text
+    function uploadAndSendImagesWithText(text) {
+        if (selectedImageFiles.length === 0 || !currentUserId) return;
+
+        // Hiển thị progress bar
+        uploadProgressContainer.style.display = 'block';
+        uploadStatus.textContent = 'Đang tải lên...';
+
+        // Sử dụng endpoint upload nhiều ảnh
+        const formData = new FormData();
+        selectedImageFiles.forEach(file => {
+            formData.append('images', file);
+        });
+
+        // Create XMLHttpRequest
+        const xhr = new XMLHttpRequest();
+
+        // Set up upload progress event
+        xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+                const percentComplete = Math.round((event.loaded / event.total) * 100);
+                uploadProgressBar.style.width = percentComplete + '%';
+                uploadProgressBar.textContent = percentComplete + '%';
+                uploadProgressBar.setAttribute('aria-valuenow', percentComplete);
+            }
+        });
+
+        // Set up load complete event
+        xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const response = JSON.parse(xhr.responseText);
+
+                if (response.success) {
+                    uploadStatus.textContent = 'Tải lên thành công!';
+
+                    // Gửi text trước nếu có
+                    if (text) {
+                        const textMessageData = {
+                            text: text,
+                            userId: currentUserId
+                        };
+
+                        socket.emit('adminMessage', textMessageData, (textResponse) => {
+                            if (textResponse.success) {
+                                addMessageToChat({
+                                    text: text,
+                                    sent_at: new Date().toLocaleString()
+                                }, 'admin');
+
+                                // Sau khi gửi text thì gửi hình ảnh
+                                sendUploadedImages(response.files);
+                            }
+                        });
+                    } else {
+                        // Nếu không có text thì gửi ảnh luôn
+                        sendUploadedImages(response.files);
+                    }
+
+                    // Xóa nội dung input
+                    messageInput.value = '';
+                } else {
+                    uploadStatus.textContent = 'Lỗi: ' + response.message;
+                    uploadProgressBar.classList.remove('bg-success');
+                    uploadProgressBar.classList.add('bg-danger');
+                }
+            } else {
+                uploadStatus.textContent = 'Lỗi khi tải lên: ' + xhr.statusText;
+                uploadProgressBar.classList.remove('bg-success');
+                uploadProgressBar.classList.add('bg-danger');
+            }
+        });
+
+        // Set up error event
+        xhr.addEventListener('error', () => {
+            uploadStatus.textContent = 'Lỗi kết nối khi tải lên ảnh';
+            uploadProgressBar.classList.remove('bg-success');
+            uploadProgressBar.classList.add('bg-danger');
+        });
+
+        // Set up abort event
+        xhr.addEventListener('abort', () => {
+            uploadStatus.textContent = 'Đã hủy tải lên';
+        });
+
+        // Open connection and send the request
+        xhr.open('POST', 'http://localhost:3002/upload-multiple', true);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + adminToken);
+        xhr.send(formData);
+    }
+
+    // Hàm gửi ảnh đã upload
+    function sendUploadedImages(files) {
+        const messageData = {
+            images: files.map(file => file.url),
+            userId: currentUserId
+        };
+
+        socket.emit('adminMultipleImagesUpload', messageData, (socketResponse) => {
+            if (socketResponse.success) {
+                console.log('Tất cả ảnh đã được gửi thành công');
+                addDebugInfo(`${files.length} ảnh đã được gửi thành công tới ${currentUserId}`);
+
+                // Hiển thị tất cả ảnh trong một nhóm thay vì từng ảnh một
+                addImageGroupToChat(files.map(file => file.url), new Date().toLocaleString(), 'admin');
+
+                // Reset sau khi gửi thành công
+                resetImageUpload();
+            } else {
+                console.error('Lỗi khi gửi ảnh:', socketResponse.error);
+                addDebugInfo(`Lỗi khi gửi ảnh: ${socketResponse.error}`, "error");
+                alert('Không thể gửi ảnh: ' + socketResponse.error);
+
+                uploadStatus.textContent = 'Lỗi khi gửi ảnh!';
+                uploadProgressBar.classList.remove('bg-success');
+                uploadProgressBar.classList.add('bg-danger');
+            }
+        });
+    }
+
+    // Thêm nhóm ảnh vào khung chat
+    function addImageGroupToChat(imageUrls, sentTime, sender) {
+        if (!imageUrls || imageUrls.length === 0) return;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message mb-3`;
+
+        let imagesContent = '';
+
+        if (imageUrls.length === 1) {
+            // Nếu chỉ có 1 ảnh thì hiển thị bình thường
+            imagesContent = `<div class="message-image mb-2">
+                <a href="${imageUrls[0]}" data-lightbox="msg-${Date.now()}" data-title="Hình ảnh">
+                    <img src="${imageUrls[0]}" alt="Hình ảnh" class="img-fluid rounded" style="max-height: 200px;">
+                </a>
+            </div>`;
+        } else if (imageUrls.length === 2) {
+            // Nếu có 2 ảnh, hiển thị cạnh nhau 50-50
+            imagesContent = `<div class="message-images-grid mb-2">
+                <div class="d-flex" style="gap: 2px;">
+                    <div style="width: 50%;">
+                        <a href="${imageUrls[0]}" data-lightbox="msg-${Date.now()}" data-title="Hình ảnh 1">
+                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded" style="height: 120px; object-fit: cover;">
+                        </a>
+                    </div>
+                    <div style="width: 50%;">
+                        <a href="${imageUrls[1]}" data-lightbox="msg-${Date.now()}" data-title="Hình ảnh 2">
+                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded" style="height: 120px; object-fit: cover;">
+                        </a>
+                    </div>
+                </div>
+            </div>`;
+        } else if (imageUrls.length === 3) {
+            // Nếu có 3 ảnh, hiển thị 2 ảnh trên 1 ảnh dưới
+            const msgGroup = `msg-${Date.now()}`;
+            imagesContent = `<div class="message-images-grid mb-2">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 2px;">
+                    <div style="grid-column: 1; grid-row: 1;">
+                        <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
+                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded" style="height: 100px; object-fit: cover;">
+                        </a>
+                    </div>
+                    <div style="grid-column: 2; grid-row: 1;">
+                        <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
+                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded" style="height: 100px; object-fit: cover;">
+                        </a>
+                    </div>
+                    <div style="grid-column: span 2; grid-row: 2;">
+                        <a href="${imageUrls[2]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 3">
+                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded" style="height: 100px; object-fit: cover;">
+                        </a>
+                    </div>
+                </div>
+            </div>`;
+        } else {
+            // Nếu có 4+ ảnh, hiển thị 3 ảnh đầu + ảnh cuối với overlay +X
+            const remainingCount = imageUrls.length - 3;
+            const msgGroup = `msg-${Date.now()}`;
+
+            imagesContent = `<div class="message-images-grid mb-2">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 2px;">
+                    <div style="grid-column: 1; grid-row: 1;">
+                        <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
+                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded" style="height: 100px; object-fit: cover;">
+                        </a>
+                    </div>
+                    <div style="grid-column: 2; grid-row: 1;">
+                        <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
+                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded" style="height: 100px; object-fit: cover;">
+                        </a>
+                    </div>
+                    <div style="grid-column: 1; grid-row: 2; position: relative;">
+                        <a href="${imageUrls[2]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 3">
+                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded" style="height: 100px; object-fit: cover;">
+                        </a>
+                    </div>
+                    <div style="grid-column: 2; grid-row: 2; position: relative;">
+                        <a href="${imageUrls[3]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 4" class="position-relative d-block">
+                            <img src="${imageUrls[3]}" alt="Hình ảnh 4" class="w-100 rounded" style="height: 100px; object-fit: cover; filter: brightness(50%);">
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-white" style="font-size: 24px; font-weight: bold;">
+                                +${remainingCount}
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>`;
+
+            // Thêm các ảnh còn lại vào lightbox nhưng không hiển thị
+            for (let i = 4; i < imageUrls.length; i++) {
+                imagesContent += `<a href="${imageUrls[i]}" data-lightbox="${msgGroup}" data-title="Hình ảnh ${i+1}" style="display: none;"></a>`;
+            }
+        }
+
+        if (sender === 'client') {
+            messageDiv.innerHTML = `
+                <div class="d-flex">
+                    <div class="message-bubble bg-light p-2 rounded">
+                        <div class="message-sender text-muted small">Khách hàng</div>
+                        ${imagesContent}
+                        <div class="message-time text-muted small">${sentTime}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="d-flex justify-content-end">
+                    <div class="message-bubble bg-primary text-white p-2 rounded">
+                        <div class="message-sender text-white-50 small">Admin</div>
+                        ${imagesContent}
+                        <div class="message-time text-white-50 small">${sentTime}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Khởi tạo lại lightbox
+        if (typeof lightbox !== 'undefined') {
+            lightbox.option({
+                'resizeDuration': 200,
+                'wrapAround': true,
+                'albumLabel': "Hình ảnh %1 / %2"
+            });
+        }
+    }
+
+    // Reset trạng thái upload ảnh
+    function resetImageUpload() {
+        selectedImageFiles = [];
+        imageInput.value = '';
+        imagePreviewContainer.style.display = 'none';
+        uploadProgressContainer.style.display = 'none';
+        uploadProgressBar.style.width = '0%';
+        uploadProgressBar.textContent = '0%';
+        uploadProgressBar.setAttribute('aria-valuenow', 0);
+        uploadProgressBar.classList.remove('bg-danger');
+        uploadProgressBar.classList.add('bg-primary');
+    }
+
+    // Xử lý upload và gửi nhiều ảnh (không có text)
+    function uploadAndSendImages() {
+        uploadAndSendImagesWithText("");
+    }
+
+    // Xử lý sự kiện chọn ảnh
+    imageInput.addEventListener('change', function(e) {
+        if (this.files && this.files.length > 0) {
+            selectedImageFiles = Array.from(this.files);
+
+            // Xóa tất cả preview cũ
+            const previewList = document.getElementById('preview-list');
+            previewList.innerHTML = '';
+
+            // Cập nhật counter
+            document.getElementById('selected-count').textContent = `${selectedImageFiles.length} ảnh được chọn`;
+
+            // Thêm preview cho mỗi ảnh
+            selectedImageFiles.forEach((file, index) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item position-relative m-1';
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview ${index + 1}" style="height: 60px; width: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #dee2e6;">
+                        <button class="btn btn-sm btn-danger position-absolute top-0 right-0 rounded-circle p-0" style="width: 20px; height: 20px; font-size: 10px; line-height: 0; top: -5px; right: -5px;"
+                                onclick="removePreviewImage(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    previewList.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Hiển thị container
+            imagePreviewContainer.style.display = 'block';
+        }
+    });
+
+    // Hàm xóa một ảnh khỏi danh sách preview
+    window.removePreviewImage = function(index) {
+        if (index >= 0 && index < selectedImageFiles.length) {
+            // Xóa file khỏi danh sách
+            selectedImageFiles.splice(index, 1);
+
+            // Cập nhật lại UI
+            const previewList = document.getElementById('preview-list');
+            previewList.innerHTML = '';
+
+            if (selectedImageFiles.length === 0) {
+                // Nếu không còn ảnh nào, ẩn container
+                imagePreviewContainer.style.display = 'none';
+                return;
+            }
+
+            // Cập nhật counter
+            document.getElementById('selected-count').textContent = `${selectedImageFiles.length} ảnh được chọn`;
+
+            // Tạo lại các preview
+            selectedImageFiles.forEach((file, idx) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item position-relative m-1';
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview ${idx + 1}" style="height: 60px; width: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #dee2e6;">
+                        <button class="btn btn-sm btn-danger position-absolute top-0 right-0 rounded-circle p-0" style="width: 20px; height: 20px; font-size: 10px; line-height: 0; top: -5px; right: -5px;"
+                                onclick="removePreviewImage(${idx})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    previewList.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    };
+
+    // Xử lý sự kiện click nút upload ảnh
+    imageUploadBtn.addEventListener('click', function() {
+        imageInput.click();
+    });
+
+    // Xử lý sự kiện hủy upload ảnh
+    cancelUpload.addEventListener('click', function() {
+        resetImageUpload();
+    });
+
     // Xử lý sự kiện nút gửi
     sendMessageBtn.addEventListener('click', sendMessage);
 
@@ -551,50 +1084,6 @@ document.addEventListener('DOMContentLoaded', function() {
             sendMessage();
         }
     });
-
-    // Thêm nút kiểm tra kết nối
-    const debugButton = document.createElement('button');
-    debugButton.innerText = "Kiểm tra kết nối";
-    debugButton.className = "btn btn-sm btn-secondary mt-2 mb-2";
-    debugButton.onclick = function() {
-        addDebugInfo("Kiểm tra kết nối...");
-
-        if (socket && socket.connected) {
-            addDebugInfo(`Socket đang kết nối: ${socket.id}`);
-        } else {
-            addDebugInfo("Socket không kết nối! Đang kết nối lại...", "error");
-            connectToSocket();
-        }
-    };
-    document.querySelector('.card-body').prepend(debugButton);
-
-    // Thêm nút kiểm tra token
-    const tokenButton = document.createElement('button');
-    tokenButton.innerText = "Kiểm tra token";
-    tokenButton.className = "btn btn-sm btn-info mt-2 mb-2 ml-2";
-    tokenButton.style.marginLeft = '10px';
-    tokenButton.onclick = async function() {
-        addDebugInfo("Đang kiểm tra token...");
-
-        try {
-            const response = await fetch('/api/test-auth', {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${adminToken}`
-                }
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                addDebugInfo(`✅ Token hợp lệ. User: ${data.user.name}, Role: ${data.user.role}`);
-            } else {
-                addDebugInfo(`❌ Token không hợp lệ: ${data.message}`, "error");
-            }
-        } catch (error) {
-            addDebugInfo(`❌ Lỗi kiểm tra token: ${error.message}`, "error");
-        }
-    };
-    document.querySelector('.card-body').prepend(tokenButton);
 
     // Kết nối đến socket khi trang load xong
     connectToSocket();

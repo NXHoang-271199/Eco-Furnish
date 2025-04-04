@@ -15,7 +15,8 @@ class MessageController extends Controller
     {
         // Validate request
         $request->validate([
-            'text' => 'required|string',
+            'text' => 'nullable|string',
+            'image' => 'nullable|string',
             'receiver_id' => 'nullable|exists:users,id',
         ]);
 
@@ -25,8 +26,14 @@ class MessageController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+        // Kiểm tra dữ liệu đầu vào
+        if (empty($request->text) && empty($request->image)) {
+            return response()->json(['error' => 'Tin nhắn phải có nội dung văn bản hoặc hình ảnh'], 400);
+        }
+
         $message = Message::create([
             'text' => $request->text,
+            'image' => $request->image,
             'sender_id' => $user->id,
             'receiver_id' => $request->receiver_id,
             'sent_at' => now(),
@@ -88,6 +95,12 @@ class MessageController extends Controller
                 ->with(['sender', 'receiver'])
                 ->orderBy('sent_at', 'asc')
                 ->get();
+
+            // Log các trường dữ liệu của messages để debug
+            Log::info('Cấu trúc tin nhắn đầu tiên', [
+                'sample' => $messages->first() ? $messages->first()->toArray() : 'Không có tin nhắn',
+                'has_image_field' => $messages->first() ? array_key_exists('image', $messages->first()->toArray()) : false
+            ]);
 
             // Đánh dấu tất cả tin nhắn đến người dùng này là đã đọc
             // nếu người đọc là người nhận

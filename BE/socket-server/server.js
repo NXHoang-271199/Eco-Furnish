@@ -69,7 +69,7 @@ const upload = multer({
 // Phục vụ file tĩnh từ thư mục uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Thêm API route để upload ảnh
+// Thêm API route để upload một ảnh
 app.post('/upload', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
@@ -95,6 +95,37 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     } catch (error) {
         console.error('Lỗi khi xử lý upload file:', error);
         res.status(500).json({ success: false, message: 'Lỗi server khi xử lý upload' });
+    }
+});
+
+// Thêm API route để upload nhiều ảnh cùng lúc
+app.post('/upload-multiple', upload.array('images', 10), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, message: 'Không có file nào được tải lên' });
+        }
+
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Không có token xác thực' });
+        }
+
+        // Tạo URL cho mỗi ảnh đã upload
+        const uploadedFiles = req.files.map(file => {
+            return {
+                filename: file.filename,
+                path: file.path,
+                url: `${req.protocol}://${req.get('host')}/uploads/${file.filename}`
+            };
+        });
+
+        res.json({
+            success: true,
+            files: uploadedFiles
+        });
+    } catch (error) {
+        console.error('Lỗi khi xử lý upload nhiều file:', error);
+        res.status(500).json({ success: false, message: 'Lỗi server khi xử lý upload nhiều ảnh' });
     }
 });
 
@@ -630,6 +661,152 @@ io.on("connection", (socket) => {
             callback({ success: true, message: savedMessage });
         } catch (error) {
             console.error("❌ Lỗi khi xử lý adminImageUpload:", error);
+            callback({ success: false, error: error.message });
+        }
+    });
+
+    // Thêm xử lý upload nhiều ảnh từ client
+    socket.on("clientMultipleImagesUpload", async (data, callback = () => {}) => {
+        try {
+            // Kiểm tra xem người dùng có tồn tại không
+            if (socket.user.role === 'admin') {
+                return callback({ success: false, error: "Admin không thể gửi tin nhắn như client" });
+            }
+
+            if (!Array.isArray(data.images) || data.images.length === 0) {
+                return callback({ success: false, error: "Không có dữ liệu ảnh" });
+            }
+
+            console.log(`📸 Nhận ${data.images.length} ảnh từ client: ${socket.user.name} (${socket.id})`);
+
+            // Tạo dữ liệu tin nhắn riêng cho mỗi ảnh
+            const savedMessages = [];
+
+            // Lưu từng ảnh vào database
+            for (const imageUrl of data.images) {
+                // Tạo dữ liệu tin nhắn để lưu vào DB
+                const messageData = {
+                    text: null,
+                    image: imageUrl,
+                    sender_id: socket.user.id,
+                    receiver_id: null, // Mặc định là null, admin sẽ nhận
+                    sent_at: new Date()
+                };
+
+                try {
+                    // Gọi API để lưu tin nhắn
+                    const response = await fetch(`${API_URL}/api/messages`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                            "Authorization": `Bearer ${socket.handshake.auth.token}`
+                        },
+                        body: JSON.stringify(messageData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+
+                    const savedMessage = await response.json();
+                    console.log("✅ Tin nhắn ảnh đã được lưu vào DB:", savedMessage.id);
+
+                    // Đảm bảo trạng thái is_read luôn là false cho tin nhắn mới từ client
+                    savedMessage.is_read = false;
+                    savedMessages.push(savedMessage);
+
+                    // Chuẩn bị dữ liệu tin nhắn để gửi cho admin
+                    const messageForAdmin = {
+                        ...savedMessage,
+                        senderName: socket.user.name,
+                        is_read: false
+                    };
+
+                    // Gửi tin nhắn đến tất cả admin
+                    io.to("admin_room").emit("newClientMessage", messageForAdmin);
+                } catch (error) {
+                    console.error("❌ Lỗi khi lưu tin nhắn ảnh:", error);
+                }
+            }
+
+            callback({ success: true, messages: savedMessages });
+        } catch (error) {
+            console.error("❌ Lỗi khi xử lý clientMultipleImagesUpload:", error);
+            callback({ success: false, error: error.message });
+        }
+    });
+
+    // Thêm xử lý upload nhiều ảnh từ admin
+    socket.on("adminMultipleImagesUpload", async (data, callback = () => {}) => {
+        try {
+            // Kiểm tra xem người dùng có phải là admin không
+            if (socket.user.role !== 'admin') {
+                console.error(`⚠️ User ${socket.user.name} (${socket.id}) cố gửi ảnh admin nhưng không có quyền`);
+                return callback({ success: false, error: "Unauthorized: Admin role required" });
+            }
+
+            if (!data.userId) {
+                console.error("❌ Thiếu userId của người nhận trong adminMultipleImagesUpload");
+                return callback({ success: false, error: "Thiếu userId của người nhận" });
+            }
+
+            if (!Array.isArray(data.images) || data.images.length === 0) {
+                return callback({ success: false, error: "Không có dữ liệu ảnh" });
+            }
+
+            console.log(`📸 Admin ${socket.user.name} gửi ${data.images.length} ảnh đến user ${data.userId}`);
+
+            // Lưu từng ảnh vào database và tạo tin nhắn riêng
+            const savedMessages = [];
+
+            for (const imageUrl of data.images) {
+                // Tạo dữ liệu tin nhắn để lưu vào DB
+                const messageData = {
+                    text: null,
+                    image: imageUrl,
+                    sender_id: socket.user.id,
+                    receiver_id: data.userId,
+                    sent_at: new Date()
+                };
+
+                try {
+                    // Gọi API để lưu tin nhắn
+                    const response = await fetch(`${API_URL}/api/messages`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                            "Authorization": `Bearer ${socket.handshake.auth.token}`
+                        },
+                        body: JSON.stringify(messageData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+
+                    const savedMessage = await response.json();
+                    console.log("✅ Tin nhắn ảnh admin đã được lưu vào DB:", savedMessage.id);
+                    savedMessages.push(savedMessage);
+
+                    // Gửi tin nhắn đến client cụ thể
+                    const messageForClient = {
+                        ...savedMessage,
+                        senderName: socket.user.name,
+                        is_read: false // Thêm trạng thái chưa đọc
+                    };
+
+                    io.to(`user_${data.userId}`).emit("adminResponse", messageForClient);
+                } catch (error) {
+                    console.error("❌ Lỗi khi lưu tin nhắn ảnh admin:", error);
+                }
+            }
+
+            console.log(`📣 Đã gửi ${savedMessages.length} tin nhắn ảnh đến user_${data.userId}`);
+            callback({ success: true, messages: savedMessages });
+        } catch (error) {
+            console.error("❌ Lỗi khi xử lý adminMultipleImagesUpload:", error);
             callback({ success: false, error: error.message });
         }
     });
