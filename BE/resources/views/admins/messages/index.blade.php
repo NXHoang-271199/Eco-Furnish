@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // NHẬN TIN NHẮN TỪ CLIENT (GIỮ LẠI PHẦN CODE MỚI NHẤT VỚI LOGIC ĐỆM)
+            // Nhận tin nhắn từ client (SỬ DỤNG LOGIC ĐỆM)
             socket.on("newClientMessage", (message) => {
                 console.log("📩 Nhận tin nhắn mới từ client:", message);
                 // addDebugInfo(`Nhận tin nhắn mới: sender=${message.sender_id}, text=${message.text ? 'có' : 'không'}, image=${message.image ? 'có' : 'không'}`);
@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // XỬ LÝ KHI CLIENT GỬI NHIỀU ẢNH (GIỮ LẠI PHẦN MỚI NHẤT)
+            // Xử lý khi client gửi nhiều ảnh (Đổi tên sự kiện thành clientMultipleImagesUpload)
             socket.on("clientMultipleImagesUpload", (data) => {
                 console.log("🖼️ Nhận nhiều ảnh từ client (sự kiện clientMultipleImagesUpload):", data);
                 // addDebugInfo(`Nhận ${data.images?.length || 0} ảnh từ client ${data.sender_id} qua sự kiện nhóm.`);
@@ -312,6 +312,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Highlight user nếu không phải chat hiện tại
                          highlightUserWithNewMessage(data.sender_id);
                     }
+                } else {
+                    // Highlight user nếu không phải chat hiện tại
+                     highlightUserWithNewMessage(data.sender_id);
                 }
             });
 
@@ -402,9 +405,13 @@ document.addEventListener('DOMContentLoaded', function() {
         let retryCount = 0;
         const maxRetries = 3;
 
+        // addDebugInfo(`User ID yêu cầu: ${userId}`);
+
         async function tryLoadMessages() {
             try {
                 // Gọi API để lấy tin nhắn
+                // addDebugInfo(`Đang gọi API tin nhắn cho user ${userId}...`);
+
                 const apiUrl = `/api/messages/user/${userId}`;
                 // addDebugInfo(`API URL: ${apiUrl}`);
 
@@ -418,6 +425,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (!response.ok) {
+                    // addDebugInfo(`❌ Lỗi HTTP: ${response.status}`, "error");
+                    // addDebugInfo(`❌ Phản hồi: ${responseText}`, "error");
+
                     if (response.status === 401) {
                         // addDebugInfo("❌ Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.", "error");
                         chatBox.innerHTML = '<div class="alert alert-danger">Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.</div>';

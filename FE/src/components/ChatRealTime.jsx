@@ -36,10 +36,6 @@ const ChatRealTime = () => {
     // Ref để theo dõi tin nhắn đã xử lý
     const processedImageIds = useRef(new Set());
 
-    // Refs cho cơ chế đệm ảnh từ admin
-    const pendingAdminImagesRef = useRef([]);
-    const imageBufferTimeoutRef = useRef(null);
-
     // Cải thiện hàm phân tích tin nhắn từ admin
     const analyzeAdminMessages = (message) => {
         // Kiểm tra nếu tin nhắn có chứa "admin" trong ID hoặc từ admin
@@ -163,6 +159,10 @@ const ChatRealTime = () => {
 
         return processedMessages;
     };
+
+    // Refs cho cơ chế đệm ảnh từ admin (GIỮ LẠI KHAI BÁO NÀY)
+    const pendingAdminImagesRef = useRef([]);
+    const imageBufferTimeoutRef = useRef(null);
 
     // Hàm lấy lịch sử chat từ server
     const loadChatHistory = async (userId) => {
@@ -473,7 +473,7 @@ const ChatRealTime = () => {
     useEffect(() => {
         if (socket && userData) { // Đảm bảo userData tồn tại để so sánh sender_id
 
-            // --- Hàm xử lý bộ đệm ảnh từ admin ---
+            // --- Hàm xử lý bộ đệm ảnh từ admin --- 
             const processAdminImageBuffer = () => {
                 const bufferedImages = pendingAdminImagesRef.current;
                 if (bufferedImages.length > 0) {
@@ -482,23 +482,23 @@ const ChatRealTime = () => {
                         // Tạo tin nhắn nhóm ảnh
                         const firstImageMsg = bufferedImages[0];
                         messageToAdd = {
-                            id: `group-admin-${firstImageMsg.sent_at}-${Math.random().toString(36).substring(2, 9)}`, // ID duy nhất
+                            id: `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Thêm ID duy nhất cho nhóm (GIỮ LẠI TỪ STASH)
                             imageGroup: {
                                 urls: bufferedImages.map(msg => msg.image),
                                 isUploading: false,
                                 uploadProgress: 100,
                             },
-                            sender_id: firstImageMsg.sender_id,
-                            sent_at: firstImageMsg.sent_at || new Date().toISOString(),
+                            sender_id: firstImageMsg.sender_id, 
+                            sent_at: firstImageMsg.sent_at || new Date().toISOString(), // Lấy thời gian của ảnh đầu tiên (GIỮ LẠI TỪ STASH)
                             isCurrentUser: false,
-                            isAdmin: true, // Đánh dấu là từ admin
                             is_read: isOpen
                         };
-                        console.log("⏳ Tạo nhóm ảnh từ buffer admin:", messageToAdd);
+                        console.log("⏳ Tạo nhóm ảnh từ buffer:", messageToAdd);
                     } else {
                         // Tạo tin nhắn ảnh đơn
-                        messageToAdd = { ...bufferedImages[0], is_read: isOpen, isAdmin: true }; // Thêm isAdmin
-                        console.log("⏳ Xử lý ảnh đơn từ buffer admin:", messageToAdd);
+                        messageToAdd = bufferedImages[0];
+                        messageToAdd.is_read = isOpen; // Cập nhật trạng thái đọc (GIỮ LẠI TỪ STASH)
+                        console.log("⏳ Xử lý ảnh đơn từ buffer:", messageToAdd);
                     }
                     // Thêm tin nhắn đã xử lý từ buffer vào state
                     setMessages((prev) => [...prev, messageToAdd]);
@@ -520,7 +520,7 @@ const ChatRealTime = () => {
                 }
             };
 
-            // --- Handler cho sự kiện adminResponse ---
+            // --- Handler cho sự kiện adminResponse --- 
             const adminResponseHandler = (data) => {
                 console.log("📩 Nhận phản hồi từ admin:", data);
 
@@ -535,27 +535,17 @@ const ChatRealTime = () => {
                     if (imageBufferTimeoutRef.current) {
                         clearTimeout(imageBufferTimeoutRef.current);
                     }
-                    // Thêm ảnh vào buffer (thêm cả isCurrentUser và isAdmin nếu chưa có)
-                     pendingAdminImagesRef.current.push({
-                         ...data,
-                         isCurrentUser: false,
-                         isAdmin: true
-                     });
+                    // Thêm ảnh vào buffer (GIỮ LẠI TỪ STASH)
+                    pendingAdminImagesRef.current.push(data);
                     // Đặt timeout mới để xử lý buffer sau 1.2 giây
-                    imageBufferTimeoutRef.current = setTimeout(processAdminImageBuffer, 1200);
+                    imageBufferTimeoutRef.current = setTimeout(processAdminImageBuffer, 1200); 
                 } else {
                     // Nếu là tin nhắn text từ admin, hoặc tin nhắn từ client (không phải ảnh admin đơn lẻ)
                     // Xử lý buffer ngay lập tức (nếu có ảnh đang chờ)
-                    processAdminImageBuffer();
-
-                    // Thêm tin nhắn hiện tại vào messages (thêm isCurrentUser/isAdmin nếu chưa có)
-                    const messageToAdd = {
-                        ...data,
-                        isCurrentUser: !isAdminMessage,
-                        isAdmin: isAdminMessage
-                    };
-                    setMessages((prev) => [...prev, messageToAdd]);
-
+                    processAdminImageBuffer(); 
+                    
+                    // Thêm tin nhắn hiện tại vào messages (GIỮ LẠI TỪ STASH)
+                    setMessages((prev) => [...prev, data]);
 
                     // Xử lý unread count và thông báo cho tin nhắn text từ admin
                     if (isAdminMessage && !isImageOnly && !isOpen) {
@@ -569,16 +559,16 @@ const ChatRealTime = () => {
                 }
             };
 
-            // --- Handler cho sự kiện adminMultipleImagesUpload ---
+            // --- Handler cho sự kiện adminMultipleImagesUpload --- 
             const adminMultipleImagesHandler = (data) => {
                 console.log("🖼️ Nhận nhiều ảnh từ admin (sự kiện riêng):", data);
                  // Xử lý buffer cũ trước khi thêm nhóm mới (tránh trùng lặp nếu server gửi cả 2)
-                 processAdminImageBuffer();
+                 processAdminImageBuffer(); 
 
                 if (data.images && data.images.length > 0) {
                     // Tạo tin nhắn nhóm ảnh
                     const imageGroupMessage = {
-                        id: `group-admin-${data.sent_at || Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // ID duy nhất
+                        id: `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Thêm ID duy nhất (GIỮ LẠI TỪ STASH)
                         imageGroup: {
                             urls: data.images,
                             isUploading: false,
@@ -586,11 +576,10 @@ const ChatRealTime = () => {
                         },
                         sender_id: data.sender_id, // Lấy sender_id từ data sự kiện
                         sent_at: data.sent_at || new Date().toISOString(),
-                        isCurrentUser: false,
-                        isAdmin: true, // Đánh dấu là từ admin
-                        is_read: isOpen
+                        isCurrentUser: false, 
+                        is_read: isOpen 
                     };
-
+                    
                     setMessages((prev) => [...prev, imageGroupMessage]);
 
                     // Xử lý unread count và thông báo
@@ -607,21 +596,16 @@ const ChatRealTime = () => {
             // --- Đăng ký listeners ---
             socket.on("adminResponse", adminResponseHandler);
             socket.on("adminMultipleImagesUpload", adminMultipleImagesHandler);
-
-            // --- Cleanup listeners và timeout ---
-            return () => {
-                 if (socket) {
-                     socket.off("adminResponse", adminResponseHandler);
-                     socket.off("adminMultipleImagesUpload", adminMultipleImagesHandler);
-                 }
-                // Dọn dẹp timeout khi unmount hoặc khi effect chạy lại
-                if (imageBufferTimeoutRef.current) {
-                    clearTimeout(imageBufferTimeoutRef.current);
-                }
-            };
         }
-        // Thêm userData và isOpen vào dependency array để effect chạy lại khi chúng thay đổi
-    }, [socket, isOpen, userData]);
+        
+        // GIỮ LẠI PHẦN CLEANUP TỪ STASH
+        return () => {
+            if (socket) {
+                socket.off("adminResponse");
+                socket.off("adminMultipleImagesUpload");
+            }
+        };
+    }, [socket, isOpen]); // GIỮ LẠI DEPENDENCY TỪ STASH
 
     // Hàm xử lý khi chọn ảnh
     const handleImageSelect = (e) => {
