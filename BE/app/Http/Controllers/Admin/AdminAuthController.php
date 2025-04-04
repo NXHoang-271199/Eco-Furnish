@@ -29,6 +29,8 @@ class AdminAuthController extends Controller
         'password' => ['required'],
     ]);
 
+    dd($credentials);
+
     if (Auth::attempt($credentials)) {
         $user = Auth::user();
         

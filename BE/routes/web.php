@@ -50,7 +50,7 @@ Route::post('admin/upload-image', [ImageUploadController::class, 'upload'])->nam
 
 Route::prefix('admin')->group(function () {
 
-    Route::middleware(['guest'])->group(function () {
+    Route::middleware(['web'])->group(function () {
         Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
         Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
 
