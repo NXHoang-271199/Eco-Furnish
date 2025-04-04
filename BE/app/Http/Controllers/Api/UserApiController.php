@@ -56,7 +56,7 @@ class UserApiController extends Controller
                 'message' => 'Không tìm thấy người dùng'
             ], 404);
         }
-        $tokens = $this->generateTokens($user);
+        // $tokens = $this->generateTokens($user);
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -66,10 +66,10 @@ class UserApiController extends Controller
                 'slug' => Str::slug($user->name),
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
                 'joined_date' => $user->created_at->format('d/m/Y'),
-                'access_token' => $tokens['access_token'],
-                'refresh_token' => $tokens['refresh_token'],
-                'access_token_expires_at' => $tokens['access_token_expires_at'],
-                'refresh_token_expires_at' => $tokens['refresh_token_expires_at']
+                // 'access_token' => $tokens['access_token'],
+                // 'refresh_token' => $tokens['refresh_token'],
+                // 'access_token_expires_at' => $tokens['access_token_expires_at'],
+                // 'refresh_token_expires_at' => $tokens['refresh_token_expires_at']
             ]
         ]);
     }
@@ -338,20 +338,18 @@ class UserApiController extends Controller
     public function apiLogout(Request $request)
     {
         $user = $request->user();
-        
+
         if (!$user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Người dùng chưa đăng nhập'
             ], 401);
         }
-        
-        // Xóa token và remember_me
-        $request->user()->currentAccessToken()->delete();
-        $user->remember_me = false;
-        $user->remember_me_expires_at = null;
+
+        $user->tokens()->delete();
+        // $user->refresh_token = null;
         $user->save();
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Đăng xuất thành công'

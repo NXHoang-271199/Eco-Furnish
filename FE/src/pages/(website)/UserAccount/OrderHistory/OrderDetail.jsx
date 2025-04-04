@@ -20,6 +20,7 @@ const OrderDetail = () => {
             headers: {
               Authorization: `Bearer ${token}`,
             },
+            withCredentials: true,
           }
         );
 
@@ -196,7 +197,7 @@ const OrderDetail = () => {
       <div className="max-w-4xl mx-auto">
         <div className="mb-4 flex items-center">
           <Link
-            to="/account/orders"
+            to="/account/list_order"
             className="inline-flex items-center text-orange-500"
           >
             <FiArrowLeft className="mr-1" />
@@ -216,6 +217,7 @@ const OrderDetail = () => {
               <div>
                 <h3 className="font-medium">Trạng thái đơn hàng</h3>
                 <p>Thanh toán: {getPaymentStatusText(order.payment_status)}</p>
+                <p>Phương thức thanh toán: {order.payment_method.name}</p>
                 <p>Đơn hàng: {order.order_status}</p>
                 <p>Ngày đặt: {new Date(order.created_at).toLocaleString()}</p>
               </div>

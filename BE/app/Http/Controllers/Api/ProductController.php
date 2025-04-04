@@ -70,13 +70,19 @@ class ProductController extends Controller
     public function show($id)
     {
         try {
+            \Log::info("Đang lấy thông tin sản phẩm ID: " . $id);
+            
             $product = Product::with(['category', 'gallery', 'variants' => function($query) {
                 $query->whereNull('deleted_at');
             }])
                 ->findOrFail($id);
 
+            \Log::info("Đã tìm thấy sản phẩm:", ['product_id' => $product->id, 'has_variants' => $product->has_variants]);
+
             // Xử lý thông tin giá và số lượng
             if ($product->has_variants) {
+                \Log::info("Sản phẩm có biến thể, đang xử lý thông tin biến thể");
+                
                 // Tính giá thấp nhất và cao nhất từ các biến thể
                 $minPrice = $product->variants->min('price');
                 $maxPrice = $product->variants->max('price');
@@ -96,45 +102,30 @@ class ProductController extends Controller
                 $product->total_quantity = $totalQuantity;
                 $product->makeVisible(['total_quantity', 'price_range']);
                 
-                // Lấy tất cả dữ liệu variant và variant_value một lần
-                $variantData = DB::table('variants')->get()->keyBy('id');
-                $variantValueData = DB::table('variant_values')->get()->keyBy('id');
-                
                 // Xử lý dữ liệu biến thể để thêm thông tin chi tiết
-                $product->variants->transform(function ($variant) use ($variantData, $variantValueData) {
-                    $variantDetailsDisplay = [];
-                    
-                    if (!empty($variant->variant_details)) {
-                        foreach ($variant->variant_details as $variantId => $valueId) {
-                            // Lấy thông tin về variant và variant_value từ dữ liệu đã cached
-                            $variantInfo = $variantData->get($variantId);
-                            $variantValueInfo = $variantValueData->get($valueId);
-                            
-                            if ($variantInfo && $variantValueInfo) {
-                                $variantDetailsDisplay[] = [
-                                    'variant_id' => $variantId,
-                                    'variant_name' => $variantInfo->name,
-                                    'value_id' => $valueId,
-                                    'value' => $variantValueInfo->value,
-                                    'full_description' => $variantInfo->name . ': ' . $variantValueInfo->value
-                                ];
-                            }
-                        }
-                    }
-                    
-                    $variant->variant_details_display = $variantDetailsDisplay;
+                $product->variants->transform(function ($variant) {
+                    \Log::info("Xử lý biến thể:", ['variant_id' => $variant->id, 'variant_details' => $variant->variant_details]);
+                    // variant_details đã được xử lý bởi accessor trong model
+                    $variant->variant_details_display = $variant->variant_details;
                     return $variant;
                 });
             } else {
+                \Log::info("Sản phẩm không có biến thể");
                 // Nếu không có biến thể, hiển thị giá và số lượng của sản phẩm
                 $product->makeVisible(['quantity']);
             }
 
+            \Log::info("Hoàn thành xử lý sản phẩm");
             return response()->json([
                 'status' => 'success',
                 'data' => $product
             ]);
         } catch (\Exception $e) {
+            \Log::error("Lỗi khi lấy thông tin sản phẩm: " . $e->getMessage(), [
+                'product_id' => $id,
+                'error' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'status' => 'error',
                 'message' => 'Có lỗi xảy ra khi lấy thông tin sản phẩm',
@@ -289,6 +280,65 @@ class ProductController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Có lỗi xảy ra khi tìm kiếm sản phẩm',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy danh sách sản phẩm bán chạy
+     */
+    public function getBestSellers()
+    {
+        try {
+            // Lấy các sản phẩm bán chạy dựa trên số lượng đã bán
+            $products = Product::with(['category', 'gallery', 'variants' => function($query) {
+                $query->whereNull('deleted_at');
+            }])
+                ->select('products.*', DB::raw('(SELECT SUM(quantity) FROM order_items WHERE product_id = products.id) as sold_quantity'))
+                ->whereNotNull(DB::raw('(SELECT SUM(quantity) FROM order_items WHERE product_id = products.id)'))
+                ->orderBy('sold_quantity', 'desc')
+                ->take(4)
+                ->get();
+
+            // Thêm thông tin giá và số lượng vào response
+            $products->transform(function ($product) {
+                // Nếu sản phẩm có biến thể
+                if ($product->has_variants) {
+                    // Tính giá thấp nhất và cao nhất từ các biến thể
+                    $minPrice = $product->variants->min('price');
+                    $maxPrice = $product->variants->max('price');
+                    $minDiscountPrice = $product->variants->min('discount_price');
+                    $maxDiscountPrice = $product->variants->max('discount_price');
+                    
+                    // Tổng số lượng từ các biến thể
+                    $totalQuantity = $product->variants->sum('quantity');
+                    
+                    $product->price_range = [
+                        'min' => $minPrice,
+                        'max' => $maxPrice != $minPrice ? $maxPrice : null,
+                        'min_discount' => $minDiscountPrice,
+                        'max_discount' => $maxDiscountPrice != $minDiscountPrice ? $maxDiscountPrice : null
+                    ];
+                    
+                    $product->total_quantity = $totalQuantity;
+                    $product->makeVisible(['total_quantity', 'price_range']);
+                } else {
+                    // Nếu không có biến thể, sử dụng giá và số lượng của sản phẩm
+                    $product->makeVisible(['quantity']);
+                }
+                
+                return $product;
+            });
+            
+            return response()->json([
+                'status' => 'success',
+                'data' => $products
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Có lỗi xảy ra khi lấy danh sách sản phẩm bán chạy',
                 'error' => $e->getMessage()
             ], 500);
         }

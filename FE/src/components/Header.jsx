@@ -32,43 +32,44 @@ const Header = () => {
 
   return (
     <>
-      <header className="bg-white fixed top-0 left-0 w-full z-50">
-        <div className="max-w-6xl mx-auto flex justify-between items-center p-4 bg-[#fbfeeb]">
+      <header className="bg-white/95 fixed top-0 left-0 w-full z-50 shadow-md border-b backdrop-blur-md">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-8 h-20">
           {/* Logo */}
-          <div className="text-2xl font-bold text-black">
+          <div className="text-2xl font-bold text-black transition-transform hover:scale-105 duration-300">
             <div>
               <Link to="/">
-                {/* <span className="text-yellow-300">E</span>co-
-                <span className="text-yellow-300">F</span>urnish */}
                 <img
-                  src="./logoweb5.jpg"
-                  alt=""
-                  className="w-[120px] h-[120px]"
+                  src="./logoweb5.png"
+                  alt="Eco-Furnish Logo"
+                  className="w-[70px] h-[70px] rounded-xl object-contain hover:shadow-lg transition-all duration-300"
                 />
               </Link>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-black text-lg">
+          <nav className="hidden md:flex space-x-12">
+            <Link
+              to="/"
+              className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
+            >
               Trang chủ
             </Link>
             <Link
               to="/products"
-              className="text-gray-700 hover:text-black text-lg"
+              className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
             >
               Sản phẩm
             </Link>
             <Link
               to="/blogs"
-              className="text-gray-700 hover:text-black text-lg"
+              className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
             >
               Bài viết
             </Link>
             <Link
               to="/contact"
-              className="text-gray-700 hover:text-black text-lg"
+              className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
             >
               Liên hệ
             </Link>
@@ -76,65 +77,38 @@ const Header = () => {
 
           {/* Icons */}
           <div className="flex items-center space-x-6">
-            <div className="relative">
-              {showSearchInput ? (
-                <input
-                  type="text"
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  placeholder="Tìm kiếm..."
-                  className="border rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  // Bạn có thể xử lý submit hoặc blur để ẩn input nếu cần
-                  onBlur={() => setShowSearchInput(false)}
-                  autoFocus
-                />
-              ) : (
-                <Link
-                  to="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowSearchInput(true);
-                  }}
-                  className="text-gray-700 hover:text-black"
-                >
-                  <AiOutlineSearch size={20} />
-                </Link>
-              )}
-            </div>
-            {/* <Link to="/search" className="text-gray-700 hover:text-black">
-              <AiOutlineSearch size={20} />
+            <Link
+              to="/search"
+              className="text-gray-600 hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full"
+            >
+              <AiOutlineSearch size={20} className="transition-transform" />
             </Link>
             <Link
               to="/cart"
-              className="text-gray-700 hover:text-black relative"
+              className="text-gray-600 hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full relative"
             >
-            </Link> */}
-
-            <Link
-              to="/cart"
-              className="text-gray-700 hover:text-black relative"
-            >
-              <IoCartOutline size={20} />
+              <IoCartOutline size={20} className="transition-transform" />
               <CartBadge />
             </Link>
             {isLoggedIn ? (
               <Link
                 to="/account"
-                className="text-gray-700 hidden md:block hover:text-black"
+                className="text-gray-600 hidden md:block hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full"
               >
-                <AiOutlineUser className="inline mr-1" />
+                <AiOutlineUser size={20} className="transition-transform" />
               </Link>
             ) : (
               <Link
                 to="/sign-in"
-                className="text-gray-700 hidden md:block hover:text-black"
+                className="text-gray-600 hidden md:block hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full"
               >
-                <AiOutlineUser className="inline mr-1" />
+                <AiOutlineUser size={20} className="transition-transform" />
               </Link>
             )}
           </div>
         </div>
       </header>
+      <div className="h-20"></div> {/* Spacer để tránh content bị đẩy lên */}
     </>
   );
 };

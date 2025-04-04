@@ -17,29 +17,25 @@ const SignIn = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const baseURL = "http://localhost:8000/api";
+
   const onSubmit = async (data) => {
     try {
-      const response = await axios.post(`${baseURL}/users/login`, data, {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
+      const response = await axios.post(
+        `http://localhost:8000/api/users/login`,
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
 
       if (response.data.status === "success") {
         // Lưu token và thông tin user
         localStorage.setItem("authToken", response.data.data.access_token);
-        localStorage.setItem("access_token", response.data.data.access_token); // Lưu cả access_token để đồng bộ
         localStorage.setItem("refreshToken", response.data.data.refresh_token);
         localStorage.setItem("userData", JSON.stringify(response.data.data));
-
-        // Kích hoạt sự kiện storage để các tab khác biết có thay đổi
-        window.dispatchEvent(new Event("storage"));
-
-        // Kích hoạt sự kiện tùy chỉnh để thông báo đã đăng nhập
-        window.dispatchEvent(new CustomEvent("auth-change"));
-
         navigate("/");
       }
     } catch (error) {
@@ -53,10 +49,11 @@ const SignIn = () => {
     }
   };
 
+  // phải thông qua email-vẻ
   const refreshToken = async () => {
     try {
       const response = await axios.post(
-        `${baseURL}/users/refresh-token`,
+        `http://localhost:8000/api/users/refresh-token`,
         {
           refresh_token: localStorage.getItem("refreshToken"), // Lưu refresh token trong localStorage
         },
@@ -70,15 +67,7 @@ const SignIn = () => {
 
       if (response.data.status === "success") {
         localStorage.setItem("authToken", response.data.data.access_token);
-        localStorage.setItem("access_token", response.data.data.access_token); // Lưu cả access_token để đồng bộ
         console.log("Token đã được làm mới:", response.data.data.access_token);
-
-        // Kích hoạt sự kiện storage để các tab khác biết có thay đổi
-        window.dispatchEvent(new Event("storage"));
-
-        // Kích hoạt sự kiện tùy chỉnh để thông báo đã refresh token
-        window.dispatchEvent(new CustomEvent("auth-change"));
-
         return response.data.data.access_token;
       }
     } catch (error) {

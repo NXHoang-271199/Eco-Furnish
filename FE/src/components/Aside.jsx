@@ -7,44 +7,34 @@ const Aside = () => {
   const handleLogout = async (e) => {
     if (e) e.preventDefault();
 
+    const token = localStorage.getItem("authToken");
+    console.log("Token trước khi gửi lên API logout:", token);
+
+    if (!token) {
+      console.log("Không tìm thấy token");
+      localStorage.clear();
+      window.location.href = "/sign-in";
+      return;
+    }
+
     try {
-      // Lấy token từ localStorage
-      const token = localStorage.getItem("authToken");
-      console.log("Token trước khi đăng xuất:", token);
+      const response = await axios.post(
+        "http://localhost:8000/api/users/logout",
+        null,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      if (!token) {
-        console.log("Không tìm thấy token");
-        localStorage.clear();
-        window.location.href = "/sign-in";
-        return;
-      }
-
-      try {
-        // Gọi API đăng xuất
-        const response = await axios.post(
-          "http://localhost:8000/api/users/logout",
-          null, // Thay {} bằng null
-          {
-            headers: {
-              Authorization: `Bearer ${token}`, // Thêm dấu nháy đơn
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-          }
-        );
-        console.log("API Response:", response.data);
-      } catch (apiError) {
-        console.error("Lỗi API:", apiError.response?.data);
-      }
-
-      // Luôn xóa dữ liệu và chuyển hướng, bất kể API thành công hay thất bại
-      localStorage.clear(); // Thay vì removeItem
-      window.location.href = "/"; // Chuyển về trang đăng nhập thay vì trang chủ
+      console.log("API Response:", response.data);
+      localStorage.clear();
+      window.location.href = "/sign-in";
     } catch (error) {
-      console.error("Lỗi tổng thể:", error);
-      // Đảm bảo vẫn đăng xuất được
-      // localStorage.clear();
-      // window.location.href = "/signin";
+      console.error("Lỗi khi gọi API logout:", error.response?.data);
+      localStorage.clear();
+      window.location.href = "/sign-in";
     }
   };
 

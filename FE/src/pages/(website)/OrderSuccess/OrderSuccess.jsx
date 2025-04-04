@@ -123,7 +123,7 @@ const OrderSuccess = () => {
               Trang chủ
             </Link>
             <Link
-              to="/list-order"
+              to="/account/list_order"
               className="mt-6 inline-block bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
             >
               Lịch sử mua hàng

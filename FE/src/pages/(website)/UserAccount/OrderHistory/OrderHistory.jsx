@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FiSearch, FiMessageCircle, FiEye, FiInfo } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "../../../../utils/axiosConfig";
-
+import axios from "axios";
 const OrderHistory = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -11,6 +11,7 @@ const OrderHistory = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const baseURL = "http://localhost:8000/api";
   // Lấy dữ liệu đơn hàng từ API
   useEffect(() => {
     const fetchOrders = async () => {
@@ -19,20 +20,27 @@ const OrderHistory = () => {
         const token = localStorage.getItem("authToken");
         const refreshToken = localStorage.getItem("refreshToken");
         const userData = localStorage.getItem("userData");
+
         console.log("Token hiện tại:", token);
         console.log("Refresh token hiện tại:", refreshToken);
+        console.log("userData", userData);
 
-        if (!token || !refreshToken || !userData) {
-          navigate("/sign-in", {
-            state: {
-              from: "/account/list_order",
-              message: "Vui lòng đăng nhập để xem đơn hàng",
-            },
-          });
+        if (!token || !userData) {
+          // navigate("/sign-in", {
+          //   state: {
+          //     from: "/account/list_order",
+          //     message: "Vui lòng đăng nhập để xem đơn hàng",
+          //   },
+          // });
+
           return;
         }
+        console.log(error);
 
-        const response = await axiosInstance.get("/orders");
+        const response = await axiosInstance.get(`/orders`, {
+          withCredentials: true,
+        });
+        console.log(response.data);
 
         if (response.data.status === "success") {
           setOrders(response.data.data.data || []);
@@ -106,68 +114,30 @@ const OrderHistory = () => {
 
         {/* <!-- Order List --> */}
         <div class="divide-y">
-          <div class="p-4">
-            <div class="flex justify-between items-center mb-3">
-              <div class="flex items-center">
-                <span class="font-medium">Mã đơn hàng: DH123456</span>
-              </div>
-              <div class="flex space-x-2">
-                <a
-                  href="/account/orders/1"
-                  class="flex items-center bg-orange-500 text-white px-3 py-1 rounded-sm text-sm"
-                >
-                  <i data-feather="eye" class="mr-1"></i> Chi tiết
-                </a>
-              </div>
-            </div>
-
-            <div class="flex justify-between border-b pb-3 mb-3">
-              <div class="flex items-center text-gray-500">
-                <i data-feather="info" class="mr-1"></i>
-                <span>Trạng thái thanh toán: Đã thanh toán</span>
-              </div>
-              <div class="text-orange-500 font-medium">Đã giao</div>
-            </div>
-
-            {/* <!-- Products --> */}
-            <div class="flex py-3">
-              <div class="w-16 h-16 flex-shrink-0">
-                <img
-                  src="https://via.placeholder.com/64"
-                  alt="Sản phẩm mẫu"
-                  class="w-full h-full object-cover border"
-                />
-              </div>
-              <div class="ml-3 flex-grow">
-                <div class="text-sm line-clamp-2">
-                  Tên sản phẩm mẫu rất dài để kiểm tra line-clamp
+          {loading ? (
+            <p>Đang tải...</p>
+          ) : error ? (
+            <p className="text-red-500">{error}</p>
+          ) : orders.length === 0 ? (
+            <p>Không có đơn hàng nào.</p>
+          ) : (
+            orders.map((order) => (
+              <div key={order.id} className="p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="font-medium">
+                    Mã đơn hàng: {order.order_code}
+                  </span>
+                  <Link
+                    to={`/account/order_detail/${order.id}`}
+                    className="flex items-center bg-orange-500 text-white px-3 py-1 rounded-sm text-sm"
+                  >
+                    <FiEye className="mr-1" /> Chi tiết
+                  </Link>
                 </div>
-                <div class="text-xs text-gray-500 mt-1">Màu: Đen, Size: M</div>
-                <div class="text-xs text-gray-500 mt-1">Số lượng: x2</div>
+                {/* Thêm các thông tin khác từ order */}
               </div>
-              <div class="ml-4 text-right">
-                <div class="text-sm text-gray-500 line-through">₫500,000</div>
-                <div class="text-sm">₫400,000</div>
-              </div>
-            </div>
-
-            {/* <!-- Order Total --> */}
-            <div class="flex justify-end items-center border-t pt-3">
-              <div class="mr-3 text-sm text-gray-600">Giảm giá: ₫100,000</div>
-              <div class="text-gray-600 mr-2">Thành tiền:</div>
-              <div class="text-xl text-orange-500 font-medium">₫800,000</div>
-            </div>
-
-            {/* <!-- Action Buttons --> */}
-            <div class="flex justify-end mt-4 space-x-2">
-              <a
-                href="/account/orders/1/confirm"
-                class="px-4 py-2 bg-green-500 text-white rounded"
-              >
-                Xác Nhận Đã Nhận
-              </a>
-            </div>
-          </div>
+            ))
+          )}
         </div>
       </div>
     </div>
