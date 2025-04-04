@@ -106,12 +106,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let socket = null;
     let connectionAttempts = 0;
     const maxConnectionAttempts = 3;
+<<<<<<< Updated upstream
     let adminToken = null;
     let selectedImageFiles = [];
 
     // Lấy admin token ngay khi trang tải xong
     adminToken = "{{ Auth::user()->createToken('admin-token')->plainTextToken }}";
     console.log('Token admin được tạo:', adminToken.substring(0, 15) + '...');
+=======
+>>>>>>> Stashed changes
 
     // Debug info function
     function addDebugInfo(message, type = 'info') {
@@ -133,6 +136,12 @@ document.addEventListener('DOMContentLoaded', function() {
         addDebugInfo("Đang kết nối đến socket server 3002...");
 
         try {
+            // Tạo token admin mới
+            const adminToken = "{{ Auth::user()->createToken('admin-token')->plainTextToken }}";
+
+            // Debug token info
+            addDebugInfo(`Token: ${adminToken.substring(0, 15)}...`);
+
             // Thử tất cả các cách kết nối có thể
             const possibleUrls = [
                 'http://localhost:3002',
@@ -374,90 +383,38 @@ document.addEventListener('DOMContentLoaded', function() {
         userList.appendChild(li);
     }
 
-    // Chọn người dùng để chat
-    function selectUser(userId, userName) {
-        currentUserId = userId;
-        chattingWith.textContent = userName;
-        chatBox.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>Đang tải tin nhắn...</p></div>';
-
-        // Xóa thông báo tin nhắn mới
-        const userElement = document.getElementById(`user-${userId}`);
-        if (userElement) {
-            userElement.classList.remove('list-group-item-warning');
-            const badgeElement = userElement.querySelector('.new-message-badge');
-            if (badgeElement) {
-                badgeElement.remove();
-            }
-        }
-
-        // Kích hoạt chat
-        enableChat();
-
-        // Tải tin nhắn cũ
-        loadMessages(userId);
-    }
-
     // Tải tin nhắn cũ
     async function loadMessages(userId) {
-        if (!userId) {
-            addDebugInfo("❌ Không có userId để tải tin nhắn", "error");
-            return;
-        }
-
         chatBox.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>Đang tải tin nhắn...</p></div>';
 
         let retryCount = 0;
         const maxRetries = 3;
 
-        addDebugInfo(`User ID yêu cầu: ${userId}`);
+        // Tạo token admin mới
+        const adminToken = "{{ Auth::user()->createToken('admin-token')->plainTextToken }}";
+        addDebugInfo(`Token API: ${adminToken.substring(0, 15)}...`);
 
         async function tryLoadMessages() {
             try {
                 // Gọi API để lấy tin nhắn
-                addDebugInfo(`Đang gọi API tin nhắn cho user ${userId}...`);
-
-                const apiUrl = `/api/messages/user/${userId}`;
-                addDebugInfo(`API URL: ${apiUrl}`);
-
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
+                const response = await fetch(`http://localhost:8000/api/messages/user/${userId}`, {
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${adminToken}`
-                    },
-                    credentials: 'include' // Thêm credentials
+                    }
                 });
 
-                // Lấy response dưới dạng text để debug
-                const responseText = await response.text();
-
                 if (!response.ok) {
-                    addDebugInfo(`❌ Lỗi HTTP: ${response.status}`, "error");
-                    addDebugInfo(`❌ Phản hồi: ${responseText}`, "error");
-
                     if (response.status === 401) {
                         addDebugInfo("❌ Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.", "error");
                         chatBox.innerHTML = '<div class="alert alert-danger">Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.</div>';
                         return;
-                    } else if (response.status === 403) {
-                        addDebugInfo("❌ Không có quyền xem tin nhắn của người dùng này. Mã lỗi: 403", "error");
-                        chatBox.innerHTML = '<div class="alert alert-danger">Không có quyền xem tin nhắn của người dùng này.</div>';
-                        return;
                     }
-
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                // Parse JSON từ responseText
-                let messages;
-                try {
-                    messages = JSON.parse(responseText);
-                } catch (parseError) {
-                    addDebugInfo(`❌ Lỗi parse JSON: ${parseError.message}`, "error");
-                    addDebugInfo(`❌ Dữ liệu: ${responseText.substring(0, 100)}...`, "error");
-                    throw new Error(`Lỗi parse JSON: ${parseError.message}`);
-                }
+                const messages = await response.json();
 
                 if (!Array.isArray(messages)) {
                     console.error('Dữ liệu không đúng định dạng:', messages);
@@ -466,7 +423,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                // Clear chat box
                 chatBox.innerHTML = '';
 
                 if (messages.length === 0) {
@@ -485,11 +441,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Cuộn xuống dưới cùng
                 chatBox.scrollTop = chatBox.scrollHeight;
 
+<<<<<<< Updated upstream
                 addDebugInfo(`✅ Đã tải ${messages.length} tin nhắn thành công`);
 
                 // Log dữ liệu tin nhắn để debug
                 console.log("Dữ liệu tin nhắn:", messages);
 
+=======
+>>>>>>> Stashed changes
             } catch (error) {
                 console.error('Lỗi khi tải tin nhắn:', error);
                 addDebugInfo(`Lỗi khi tải tin nhắn: ${error.message}`, "error");
@@ -1085,6 +1044,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+<<<<<<< Updated upstream
+=======
+    // Thêm nút kiểm tra kết nối
+    const debugButton = document.createElement('button');
+    debugButton.innerText = "Kiểm tra kết nối";
+    debugButton.className = "btn btn-sm btn-secondary mt-2 mb-2";
+    debugButton.onclick = function() {
+        addDebugInfo("Kiểm tra kết nối...");
+
+        if (socket && socket.connected) {
+            addDebugInfo(`Socket đang kết nối: ${socket.id}`);
+        } else {
+            addDebugInfo("Socket không kết nối! Đang kết nối lại...", "error");
+            connectToSocket();
+        }
+    };
+    document.querySelector('.card-body').prepend(debugButton);
+
+>>>>>>> Stashed changes
     // Kết nối đến socket khi trang load xong
     connectToSocket();
 });

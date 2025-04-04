@@ -18,8 +18,11 @@ use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -153,23 +156,12 @@ Route::get('/auth/check-token', function (Request $request) {
 })->middleware('auth:sanctum');
 
 // Route test kiểm tra xác thực
-Route::get('/test-auth', function (Request $request) {
-    $user = Auth::user();
-    if ($user) {
-        return response()->json([
-            'success' => true,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'role_id' => $user->role_id ?? null
-            ],
-            'token' => $request->bearerToken()
-        ]);
-    }
-    return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-})->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->get('/auth/check', function (Request $request) {
+    return response()->json([
+        'message' => 'Bạn đã đăng nhập thành công',
+        'user' => $request->user()
+    ]);
+});
 
 // API đơn giản để lấy thông tin người dùng từ ID (cho socket server)
 Route::get('/users/{id}', function ($id) {
