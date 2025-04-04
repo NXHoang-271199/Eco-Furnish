@@ -4,11 +4,8 @@ import { IoMdSend } from "react-icons/io";
 import { MdImage } from "react-icons/md";
 import { getSocket } from "../utils/socketConfig";
 import axios from "axios";
-// Thêm import lightbox
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
-// Import CSS riêng cho chat
-import "../styles/chat.css";
 
 const ChatRealTime = () => {
     const [message, setMessage] = useState("");
@@ -25,16 +22,159 @@ const ChatRealTime = () => {
     const [selectedImages, setSelectedImages] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [imagePreviews, setImagePreviews] = useState([]);
+    // Thêm state để theo dõi quá trình nhóm ảnh
+    const [imageGroups, setImageGroups] = useState({});
     // State cho lightbox
-    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [lightboxImages, setLightboxImages] = useState([]);
 
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
     const imageInputRef = useRef(null);
+    
+    // Thêm ref để lưu trữ tin nhắn gốc và tin nhắn đã nhóm
+    const originalMessages = useRef([]);
+    // Ref để theo dõi tin nhắn đã xử lý
+    const processedImageIds = useRef(new Set());
 
-    // Hàm lấy lịch sử chat từ server
+    // Thêm state để lưu trữ tin nhắn ảnh đang trong buffer
+    const [bufferingImages, setBufferingImages] = useState(false);
+    const imageBufferTimeoutRef = useRef(null);
+    const pendingAdminImages = useRef([]);
+
+    // Cải thiện hàm phân tích tin nhắn từ admin
+    const analyzeAdminMessages = (message) => {
+        // Kiểm tra nếu tin nhắn có chứa "admin" trong ID hoặc từ admin
+        return message && 
+               (!message.isCurrentUser && 
+                (message.sender_id.toString() !== userData?.id?.toString()));
+    };
+
+    // Thêm hàm xử lý và nhóm các tin nhắn ảnh liên tiếp
+    const processMessagesWithImageGroups = (messagesArray) => {
+        if (!messagesArray || !Array.isArray(messagesArray) || messagesArray.length === 0) {
+            return [];
+        }
+
+        // Lưu trữ tin nhắn gốc để tham chiếu sau này
+        originalMessages.current = messagesArray;
+
+        // Clone mảng tin nhắn để không ảnh hưởng đến mảng gốc
+        const messages = [...messagesArray];
+        const processedMessages = [];
+        let i = 0;
+
+        // Cập nhật state để theo dõi nhóm ảnh đã xử lý
+        const imageGroupsTracking = {...imageGroups};
+
+        while (i < messages.length) {
+            const currentMsg = messages[i];
+            
+            // Nếu tin nhắn hiện tại đã có nhóm ảnh, giữ nguyên
+            if (currentMsg.imageGroup) {
+                processedMessages.push(currentMsg);
+                i++;
+                continue;
+            }
+
+            // Kiểm tra xem tin nhắn hiện tại có phải là ảnh không
+            if (currentMsg.image && !currentMsg.text) {
+                // Tạo ID duy nhất cho tin nhắn này nếu chưa có
+                const msgId = currentMsg.id || `msg-${currentMsg.sender_id}-${currentMsg.sent_at}-${Math.random()}`;
+                
+                // Nếu đã xử lý tin nhắn này, bỏ qua
+                if (processedImageIds.current.has(msgId)) {
+                    processedMessages.push(currentMsg);
+                    i++;
+                    continue;
+                }
+
+                // Bắt đầu một nhóm ảnh mới
+                const imageUrls = [currentMsg.image];
+                const senderID = currentMsg.sender_id;
+                const isAdmin = analyzeAdminMessages(currentMsg);
+                const isCurrentUser = currentMsg.isCurrentUser || currentMsg.sender_id === userData?.id;
+                const sentTime = currentMsg.sent_at;
+                const isRead = currentMsg.is_read;
+                let nextIndex = i + 1;
+                
+                // Thêm ID tin nhắn vào danh sách đã xử lý
+                processedImageIds.current.add(msgId);
+                
+                // Kiểm tra các tin nhắn tiếp theo có phải là ảnh từ cùng người gửi không
+                while (
+                    nextIndex < messages.length && 
+                    messages[nextIndex].image && 
+                    !messages[nextIndex].text && 
+                    messages[nextIndex].sender_id === senderID &&
+                    !messages[nextIndex].imageGroup &&
+                    Math.abs(new Date(messages[nextIndex].sent_at) - new Date(sentTime)) < 90000 // Tăng thành 1.5 phút cho admin
+                ) {
+                    // Tạo ID cho tin nhắn kế tiếp
+                    const nextMsgId = messages[nextIndex].id || 
+                                     `msg-${messages[nextIndex].sender_id}-${messages[nextIndex].sent_at}-${Math.random()}`;
+                    
+                    // Nếu đã xử lý tin nhắn này, bỏ qua
+                    if (processedImageIds.current.has(nextMsgId)) {
+                        nextIndex++;
+                        continue;
+                    }
+                    
+                    imageUrls.push(messages[nextIndex].image);
+                    // Đánh dấu tin nhắn đã được xử lý
+                    processedImageIds.current.add(nextMsgId);
+                    nextIndex++;
+                    
+                    // Giới hạn tối đa 10 ảnh trong một nhóm
+                    if (imageUrls.length >= 10) break;
+                }
+                
+                // Nếu có nhiều hơn 1 ảnh, tạo một nhóm
+                if (imageUrls.length > 1) {
+                    const groupId = `group-${isAdmin ? 'admin' : 'user'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                    const groupMessage = {
+                        id: groupId,
+                        sender_id: senderID,
+                        isCurrentUser: isCurrentUser,
+                        isAdmin: isAdmin,
+                        sent_at: sentTime,
+                        is_read: isRead,
+                        imageGroup: {
+                            urls: imageUrls,
+                            groupId: groupId
+                        }
+                    };
+                    
+                    // Lưu nhóm ảnh vào tracking
+                    imageGroupsTracking[groupId] = {
+                        totalImages: imageUrls.length,
+                        sender: senderID,
+                        isAdmin: isAdmin,
+                        timestamp: new Date().getTime()
+                    };
+                    
+                    processedMessages.push(groupMessage);
+                    i = nextIndex; // Bỏ qua các tin nhắn đã được nhóm
+                } else {
+                    // Nếu chỉ có 1 ảnh, giữ nguyên
+                    processedMessages.push(currentMsg);
+                    i++;
+                }
+            } else {
+                // Nếu không phải ảnh, thêm vào kết quả bình thường
+                processedMessages.push(currentMsg);
+                i++;
+            }
+        }
+        
+        // Cập nhật state theo dõi nhóm ảnh
+        setImageGroups(imageGroupsTracking);
+        
+        return processedMessages;
+    };
+
+    // Cải thiện hàm loadChatHistory để xử lý nhóm ảnh ngay khi load
     const loadChatHistory = async (userId) => {
         if (!userId) return;
         
@@ -45,7 +185,7 @@ const ChatRealTime = () => {
             console.log("🔍 Đang tải lịch sử cho user:", userId);
             console.log("🔑 Token:", token?.substring(0, 15) + "...");
             
-            // Gọi API lấy lịch sử tin nhắn - đảm bảo đúng đường dẫn
+            // Gọi API lấy lịch sử tin nhắn
             const response = await axios.get(
                 `http://localhost:8000/api/messages/user/${userId}`,
                 {
@@ -63,151 +203,104 @@ const ChatRealTime = () => {
                 console.log("📜 Lịch sử tin nhắn:", response.data);
                 
                 // Đảm bảo tất cả tin nhắn có trạng thái is_read
-                let messagesWithReadStatus = response.data.map(msg => {
-                    // Nếu là tin nhắn từ người dùng (sender_id === userId), cần đảm bảo có trạng thái is_read
+                const messagesWithReadStatus = response.data.map(msg => {
                     if (msg.sender_id === userId) {
                         return {
                             ...msg,
-                            is_read: typeof msg.is_read === 'boolean' ? msg.is_read : false
+                            is_read: typeof msg.is_read === 'boolean' ? msg.is_read : false,
+                            isCurrentUser: true
                         };
                     }
                     return msg;
                 });
-                
-                // Nhóm ảnh gửi liên tiếp trong khoảng thời gian gần nhau từ cùng một người gửi
+
+                // Nhóm các tin nhắn ảnh từ admin
                 const groupedMessages = [];
-                const timeThreshold = 10000; // 10 giây, thời gian chấp nhận để xem là cùng nhóm
-                
-                // Tìm các tin nhắn ảnh liên tiếp để nhóm lại
-                let currentGroup = [];
-                let lastImageTime = 0;
-                let lastSenderId = null;
-                
-                for (let i = 0; i < messagesWithReadStatus.length; i++) {
-                    const msg = messagesWithReadStatus[i];
-                    const msgTime = new Date(msg.sent_at).getTime();
-                    
-                    // Chỉ xử lý tin nhắn ảnh
-                    if (msg.image && !msg.text) {
-                        // Kiểm tra nếu tin nhắn này là cùng người gửi và trong ngưỡng thời gian
-                        if (
-                            lastSenderId === msg.sender_id && 
-                            lastImageTime > 0 && 
-                            msgTime - lastImageTime < timeThreshold
-                        ) {
-                            // Thêm vào nhóm hiện tại
-                            currentGroup.push(msg);
+                let currentGroup = null;
+
+                messagesWithReadStatus.forEach((msg) => {
+                    // Nếu là tin nhắn ảnh từ admin
+                    if (analyzeAdminMessages(msg) && msg.image && !msg.text) {
+                        // Kiểm tra xem có thể thêm vào nhóm hiện tại không
+                        if (currentGroup && 
+                            Math.abs(new Date(msg.sent_at) - new Date(currentGroup.messages[0].sent_at)) < 120000) {
+                            currentGroup.messages.push(msg);
                         } else {
-                            // Bắt đầu nhóm mới (nếu có nhóm cũ, lưu nhóm cũ trước)
-                            if (currentGroup.length > 1) {
-                                // Có nhóm ảnh gửi cùng lúc cần xử lý
-                                // Thêm tin nhắn nhóm vào mảng kết quả, bỏ qua các tin nhắn riêng lẻ này
-                                const groupId = Date.now().toString() + '-' + Math.random().toString(36).substring(2, 9);
-                                
+                            // Nếu có nhóm cũ, thêm vào kết quả
+                            if (currentGroup) {
                                 // Tạo tin nhắn nhóm ảnh
-                                const groupMessage = {
-                                    ...currentGroup[0], // Lấy thông tin cơ bản từ tin nhắn đầu tiên
-                                    imageGroup: {
-                                        urls: currentGroup.map(item => item.image),
-                                        isUploading: false,
-                                        uploadProgress: 100,
-                                        groupId: groupId
-                                    },
-                                    id: `group-${groupId}` // ID duy nhất cho nhóm
-                                };
-                                
-                                // Đánh dấu các tin nhắn đã được nhóm
-                                const groupMsgIds = currentGroup.map(item => item.id);
-                                messagesWithReadStatus = messagesWithReadStatus.map(item => {
-                                    if (groupMsgIds.includes(item.id)) {
-                                        return { ...item, isGrouped: true };
-                                    }
-                                    return item;
-                                });
-                                
-                                groupedMessages.push(groupMessage);
-                            }
-                            
-                            // Bắt đầu nhóm mới
-                            currentGroup = [msg];
-                        }
-                        
-                        lastImageTime = msgTime;
-                        lastSenderId = msg.sender_id;
-                    } else {
-                        // Không phải ảnh hoặc có cả text
-                        // Lưu nhóm ảnh hiện tại nếu có
-                        if (currentGroup.length > 1) {
-                            // Có nhóm ảnh gửi cùng lúc cần xử lý
-                            const groupId = Date.now().toString() + '-' + Math.random().toString(36).substring(2, 9);
-                            
-                            // Tạo tin nhắn nhóm ảnh
-                            const groupMessage = {
-                                ...currentGroup[0], // Lấy thông tin cơ bản từ tin nhắn đầu tiên
-                                imageGroup: {
-                                    urls: currentGroup.map(item => item.image),
-                                    isUploading: false,
-                                    uploadProgress: 100,
-                                    groupId: groupId
-                                },
-                                id: `group-${groupId}` // ID duy nhất cho nhóm
-                            };
-                            
-                            // Đánh dấu các tin nhắn đã được nhóm
-                            const groupMsgIds = currentGroup.map(item => item.id);
-                            messagesWithReadStatus = messagesWithReadStatus.map(item => {
-                                if (groupMsgIds.includes(item.id)) {
-                                    return { ...item, isGrouped: true };
+                                if (currentGroup.messages.length > 1) {
+                                    const groupId = `group-admin-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                                    groupedMessages.push({
+                                        id: groupId,
+                                        sender_id: currentGroup.messages[0].sender_id,
+                                        isAdmin: true,
+                                        sent_at: currentGroup.messages[0].sent_at,
+                                        is_read: currentGroup.messages[0].is_read,
+                                        imageGroup: {
+                                            urls: currentGroup.messages.map(m => m.image),
+                                            groupId: groupId
+                                        }
+                                    });
+                                } else {
+                                    // Nếu chỉ có 1 ảnh, giữ nguyên tin nhắn
+                                    groupedMessages.push(currentGroup.messages[0]);
                                 }
-                                return item;
-                            });
-                            
-                            groupedMessages.push(groupMessage);
+                            }
+                            // Bắt đầu nhóm mới
+                            currentGroup = {
+                                messages: [msg]
+                            };
                         }
-                        
-                        // Reset
-                        currentGroup = [];
-                        lastImageTime = 0;
+                    } else {
+                        // Nếu có nhóm đang xử lý, thêm vào kết quả
+                        if (currentGroup) {
+                            if (currentGroup.messages.length > 1) {
+                                const groupId = `group-admin-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                                groupedMessages.push({
+                                    id: groupId,
+                                    sender_id: currentGroup.messages[0].sender_id,
+                                    isAdmin: true,
+                                    sent_at: currentGroup.messages[0].sent_at,
+                                    is_read: currentGroup.messages[0].is_read,
+                                    imageGroup: {
+                                        urls: currentGroup.messages.map(m => m.image),
+                                        groupId: groupId
+                                    }
+                                });
+                            } else {
+                                // Nếu chỉ có 1 ảnh, giữ nguyên tin nhắn
+                                groupedMessages.push(currentGroup.messages[0]);
+                            }
+                            currentGroup = null;
+                        }
+                        // Thêm tin nhắn không phải ảnh vào kết quả
+                        groupedMessages.push(msg);
+                    }
+                });
+
+                // Xử lý nhóm cuối cùng nếu có
+                if (currentGroup) {
+                    if (currentGroup.messages.length > 1) {
+                        const groupId = `group-admin-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                        groupedMessages.push({
+                            id: groupId,
+                            sender_id: currentGroup.messages[0].sender_id,
+                            isAdmin: true,
+                            sent_at: currentGroup.messages[0].sent_at,
+                            is_read: currentGroup.messages[0].is_read,
+                            imageGroup: {
+                                urls: currentGroup.messages.map(m => m.image),
+                                groupId: groupId
+                            }
+                        });
+                    } else {
+                        groupedMessages.push(currentGroup.messages[0]);
                     }
                 }
-                
-                // Xử lý nhóm cuối cùng nếu cần
-                if (currentGroup.length > 1) {
-                    const groupId = Date.now().toString() + '-' + Math.random().toString(36).substring(2, 9);
-                    
-                    const groupMessage = {
-                        ...currentGroup[0],
-                        imageGroup: {
-                            urls: currentGroup.map(item => item.image),
-                            isUploading: false,
-                            uploadProgress: 100,
-                            groupId: groupId
-                        },
-                        id: `group-${groupId}`
-                    };
-                    
-                    const groupMsgIds = currentGroup.map(item => item.id);
-                    messagesWithReadStatus = messagesWithReadStatus.map(item => {
-                        if (groupMsgIds.includes(item.id)) {
-                            return { ...item, isGrouped: true };
-                        }
-                        return item;
-                    });
-                    
-                    groupedMessages.push(groupMessage);
-                }
-                
-                // Kết hợp tin nhắn nhóm và tin nhắn đơn lẻ
-                // Lọc bỏ tin nhắn đã được nhóm
-                const singleMessages = messagesWithReadStatus.filter(msg => !msg.isGrouped);
-                
-                // Sắp xếp tất cả tin nhắn theo thời gian
-                const allMessages = [...singleMessages, ...groupedMessages].sort((a, b) => {
-                    return new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime();
-                });
-                
-                console.log("📊 Tin nhắn sau khi nhóm:", allMessages);
-                setMessages(allMessages);
+
+                // Cập nhật messages với tin nhắn đã được nhóm
+                setMessages(groupedMessages);
                 
                 // Đếm tin nhắn chưa đọc
                 const unread = messagesWithReadStatus.filter(msg => 
@@ -216,6 +309,11 @@ const ChatRealTime = () => {
                 
                 setUnreadCount(unread);
                 console.log("📬 Số tin nhắn chưa đọc:", unread);
+
+                // Cuộn xuống cuối sau khi load xong
+                setTimeout(() => {
+                    scrollToBottom();
+                }, 100);
             } else {
                 console.warn("⚠️ Dữ liệu không đúng định dạng:", response.data);
             }
@@ -297,15 +395,12 @@ const ChatRealTime = () => {
                         setLastError("Lỗi kết nối: " + error.message);
                     });
                     
-                    // Nhận tin nhắn
+                    // Cập nhật xử lý nhận tin nhắn
+                    socketConnection.on("adminResponse", handleAdminResponse);
+                    
                     socketConnection.on("newClientMessage", (data) => {
                         console.log("📩 Nhận tin nhắn mới từ client:", data);
-                        setMessages((prev) => [...prev, data]);
-                    });
-                    
-                    socketConnection.on("adminResponse", (data) => {
-                        console.log("📩 Nhận phản hồi từ admin:", data);
-                        setMessages((prev) => [...prev, data]);
+                        setMessages(prev => processMessagesWithImageGroups([...prev, data]));
                     });
                 }
             } catch (error) {
@@ -476,23 +571,166 @@ const ChatRealTime = () => {
         }
     }, [isOpen]);
 
-    // Lắng nghe tin nhắn mới từ admin
-    useEffect(() => {
-        if (socket) {
-            socket.on("adminResponse", (data) => {
-                console.log("📩 Nhận phản hồi từ admin:", data);
-                setMessages((prev) => [...prev, data]);
+    // Cải thiện hàm xử lý nhận ảnh từ admin
+    const handleAdminImageBuffer = (imageData) => {
+        // Thêm ảnh vào buffer tạm thời
+        pendingAdminImages.current.push(imageData);
+        
+        // Nếu đã có timer đang chạy, hủy nó để set timer mới
+        if (imageBufferTimeoutRef.current) {
+            clearTimeout(imageBufferTimeoutRef.current);
+        }
+        
+        // Đánh dấu đang trong trạng thái buffer ảnh
+        setBufferingImages(true);
+        
+        // Đặt lịch xử lý buffer sau 1200ms (thời gian đủ để đợi tất cả ảnh đến)
+        imageBufferTimeoutRef.current = setTimeout(() => {
+            if (pendingAdminImages.current.length > 0) {
+                console.log(`📦 Xử lý ${pendingAdminImages.current.length} ảnh từ buffer`);
                 
-                // Tăng số lượng tin nhắn chưa đọc nếu chat box đang đóng
+                // Tạo một nhóm tin nhắn ảnh từ admin
+                if (pendingAdminImages.current.length > 1) {
+                    const senderId = pendingAdminImages.current[0].sender_id;
+                    const groupId = `admin-group-${Date.now()}`;
+                    
+                    // Tạo nhóm ảnh mới
+                    const imageGroup = {
+                        id: groupId,
+                        sender_id: senderId,
+                        isAdmin: true,
+                        sent_at: new Date().toISOString(),
+                        is_read: false,
+                        imageGroup: {
+                            urls: pendingAdminImages.current.map(img => img.image),
+                            groupId: groupId
+                        }
+                    };
+                    
+                    // Thêm tin nhắn nhóm ảnh vào list
+                    setMessages(prev => {
+                        // Lọc ra các tin nhắn không phải từ buffer hiện tại
+                        const filtered = prev.filter(msg => 
+                            !pendingAdminImages.current.some(
+                                buffImg => buffImg.id === msg.id || 
+                                (msg.image === buffImg.image && 
+                                 Math.abs(new Date(msg.sent_at) - new Date(buffImg.sent_at)) < 5000)
+                            )
+                        );
+                        return [...filtered, imageGroup];
+                    });
+                } else {
+                    // Nếu chỉ có 1 ảnh, thêm vào như bình thường
+                    const singleImage = pendingAdminImages.current[0];
+                    handleAdminResponse(singleImage);
+                }
+                
+                // Xóa buffer sau khi xử lý
+                pendingAdminImages.current = [];
+            }
+            
+            // Đánh dấu kết thúc buffering
+            setBufferingImages(false);
+        }, 1200);
+    };
+
+    // Cập nhật hàm xử lý khi nhận tin nhắn từ admin
+    const handleAdminResponse = (data) => {
+                console.log("📩 Nhận phản hồi từ admin:", data);
+        
+        // Đánh dấu tin nhắn này là từ admin
+        const adminData = {
+            ...data,
+            isAdmin: true
+        };
+        
+        // Nếu là tin nhắn ảnh và đang trong quá trình buffer, thêm vào buffer
+        if (adminData.image && !adminData.text && bufferingImages) {
+            console.log("📦 Thêm ảnh vào buffer đang chờ xử lý");
+            pendingAdminImages.current.push(adminData);
+            return;
+        }
+        
+        // Nếu là tin nhắn ảnh và không có text, bắt đầu quá trình buffer
+        if (adminData.image && !adminData.text && !bufferingImages) {
+            console.log("📦 Bắt đầu buffer ảnh mới");
+            handleAdminImageBuffer(adminData);
+            return;
+        }
+        
+        // Xử lý các loại tin nhắn khác như bình thường
+        setMessages(prev => {
+            // Thêm tin nhắn mới vào danh sách
+            const newMessages = [...prev, adminData];
+            
+            // Xử lý nhóm ảnh
+            return processMessagesWithImageGroups(newMessages);
+        });
+        
+        // Kiểm tra nếu hộp chat chưa mở, tăng số tin nhắn chưa đọc
                 if (!isOpen) {
                     setUnreadCount(prev => prev + 1);
-                    
-                    // Thông báo âm thanh nếu có thể
+            // Phát âm thanh thông báo
+            try {
                     const audio = new Audio('/notification.mp3');
-                    audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                audio.play().catch(audioError => console.log("Không thể phát âm thanh:", audioError));
+            } catch (audioError) {
+                console.log("Lỗi khi phát âm thanh:", audioError);
+            }
                 } else {
                     // Nếu chat box đang mở, đánh dấu là đã đọc
                     markMessagesAsRead();
+        }
+    };
+
+    // Cập nhật xử lý cho sự kiện adminMultipleImagesUpload
+    useEffect(() => {
+        if (socket) {
+            socket.on("adminResponse", (data) => {
+                if (data.image && !data.text) {
+                    handleAdminImageBuffer(data);
+                } else {
+                    handleAdminResponse(data);
+                }
+            });
+            
+            // Xử lý trực tiếp nhiều ảnh từ admin
+            socket.on("adminMultipleImagesUpload", (data) => {
+                console.log("📷 Nhận nhiều ảnh từ admin:", data);
+                if (Array.isArray(data.messages) && data.messages.length > 0) {
+                    // Tạo nhóm ảnh mới
+                    const groupId = `admin-group-${Date.now()}`;
+                    const imageGroup = {
+                        id: groupId,
+                        sender_id: data.messages[0].sender_id,
+                        isAdmin: true,
+                        sent_at: new Date().toISOString(),
+                        is_read: false,
+                        imageGroup: {
+                            urls: data.messages.map(msg => msg.image),
+                            groupId: groupId
+                        }
+                    };
+                    
+                    // Thêm trực tiếp nhóm ảnh vào messages
+                    setMessages(prev => [...prev, imageGroup]);
+                } else if (Array.isArray(data.images) && data.images.length > 0) {
+                    // Nếu server chỉ gửi mảng URLs
+                    const groupId = `admin-group-${Date.now()}`;
+                    const imageGroup = {
+                        id: groupId,
+                        sender_id: data.sender_id || "admin",
+                        isAdmin: true,
+                        sent_at: new Date().toISOString(),
+                        is_read: false,
+                        imageGroup: {
+                            urls: data.images,
+                            groupId: groupId
+                        }
+                    };
+                    
+                    // Thêm trực tiếp nhóm ảnh vào messages
+                    setMessages(prev => [...prev, imageGroup]);
                 }
             });
         }
@@ -500,9 +738,15 @@ const ChatRealTime = () => {
         return () => {
             if (socket) {
                 socket.off("adminResponse");
+                socket.off("adminMultipleImagesUpload");
+            }
+            
+            // Hủy timeout nếu component unmount
+            if (imageBufferTimeoutRef.current) {
+                clearTimeout(imageBufferTimeoutRef.current);
             }
         };
-    }, [socket, isOpen]);
+    }, [socket, isOpen, bufferingImages]);
 
     // Hàm xử lý khi chọn ảnh
     const handleImageSelect = (e) => {
@@ -637,8 +881,8 @@ const ChatRealTime = () => {
                                 } else {
                                     reject(new Error(response.message || "Upload thất bại"));
                                 }
-                            } catch (error) {
-                                console.error("❌ Lỗi phân tích dữ liệu:", error.message);
+                            } catch {
+                                // Bỏ tham số không sử dụng
                                 reject(new Error("Lỗi phân tích dữ liệu phản hồi"));
                             }
                         } else {
@@ -705,6 +949,12 @@ const ChatRealTime = () => {
                                     return msg;
                                 }));
                                 
+                                // Lưu nhóm ảnh vào state để tham chiếu sau này
+                                setImageGroups(prev => ({
+                                    ...prev,
+                                    [groupId]: successfulUrls
+                                }));
+                                
                                 setLastError("");
                             } else {
                                 console.error("❌ Lỗi gửi ảnh:", socketResponse.error);
@@ -739,9 +989,9 @@ const ChatRealTime = () => {
                     setIsUploading(false);
                 });
             
-        } catch (error) {
-            console.error("❌ Lỗi khi upload ảnh:", error);
-            setLastError("Lỗi khi upload ảnh: " + error.message);
+        } catch (uploadError) {
+            console.error("❌ Lỗi khi gửi nhiều ảnh:", uploadError.message);
+            setLastError(`Lỗi gửi ảnh: ${uploadError.message}`);
             setIsUploading(false);
         }
     };
@@ -805,24 +1055,65 @@ const ChatRealTime = () => {
         }
     };
 
-    // Hàm scroll xuống cuối cuộc hội thoại
+    // Cải thiện hàm scroll
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (messagesEndRef.current) {
+            const chatBox = messagesEndRef.current.parentElement;
+            if (chatBox) {
+                chatBox.scrollTo({
+                    top: chatBox.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }
     };
 
-    // Cuộn xuống khi có tin nhắn mới
+    // Thêm useEffect để xử lý scroll khi có tin nhắn mới
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        if (!isLoading && messages.length > 0) {
+            scrollToBottom();
+        }
+    }, [messages, isLoading]);
 
-    // Hàm mở lightbox
-    const openLightbox = (urls, startIndex = 0) => {
-        // Chuẩn bị mảng ảnh cho lightbox
-        const lightboxItems = urls.map(url => ({ src: url }));
-        setLightboxImages(lightboxItems);
-        setLightboxIndex(startIndex);
-        setLightboxOpen(true);
+    // Mở lightbox với index ảnh cụ thể
+    const openLightbox = (images, index) => {
+        try {
+            const formattedImages = images.map(url => ({ src: url }));
+            setLightboxImages(formattedImages);
+            setLightboxIndex(index);
+            setIsLightboxOpen(true);
+        } catch (err) {
+            console.error("Lỗi khi mở lightbox:", err);
+        }
     };
+
+    // Cập nhật sau khi có tin nhắn mới để đảm bảo hiển thị nhóm
+    useEffect(() => {
+        // Nếu trang đã load và tin nhắn đã được tải, thực hiện nhóm lại sau 500ms
+        if (!isLoading && messages.length > 0) {
+            const timer = setTimeout(() => {
+                // Làm sạch bộ nhớ đã xử lý để đảm bảo xử lý lại tất cả
+                processedImageIds.current = new Set();
+                
+                // Kiểm tra xem có tin nhắn ảnh đơn lẻ từ admin cần được nhóm không
+                const adminImageMessages = messages.filter(msg => 
+                    analyzeAdminMessages(msg) && 
+                    msg.image && 
+                    !msg.text && 
+                    !msg.imageGroup
+                );
+                
+                const needsRegrouping = adminImageMessages.length > 1;
+                
+                if (needsRegrouping) {
+                    console.log("🔍 Phát hiện ảnh từ admin cần nhóm lại, đang xử lý...");
+                    setMessages(currentMessages => processMessagesWithImageGroups([...currentMessages]));
+                }
+            }, 500);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [messages, isLoading]);
 
     // Nếu không đăng nhập, không hiển thị box chat
     if (!isAuthenticated) {
@@ -831,14 +1122,6 @@ const ChatRealTime = () => {
 
     return (
         <div className="fixed bottom-5 left-5 z-50">
-            {/* Lightbox */}
-            <Lightbox
-                open={lightboxOpen}
-                close={() => setLightboxOpen(false)}
-                slides={lightboxImages}
-                index={lightboxIndex}
-            />
-            
             {/* Chat Bubble Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
@@ -930,121 +1213,107 @@ const ChatRealTime = () => {
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            {/* Hiển thị ảnh đã tải thành công dạng lưới (Grid) */}
+                                                            {/* Hiển thị ảnh đã tải thành công */}
                                                             {msg.imageGroup.urls && (
-                                                                <div className="image-grid">
-                                                                    {msg.imageGroup.urls.length === 1 && (
-                                                                        // Trường hợp 1 ảnh
+                                                                <>
+                                                                    {msg.imageGroup.urls.length === 1 ? (
+                                                                        // Nếu chỉ có 1 ảnh, hiển thị to hơn
                                                                         <div 
-                                                                            className="w-full cursor-pointer"
+                                                                            className="cursor-pointer" 
                                                                             onClick={() => openLightbox(msg.imageGroup.urls, 0)}
                                                                         >
                                                                             <img 
-                                                                                loading="lazy"
                                                                                 src={msg.imageGroup.urls[0]} 
                                                                                 alt="Hình ảnh" 
-                                                                                className="rounded max-w-full max-h-[200px] object-contain" 
+                                                                                className="rounded max-w-full max-h-[200px] object-contain"
                                                                             />
                                                                         </div>
-                                                                    )}
-                                                                    
-                                                                    {msg.imageGroup.urls.length === 2 && (
-                                                                        // Trường hợp 2 ảnh: 2 ảnh cạnh nhau
+                                                                    ) : msg.imageGroup.urls.length === 2 ? (
+                                                                        // Nếu có 2 ảnh, hiển thị dạng 50-50
                                                                         <div className="grid grid-cols-2 gap-1">
                                                                             {msg.imageGroup.urls.map((url, idx) => (
                                                                                 <div 
                                                                                     key={idx} 
-                                                                                    className="cursor-pointer"
+                                                                                    className="cursor-pointer" 
                                                                                     onClick={() => openLightbox(msg.imageGroup.urls, idx)}
                                                                                 >
                                                                                     <img 
-                                                                                        loading="lazy"
                                                                                         src={url} 
                                                                                         alt={`Hình ảnh ${idx + 1}`} 
-                                                                                        className="h-[100px] w-full object-cover rounded" 
+                                                                                        className="w-full h-[100px] object-cover rounded" 
                                                                                     />
                                                                                 </div>
                                                                             ))}
                                                                         </div>
-                                                                    )}
-                                                                    
-                                                                    {msg.imageGroup.urls.length === 3 && (
-                                                                        // Trường hợp 3 ảnh: 2 ảnh trên, 1 ảnh dưới
+                                                                    ) : msg.imageGroup.urls.length === 3 ? (
+                                                                        // Nếu có 3 ảnh, hiển thị 2 ảnh trên, 1 ảnh dưới
                                                                         <div className="grid grid-cols-2 gap-1">
                                                                             {msg.imageGroup.urls.slice(0, 2).map((url, idx) => (
                                                                                 <div 
                                                                                     key={idx} 
-                                                                                    className="cursor-pointer"
+                                                                                    className="cursor-pointer" 
                                                                                     onClick={() => openLightbox(msg.imageGroup.urls, idx)}
                                                                                 >
                                                                                     <img 
-                                                                                        loading="lazy"
                                                                                         src={url} 
                                                                                         alt={`Hình ảnh ${idx + 1}`} 
-                                                                                        className="h-[80px] w-full object-cover rounded" 
+                                                                                        className="w-full h-[80px] object-cover rounded" 
                                                                                     />
                                                                                 </div>
                                                                             ))}
                                                                             <div 
-                                                                                className="col-span-2 cursor-pointer"
+                                                                                className="col-span-2 cursor-pointer" 
                                                                                 onClick={() => openLightbox(msg.imageGroup.urls, 2)}
                                                                             >
                                                                                 <img 
-                                                                                    loading="lazy"
                                                                                     src={msg.imageGroup.urls[2]} 
                                                                                     alt="Hình ảnh 3" 
-                                                                                    className="h-[80px] w-full object-cover rounded" 
+                                                                                    className="w-full h-[80px] object-cover rounded" 
                                                                                 />
                                                                             </div>
                                                                         </div>
-                                                                    )}
-                                                                    
-                                                                    {msg.imageGroup.urls.length > 3 && (
-                                                                        // Trường hợp 4+ ảnh: 3 ảnh hiển thị + ảnh cuối có đếm số ảnh còn lại
+                                                                    ) : (
+                                                                        // Nếu có 4+ ảnh, hiển thị dạng lưới với ảnh cuối "+X"
                                                                         <div className="grid grid-cols-2 gap-1">
+                                                                            {msg.imageGroup.urls.slice(0, 2).map((url, idx) => (
+                                                                                <div 
+                                                                                    key={idx} 
+                                                                                    className="cursor-pointer" 
+                                                                                    onClick={() => openLightbox(msg.imageGroup.urls, idx)}
+                                                                                >
+                                                                                    <img 
+                                                                                        src={url} 
+                                                                                        alt={`Hình ảnh ${idx + 1}`} 
+                                                                                        className="w-full h-[80px] object-cover rounded" 
+                                                                                    />
+                                                                                </div>
+                                                                            ))}
                                                                             <div 
-                                                                                className="col-span-2 cursor-pointer"
-                                                                                onClick={() => openLightbox(msg.imageGroup.urls, 0)}
-                                                                            >
-                                                                                <img 
-                                                                                    loading="lazy"
-                                                                                    src={msg.imageGroup.urls[0]} 
-                                                                                    alt="Hình ảnh 1" 
-                                                                                    className="h-[80px] w-full object-cover rounded" 
-                                                                                />
-                                                                            </div>
-                                                                            <div 
-                                                                                className="cursor-pointer"
-                                                                                onClick={() => openLightbox(msg.imageGroup.urls, 1)}
-                                                                            >
-                                                                                <img 
-                                                                                    loading="lazy"
-                                                                                    src={msg.imageGroup.urls[1]} 
-                                                                                    alt="Hình ảnh 2" 
-                                                                                    className="h-[80px] w-full object-cover rounded" 
-                                                                                />
-                                                                            </div>
-                                                                            <div 
-                                                                                className="relative cursor-pointer"
+                                                                                className="cursor-pointer" 
                                                                                 onClick={() => openLightbox(msg.imageGroup.urls, 2)}
                                                                             >
                                                                                 <img 
-                                                                                    loading="lazy"
                                                                                     src={msg.imageGroup.urls[2]} 
                                                                                     alt="Hình ảnh 3" 
-                                                                                    className="h-[80px] w-full object-cover rounded" 
+                                                                                    className="w-full h-[80px] object-cover rounded" 
                                                                                 />
-                                                                                {msg.imageGroup.urls.length > 3 && (
-                                                                                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded">
-                                                                                        <span className="text-white font-bold">
-                                                                                            +{msg.imageGroup.urls.length - 3}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                )}
+                                                                            </div>
+                                                                            <div 
+                                                                                className="cursor-pointer relative" 
+                                                                                onClick={() => openLightbox(msg.imageGroup.urls, 3)}
+                                                                            >
+                                                                                <img 
+                                                                                    src={msg.imageGroup.urls[3]} 
+                                                                                    alt="Hình ảnh 4+" 
+                                                                                    className="w-full h-[80px] object-cover rounded brightness-50" 
+                                                                                />
+                                                                                <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl">
+                                                                                    +{msg.imageGroup.urls.length - 3}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     )}
-                                                                </div>
+                                                                </>
                                                             )}
                                                         </>
                                                     )}
@@ -1053,13 +1322,14 @@ const ChatRealTime = () => {
                                             
                                             {/* Hiển thị ảnh đơn lẻ (cho tin nhắn cũ) */}
                                             {msg.image && !msg.imageGroup && (
-                                                <div className="mb-2 relative">
+                                                <div 
+                                                    className="mb-2 relative cursor-pointer" 
+                                                    onClick={() => openLightbox([msg.image], 0)}
+                                                >
                                                     <img 
-                                                        loading="lazy"
                                                         src={msg.image} 
                                                         alt="Hình ảnh" 
-                                                        className="rounded max-w-full max-h-[200px] object-contain cursor-pointer"
-                                                        onClick={() => openLightbox([msg.image], 0)}
+                                                        className="rounded max-w-full max-h-[200px] object-contain"
                                                     />
                                                     
                                                     {/* Hiển thị progress bar nếu đang upload */}
@@ -1188,6 +1458,14 @@ const ChatRealTime = () => {
                     </div>
                 </div>
             )}
+
+            {/* Lightbox component */}
+            <Lightbox
+                open={isLightboxOpen}
+                close={() => setIsLightboxOpen(false)}
+                slides={lightboxImages}
+                index={lightboxIndex}
+            />
         </div>
     );
 };
