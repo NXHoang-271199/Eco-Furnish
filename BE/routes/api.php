@@ -108,7 +108,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng 
     Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
     Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
-    // Route::post('/cart-items/update-quantity', [CartController::class, 'updateCartItemQuantity']); // API mới cập nhật số lượng
 });
 
 // Payment Method routes

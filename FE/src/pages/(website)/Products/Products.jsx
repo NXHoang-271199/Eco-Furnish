@@ -53,7 +53,6 @@ const Products = () => {
 
         if (response.data.status === "success") {
           setProducts(response.data.data.data);
-          setFilteredProducts(response.data.data.data);
         }
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu:", error);
@@ -113,25 +112,29 @@ const Products = () => {
 
     // Lọc theo danh mục
     if (selectedCategories.length > 0) {
-      filtered = filtered.filter(product =>
+      filtered = filtered.filter((product) =>
         selectedCategories.includes(product.category_id)
       );
     }
 
     // Lọc theo biến thể
     if (selectedVariants.length > 0) {
-      filtered = filtered.filter(product => {
+      filtered = filtered.filter((product) => {
         if (!product.variants || product.variants.length === 0) return false;
 
-        return product.variants.some(variant => {
-          if (!variant.variant_details || !Array.isArray(variant.variant_details)) return false;
+        return product.variants.some((variant) => {
+          if (
+            !variant.variant_details ||
+            !Array.isArray(variant.variant_details)
+          )
+            return false;
 
           // Kiểm tra xem có bất kỳ giá trị nào trong selectedVariants khớp với variant_details
-          return selectedVariants.some(selectedValueId => {
-            return variant.variant_details.some(detail => {
+          return selectedVariants.some((selectedValueId) => {
+            return variant.variant_details.some((detail) => {
               const selectedVariantValue = variants
-                .flatMap(v => v.values)
-                .find(val => val.id === selectedValueId);
+                .flatMap((v) => v.values)
+                .find((val) => val.id === selectedValueId);
 
               if (!selectedVariantValue) return false;
 
@@ -144,10 +147,12 @@ const Products = () => {
 
     // Lọc theo khoảng giá
     if (priceRange[0] !== 0 || priceRange[1] !== 10000000) {
-      filtered = filtered.filter(product => {
+      filtered = filtered.filter((product) => {
         let price;
         if (product.has_variants) {
-          const variantPrices = product.variants.map(v => v.discount_price || v.price);
+          const variantPrices = product.variants.map(
+            (v) => v.discount_price || v.price
+          );
           price = Math.min(...variantPrices);
         } else {
           price = product.discount_price || product.price;
@@ -158,7 +163,7 @@ const Products = () => {
 
     // Lọc theo từ khóa tìm kiếm
     if (searchTerm) {
-      filtered = filtered.filter(product =>
+      filtered = filtered.filter((product) =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -167,18 +172,18 @@ const Products = () => {
   };
 
   const handleCategoryChange = (categoryId) => {
-    setSelectedCategories(prev => {
+    setSelectedCategories((prev) => {
       const newCategories = prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
+        ? prev.filter((id) => id !== categoryId)
         : [...prev, categoryId];
       return newCategories;
     });
   };
 
   const handleVariantValueChange = (valueId) => {
-    setSelectedVariants(prev => {
+    setSelectedVariants((prev) => {
       const newVariants = prev.includes(valueId)
-        ? prev.filter(id => id !== valueId)
+        ? prev.filter((id) => id !== valueId)
         : [...prev, valueId];
       return newVariants;
     });
@@ -278,8 +283,9 @@ const Products = () => {
         <div className="flex gap-6 relative">
           {/* Bộ lọc */}
           <motion.div
-            className={`${filterOpen ? "flex" : "hidden"
-              } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4 h-fit transition-all duration-300`}
+            className={`${
+              filterOpen ? "flex" : "hidden"
+            } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4 h-fit transition-all duration-300`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
@@ -456,8 +462,9 @@ const Products = () => {
                           {[1, 2, 3, 4, 5].map((star) => (
                             <IoStar
                               key={star}
-                              className={`${star <= 4 ? "text-amber-400" : "text-gray-300"
-                                } w-4 h-4`}
+                              className={`${
+                                star <= 4 ? "text-amber-400" : "text-gray-300"
+                              } w-4 h-4`}
                             />
                           ))}
                           <span className="text-gray-500 text-sm ml-2">
@@ -486,12 +493,15 @@ const Products = () => {
                                       style: "currency",
                                       currency: "VND",
                                     }).format(product.price_range.min_discount)}
-                                    {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                    {product.price_range.max_discount &&
+                                      product.price_range.max_discount !==
+                                        product.price_range.min_discount &&
                                       ` - ${new Intl.NumberFormat("vi-VN", {
                                         style: "currency",
                                         currency: "VND",
-                                      }).format(product.price_range.max_discount)}`
-                                    }
+                                      }).format(
+                                        product.price_range.max_discount
+                                      )}`}
                                   </p>
                                   <p className="text-gray-400 line-through text-sm">
                                     {new Intl.NumberFormat("vi-VN", {
@@ -507,12 +517,13 @@ const Products = () => {
                                     style: "currency",
                                     currency: "VND",
                                   }).format(product.price_range?.min || 0)}
-                                  {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                                  {product.price_range?.max &&
+                                    product.price_range.max !==
+                                      product.price_range.min &&
                                     ` - ${new Intl.NumberFormat("vi-VN", {
                                       style: "currency",
                                       currency: "VND",
-                                    }).format(product.price_range.max)}`
-                                  }
+                                    }).format(product.price_range.max)}`}
                                 </p>
                               )}
                             </div>
@@ -616,10 +627,11 @@ const Products = () => {
         {[1, 2, 3, "...", 10].map((item, index) => (
           <button
             key={index}
-            className={`${item === 1
-              ? "bg-amber-500 text-white"
-              : "bg-white text-gray-700 hover:bg-amber-100"
-              } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
+            className={`${
+              item === 1
+                ? "bg-amber-500 text-white"
+                : "bg-white text-gray-700 hover:bg-amber-100"
+            } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
           >
             {item}
           </button>

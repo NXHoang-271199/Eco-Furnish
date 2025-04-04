@@ -12,7 +12,7 @@ const LayoutAccount = () => {
         Tài khoản của tôi
       </h1>
       <div class="max-w-6xl mx-auto p-4 ">
-        <div class="flex flex-col md:flex-row bg-white rounded-lg overflow-hidden ">
+        <div class="flex flex-col md:flex-row bg-white rounded-lg overflow-hidden w-full">
           <Aside />
 
           <Outlet />
