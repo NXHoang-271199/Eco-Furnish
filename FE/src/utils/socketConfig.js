@@ -40,8 +40,8 @@ export const getSocket = () => {
     const sessionId = generateSessionId();
     
     // Khởi tạo socket mới với token
-    socketInstance = io("http://127.0.0.1:3002", {
-      transports: ["websocket"],
+    socketInstance = io("http://localhost:3002", {
+      transports: ["websocket", "polling"],
       auth: { 
         token: token,
         userId: userData.id,
@@ -52,7 +52,8 @@ export const getSocket = () => {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       // Tắt kết nối tự động để kiểm soát tốt hơn việc kết nối
-      autoConnect: false
+      autoConnect: false,
+      withCredentials: true // Thêm credentails để hỗ trợ CORS
     });
     
     // Thêm sự kiện trước khi kết nối

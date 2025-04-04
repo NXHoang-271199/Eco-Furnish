@@ -1,11 +1,12 @@
 .message-read {
   opacity: 1;
   transition: opacity 0.3s ease;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .message-unread {
   opacity: 0.7;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .chat-notification-badge {
@@ -53,3 +54,36 @@
 .message-sent {
   color: rgba(255, 255, 255, 0.5);
 }
+
+/* Styles cho hiển thị ảnh lưới trong chat */
+.image-grid {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+
+.image-grid img {
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+
+.image-grid img:hover {
+  opacity: 0.9;
+}
+
+/* Hiệu ứng mở chat box */
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease forwards;
+}
+
