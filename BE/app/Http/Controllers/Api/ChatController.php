@@ -313,6 +313,7 @@ class ChatController extends Controller
      */
     private function extractPriceInfo($message)
     {
+        // Chuẩn bị kết quả trả về
         $priceInfo = [
             'has_price' => false,
             'min_price' => null,
@@ -635,6 +636,8 @@ class ChatController extends Controller
 
             // Nếu có thông tin giá, áp dụng bộ lọc giá
             if ($priceInfo && $priceInfo['has_price']) {
+                Log::info('Đang áp dụng bộ lọc giá...');
+
                 // Xử lý giá chính xác
                 if ($priceInfo['price_type'] === 'exact' && $priceInfo['exact_price'] !== null) {
                     // Tìm sản phẩm có giá xấp xỉ (sai số 15%)
@@ -645,13 +648,25 @@ class ChatController extends Controller
                     Log::info("Tìm sản phẩm với giá chính xác: {$exactPrice}, phạm vi [{$minPrice} - {$maxPrice}]");
 
                     $query->where(function($q) use ($minPrice, $maxPrice) {
-                        $q->whereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
+                        // Kiểm tra giá biến thể
+                        $q->orWhereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
                             $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
-                                $subQ->whereBetween('price', [$minPrice, $maxPrice]);
-                            })->orWhere(function($subQ) use ($minPrice, $maxPrice) {
-                                $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
-                                     ->whereNotNull('discount_price');
+                                // Giá gốc hoặc giá khuyến mãi nằm trong phạm vi
+                                $subQ->whereBetween('price', [$minPrice, $maxPrice])
+                                    ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
+                                        $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                            ->whereNotNull('discount_price');
+                                    });
                             });
+                        });
+
+                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
+                        $q->orWhere(function($subQ) use ($minPrice, $maxPrice) {
+                            $subQ->whereBetween('price', [$minPrice, $maxPrice])
+                                ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
+                                    $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                        ->whereNotNull('discount_price');
+                                });
                         });
                     });
                 }
@@ -672,9 +687,8 @@ class ChatController extends Controller
                                     $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
                                          ->whereNotNull('discount_price');
                                 });
-                            });
                         });
-                    }
+                    });
                 }
 
                 // Xử lý giá tối đa
@@ -683,13 +697,26 @@ class ChatController extends Controller
                     Log::info("Tìm sản phẩm với giá tối đa: {$maxPrice}");
 
                     $query->where(function($q) use ($maxPrice) {
-                        $q->whereHas('variants', function($variantQuery) use ($maxPrice) {
+                        // Kiểm tra giá biến thể
+                        $q->orWhereHas('variants', function($variantQuery) use ($maxPrice) {
                             $variantQuery->where(function($subQ) use ($maxPrice) {
-                                $subQ->where('price', '<=', $maxPrice);
-                            })->orWhere(function($subQ) use ($maxPrice) {
-                                $subQ->where('discount_price', '<=', $maxPrice)
-                                     ->whereNotNull('discount_price');
+                                // Giá gốc <= maxPrice
+                                $subQ->where('price', '<=', $maxPrice)
+                                    // Hoặc giá khuyến mãi <= maxPrice
+                                    ->orWhere(function($priceQ) use ($maxPrice) {
+                                        $priceQ->where('discount_price', '<=', $maxPrice)
+                                            ->whereNotNull('discount_price');
+                                    });
                             });
+                        });
+
+                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
+                        $q->orWhere(function($subQ) use ($maxPrice) {
+                            $subQ->where('price', '<=', $maxPrice)
+                                ->orWhere(function($priceQ) use ($maxPrice) {
+                                    $priceQ->where('discount_price', '<=', $maxPrice)
+                                        ->whereNotNull('discount_price');
+                                });
                         });
                     });
                 }
@@ -700,13 +727,26 @@ class ChatController extends Controller
                     Log::info("Tìm sản phẩm với giá tối thiểu: {$minPrice}");
 
                     $query->where(function($q) use ($minPrice) {
-                        $q->whereHas('variants', function($variantQuery) use ($minPrice) {
+                        // Kiểm tra giá biến thể
+                        $q->orWhereHas('variants', function($variantQuery) use ($minPrice) {
                             $variantQuery->where(function($subQ) use ($minPrice) {
-                                $subQ->where('price', '>=', $minPrice);
-                            })->orWhere(function($subQ) use ($minPrice) {
-                                $subQ->where('discount_price', '>=', $minPrice)
-                                     ->whereNotNull('discount_price');
+                                // Giá gốc >= minPrice
+                                $subQ->where('price', '>=', $minPrice)
+                                    // Hoặc giá khuyến mãi >= minPrice
+                                    ->orWhere(function($priceQ) use ($minPrice) {
+                                        $priceQ->where('discount_price', '>=', $minPrice)
+                                            ->whereNotNull('discount_price');
+                                    });
                             });
+                        });
+
+                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
+                        $q->orWhere(function($subQ) use ($minPrice) {
+                            $subQ->where('price', '>=', $minPrice)
+                                ->orWhere(function($priceQ) use ($minPrice) {
+                                    $priceQ->where('discount_price', '>=', $minPrice)
+                                        ->whereNotNull('discount_price');
+                                });
                         });
                     });
                 }

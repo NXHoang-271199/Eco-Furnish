@@ -10,25 +10,6 @@ trait TokenHandler
     {
         // Xóa tokens cũ
         $user->tokens()->delete();
-<<<<<<< Updated upstream
-        
-        if ($remember) {
-            // Thời gian token dài hơn nếu remember_me = true
-            $accessTokenExpiry = now()->addDays(7);    // 7 ngày
-            $refreshTokenExpiry = now()->addDays(30);  // 30 ngày
-        } else {
-            // Thời gian token mặc định
-            $accessTokenExpiry = now()->addMinutes(30); // 30 phút
-            $refreshTokenExpiry = now()->addDays(7);    // 7 ngày
-        }
-        
-        // Tạo access token
-        $accessToken = $user->createToken('access_token', ['*'], $accessTokenExpiry)->plainTextToken;
-        
-        // Tạo refresh token
-        $refreshToken = $user->createToken('refresh_token', ['*'], $refreshTokenExpiry)->plainTextToken;
-        
-=======
 
         // Tạo access token (30 phút)
         $accessToken = $user->createToken('access_token', ['*'], now()->addMinutes(30))->plainTextToken;
@@ -36,7 +17,6 @@ trait TokenHandler
         // Tạo refresh token (7 ngày)
         $refreshToken = $user->createToken('refresh_token', ['*'], now()->addDays(7))->plainTextToken;
 
->>>>>>> Stashed changes
         // Lưu tokens
         $user->access_token = $accessToken;
         $user->refresh_token = $refreshToken;

@@ -22,7 +22,7 @@ const SignIn = () => {
   const onSubmit = async (data) => {
     try {
       const response = await axios.post(
-        `http://127.0.0.1:8000/api/users/login`,
+        `http://localhost:8000/api/users/login`,
         data,
         {
           headers: {
@@ -35,58 +35,9 @@ const SignIn = () => {
       if (response.data.status === "success") {
         // Lưu token và thông tin user
         localStorage.setItem("authToken", response.data.data.access_token);
-        localStorage.setItem("access_token", response.data.data.access_token); // Lưu cả access_token để đồng bộ
         localStorage.setItem("refreshToken", response.data.data.refresh_token);
         localStorage.setItem("userData", JSON.stringify(response.data.data));
-
-        // Kích hoạt sự kiện storage để các tab khác biết có thay đổi
-        window.dispatchEvent(new Event("storage"));
-
-        // Kích hoạt sự kiện tùy chỉnh để thông báo đã đăng nhập
-        window.dispatchEvent(new CustomEvent("auth-change"));
-
-
-        // Khởi động lại socket connection
-        setTimeout(() => {
-          console.log("🔌 Khởi động lại kết nối socket sau đăng nhập...");
-          resetSocket();
-        }, 500);
-
-        // Kiểm tra xem đã lưu token thành công chưa
-        console.log("Token đã lưu:", localStorage.getItem("authToken"));
-        console.log("User data đã lưu:", localStorage.getItem("userData"));
-
-        // Phát sự kiện để thông báo đăng nhập thành công cho các tab khác
-        const authChangeEvent = new Event("auth-change");
-        window.dispatchEvent(authChangeEvent);
-
-        // Phát sự kiện storage để cập nhật các tab khác
-        try {
-          const storageEvent = new StorageEvent("storage", {
-            key: "authToken",
-            newValue: response.data.data.access_token,
-          });
-          window.dispatchEvent(storageEvent);
-
-          // Thêm sự kiện cho userData
-          const userDataEvent = new StorageEvent("storage", {
-            key: "userData",
-            newValue: JSON.stringify(response.data.data),
-          });
-          window.dispatchEvent(userDataEvent);
-        } catch (error) {
-          console.error("Lỗi khi phát sự kiện storage:", error);
-        }
-
-        // Kiểm tra xem có returnUrl trong state không
-        const returnUrl = location.state?.returnUrl || "/";
-
-        // Thêm dữ liệu để chuyển về trang chi tiết
-        if (location.state?.returnUrl) {
-          localStorage.setItem("returnPath", location.state.returnUrl);
-        }
-
-        navigate(returnUrl, { replace: true });
+        navigate("/");
       }
     } catch (error) {
       if (error.response?.status === 403) {
@@ -103,7 +54,7 @@ const SignIn = () => {
   const refreshToken = async () => {
     try {
       const response = await axios.post(
-        `http://127.0.0.1:8000/api/users/refresh-token`,
+        `http://localhost:8000/api/users/refresh-token`,
         {
           refresh_token: localStorage.getItem("refreshToken"), // Lưu refresh token trong localStorage
         },

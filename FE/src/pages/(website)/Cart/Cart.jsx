@@ -111,6 +111,8 @@ const Cart = () => {
   // Hàm xóa một sản phẩm khỏi giỏ hàng
   const handleRemoveItem = async (cartId) => {
     const token = localStorage.getItem("authToken");
+    console.log(cartId);
+
     try {
       const response = await axios.delete(
         `http://localhost:8000/api/cart/remove/${cartId}`,
@@ -229,8 +231,8 @@ const Cart = () => {
     const total = calculateSelectedTotal();
 
     // Lưu thông tin sản phẩm đã chọn vào Redux store để sử dụng ở trang thanh toán
-    dispatch(setSelectedItems(localSelectedItems));
-    dispatch(setSelectedProducts(selectedProducts));
+    // dispatch(setSelectedItems(localSelectedItems));
+    // dispatch(setSelectedProducts(selectedProducts));
 
     navigate("/payment", {
       state: {
