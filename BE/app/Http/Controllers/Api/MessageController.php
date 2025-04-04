@@ -7,6 +7,7 @@ use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class MessageController extends Controller
 {
@@ -54,10 +55,10 @@ class MessageController extends Controller
         // Kiểm tra xác thực người dùng
         $user = Auth::user();
         if (!$user) {
+            Log::error('Lỗi xác thực: Không có người dùng');
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-<<<<<<< Updated upstream
         // Debug thông tin user
         Log::info('User info in getUserMessages', [
             'id' => $user->id,
@@ -120,31 +121,7 @@ class MessageController extends Controller
                 'error' => 'Server Error',
                 'message' => 'Lỗi khi tải tin nhắn: ' . $e->getMessage()
             ], 500);
-=======
-        // Admin có thể xem tin nhắn của bất kỳ người dùng nào
-        // Người dùng thường chỉ có thể xem tin nhắn của họ
-        if ($user->role !== 'admin' && $user->id != $userId) {
-            return response()->json(['error' => 'Forbidden'], 403);
->>>>>>> Stashed changes
         }
-
-        $messages = Message::where(function ($query) use ($userId) {
-                $query->where('sender_id', $userId)
-                    ->orWhere('receiver_id', $userId);
-            })
-            ->with(['sender', 'receiver'])
-            ->orderBy('sent_at', 'asc')
-            ->get();
-
-        // Đánh dấu tất cả tin nhắn đến người dùng này là đã đọc
-        // nếu người đọc là người nhận
-        if ($user->id == $userId) {
-            Message::where('receiver_id', $userId)
-                ->where('is_read', false)
-                ->update(['is_read' => true]);
-        }
-
-        return response()->json($messages);
     }
 
     public function getUnreadMessages()
