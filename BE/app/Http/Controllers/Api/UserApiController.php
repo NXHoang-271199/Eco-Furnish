@@ -40,7 +40,7 @@ class UserApiController extends Controller
         ]);
     }
 
-    // 2. Xem chi tiết user theo email
+    // 2. Lấy thông tin chi tiết một user (client)
     public function show($id)
     {
         $user = User::whereHas('role', function ($query) {
@@ -56,7 +56,6 @@ class UserApiController extends Controller
                 'message' => 'Không tìm thấy người dùng'
             ], 404);
         }
-        $tokens = $this->generateTokens($user);
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -66,10 +65,6 @@ class UserApiController extends Controller
                 'slug' => Str::slug($user->name),
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
                 'joined_date' => $user->created_at->format('d/m/Y'),
-                'access_token' => $tokens['access_token'],
-                'refresh_token' => $tokens['refresh_token'],
-                'access_token_expires_at' => $tokens['access_token_expires_at'],
-                'refresh_token_expires_at' => $tokens['refresh_token_expires_at']
             ]
         ]);
     }

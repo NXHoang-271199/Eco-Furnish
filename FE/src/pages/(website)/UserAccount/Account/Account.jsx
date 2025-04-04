@@ -17,8 +17,6 @@ const Account = () => {
 
         if (!token || token === "undefined") {
           console.log("Token không hợp lệ, chuyển hướng đến trang đăng nhập");
-          localStorage.removeItem("authToken");
-          localStorage.removeItem("userData");
           navigate("/signin");
           return;
         }
@@ -82,17 +80,15 @@ const Account = () => {
 
           if (error.response.status === 401) {
             console.log(
-              "Token không hợp lệ hoặc hết hạn, đăng xuất và chuyển hướng"
+              "Token không hợp lệ hoặc hết hạn, chuyển hướng đến trang đăng nhập"
             );
-            localStorage.removeItem("userData");
-            localStorage.removeItem("authToken");
-
+            // Không xóa token - chỉ chuyển hướng để người dùng đăng nhập lại
             navigate("/signin");
           }
 
           setError(
             error.response.data?.message ||
-              `Lỗi từ máy chủ: ${error.response.status}`
+            `Lỗi từ máy chủ: ${error.response.status}`
           );
         } else if (error.request) {
           console.error("Không nhận được phản hồi từ máy chủ");
