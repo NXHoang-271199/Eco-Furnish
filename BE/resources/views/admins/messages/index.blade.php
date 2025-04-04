@@ -269,31 +269,48 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Nhận tin nhắn từ client
-            socket.on("newClientMessage", (message) => {
-                console.log("Tin nhắn mới từ client:", message);
-                addDebugInfo(`Tin nhắn mới từ client: ${message.sender_id}, nội dung: ${message.text}`);
+            socket.on("newClientMessage", (data) => {
+                console.log("Nhận tin nhắn mới từ client:", data);
+                addDebugInfo(`Tin nhắn mới từ ${data.senderName}: ${data.text || "Hình ảnh"}`);
 
-                // Nếu đang chat với người dùng này
-                if (currentUserId === message.sender_id) {
-                    addMessageToChat(message, 'client');
-                } else {
-                    // Hiển thị thông báo có tin nhắn mới
-                    const userElement = document.getElementById(`user-${message.sender_id}`);
-                    if (userElement) {
-                        userElement.classList.add('list-group-item-warning');
+                // Xử lý không gộp nhóm các ảnh nhận được riêng biệt
+                const messageTime = new Date(data.sent_at).toLocaleString();
 
-                        // Thêm badge thông báo nếu chưa có
-                        if (!userElement.querySelector('.new-message-badge')) {
-                            const badge = document.createElement('span');
-                            badge.className = 'badge bg-danger float-end new-message-badge';
-                            badge.textContent = 'Mới';
-                            userElement.appendChild(badge);
-                        }
-                    } else {
-                        // Nếu người dùng không có trong danh sách, cần tải lại danh sách
-                        addDebugInfo(`Không tìm thấy user ${message.sender_id} trong danh sách, yêu cầu danh sách mới`);
-                        socket.emit("adminConnect"); // Yêu cầu danh sách users mới
-                    }
+                // Xác định loại tin nhắn và hiển thị phù hợp
+                if (data.image) {
+                    // Nếu là ảnh, hiển thị riêng từng ảnh
+                    addMessageToChat({
+                        image: data.image,
+                        sent_at: messageTime,
+                        sender: data.sender || { name: data.senderName }
+                    }, 'client');
+                } else if (data.text) {
+                    // Nếu là text, hiển thị message bình thường
+                    addMessageToChat({
+                        text: data.text,
+                        sent_at: messageTime,
+                        sender: data.sender || { name: data.senderName }
+                    }, 'client');
+                }
+
+                // Highlight user có tin nhắn mới
+                highlightUserWithNewMessage(data.sender_id, data.senderName);
+            });
+
+            // Thêm code để xử lý nhiều ảnh nhận được từ client
+            socket.on("clientMultipleImagesReceived", (data) => {
+                console.log("Nhận nhiều ảnh từ client:", data);
+                addDebugInfo(`Nhận ${data.images?.length || 0} ảnh từ ${data.senderName}`);
+
+                if (data.images && data.images.length > 0) {
+                    // Tạo ID nhóm tin nhắn
+                    const groupId = Date.now() + Math.random().toString(36).substring(2, 9);
+
+                    // Hiển thị nhóm ảnh dưới dạng một khối
+                    addImageGroupToChat(data.images, new Date(data.sent_at || Date.now()).toLocaleString(), 'client');
+
+                    // Highlight user có tin nhắn mới
+                    highlightUserWithNewMessage(data.sender_id, data.senderName);
                 }
             });
 
