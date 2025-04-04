@@ -1,21 +1,70 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xác nhận đơn hàng</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.5; background-color: #f8f8f8; padding: 0; margin: 0; }
-        .container { max-width: 600px; margin: auto; padding: 20px; background: #ffffff; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
-        h2 { text-align: center; color: #333; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
-        th { background-color: #f4f4f4; }
-        .total { font-weight: bold; color: #d9534f; }
-        .summary p { margin: 5px 0; font-size: 14px; }
-        .note { font-size: 13px; color: #555; text-align: center; margin-top: 10px; }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            background-color: #f8f8f8;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .total {
+            font-weight: bold;
+            color: #d9534f;
+        }
+
+        .summary p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .note {
+            font-size: 13px;
+            color: #555;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h2>Xác nhận đơn hàng</h2>
@@ -26,7 +75,7 @@
         <p><strong>Mã đơn hàng:</strong> {{ $order->order_code }}</p>
         <p><strong>Phương thức thanh toán:</strong> {{ $order->paymentMethod->name }}</p>
         <p><strong>Trạng thái thanh toán:</strong>
-            {{ ($order->payment_status == 1) ? "✅ Đã thanh toán" : "❌ Chưa thanh toán"}}
+            {{ $order->payment_status == 1 ? '✅ Đã thanh toán' : '❌ Chưa thanh toán' }}
         </p>
 
         <h3>Chi tiết đơn hàng</h3>
@@ -35,6 +84,7 @@
                 <tr>
                     <th>STT</th>
                     <th>Sản phẩm</th>
+                    <th>Phân loại</th>
                     <th>SL</th>
                     <th>Giá</th>
                     <th>Tổng</th>
@@ -51,14 +101,26 @@
                             ? $item->productVariant->price
                             : $item->product->price;
                         $discountPrice = $item->product_variant_id
-                            ? ($item->productVariant->discount_price ?? $originalPrice)
-                            : ($item->product->discount_price ?? $originalPrice);
+                            ? $item->productVariant->discount_price ?? $originalPrice
+                            : $item->product->discount_price ?? $originalPrice;
                         $totalPrice = $discountPrice * $item->quantity;
                         $subtotal += $totalPrice;
                     @endphp
                     <tr>
                         <td>{{ $index++ }}</td>
                         <td>{{ $item->product_name }}</td>
+                        <td>
+                            @if ($item->productVariant && $item->productVariant->variant_details && count($item->productVariant->variant_details) > 0)
+                                @foreach ($item->productVariant->variant_details as $details)
+                                    <p>
+                                        <strong>{{ $details['name'] }}:</strong> {{ $details['value'] }}<br>
+                                    </p>
+                                @endforeach
+                            @else
+                                <p>Không có phân loại</p>
+                            @endif
+                        </td>
+
                         <td>{{ $item->quantity }}</td>
                         <td>{{ number_format($discountPrice, 0, ',', '.') }} đ</td>
                         <td class="total">{{ number_format($totalPrice, 0, ',', '.') }} đ</td>
@@ -71,12 +133,14 @@
         <div class="summary">
             <p><strong>Tạm tính:</strong> {{ number_format($subtotal, 0, ',', '.') }} đ</p>
             <p><strong>Phí vận chuyển:</strong> {{ number_format($order->shipping_fee, 0, ',', '.') }} đ</p>
-            <p><strong>Giảm giá đơn hàng:</strong> {{ number_format($discountAmount, 0, ',', '.') }} đ</p>
-            <p><strong>Tổng cộng:</strong> <span class="total">{{ number_format($order->total_price, 0, ',', '.') }} đ</span></p>
+            <p><strong>Giảm giá đơn hàng:</strong> {{ number_format($order->discount_amount, 0, ',', '.') }} đ</p>
+            <p><strong>Tổng cộng:</strong> <span class="total">{{ number_format($order->total_price, 0, ',', '.') }}
+                    đ</span></p>
         </div>
 
         <p class="note">(* Tổng cộng = Tạm tính + Phí vận chuyển - Giảm giá đơn hàng)</p>
         <p style="text-align: center;">Cảm ơn bạn đã mua sắm tại cửa hàng của chúng tôi!</p>
     </div>
 </body>
+
 </html>

@@ -70,7 +70,8 @@
                         <div class="d-flex align-items-center border-bottom pt-2 pb-2">
                             <div class="col-md-1">
                                 @if (!empty($item->image_url))
-                                    <img src="{{ Storage::url($item->image_url) }}" width="80px" alt="Product" class="img-fluid rounded">
+                                    <img src="{{ Storage::url($item->image_url) }}" width="80px" alt="Product"
+                                        class="img-fluid rounded">
                                 @else
                                     Không có ảnh
                                 @endif
@@ -79,7 +80,8 @@
                                 <p class="mb-1 ms-3 fw-bold">{{ $item->product_name }}</p>
 
                                 @if (!empty($item->productVariant))
-                                    <p class="mb-1 ms-3"><strong>Phân loại hàng:</strong> {{ implode(' - ', $item->variant_info) }}</p>
+                                    <p class="mb-1 ms-3"><strong>Phân loại hàng:</strong>
+                                        {{ implode(' - ', $item->variant_info) }}</p>
                                 @else
                                     <p class="mb-1 ms-3 text-muted">Không có phân loại</p>
                                 @endif
@@ -107,7 +109,7 @@
                 <div class="d-flex align-items-center justify-content-end pe-3 text-end border-bottom">
                     <div class="pe-3 fw-bold"><span>Giảm giá</span></div>
                     <div class="w-25 border-start p-3">
-                        <div>{{ number_format($order->voucher->discount_percentage ?? 0, 0) }} %</div>
+                        <div>{{ number_format($order->discount_amount, 0, ',', '.') }} đ</div>
 
 
                     </div>
@@ -127,15 +129,21 @@
                 </div>
                 <div>
                     @if ($order->payment_status == 0)
-                        <div class="alert alert-warning text-center my-3 ">
+                        <div class="alert alert-danger text-center my-3">
                             <strong>Đơn hàng chưa được thanh toán. Tổng số tiền cần thanh toán là
-                                {{ number_format($order->total_price, 0, ',', '.') }} đ</strong>.
+                                {{ number_format($order->total_price, 0, ',', '.') }} đ.</strong>
                         </div>
-                    @else
+                    @elseif ($order->payment_status == 1)
                         <div class="alert alert-success text-center my-3">
-                            <strong>Đơn đã được thanh toán. Số tiền cần thanh toán là 0 đồng</strong>.
+                            <strong>Đơn đã được thanh toán. Số tiền cần thanh toán là 0 đồng.</strong>
+                        </div>
+                    @elseif ($order->payment_status == 2)
+                        <div class="alert alert-warning text-center my-3">
+                            <strong>Đơn hàng đang chờ thanh toán. Tổng số tiền cần thanh toán là
+                                {{ number_format($order->total_price, 0, ',', '.') }} đ.</strong>
                         </div>
                     @endif
+
 
                 </div>
             </div>

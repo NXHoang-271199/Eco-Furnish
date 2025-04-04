@@ -58,10 +58,10 @@
                                         <div class="card-body">
                                             <div class="d-flex align-items-center border-bottom">
                                                 @if ($order->orderItems->isNotEmpty())
-                                                <div class="col-md">
-                                                    <img src="{{ Storage::url($order->orderItems->first()->image_url) }}"
-                                                    width= "80px" height="80px" alt="Product">
-                                                </div>
+                                                    <div class="col-md">
+                                                        <img src="{{ Storage::url($order->orderItems->first()->image_url) }}"
+                                                            width= "80px" height="80px" alt="Product">
+                                                    </div>
                                                 @endif
 
                                                 <div class="col-md-9">
@@ -74,7 +74,6 @@
                                                                     $order->order_status === 'Đang Giao' ||
                                                                     $order->order_status === 'Đã Giao' ||
                                                                     $order->order_status === 'Đã Nhận' ||
-                                                                    $order->order_status === 'Thành Công' ||
                                                                     $order->order_status === 'Hoàn Hàng' ||
                                                                     $order->order_status === 'Hủy Đơn' ||
                                                                     $order->payment_status === '2')
@@ -91,8 +90,9 @@
                                                     <p class="mb-1 ms-3">
                                                         Trạng thái thanh toán:
                                                         <span
-                                                            class="fw-bold {{ $order->payment_status == 1 ? 'text-success' : 'text-danger' }}">
-                                                            {{ $order->payment_status == 1 ? 'Đã thanh toán' : 'Chưa thanh toán' }}
+                                                            class="fw-bold
+                                                            {{ $order->payment_status == 1 ? 'text-success' : ($order->payment_status == 2 ? 'text-warning' : 'text-danger') }}">
+                                                            {{ $order->payment_status == 1 ? 'Đã thanh toán' : ($order->payment_status == 2 ? 'Chờ thanh toán' : 'Chưa thanh toán') }}
                                                         </span>
                                                     </p>
                                                     <p class="mb-1 ms-3 text-danger fw-600"><strong>Tổng tiền:
@@ -107,7 +107,7 @@
                                                             value="{{ $order->order_status }}">
                                                         <select name="order_status" class="form-control fw-bold"
                                                             onchange="this.form.submit()"
-                                                            {{ $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' ? 'disabled' : '' }}>
+                                                            {{ $order->order_status === 'Đã Nhận' || $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' ? 'disabled' : '' }}>
                                                             <option value="Chưa Xác Nhận"
                                                                 {{ $order->order_status === 'Chưa Xác Nhận' ? 'selected' : '' }}>
                                                                 Chưa Xác Nhận</option>
@@ -126,9 +126,6 @@
                                                             <option value="Đã Nhận"
                                                                 {{ $order->order_status === 'Đã Nhận' ? 'selected' : '' }}>
                                                                 Đã Nhận</option>
-                                                            <option value="Thành Công"
-                                                                {{ $order->order_status === 'Thành Công' ? 'selected' : '' }}>
-                                                                Thành Công</option>
                                                             <option value="Hoàn Hàng"
                                                                 {{ $order->order_status === 'Hoàn Hàng' ? 'selected disabled' : '' }}>
                                                                 Hoàn Hàng</option>
@@ -151,6 +148,42 @@
 
                                                     </div>
                                                 </div>
+                                                @if ($order->refundRequest->isNotEmpty())
+                                                    <div class="mt-3">
+                                                        @foreach ($order->refundRequest as $refund)
+                                                            <p class="fw-bold text-warning">Yêu cầu hoàn hàng:
+                                                                {{ $refund->reason ?? 'Chưa có lý do' }}</p>
+
+                                                            <!-- Hiển thị nút duyệt và từ chối chỉ khi yêu cầu chưa bị từ chối hoặc duyệt -->
+                                                            @if ($refund->status === 'Chờ Duyệt')
+                                                                <form
+                                                                    action="{{ route('order.refund.approve', ['orderId' => $order->id, 'refundRequestId' => $refund->id]) }}"
+                                                                    method="POST" style="display:inline-block;">
+                                                                    @csrf
+                                                                    <button type="submit"
+                                                                        class="btn btn-success btn-sm">Duyệt</button>
+                                                                </form>
+                                                                <form
+                                                                    action="{{ route('order.refund.reject', ['orderId' => $order->id, 'refundRequestId' => $refund->id]) }}"
+                                                                    method="POST" style="display:inline-block;">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-danger btn-sm">Từ
+                                                                        Chối</button>
+                                                                </form>
+                                                            @else
+                                                                <!-- Nếu đã duyệt hoặc từ chối, ẩn nút và hiển thị trạng thái -->
+                                                                <strong
+                                                                    style="color: {{ $refund->status == 'Đã Duyệt' ? 'green' : 'red' }};">
+                                                                    {{ $refund->status }} Yêu Cầu Hoàn Hàng
+                                                                </strong>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+
+
+
+
                                             </div>
                                         </div>
                                     </div>

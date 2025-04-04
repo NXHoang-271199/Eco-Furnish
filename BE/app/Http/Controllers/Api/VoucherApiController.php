@@ -61,31 +61,23 @@ class VoucherApiController extends Controller
     {
         try {
             $userId = Auth::id();
-            if (!$userId) {
+            if (!$request->has('voucher_code') || !$request->has('subtotal')) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Bạn cần đăng nhập để sử dụng voucher!'
-                ], 401);
-            }
-
-            if (!$request->has('voucher_id') || !$request->has('subtotal')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Thiếu thông tin voucher hoặc giá trị đơn hàng!'
+                    'message' => 'Thiếu thông tin mã voucher hoặc giá trị đơn hàng!'
                 ], 400);
             }
 
             $subtotal = $request->subtotal;
-            $voucherId = $request->voucher_id;
+            $voucherCode = $request->voucher_code;
 
-            // Lấy voucher hợp lệ
-            $voucher = Voucher::where('id', $voucherId)
+            // Tìm voucher theo mã code
+            $voucher = Voucher::where('code', $voucherCode)
                 ->where('is_active', 'active')
                 ->where('start_date', '<=', now())
                 ->where('end_date', '>=', now())
                 ->where('usage_limit', '>', 0)
                 ->first();
-
             if (!$voucher) {
                 return response()->json([
                     'status' => 'error',
@@ -102,7 +94,7 @@ class VoucherApiController extends Controller
 
             // Kiểm tra user đã dùng voucher chưa
             $usedVoucher = VoucherUsage::where('user_id', $userId)
-                ->where('voucher_id', $voucherId)
+                ->where('voucher_id', $voucher->id)
                 ->exists();
 
             if ($usedVoucher) {
@@ -118,7 +110,8 @@ class VoucherApiController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Voucher hợp lệ!',
-                'discount_amount' => $discountAmount
+                'discount_amount' => $discountAmount,
+                'voucher_id' => $voucher->id // FE cần dùng khi đặt hàng
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

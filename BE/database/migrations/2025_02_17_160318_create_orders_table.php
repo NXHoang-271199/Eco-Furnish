@@ -24,8 +24,8 @@ return new class extends Migration
             $table->string('user_address', 255);
             $table->foreignIdFor(PaymentMethod::class)->constrained();
             $table->boolean('payment_status')->default('1');
-            $table->enum('order_status', ['Chưa Xác Nhận', 'Đã Xác Nhận', 'Đang Chuẩn Bị Hàng', 'Đang Giao', 'Đã Giao', 'Đã Nhận', 'Thành Công', 'Hoàn Hàng', 'Hủy Đơn'])->default('Chưa Xác Nhận');
-            $table->decimal('total_price', 15, 2);
+            $table->enum('order_status', ['Chưa Xác Nhận', 'Đã Xác Nhận', 'Đang Chuẩn Bị Hàng', 'Đang Giao', 'Đã Giao', 'Đã Nhận', 'Hoàn Hàng', 'Hủy Đơn'])->default('Chưa Xác Nhận');
+            $table->decimal('total_price', 10, 2);
             $table->foreignIdFor(Voucher::class)->nullable()->constrained();
             $table->timestamps();
         });

@@ -88,10 +88,4 @@ class CommentController extends Controller
     /**
      * Remove the specified comment from storage.
      */
-    public function destroy(Comment $comment)
-    {
-        $comment->delete();
-
-        return back()->with('success', 'Bình luận đã được xóa thành công.');
-    }
 } 

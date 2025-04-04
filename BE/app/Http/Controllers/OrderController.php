@@ -7,8 +7,11 @@ use App\Models\Product;
 use App\Models\Variant;
 use App\Models\VariantValue;
 use Illuminate\Http\Request;
+use App\Models\RefundRequest;
 use App\Models\ProductVariant;
+use App\Mail\RefundRequestMail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
 {
@@ -31,7 +34,7 @@ class OrderController extends Controller
         $search = $request->input('search');
         $perPage = 10;
 
-        $orders = Order::with(['user', 'paymentMethod', 'voucher'])
+        $orders = Order::with(['user', 'paymentMethod', 'voucher', 'refundRequest']) // Thêm 'refundRequest' vào eager load
             ->where(function ($query) use ($search) {
                 if ($search) {
                     $query->where('order_code', 'like', "%$search%")
@@ -53,7 +56,6 @@ class OrderController extends Controller
             'Đang Giao' => Order::where('order_status', 'Đang Giao'),
             'Đã Giao' => Order::where('order_status', 'Đã Giao'),
             'Đã Nhận' => Order::where('order_status', 'Đã Nhận'),
-            'Thành Công' => Order::where('order_status', 'Thành Công'),
             'Hoàn Hàng' => Order::where('order_status', 'Hoàn Hàng'),
             'Hủy Đơn' => Order::where('order_status', 'Hủy Đơn'),
         ];
@@ -61,7 +63,7 @@ class OrderController extends Controller
         $groupedOrders = [];
 
         foreach ($statuses as $status => $query) {
-            $groupedOrders[$status] = $query->with(['user', 'paymentMethod', 'voucher'])
+            $groupedOrders[$status] = $query->with(['user', 'paymentMethod', 'voucher', 'refundRequest']) // Thêm 'refundRequest' vào đây
                 ->where(function ($query) use ($search) {
                     if ($search) {
                         $query->where('order_code', 'like', "%$search%")
@@ -72,11 +74,11 @@ class OrderController extends Controller
                 })
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage);
-                // ->appends($request->query());
         }
 
         return view('admins.orders.index', compact('orders', 'search', 'groupedOrders'));
     }
+
 
 
 
@@ -123,12 +125,6 @@ class OrderController extends Controller
         return view('admins.orders.detail', compact('order'));
     }
 
-
-
-
-
-
-
     /**
      * Show the form for editing the specified resource.
      */
@@ -152,7 +148,8 @@ class OrderController extends Controller
     {
         //
     }
-    public function updateStatus(Request $request, $id) {
+    public function updateStatus(Request $request, $id)
+    {
         DB::beginTransaction();
         try {
             $order = Order::with('orderItems')->findOrFail($id);
@@ -164,11 +161,10 @@ class OrderController extends Controller
             $validTransitions = [
                 'Chưa Xác Nhận' => ['Đã Xác Nhận', 'Hủy Đơn'],
                 'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng', 'Hủy Đơn'],
-                'Đang Chuẩn Bị Hàng' => ['Đang Giao', 'Hủy Đơn'],
+                'Đang Chuẩn Bị Hàng' => ['Đang Giao'],
                 'Đang Giao' => ['Đã Giao'],
                 'Đã Giao' => ['Đã Nhận', 'Hoàn Hàng'],
-                'Đã Nhận' => ['Thành Công', 'Hoàn Hàng'],
-                'Thành Công' => ['Hoàn Hàng'],
+                'Đã Nhận' => ['Hoàn Hàng']
             ];
 
             if (!in_array($request->order_status, $validTransitions[$order->order_status] ?? [])) {
@@ -197,5 +193,62 @@ class OrderController extends Controller
         }
     }
 
+    public function approveRefundRequest($orderId, $refundRequestId, Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            $refundRequest = RefundRequest::where('id', $refundRequestId)
+                ->where('order_id', $orderId)
+                ->first();
 
+            if (!$refundRequest) {
+                return back()->with('error', 'Yêu cầu hoàn hàng không tồn tại.');
+            }
+
+            if ($refundRequest->status !== 'Chờ Duyệt') {
+                return back()->with('error', 'Yêu cầu hoàn hàng không thể duyệt.');
+            }
+
+            $refundRequest->update(['status' => 'Đã Duyệt']);
+
+            $order = $refundRequest->order;
+            if ($order) {
+                $order->update(['order_status' => 'Hoàn Hàng']);
+            }
+
+            // Hoàn lại số lượng sản phẩm
+            foreach ($order->orderItems as $item) {
+                if ($item->product_variant_id) {
+                    ProductVariant::where('id', $item->product_variant_id)->increment('quantity', $item->quantity);
+                } else {
+                    Product::where('id', $item->product_id)->increment('quantity', $item->quantity);
+                }
+            }
+
+            DB::commit();
+
+            // Gửi mail
+            Mail::to($order->user->email)->send(new RefundRequestMail($refundRequest, $order, 'đã được duyệt.'));
+
+            return back()->with('success', 'Yêu cầu hoàn hàng đã được duyệt.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Lỗi khi duyệt yêu cầu hoàn hàng: ' . $e->getMessage());
+        }
+    }
+
+    public function rejectRefundRequest($orderId, $refundRequestId)
+    {
+        $order = Order::findOrFail($orderId);
+        $refundRequest = RefundRequest::findOrFail($refundRequestId);
+
+        $refundRequest->update([
+            'status' => 'Từ Chối',
+        ]);
+
+        // Gửi mail thông báo từ chối
+        Mail::to($order->user->email)->send(new RefundRequestMail($refundRequest, $order, 'đã bị từ chối.'));
+
+        return redirect()->route('orders.index')->with('success', 'Yêu cầu hoàn hàng đã bị từ chối.');
+    }
 }
