@@ -482,14 +482,14 @@ const ChatRealTime = () => {
                         // Tạo tin nhắn nhóm ảnh
                         const firstImageMsg = bufferedImages[0];
                         messageToAdd = {
-                            id: `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Thêm ID duy nhất cho nhóm (GIỮ LẠI TỪ STASH)
+                            id: `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Thêm ID duy nhất cho nhóm
                             imageGroup: {
                                 urls: bufferedImages.map(msg => msg.image),
                                 isUploading: false,
                                 uploadProgress: 100,
                             },
                             sender_id: firstImageMsg.sender_id, 
-                            sent_at: firstImageMsg.sent_at || new Date().toISOString(), // Lấy thời gian của ảnh đầu tiên (GIỮ LẠI TỪ STASH)
+                            sent_at: firstImageMsg.sent_at || new Date().toISOString(), // Lấy thời gian của ảnh đầu tiên
                             isCurrentUser: false,
                             is_read: isOpen
                         };
@@ -497,7 +497,7 @@ const ChatRealTime = () => {
                     } else {
                         // Tạo tin nhắn ảnh đơn
                         messageToAdd = bufferedImages[0];
-                        messageToAdd.is_read = isOpen; // Cập nhật trạng thái đọc (GIỮ LẠI TỪ STASH)
+                        messageToAdd.is_read = isOpen; // Cập nhật trạng thái đọc
                         console.log("⏳ Xử lý ảnh đơn từ buffer:", messageToAdd);
                     }
                     // Thêm tin nhắn đã xử lý từ buffer vào state
@@ -535,7 +535,7 @@ const ChatRealTime = () => {
                     if (imageBufferTimeoutRef.current) {
                         clearTimeout(imageBufferTimeoutRef.current);
                     }
-                    // Thêm ảnh vào buffer (GIỮ LẠI TỪ STASH)
+                    // Thêm ảnh vào buffer
                     pendingAdminImagesRef.current.push(data);
                     // Đặt timeout mới để xử lý buffer sau 1.2 giây
                     imageBufferTimeoutRef.current = setTimeout(processAdminImageBuffer, 1200); 
@@ -544,7 +544,7 @@ const ChatRealTime = () => {
                     // Xử lý buffer ngay lập tức (nếu có ảnh đang chờ)
                     processAdminImageBuffer(); 
                     
-                    // Thêm tin nhắn hiện tại vào messages (GIỮ LẠI TỪ STASH)
+                    // Thêm tin nhắn hiện tại vào messages
                     setMessages((prev) => [...prev, data]);
 
                     // Xử lý unread count và thông báo cho tin nhắn text từ admin
@@ -568,7 +568,7 @@ const ChatRealTime = () => {
                 if (data.images && data.images.length > 0) {
                     // Tạo tin nhắn nhóm ảnh
                     const imageGroupMessage = {
-                        id: `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Thêm ID duy nhất (GIỮ LẠI TỪ STASH)
+                        id: `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Thêm ID duy nhất
                         imageGroup: {
                             urls: data.images,
                             isUploading: false,
@@ -598,14 +598,14 @@ const ChatRealTime = () => {
             socket.on("adminMultipleImagesUpload", adminMultipleImagesHandler);
         }
         
-        // GIỮ LẠI PHẦN CLEANUP TỪ STASH
+        // ƯU TIÊN CLEANUP VÀ DEPENDENCY TỪ STASH
         return () => {
             if (socket) {
                 socket.off("adminResponse");
                 socket.off("adminMultipleImagesUpload");
             }
         };
-    }, [socket, isOpen]); // GIỮ LẠI DEPENDENCY TỪ STASH
+    }, [socket, isOpen]);
 
     // Hàm xử lý khi chọn ảnh
     const handleImageSelect = (e) => {
