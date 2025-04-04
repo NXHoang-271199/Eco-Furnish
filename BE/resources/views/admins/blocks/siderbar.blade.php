@@ -241,15 +241,15 @@
                         <i class="ri-image-line"></i> <span data-key="t-advance-ui">Quản lý banner</span>
                     </a>
                 </li>
-                @if (Auth::user()->hasPermission('view-messages'))
+                {{-- @if (Auth::user()->hasPermission('view-messages')) --}}
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="{{ route('messages.index') }}">
-                            <i class="ri-image-line"></i> <span data-key="t-advance-ui">Chat trực tuyến</span>
+                            <i class="ri-customer-service-2-line"></i> <span data-key="t-advance-ui">Chat trực tuyến</span>
                         </a>
                     </li>
-                @endif
+                {{-- @endif --}}
 
-                <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
+                {{-- <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li> --}}
                 @endif
             </ul>
         </div>

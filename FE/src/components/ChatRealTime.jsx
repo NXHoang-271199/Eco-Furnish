@@ -22,7 +22,7 @@ const ChatRealTime = () => {
     const [selectedImages, setSelectedImages] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [imagePreviews, setImagePreviews] = useState([]);
-    // Thêm state để theo dõi quá trình nhóm ảnh
+    // Thêm state để theo dõi quá trình nhóm ảnh (Thêm lại do vẫn được dùng)
     const [imageGroups, setImageGroups] = useState({});
     // State cho lightbox
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -33,22 +33,19 @@ const ChatRealTime = () => {
     const messagesEndRef = useRef(null);
     const imageInputRef = useRef(null);
     
-    // Thêm ref để lưu trữ tin nhắn gốc và tin nhắn đã nhóm
-    const originalMessages = useRef([]);
     // Ref để theo dõi tin nhắn đã xử lý
     const processedImageIds = useRef(new Set());
 
-    // Thêm state để lưu trữ tin nhắn ảnh đang trong buffer
-    const [bufferingImages, setBufferingImages] = useState(false);
+    // Refs cho cơ chế đệm ảnh từ admin
+    const pendingAdminImagesRef = useRef([]);
     const imageBufferTimeoutRef = useRef(null);
-    const pendingAdminImages = useRef([]);
 
     // Cải thiện hàm phân tích tin nhắn từ admin
     const analyzeAdminMessages = (message) => {
         // Kiểm tra nếu tin nhắn có chứa "admin" trong ID hoặc từ admin
-        return message && 
-               (!message.isCurrentUser && 
-                (message.sender_id.toString() !== userData?.id?.toString()));
+        return message &&
+               (!message.isCurrentUser && userData && // Thêm kiểm tra userData tồn tại
+                (message.sender_id.toString() !== userData.id?.toString()));
     };
 
     // Thêm hàm xử lý và nhóm các tin nhắn ảnh liên tiếp
@@ -58,19 +55,19 @@ const ChatRealTime = () => {
         }
 
         // Lưu trữ tin nhắn gốc để tham chiếu sau này
-        originalMessages.current = messagesArray;
+        // originalMessages.current = messagesArray; // Tạm thời comment out nếu không dùng
 
         // Clone mảng tin nhắn để không ảnh hưởng đến mảng gốc
         const messages = [...messagesArray];
         const processedMessages = [];
         let i = 0;
 
-        // Cập nhật state để theo dõi nhóm ảnh đã xử lý
-        const imageGroupsTracking = {...imageGroups};
+        // Reset processed IDs mỗi lần chạy để đảm bảo nhóm lại đúng
+        processedImageIds.current = new Set();
 
         while (i < messages.length) {
             const currentMsg = messages[i];
-            
+
             // Nếu tin nhắn hiện tại đã có nhóm ảnh, giữ nguyên
             if (currentMsg.imageGroup) {
                 processedMessages.push(currentMsg);
@@ -78,239 +75,96 @@ const ChatRealTime = () => {
                 continue;
             }
 
+             // Bỏ qua nếu đã xử lý trong lần chạy này
+            const msgId = currentMsg.id || `msg-${currentMsg.sender_id}-${currentMsg.sent_at}-${Math.random()}`;
+             if (processedImageIds.current.has(msgId)) {
+                 i++; // Chỉ tăng i, không push lại vào processedMessages
+                 continue;
+             }
+
+
             // Kiểm tra xem tin nhắn hiện tại có phải là ảnh không
             if (currentMsg.image && !currentMsg.text) {
                 // Tạo ID duy nhất cho tin nhắn này nếu chưa có
-                const msgId = currentMsg.id || `msg-${currentMsg.sender_id}-${currentMsg.sent_at}-${Math.random()}`;
-                
-                // Nếu đã xử lý tin nhắn này, bỏ qua
-                if (processedImageIds.current.has(msgId)) {
-                    processedMessages.push(currentMsg);
-                    i++;
-                    continue;
-                }
+                // const msgId = currentMsg.id || `msg-${currentMsg.sender_id}-${currentMsg.sent_at}-${Math.random()}`; // Đã có ở trên
 
                 // Bắt đầu một nhóm ảnh mới
-                const imageUrls = [currentMsg.image];
+                const imageInfo = [{ url: currentMsg.image, msg: currentMsg }]; // Lưu cả msg gốc
                 const senderID = currentMsg.sender_id;
-                const isAdmin = analyzeAdminMessages(currentMsg);
-                const isCurrentUser = currentMsg.isCurrentUser || currentMsg.sender_id === userData?.id;
-                const sentTime = currentMsg.sent_at;
+                const isAdmin = analyzeAdminMessages(currentMsg); // Phân tích lại
+                const isCurrentUser = currentMsg.isCurrentUser || (userData && currentMsg.sender_id === userData.id); // Kiểm tra userData
+                const baseSentTime = new Date(currentMsg.sent_at); // Dùng Date object để so sánh
                 const isRead = currentMsg.is_read;
                 let nextIndex = i + 1;
-                
+
                 // Thêm ID tin nhắn vào danh sách đã xử lý
                 processedImageIds.current.add(msgId);
-                
+
                 // Kiểm tra các tin nhắn tiếp theo có phải là ảnh từ cùng người gửi không
                 while (
-                    nextIndex < messages.length && 
-                    messages[nextIndex].image && 
-                    !messages[nextIndex].text && 
+                    nextIndex < messages.length &&
+                    messages[nextIndex].image &&
+                    !messages[nextIndex].text &&
                     messages[nextIndex].sender_id === senderID &&
-                    !messages[nextIndex].imageGroup &&
-                    Math.abs(new Date(messages[nextIndex].sent_at) - new Date(sentTime)) < 90000 // Tăng thành 1.5 phút cho admin
+                    !messages[nextIndex].imageGroup
                 ) {
-                    // Tạo ID cho tin nhắn kế tiếp
-                    const nextMsgId = messages[nextIndex].id || 
-                                     `msg-${messages[nextIndex].sender_id}-${messages[nextIndex].sent_at}-${Math.random()}`;
-                    
-                    // Nếu đã xử lý tin nhắn này, bỏ qua
-                    if (processedImageIds.current.has(nextMsgId)) {
-                        nextIndex++;
-                        continue;
+                    const nextMsgId = messages[nextIndex].id || `msg-${messages[nextIndex].sender_id}-${messages[nextIndex].sent_at}-${Math.random()}`;
+
+                    // Bỏ qua nếu đã xử lý hoặc là tin nhắn nhóm
+                     if (processedImageIds.current.has(nextMsgId)) {
+                         nextIndex++;
+                         continue;
+                     }
+
+                    // Kiểm tra ngưỡng thời gian (ví dụ: 1.5 phút = 90000 ms)
+                    const timeDiff = Math.abs(new Date(messages[nextIndex].sent_at) - baseSentTime);
+                    if (timeDiff >= 90000) {
+                        break; // Dừng nếu quá ngưỡng thời gian
                     }
-                    
-                    imageUrls.push(messages[nextIndex].image);
-                    // Đánh dấu tin nhắn đã được xử lý
+
+                    imageInfo.push({ url: messages[nextIndex].image, msg: messages[nextIndex] });
                     processedImageIds.current.add(nextMsgId);
                     nextIndex++;
-                    
+
                     // Giới hạn tối đa 10 ảnh trong một nhóm
-                    if (imageUrls.length >= 10) break;
+                    if (imageInfo.length >= 10) break;
                 }
-                
+
                 // Nếu có nhiều hơn 1 ảnh, tạo một nhóm
-                if (imageUrls.length > 1) {
-                    const groupId = `group-${isAdmin ? 'admin' : 'user'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                if (imageInfo.length > 1) {
+                    const groupId = `group-${isAdmin ? 'admin' : 'user'}-${baseSentTime.getTime()}-${Math.random().toString(36).substring(2, 9)}`;
                     const groupMessage = {
                         id: groupId,
                         sender_id: senderID,
                         isCurrentUser: isCurrentUser,
-                        isAdmin: isAdmin,
-                        sent_at: sentTime,
-                        is_read: isRead,
+                        isAdmin: isAdmin, // Thêm thuộc tính isAdmin
+                        sent_at: currentMsg.sent_at, // Giữ thời gian của tin nhắn đầu tiên
+                        is_read: isRead, // Có thể cần logic phức tạp hơn để xác định is_read cho nhóm
                         imageGroup: {
-                            urls: imageUrls,
+                            urls: imageInfo.map(info => info.url),
                             groupId: groupId
                         }
                     };
-                    
-                    // Lưu nhóm ảnh vào tracking
-                    imageGroupsTracking[groupId] = {
-                        totalImages: imageUrls.length,
-                        sender: senderID,
-                        isAdmin: isAdmin,
-                        timestamp: new Date().getTime()
-                    };
-                    
+
                     processedMessages.push(groupMessage);
                     i = nextIndex; // Bỏ qua các tin nhắn đã được nhóm
                 } else {
-                    // Nếu chỉ có 1 ảnh, giữ nguyên
+                    // Nếu chỉ có 1 ảnh, giữ nguyên tin nhắn gốc
                     processedMessages.push(currentMsg);
                     i++;
                 }
             } else {
                 // Nếu không phải ảnh, thêm vào kết quả bình thường
                 processedMessages.push(currentMsg);
+                processedImageIds.current.add(msgId); // Đánh dấu đã xử lý
                 i++;
             }
         }
-        
-        // Cập nhật state theo dõi nhóm ảnh
-        setImageGroups(imageGroupsTracking);
-        
+
         return processedMessages;
     };
 
-    // Thêm state để lưu trữ tin nhắn ảnh đang trong buffer
-    const [bufferingImages, setBufferingImages] = useState(false);
-    const imageBufferTimeoutRef = useRef(null);
-    const pendingAdminImages = useRef([]);
-
-    // Cải thiện hàm phân tích tin nhắn từ admin
-    const analyzeAdminMessages = (message) => {
-        // Kiểm tra nếu tin nhắn có chứa "admin" trong ID hoặc từ admin
-        return message && 
-               (!message.isCurrentUser && 
-                (message.sender_id.toString() !== userData?.id?.toString()));
-    };
-
-    // Thêm hàm xử lý và nhóm các tin nhắn ảnh liên tiếp
-    const processMessagesWithImageGroups = (messagesArray) => {
-        if (!messagesArray || !Array.isArray(messagesArray) || messagesArray.length === 0) {
-            return [];
-        }
-
-        // Lưu trữ tin nhắn gốc để tham chiếu sau này
-        originalMessages.current = messagesArray;
-
-        // Clone mảng tin nhắn để không ảnh hưởng đến mảng gốc
-        const messages = [...messagesArray];
-        const processedMessages = [];
-        let i = 0;
-
-        // Cập nhật state để theo dõi nhóm ảnh đã xử lý
-        const imageGroupsTracking = {...imageGroups};
-
-        while (i < messages.length) {
-            const currentMsg = messages[i];
-            
-            // Nếu tin nhắn hiện tại đã có nhóm ảnh, giữ nguyên
-            if (currentMsg.imageGroup) {
-                processedMessages.push(currentMsg);
-                i++;
-                continue;
-            }
-
-            // Kiểm tra xem tin nhắn hiện tại có phải là ảnh không
-            if (currentMsg.image && !currentMsg.text) {
-                // Tạo ID duy nhất cho tin nhắn này nếu chưa có
-                const msgId = currentMsg.id || `msg-${currentMsg.sender_id}-${currentMsg.sent_at}-${Math.random()}`;
-                
-                // Nếu đã xử lý tin nhắn này, bỏ qua
-                if (processedImageIds.current.has(msgId)) {
-                    processedMessages.push(currentMsg);
-                    i++;
-                    continue;
-                }
-
-                // Bắt đầu một nhóm ảnh mới
-                const imageUrls = [currentMsg.image];
-                const senderID = currentMsg.sender_id;
-                const isAdmin = analyzeAdminMessages(currentMsg);
-                const isCurrentUser = currentMsg.isCurrentUser || currentMsg.sender_id === userData?.id;
-                const sentTime = currentMsg.sent_at;
-                const isRead = currentMsg.is_read;
-                let nextIndex = i + 1;
-                
-                // Thêm ID tin nhắn vào danh sách đã xử lý
-                processedImageIds.current.add(msgId);
-                
-                // Kiểm tra các tin nhắn tiếp theo có phải là ảnh từ cùng người gửi không
-                while (
-                    nextIndex < messages.length && 
-                    messages[nextIndex].image && 
-                    !messages[nextIndex].text && 
-                    messages[nextIndex].sender_id === senderID &&
-                    !messages[nextIndex].imageGroup &&
-                    Math.abs(new Date(messages[nextIndex].sent_at) - new Date(sentTime)) < 90000 // Tăng thành 1.5 phút cho admin
-                ) {
-                    // Tạo ID cho tin nhắn kế tiếp
-                    const nextMsgId = messages[nextIndex].id || 
-                                     `msg-${messages[nextIndex].sender_id}-${messages[nextIndex].sent_at}-${Math.random()}`;
-                    
-                    // Nếu đã xử lý tin nhắn này, bỏ qua
-                    if (processedImageIds.current.has(nextMsgId)) {
-                        nextIndex++;
-                        continue;
-                    }
-                    
-                    imageUrls.push(messages[nextIndex].image);
-                    // Đánh dấu tin nhắn đã được xử lý
-                    processedImageIds.current.add(nextMsgId);
-                    nextIndex++;
-                    
-                    // Giới hạn tối đa 10 ảnh trong một nhóm
-                    if (imageUrls.length >= 10) break;
-                }
-                
-                // Nếu có nhiều hơn 1 ảnh, tạo một nhóm
-                if (imageUrls.length > 1) {
-                    const groupId = `group-${isAdmin ? 'admin' : 'user'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-                    const groupMessage = {
-                        id: groupId,
-                        sender_id: senderID,
-                        isCurrentUser: isCurrentUser,
-                        isAdmin: isAdmin,
-                        sent_at: sentTime,
-                        is_read: isRead,
-                        imageGroup: {
-                            urls: imageUrls,
-                            groupId: groupId
-                        }
-                    };
-                    
-                    // Lưu nhóm ảnh vào tracking
-                    imageGroupsTracking[groupId] = {
-                        totalImages: imageUrls.length,
-                        sender: senderID,
-                        isAdmin: isAdmin,
-                        timestamp: new Date().getTime()
-                    };
-                    
-                    processedMessages.push(groupMessage);
-                    i = nextIndex; // Bỏ qua các tin nhắn đã được nhóm
-                } else {
-                    // Nếu chỉ có 1 ảnh, giữ nguyên
-                    processedMessages.push(currentMsg);
-                    i++;
-                }
-            } else {
-                // Nếu không phải ảnh, thêm vào kết quả bình thường
-                processedMessages.push(currentMsg);
-                i++;
-            }
-        }
-        
-        // Cập nhật state theo dõi nhóm ảnh
-        setImageGroups(imageGroupsTracking);
-        
-        return processedMessages;
-    };
-
-    // Cải thiện hàm loadChatHistory để xử lý nhóm ảnh ngay khi load
+    // Hàm lấy lịch sử chat từ server
     const loadChatHistory = async (userId) => {
         if (!userId) return;
         
@@ -338,26 +192,21 @@ const ChatRealTime = () => {
             if (response.data && Array.isArray(response.data)) {
                 console.log("📜 Lịch sử tin nhắn:", response.data);
                 
-                // Đảm bảo tất cả tin nhắn có trạng thái is_read
-                const messagesWithReadStatus = response.data.map(msg => {
-                    // Nếu là tin nhắn từ người dùng (sender_id === userId), cần đảm bảo có trạng thái is_read
-                    if (msg.sender_id === userId) {
-                        return {
-                            ...msg,
-                            is_read: typeof msg.is_read === 'boolean' ? msg.is_read : false,
-                            isCurrentUser: true
-                        };
-                    }
-                    return msg;
-                });
+                // Đảm bảo tất cả tin nhắn có trạng thái is_read và isCurrentUser
+                const messagesWithStatus = response.data.map(msg => ({
+                    ...msg,
+                    is_read: typeof msg.is_read === 'boolean' ? msg.is_read : false,
+                    isCurrentUser: userData && msg.sender_id === userData.id,
+                    isAdmin: !msg.sender_id || (userData && msg.sender_id !== userData.id) // Thêm logic xác định admin
+                }));
                 
                 // Xử lý nhóm ảnh trước khi set messages
-                const groupedMessages = processMessagesWithImageGroups(messagesWithReadStatus);
+                const groupedMessages = processMessagesWithImageGroups(messagesWithStatus);
                 setMessages(groupedMessages);
                 
                 // Đếm tin nhắn chưa đọc
-                const unread = messagesWithReadStatus.filter(msg => 
-                    msg.receiver_id === userId && !msg.is_read
+                const unread = messagesWithStatus.filter(msg => 
+                    !msg.isCurrentUser && !msg.is_read // Chỉ đếm tin nhắn từ người khác và chưa đọc
                 ).length;
                 
                 setUnreadCount(unread);
@@ -448,9 +297,6 @@ const ChatRealTime = () => {
                         setLastError("Lỗi kết nối: " + error.message);
                     });
                     
-                    // Cập nhật xử lý nhận tin nhắn
-                    socketConnection.on("adminResponse", handleAdminResponse);
-                    
                     socketConnection.on("newClientMessage", (data) => {
                         console.log("📩 Nhận tin nhắn mới từ client:", data);
                         setMessages(prev => processMessagesWithImageGroups([...prev, data]));
@@ -473,7 +319,6 @@ const ChatRealTime = () => {
                 socket.off("disconnect");
                 socket.off("connect_error");
                 socket.off("newClientMessage");
-                socket.off("adminResponse");
             }
         };
     }, []);
@@ -624,182 +469,159 @@ const ChatRealTime = () => {
         }
     }, [isOpen]);
 
-    // Cải thiện hàm xử lý nhận ảnh từ admin
-    const handleAdminImageBuffer = (imageData) => {
-        // Thêm ảnh vào buffer tạm thời
-        pendingAdminImages.current.push(imageData);
-        
-        // Nếu đã có timer đang chạy, hủy nó để set timer mới
-        if (imageBufferTimeoutRef.current) {
-            clearTimeout(imageBufferTimeoutRef.current);
-        }
-        
-        // Đánh dấu đang trong trạng thái buffer ảnh
-        setBufferingImages(true);
-        
-        // Đặt lịch xử lý buffer sau 1200ms (thời gian đủ để đợi tất cả ảnh đến)
-        imageBufferTimeoutRef.current = setTimeout(() => {
-            if (pendingAdminImages.current.length > 0) {
-                console.log(`📦 Xử lý ${pendingAdminImages.current.length} ảnh từ buffer`);
-                
-                // Tạo một nhóm tin nhắn ảnh từ admin
-                if (pendingAdminImages.current.length > 1) {
-                    const senderId = pendingAdminImages.current[0].sender_id;
-                    const groupId = `admin-group-${Date.now()}`;
-                    
-                    // Tạo nhóm ảnh mới
-                    const imageGroup = {
-                        id: groupId,
-                        sender_id: senderId,
-                        isAdmin: true,
-                        sent_at: new Date().toISOString(),
-                        is_read: false,
-                        imageGroup: {
-                            urls: pendingAdminImages.current.map(img => img.image),
-                            groupId: groupId
-                        }
-                    };
-                    
-                    // Thêm tin nhắn nhóm ảnh vào list
-                    setMessages(prev => {
-                        // Lọc ra các tin nhắn không phải từ buffer hiện tại
-                        const filtered = prev.filter(msg => 
-                            !pendingAdminImages.current.some(
-                                buffImg => buffImg.id === msg.id || 
-                                (msg.image === buffImg.image && 
-                                 Math.abs(new Date(msg.sent_at) - new Date(buffImg.sent_at)) < 5000)
-                            )
-                        );
-                        return [...filtered, imageGroup];
-                    });
-                } else {
-                    // Nếu chỉ có 1 ảnh, thêm vào như bình thường
-                    const singleImage = pendingAdminImages.current[0];
-                    handleAdminResponse(singleImage);
-                }
-                
-                // Xóa buffer sau khi xử lý
-                pendingAdminImages.current = [];
-            }
-            
-            // Đánh dấu kết thúc buffering
-            setBufferingImages(false);
-        }, 1200);
-    };
-
-    // Cập nhật hàm xử lý khi nhận tin nhắn từ admin
-    const handleAdminResponse = (data) => {
-                console.log("📩 Nhận phản hồi từ admin:", data);
-        
-        // Đánh dấu tin nhắn này là từ admin
-        const adminData = {
-            ...data,
-            isAdmin: true
-        };
-        
-        // Nếu là tin nhắn ảnh và đang trong quá trình buffer, thêm vào buffer
-        if (adminData.image && !adminData.text && bufferingImages) {
-            console.log("📦 Thêm ảnh vào buffer đang chờ xử lý");
-            pendingAdminImages.current.push(adminData);
-            return;
-        }
-        
-        // Nếu là tin nhắn ảnh và không có text, bắt đầu quá trình buffer
-        if (adminData.image && !adminData.text && !bufferingImages) {
-            console.log("📦 Bắt đầu buffer ảnh mới");
-            handleAdminImageBuffer(adminData);
-            return;
-        }
-        
-        // Xử lý các loại tin nhắn khác như bình thường
-        setMessages(prev => {
-            // Thêm tin nhắn mới vào danh sách
-            const newMessages = [...prev, adminData];
-            
-            // Xử lý nhóm ảnh
-            return processMessagesWithImageGroups(newMessages);
-        });
-        
-        // Kiểm tra nếu hộp chat chưa mở, tăng số tin nhắn chưa đọc
-                if (!isOpen) {
-                    setUnreadCount(prev => prev + 1);
-            // Phát âm thanh thông báo
-            try {
-                    const audio = new Audio('/notification.mp3');
-                audio.play().catch(audioError => console.log("Không thể phát âm thanh:", audioError));
-            } catch (audioError) {
-                console.log("Lỗi khi phát âm thanh:", audioError);
-            }
-                } else {
-                    // Nếu chat box đang mở, đánh dấu là đã đọc
-                    markMessagesAsRead();
-        }
-    };
-
-    // Cập nhật xử lý cho sự kiện adminMultipleImagesUpload
+    // Lắng nghe tin nhắn mới, xử lý đệm ảnh admin
     useEffect(() => {
-        if (socket) {
-            socket.on("adminResponse", (data) => {
-                if (data.image && !data.text) {
-                    handleAdminImageBuffer(data);
-                } else {
-                    handleAdminResponse(data);
+        if (socket && userData) { // Đảm bảo userData tồn tại để so sánh sender_id
+
+            // --- Hàm xử lý bộ đệm ảnh từ admin ---
+            const processAdminImageBuffer = () => {
+                const bufferedImages = pendingAdminImagesRef.current;
+                if (bufferedImages.length > 0) {
+                    let messageToAdd;
+                    if (bufferedImages.length > 1) {
+                        // Tạo tin nhắn nhóm ảnh
+                        const firstImageMsg = bufferedImages[0];
+                        messageToAdd = {
+                            id: `group-admin-${firstImageMsg.sent_at}-${Math.random().toString(36).substring(2, 9)}`, // ID duy nhất
+                            imageGroup: {
+                                urls: bufferedImages.map(msg => msg.image),
+                                isUploading: false,
+                                uploadProgress: 100,
+                            },
+                            sender_id: firstImageMsg.sender_id,
+                            sent_at: firstImageMsg.sent_at || new Date().toISOString(),
+                            isCurrentUser: false,
+                            isAdmin: true, // Đánh dấu là từ admin
+                            is_read: isOpen
+                        };
+                        console.log("⏳ Tạo nhóm ảnh từ buffer admin:", messageToAdd);
+                    } else {
+                        // Tạo tin nhắn ảnh đơn
+                        messageToAdd = { ...bufferedImages[0], is_read: isOpen, isAdmin: true }; // Thêm isAdmin
+                        console.log("⏳ Xử lý ảnh đơn từ buffer admin:", messageToAdd);
+                    }
+                    // Thêm tin nhắn đã xử lý từ buffer vào state
+                    setMessages((prev) => [...prev, messageToAdd]);
+                    pendingAdminImagesRef.current = []; // Xóa bộ đệm
+
+                     // Xử lý unread count và thông báo khi buffer được xử lý
+                    if (!isOpen) {
+                        setUnreadCount(prev => prev + 1);
+                        const audio = new Audio('/notification.mp3');
+                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                    } else {
+                        markMessagesAsRead(); // Đánh dấu đã đọc nếu chat mở
+                    }
                 }
-            });
-            
-            // Xử lý trực tiếp nhiều ảnh từ admin
-            socket.on("adminMultipleImagesUpload", (data) => {
-                console.log("📷 Nhận nhiều ảnh từ admin:", data);
-                if (Array.isArray(data.messages) && data.messages.length > 0) {
-                    // Tạo nhóm ảnh mới
-                    const groupId = `admin-group-${Date.now()}`;
-                    const imageGroup = {
-                        id: groupId,
-                        sender_id: data.messages[0].sender_id,
-                        isAdmin: true,
-                        sent_at: new Date().toISOString(),
-                        is_read: false,
-                        imageGroup: {
-                            urls: data.messages.map(msg => msg.image),
-                            groupId: groupId
-                        }
+                // Xóa timeout ref sau khi xử lý
+                if (imageBufferTimeoutRef.current) {
+                    clearTimeout(imageBufferTimeoutRef.current);
+                    imageBufferTimeoutRef.current = null;
+                }
+            };
+
+            // --- Handler cho sự kiện adminResponse ---
+            const adminResponseHandler = (data) => {
+                console.log("📩 Nhận phản hồi từ admin:", data);
+
+                // Kiểm tra xem có phải tin nhắn từ admin không (sender_id tồn tại và khác user hiện tại)
+                const isAdminMessage = data.sender_id && userData && data.sender_id !== userData.id;
+                const isImageOnly = !!(data.image && !data.text); // Dùng !! để đảm bảo là boolean
+
+                if (isAdminMessage && isImageOnly) {
+                    // Nếu là ảnh đơn từ admin -> đưa vào buffer
+                    console.log("⏳ Thêm ảnh admin vào buffer:", data);
+                    // Xóa timeout cũ nếu có
+                    if (imageBufferTimeoutRef.current) {
+                        clearTimeout(imageBufferTimeoutRef.current);
+                    }
+                    // Thêm ảnh vào buffer (thêm cả isCurrentUser và isAdmin nếu chưa có)
+                     pendingAdminImagesRef.current.push({
+                         ...data,
+                         isCurrentUser: false,
+                         isAdmin: true
+                     });
+                    // Đặt timeout mới để xử lý buffer sau 1.2 giây
+                    imageBufferTimeoutRef.current = setTimeout(processAdminImageBuffer, 1200);
+                } else {
+                    // Nếu là tin nhắn text từ admin, hoặc tin nhắn từ client (không phải ảnh admin đơn lẻ)
+                    // Xử lý buffer ngay lập tức (nếu có ảnh đang chờ)
+                    processAdminImageBuffer();
+
+                    // Thêm tin nhắn hiện tại vào messages (thêm isCurrentUser/isAdmin nếu chưa có)
+                    const messageToAdd = {
+                        ...data,
+                        isCurrentUser: !isAdminMessage,
+                        isAdmin: isAdminMessage
                     };
-                    
-                    // Thêm trực tiếp nhóm ảnh vào messages
-                    setMessages(prev => [...prev, imageGroup]);
-                } else if (Array.isArray(data.images) && data.images.length > 0) {
-                    // Nếu server chỉ gửi mảng URLs
-                    const groupId = `admin-group-${Date.now()}`;
-                    const imageGroup = {
-                        id: groupId,
-                        sender_id: data.sender_id || "admin",
-                        isAdmin: true,
-                        sent_at: new Date().toISOString(),
-                        is_read: false,
+                    setMessages((prev) => [...prev, messageToAdd]);
+
+
+                    // Xử lý unread count và thông báo cho tin nhắn text từ admin
+                    if (isAdminMessage && !isImageOnly && !isOpen) {
+                        setUnreadCount(prev => prev + 1);
+                        const audio = new Audio('/notification.mp3');
+                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                    } else if (isOpen) {
+                        // Nếu chat đang mở, đánh dấu đã đọc
+                        markMessagesAsRead();
+                    }
+                }
+            };
+
+            // --- Handler cho sự kiện adminMultipleImagesUpload ---
+            const adminMultipleImagesHandler = (data) => {
+                console.log("🖼️ Nhận nhiều ảnh từ admin (sự kiện riêng):", data);
+                 // Xử lý buffer cũ trước khi thêm nhóm mới (tránh trùng lặp nếu server gửi cả 2)
+                 processAdminImageBuffer();
+
+                if (data.images && data.images.length > 0) {
+                    // Tạo tin nhắn nhóm ảnh
+                    const imageGroupMessage = {
+                        id: `group-admin-${data.sent_at || Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // ID duy nhất
                         imageGroup: {
                             urls: data.images,
-                            groupId: groupId
-                        }
+                            isUploading: false,
+                            uploadProgress: 100
+                        },
+                        sender_id: data.sender_id, // Lấy sender_id từ data sự kiện
+                        sent_at: data.sent_at || new Date().toISOString(),
+                        isCurrentUser: false,
+                        isAdmin: true, // Đánh dấu là từ admin
+                        is_read: isOpen
                     };
-                    
-                    // Thêm trực tiếp nhóm ảnh vào messages
-                    setMessages(prev => [...prev, imageGroup]);
+
+                    setMessages((prev) => [...prev, imageGroupMessage]);
+
+                    // Xử lý unread count và thông báo
+                    if (!isOpen) {
+                        setUnreadCount(prev => prev + 1);
+                        const audio = new Audio('/notification.mp3');
+                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                    } else {
+                        markMessagesAsRead();
+                    }
                 }
-            });
-        }
-        
-        return () => {
-            if (socket) {
-                socket.off("adminResponse");
-                socket.off("adminMultipleImagesUpload");
-            }
+            };
             
-            // Hủy timeout nếu component unmount
-            if (imageBufferTimeoutRef.current) {
-                clearTimeout(imageBufferTimeoutRef.current);
-            }
-        };
-    }, [socket, isOpen, bufferingImages]);
+            // --- Đăng ký listeners ---
+            socket.on("adminResponse", adminResponseHandler);
+            socket.on("adminMultipleImagesUpload", adminMultipleImagesHandler);
+
+            // --- Cleanup listeners và timeout ---
+            return () => {
+                 if (socket) {
+                     socket.off("adminResponse", adminResponseHandler);
+                     socket.off("adminMultipleImagesUpload", adminMultipleImagesHandler);
+                 }
+                // Dọn dẹp timeout khi unmount hoặc khi effect chạy lại
+                if (imageBufferTimeoutRef.current) {
+                    clearTimeout(imageBufferTimeoutRef.current);
+                }
+            };
+        }
+        // Thêm userData và isOpen vào dependency array để effect chạy lại khi chúng thay đổi
+    }, [socket, isOpen, userData]);
 
     // Hàm xử lý khi chọn ảnh
     const handleImageSelect = (e) => {
@@ -934,8 +756,8 @@ const ChatRealTime = () => {
                                 } else {
                                     reject(new Error(response.message || "Upload thất bại"));
                                 }
-                            } catch (_) {
-                                // Sử dụng underscore để không cần sử dụng biến
+                            } catch (error) {
+                                console.error("❌ Lỗi phân tích dữ liệu:", error.message);
                                 reject(new Error("Lỗi phân tích dữ liệu phản hồi"));
                             }
                         } else {
@@ -1139,34 +961,6 @@ const ChatRealTime = () => {
             console.error("Lỗi khi mở lightbox:", err);
         }
     };
-
-    // Cập nhật sau khi có tin nhắn mới để đảm bảo hiển thị nhóm
-    useEffect(() => {
-        // Nếu trang đã load và tin nhắn đã được tải, thực hiện nhóm lại sau 500ms
-        if (!isLoading && messages.length > 0) {
-            const timer = setTimeout(() => {
-                // Làm sạch bộ nhớ đã xử lý để đảm bảo xử lý lại tất cả
-                processedImageIds.current = new Set();
-                
-                // Kiểm tra xem có tin nhắn ảnh đơn lẻ từ admin cần được nhóm không
-                const adminImageMessages = messages.filter(msg => 
-                    analyzeAdminMessages(msg) && 
-                    msg.image && 
-                    !msg.text && 
-                    !msg.imageGroup
-                );
-                
-                const needsRegrouping = adminImageMessages.length > 1;
-                
-                if (needsRegrouping) {
-                    console.log("🔍 Phát hiện ảnh từ admin cần nhóm lại, đang xử lý...");
-                    setMessages(currentMessages => processMessagesWithImageGroups([...currentMessages]));
-                }
-            }, 500);
-            
-            return () => clearTimeout(timer);
-        }
-    }, [messages, isLoading]);
 
     // Nếu không đăng nhập, không hiển thị box chat
     if (!isAuthenticated) {

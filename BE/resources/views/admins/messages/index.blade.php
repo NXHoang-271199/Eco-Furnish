@@ -56,16 +56,13 @@
                         <div id="image-preview-container" class="mt-2" style="display: none;">
                             <div class="card">
                                 <div class="card-body p-2">
-                                    <div id="preview-list" class="d-flex flex-wrap gap-2 mb-2">
-                                        <div class="preview-item d-flex align-items-center">
-                                            <img id="image-preview" src="" alt="Preview" style="max-height: 60px; max-width: 60px;">
-                                            <span id="image-name" class="ms-2 small text-truncate"></span>
-                                        </div>
+                                    <div id="preview-list" class="d-flex flex-wrap gap-2 mb-2" style="max-height: 150px; overflow-y: auto;">
+                                        <!-- Thumbnails sẽ được thêm vào đây bằng JS -->
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <span id="selected-count" class="text-muted small">1 ảnh được chọn</span>
+                                        <span id="selected-count" class="text-muted small">0 ảnh được chọn</span>
                                         <button id="cancel-upload" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-times"></i> Hủy
+                                            <i class="fas fa-times"></i> Hủy tất cả
                                         </button>
                                     </div>
                                 </div>
@@ -98,33 +95,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadProgressBar = document.getElementById('upload-progress-bar');
     const uploadStatus = document.getElementById('upload-status');
     const imagePreviewContainer = document.getElementById('image-preview-container');
-    const imagePreview = document.getElementById('image-preview');
-    const imageName = document.getElementById('image-name');
+    const previewList = document.getElementById('preview-list');
     const cancelUpload = document.getElementById('cancel-upload');
+    const selectedCountSpan = document.getElementById('selected-count');
 
     let currentUserId = null;
     let socket = null;
     let connectionAttempts = 0;
     const maxConnectionAttempts = 3;
-<<<<<<< Updated upstream
     let adminToken = null;
     let selectedImageFiles = [];
+    let pendingClientImages = [];
+    let clientImageBufferTimeout = null;
 
     // Lấy admin token ngay khi trang tải xong
     adminToken = "{{ Auth::user()->createToken('admin-token')->plainTextToken }}";
     console.log('Token admin được tạo:', adminToken.substring(0, 15) + '...');
-=======
->>>>>>> Stashed changes
 
-    // Debug info function
+    // Debug info function (Sẽ xóa các lời gọi đến hàm này)
     function addDebugInfo(message, type = 'info') {
         console.log(`[DEBUG] ${message}`);
-        const debugDiv = document.createElement('div');
-        debugDiv.className = `alert alert-${type === 'error' ? 'danger' : 'info'} mt-2 mb-2 p-2 text-small`;
-        debugDiv.innerText = message;
-        debugDiv.style.fontSize = '12px';
-        chatBox.appendChild(debugDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        // const debugDiv = document.createElement('div');
+        // debugDiv.className = `alert alert-${type === 'error' ? 'danger' : 'info'} mt-2 mb-2 p-2 text-small`;
+        // debugDiv.innerText = message;
+        // debugDiv.style.fontSize = '12px';
+        // chatBox.appendChild(debugDiv);
+        // chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     // Kết nối đến Socket.IO server
@@ -132,8 +128,6 @@ document.addEventListener('DOMContentLoaded', function() {
         connectionStatus.textContent = "Đang kết nối...";
         connectionStatus.classList.remove('bg-success', 'bg-danger');
         connectionStatus.classList.add('bg-warning');
-
-        addDebugInfo("Đang kết nối đến socket server 3002...");
 
         try {
             // Tạo token admin mới
@@ -150,7 +144,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Chọn URL đầu tiên trong danh sách
             const serverUrl = possibleUrls[0];
-            addDebugInfo(`Đang thử kết nối đến: ${serverUrl}`);
 
             socket = io(serverUrl, {
                 transports: ['polling', 'websocket'], // Dùng polling trước, sau đó mới dùng websocket
@@ -170,19 +163,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Sự kiện kết nối thành công
             socket.on("connect", () => {
                 console.log("Đã kết nối đến Socket.IO server");
-                addDebugInfo(`Socket đã kết nối: ${socket.id}`);
                 connectionStatus.textContent = "Đã kết nối";
                 connectionStatus.classList.remove('bg-warning', 'bg-danger');
                 connectionStatus.classList.add('bg-success');
                 connectionAttempts = 0;
 
                 // Đăng ký là admin
-                addDebugInfo("Đang đăng ký với vai trò admin...");
                 socket.emit("adminConnect", { token: adminToken }, (response) => {
                     if (response && response.success) {
-                        addDebugInfo("✅ Đăng ký admin thành công");
                     } else {
-                        addDebugInfo("❌ Đăng ký admin thất bại", "error");
                         reconnectWithDelay();
                     }
                 });
@@ -193,7 +182,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (connectionAttempts < maxConnectionAttempts) {
                     connectionAttempts++;
                     const delay = connectionAttempts * 2000; // Tăng thời gian delay mỗi lần thử
-                    addDebugInfo(`Đang thử kết nối lại sau ${delay/1000}s (lần ${connectionAttempts})...`);
                     setTimeout(connectToSocket, delay);
                 } else {
                     addDebugInfo("❌ Đã vượt quá số lần thử kết nối. Vui lòng tải lại trang.", "error");
@@ -203,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Sự kiện ngắt kết nối
             socket.on("disconnect", (reason) => {
                 console.log("Mất kết nối đến Socket.IO server:", reason);
-                addDebugInfo(`⚠️ Mất kết nối đến socket server (${reason})`, "error");
                 connectionStatus.textContent = "Mất kết nối";
                 connectionStatus.classList.remove('bg-success', 'bg-warning');
                 connectionStatus.classList.add('bg-danger');
@@ -219,14 +206,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Sự kiện lỗi kết nối
             socket.on("connect_error", (error) => {
                 console.error("Lỗi kết nối socket:", error.message);
-                addDebugInfo(`❌ Lỗi kết nối: ${error.message}`, "error");
                 connectionStatus.textContent = "Lỗi kết nối";
                 connectionStatus.classList.remove('bg-success', 'bg-warning');
                 connectionStatus.classList.add('bg-danger');
 
                 // Thử kết nối lại với polling nếu websocket thất bại
                 if (error.message.includes('websocket')) {
-                    addDebugInfo("⚠️ Websocket thất bại, đang thử lại với polling...");
                     socket.io.opts.transports = ['polling', 'websocket'];
                 }
 
@@ -236,14 +221,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Nhận danh sách người dùng hiện tại
             socket.on("currentUsers", (users) => {
                 console.log("Nhận danh sách users:", users);
-                addDebugInfo(`Đã nhận danh sách ${users.length} người dùng online`);
                 updateUserList(users);
             });
 
             // Người dùng mới kết nối
             socket.on("newClientConnected", (user) => {
                 console.log("Người dùng mới kết nối:", user);
-                addDebugInfo(`Người dùng mới kết nối: ${user.name || 'Không tên'} (${user.userId})`);
 
                 // Thêm người dùng vào danh sách nếu chưa có
                 if (!document.getElementById(`user-${user.userId}`)) {
@@ -254,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Người dùng ngắt kết nối
             socket.on("clientDisconnected", (data) => {
                 console.log("Người dùng ngắt kết nối:", data);
-                addDebugInfo(`Người dùng ngắt kết nối: ${data.userId}`);
 
                 const userElement = document.getElementById(`user-${data.userId}`);
                 if (userElement) {
@@ -277,60 +259,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // Nhận tin nhắn từ client
-            socket.on("newClientMessage", (data) => {
-                console.log("Nhận tin nhắn mới từ client:", data);
-                addDebugInfo(`Tin nhắn mới từ ${data.senderName}: ${data.text || "Hình ảnh"}`);
+            // NHẬN TIN NHẮN TỪ CLIENT (GIỮ LẠI PHẦN CODE MỚI NHẤT VỚI LOGIC ĐỆM)
+            socket.on("newClientMessage", (message) => {
+                console.log("📩 Nhận tin nhắn mới từ client:", message);
+                // addDebugInfo(`Nhận tin nhắn mới: sender=${message.sender_id}, text=${message.text ? 'có' : 'không'}, image=${message.image ? 'có' : 'không'}`);
 
-                // Xử lý không gộp nhóm các ảnh nhận được riêng biệt
-                const messageTime = new Date(data.sent_at).toLocaleString();
+                const isImageOnly = !!(message.image && !message.text); // Đảm bảo boolean
 
-                // Xác định loại tin nhắn và hiển thị phù hợp
-                if (data.image) {
-                    // Nếu là ảnh, hiển thị riêng từng ảnh
-                    addMessageToChat({
-                        image: data.image,
-                        sent_at: messageTime,
-                        sender: data.sender || { name: data.senderName }
-                    }, 'client');
-                } else if (data.text) {
-                    // Nếu là text, hiển thị message bình thường
-                    addMessageToChat({
-                        text: data.text,
-                        sent_at: messageTime,
-                        sender: data.sender || { name: data.senderName }
-                    }, 'client');
+                if (isImageOnly) {
+                    // Nếu là ảnh đơn từ client -> đưa vào buffer
+                    console.log("⏳ [Admin Buffer] Thêm ảnh client vào buffer:", message);
+                    if (clientImageBufferTimeout) {
+                        clearTimeout(clientImageBufferTimeout);
+                    }
+                    pendingClientImages.push(message);
+                    clientImageBufferTimeout = setTimeout(processClientImageBuffer, 1200); // Tăng timeout lên 1.2s
+                } else {
+                    // Nếu là tin nhắn text hoặc có cả ảnh và text
+                    console.log("⏳ [Admin Buffer] Xử lý buffer do có text hoặc tin nhắn không phải ảnh đơn.");
+                    processClientImageBuffer(); // Xử lý buffer ngay lập tức
+
+                    // Hiển thị tin nhắn hiện tại (text hoặc ảnh+text)
+                    if (currentUserId === message.sender_id) {
+                        addMessageToChat(message, 'client');
+                    } else {
+                        // Highlight user và thêm badge nếu không phải chat hiện tại
+                        highlightUserWithNewMessage(message.sender_id);
+                    }
                 }
-
-                // Highlight user có tin nhắn mới
-                highlightUserWithNewMessage(data.sender_id, data.senderName);
             });
 
-            // Thêm code để xử lý nhiều ảnh nhận được từ client
-            socket.on("clientMultipleImagesReceived", (data) => {
-                console.log("Nhận nhiều ảnh từ client:", data);
-                addDebugInfo(`Nhận ${data.images?.length || 0} ảnh từ ${data.senderName}`);
+            // XỬ LÝ KHI CLIENT GỬI NHIỀU ẢNH (GIỮ LẠI PHẦN MỚI NHẤT)
+            socket.on("clientMultipleImagesUpload", (data) => {
+                console.log("🖼️ Nhận nhiều ảnh từ client (sự kiện clientMultipleImagesUpload):", data);
+                // addDebugInfo(`Nhận ${data.images?.length || 0} ảnh từ client ${data.sender_id} qua sự kiện nhóm.`);
 
-                if (data.images && data.images.length > 0) {
-                    // Tạo ID nhóm tin nhắn
-                    const groupId = Date.now() + Math.random().toString(36).substring(2, 9);
+                // Xử lý buffer cũ trước khi hiển thị nhóm mới (tránh trùng lặp)
+                console.log("🖼️ [Admin Buffer] Xử lý buffer trước khi hiển thị nhóm ảnh mới.");
+                processClientImageBuffer();
 
-                    // Hiển thị nhóm ảnh dưới dạng một khối
-                    addImageGroupToChat(data.images, new Date(data.sent_at || Date.now()).toLocaleString(), 'client');
-
-                    // Highlight user có tin nhắn mới
-                    highlightUserWithNewMessage(data.sender_id, data.senderName);
+                if (data.images && data.images.length > 0 && data.sender_id) {
+                    if (currentUserId === data.sender_id) {
+                         console.log("🖼️ Hiển thị nhóm ảnh nhận được.");
+                        // Sử dụng addImageGroupToChat để hiển thị nhóm ảnh
+                        addImageGroupToChat(
+                            data.images,
+                            new Date(data.sent_at || Date.now()).toLocaleString(),
+                            'client',
+                            data.sender // Truyền sender object nếu client gửi kèm
+                        );
+                    } else {
+                        // Highlight user nếu không phải chat hiện tại
+                         highlightUserWithNewMessage(data.sender_id);
+                    }
                 }
             });
 
             // Tin nhắn lỗi từ server
             socket.on("error", (data) => {
                 console.error("Lỗi từ server:", data.message);
-                addDebugInfo(`❌ Lỗi từ server: ${data.message}`, "error");
             });
         } catch (error) {
             console.error("Lỗi khởi tạo socket:", error);
-            addDebugInfo(`❌ Lỗi khởi tạo socket: ${error.message}`, "error");
             reconnectWithDelay();
         }
     }
@@ -402,19 +392,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Tải tin nhắn cũ
     async function loadMessages(userId) {
+        if (!userId) {
+            // addDebugInfo("❌ Không có userId để tải tin nhắn", "error");
+            return;
+        }
+
         chatBox.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>Đang tải tin nhắn...</p></div>';
 
         let retryCount = 0;
         const maxRetries = 3;
 
-        // Tạo token admin mới
-        const adminToken = "{{ Auth::user()->createToken('admin-token')->plainTextToken }}";
-        addDebugInfo(`Token API: ${adminToken.substring(0, 15)}...`);
-
         async function tryLoadMessages() {
             try {
                 // Gọi API để lấy tin nhắn
-                const response = await fetch(`http://localhost:8000/api/messages/user/${userId}`, {
+                const apiUrl = `/api/messages/user/${userId}`;
+                // addDebugInfo(`API URL: ${apiUrl}`);
+
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
@@ -424,18 +419,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        addDebugInfo("❌ Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.", "error");
+                        // addDebugInfo("❌ Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.", "error");
                         chatBox.innerHTML = '<div class="alert alert-danger">Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.</div>';
+                        return;
+                    } else if (response.status === 403) {
+                        // addDebugInfo("❌ Không có quyền xem tin nhắn của người dùng này. Mã lỗi: 403", "error");
+                        chatBox.innerHTML = '<div class="alert alert-danger">Không có quyền xem tin nhắn của người dùng này.</div>';
                         return;
                     }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const messages = await response.json();
+                // Parse JSON từ responseText
+                let messages;
+                try {
+                    messages = await response.json();
+                } catch (parseError) {
+                    // addDebugInfo(`❌ Lỗi parse JSON: ${parseError.message}`, "error");
+                    // addDebugInfo(`❌ Dữ liệu: ${responseText.substring(0, 100)}...`, "error");
+                    throw new Error(`Lỗi parse JSON: ${parseError.message}`);
+                }
 
                 if (!Array.isArray(messages)) {
                     console.error('Dữ liệu không đúng định dạng:', messages);
-                    addDebugInfo(`Lỗi: Dữ liệu không đúng định dạng`, "error");
+                    // addDebugInfo(`Lỗi: Dữ liệu không đúng định dạng`, "error");
                     chatBox.innerHTML = '<div class="alert alert-danger">Lỗi: Dữ liệu không đúng định dạng</div>';
                     return;
                 }
@@ -447,33 +454,89 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                // Nhóm các tin nhắn của cùng người gửi theo thời gian
-                const groupedMessages = groupMessagesForDisplay(messages);
+                // Phân nhóm tin nhắn (Cập nhật để nhóm ảnh)
+                function groupMessagesForDisplay(messages) {
+                    const sortedMessages = [...messages].sort((a, b) =>
+                        new Date(a.sent_at) - new Date(b.sent_at)
+                    );
+
+                    const groups = [];
+                    let currentGroup = null;
+                    const timeThreshold = 15000; // 15 giây để nhóm tin nhắn
+
+                    sortedMessages.forEach(msg => {
+                    const isSentByAdmin = msg.sender_id.toString() === "{{ Auth::id() }}";
+                    const messageType = isSentByAdmin ? 'admin' : 'client';
+                        const msgTime = new Date(msg.sent_at);
+                        const isImageOnly = msg.image && !msg.text;
+
+                        // Điều kiện để bắt đầu một nhóm mới
+                        const startNewGroup = !currentGroup ||
+                                              currentGroup.type !== messageType ||
+                                              msgTime - currentGroup.lastTime > timeThreshold ||
+                                              (currentGroup.isImageGroup && !isImageOnly) || // Đang nhóm ảnh mà gặp text -> nhóm mới
+                                              (!currentGroup.isImageGroup && isImageOnly); // Đang nhóm text mà gặp ảnh -> nhóm mới
+
+                        if (startNewGroup) {
+                            currentGroup = {
+                                type: messageType,
+                                sender: msg.sender,
+                                messages: [msg],
+                                lastTime: msgTime,
+                                isImageGroup: isImageOnly, // Đánh dấu nếu nhóm này chỉ chứa ảnh
+                                images: isImageOnly ? [msg.image] : [] // Lưu trữ URL ảnh nếu là nhóm ảnh
+                            };
+                            groups.push(currentGroup);
+                        } else {
+                            // Thêm vào nhóm hiện tại
+                            currentGroup.messages.push(msg);
+                            currentGroup.lastTime = msgTime;
+                            // Nếu là nhóm ảnh, thêm URL ảnh
+                            if (currentGroup.isImageGroup && isImageOnly) {
+                                currentGroup.images.push(msg.image);
+                            } else {
+                                // Nếu nhóm đang là ảnh mà gặp text, hoặc ngược lại, nó không còn là nhóm chỉ ảnh nữa
+                                currentGroup.isImageGroup = false;
+                                currentGroup.images = []; // Xóa danh sách ảnh
+                            }
+                        }
+                    });
+
+                    return groups;
+                }
 
                 // Hiển thị các nhóm tin nhắn
+                const groupedMessages = groupMessagesForDisplay(messages);
                 groupedMessages.forEach(group => {
-                    displayMessageGroup(group);
+                    // Nếu group chỉ chứa ảnh, dùng addImageGroupToChat
+                    if (group.isImageGroup) {
+                        // Truyền thêm group.sender vào hàm
+                        addImageGroupToChat(group.images, group.lastTime.toLocaleString(), group.type, group.sender);
+                    } else {
+                        // Nếu group chứa cả text và ảnh (hoặc chỉ text)
+                        // Hiển thị từng message trong group
+                        group.messages.forEach(msg => {
+                            addMessageToChat(msg, group.type);
+                        });
+                        // Hoặc có thể tùy chỉnh hiển thị group này nếu muốn
+                        // displayMessageGroup(group); // Sử dụng hàm cũ nếu muốn
+                    }
                 });
 
                 // Cuộn xuống dưới cùng
                 chatBox.scrollTop = chatBox.scrollHeight;
 
-<<<<<<< Updated upstream
-                addDebugInfo(`✅ Đã tải ${messages.length} tin nhắn thành công`);
-
                 // Log dữ liệu tin nhắn để debug
                 console.log("Dữ liệu tin nhắn:", messages);
 
-=======
->>>>>>> Stashed changes
             } catch (error) {
                 console.error('Lỗi khi tải tin nhắn:', error);
-                addDebugInfo(`Lỗi khi tải tin nhắn: ${error.message}`, "error");
+                // addDebugInfo(`Lỗi khi tải tin nhắn: ${error.message}`, "error");
 
                 if (retryCount < maxRetries) {
                     retryCount++;
                     const delay = retryCount * 2000;
-                    addDebugInfo(`Đang thử tải lại tin nhắn sau ${delay/1000}s (lần ${retryCount})...`);
+                    // addDebugInfo(`Đang thử tải lại tin nhắn sau ${delay/1000}s (lần ${retryCount})...`);
                     setTimeout(tryLoadMessages, delay);
                 } else {
                     if (error.name === 'TypeError') {
@@ -488,146 +551,144 @@ document.addEventListener('DOMContentLoaded', function() {
         await tryLoadMessages();
     }
 
-    // Nhóm tin nhắn để hiển thị
-    function groupMessagesForDisplay(messages) {
-        // Sắp xếp tin nhắn theo thời gian
-        const sortedMessages = [...messages].sort((a, b) =>
-            new Date(a.sent_at) - new Date(b.sent_at)
-        );
-
-        const groups = [];
-        let currentGroup = null;
-
-        sortedMessages.forEach(msg => {
-            const isSentByAdmin = msg.sender_id.toString() === "{{ Auth::id() }}";
-            const messageType = isSentByAdmin ? 'admin' : 'client';
-
-            // Nếu chưa có nhóm hoặc nhóm mới khác loại với nhóm hiện tại
-            if (!currentGroup || currentGroup.type !== messageType) {
-                // Tạo nhóm mới
-                currentGroup = {
-                    type: messageType,
-                    sender: msg.sender,
-                    messages: [msg],
-                    lastTime: new Date(msg.sent_at)
-                };
-                groups.push(currentGroup);
-            } else {
-                // Thêm tin nhắn vào nhóm hiện tại
-                currentGroup.messages.push(msg);
-                currentGroup.lastTime = new Date(msg.sent_at);
-            }
-        });
-
-        return groups;
+    // Hàm highlight user và thêm badge thông báo mới
+    function highlightUserWithNewMessage(senderId, senderName) {
+         const userElement = document.getElementById(`user-${senderId}`);
+         if (userElement) {
+             // Thêm class warning để thay đổi màu nền
+             userElement.classList.add('list-group-item-warning');
+             // Chỉ thêm badge nếu chưa có
+             if (!userElement.querySelector('.new-message-badge')) {
+                 const badge = document.createElement('span');
+                 badge.className = 'badge bg-danger float-end new-message-badge';
+                 badge.textContent = 'Mới';
+                 // Chèn vào trước badge thời gian (nếu có) để không bị đẩy xuống
+                 const timeBadge = userElement.querySelector('.badge.bg-primary');
+                 if (timeBadge) {
+                     userElement.insertBefore(badge, timeBadge);
+                 } else {
+                     // Nếu không có time badge, thêm vào cuối
+                     userElement.appendChild(badge);
+                 }
+             }
+         } else {
+             // Log nếu không tìm thấy user (có thể cần refresh list)
+             // addDebugInfo(`Không tìm thấy user ${senderId} để highlight`, "warning");
+         }
     }
 
-    // Hiển thị nhóm tin nhắn
-    function displayMessageGroup(group) {
+    // Thêm hàm mới để hiển thị nhóm ảnh (Cập nhật tham số và logic senderName)
+    function addImageGroupToChat(imageUrls, sentTime, senderType, senderInfo) {
+        if (!imageUrls || imageUrls.length === 0) return;
+
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${group.type}-message mb-3`;
+        // Sử dụng senderType cho class
+        messageDiv.className = `message ${senderType}-message mb-3`;
 
-        let allContent = '';
+        let imagesContent = '';
+        const msgGroup = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`; // Tạo ID group duy nhất
 
-        // Phần text
-        const textMessages = group.messages.filter(msg => msg.text);
-        if (textMessages.length > 0) {
-            textMessages.forEach(msg => {
-                allContent += `<div class="message-text mb-1">${msg.text}</div>`;
-            });
-        }
-
-        // Phần ảnh - hiển thị thành một khối
-        const imageMessages = group.messages.filter(msg => msg.image);
-        if (imageMessages.length > 0) {
-            if (imageMessages.length === 1) {
-                // Nếu chỉ có 1 ảnh thì hiển thị bình thường
-                allContent += `<div class="message-image mb-2">
-                    <a href="${imageMessages[0].image}" target="_blank">
-                        <img src="${imageMessages[0].image}" alt="Hình ảnh" class="img-fluid rounded" style="max-height: 200px;">
-                    </a>
-                </div>`;
-            } else {
-                // Nếu có nhiều ảnh thì hiển thị dạng lưới
-                allContent += `<div class="message-images-grid mb-2">
-                    <div class="d-flex flex-wrap">`;
-
-                imageMessages.forEach(msg => {
-                    allContent += `
-                        <div class="image-item m-1">
-                            <a href="${msg.image}" target="_blank">
-                                <img src="${msg.image}" alt="Hình ảnh" class="rounded" style="height: 100px; object-fit: cover;">
-                            </a>
-                        </div>`;
-                });
-
-                allContent += `</div>
-                </div>`;
-            }
-        }
-
-        if (group.type === 'client') {
-            messageDiv.innerHTML = `
-                <div class="d-flex">
-                    <div class="message-bubble bg-light p-2 rounded">
-                        <div class="message-sender text-muted small">${group.sender?.name || 'Khách hàng'}</div>
-                        ${allContent}
-                        <div class="message-time text-muted small">${group.lastTime.toLocaleString()}</div>
-                    </div>
-                </div>
-            `;
-        } else {
-            messageDiv.innerHTML = `
-                <div class="d-flex justify-content-end">
-                    <div class="message-bubble bg-primary text-white p-2 rounded">
-                        <div class="message-sender text-white-50 small">Admin</div>
-                        ${allContent}
-                        <div class="message-time text-white-50 small">${group.lastTime.toLocaleString()}</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        chatBox.appendChild(messageDiv);
-    }
-
-    // Thêm tin nhắn vào khung chat
-    function addMessageToChat(message, sender) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}-message mb-3`;
-
-        let messageContent = '';
-        // Kiểm tra nếu có ảnh thì hiển thị ảnh
-        if (message.image) {
-            messageContent += `<div class="message-image mb-2">
-                <a href="${message.image}" target="_blank">
-                    <img src="${message.image}" alt="Hình ảnh" class="img-fluid rounded" style="max-height: 200px;">
+        if (imageUrls.length === 1) {
+            // 1 ảnh: Hiển thị lớn
+            imagesContent = `<div class="message-image mb-2">
+                <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh">
+                    <img src="${imageUrls[0]}" alt="Hình ảnh" class="img-fluid rounded" style="max-height: 200px; cursor: pointer;">
                 </a>
             </div>`;
+        } else if (imageUrls.length === 2) {
+            // 2 ảnh: Hiển thị 50-50
+            imagesContent = `<div class="message-images-grid mb-2">
+                <div class="d-flex" style="gap: 2px;">
+                    <div style="width: 50%;">
+                        <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
+                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded" style="height: 120px; object-fit: cover; cursor: pointer;">
+                        </a>
+                    </div>
+                    <div style="width: 50%;">
+                        <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
+                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded" style="height: 120px; object-fit: cover; cursor: pointer;">
+                        </a>
+                    </div>
+                </div>
+            </div>`;
+        } else if (imageUrls.length === 3) {
+            // 3 ảnh: 2 trên, 1 dưới
+            imagesContent = `<div class="message-images-grid mb-2">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 2px;">
+                    <div style="grid-column: 1; grid-row: 1;">
+                        <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
+                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded" style="height: 100px; object-fit: cover; cursor: pointer;">
+                        </a>
+                    </div>
+                    <div style="grid-column: 2; grid-row: 1;">
+                        <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
+                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded" style="height: 100px; object-fit: cover; cursor: pointer;">
+                        </a>
+                    </div>
+                    <div style="grid-column: span 2; grid-row: 2;">
+                        <a href="${imageUrls[2]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 3">
+                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded" style="height: 100px; object-fit: cover; cursor: pointer;">
+                        </a>
+                    </div>
+                </div>
+            </div>`;
+        } else { // 4+ ảnh
+            const remainingCount = imageUrls.length - 3;
+            imagesContent = `<div class="message-images-grid mb-2">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 2px;">
+                    <div style="grid-column: 1; grid-row: 1;">
+                        <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
+                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded" style="height: 100px; object-fit: cover; cursor: pointer;">
+                        </a>
+                    </div>
+                    <div style="grid-column: 2; grid-row: 1;">
+                        <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
+                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded" style="height: 100px; object-fit: cover; cursor: pointer;">
+                        </a>
+                    </div>
+                    <div style="grid-column: 1; grid-row: 2; position: relative;">
+                        <a href="${imageUrls[2]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 3">
+                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded" style="height: 100px; object-fit: cover; cursor: pointer;">
+                        </a>
+                    </div>
+                    <div style="grid-column: 2; grid-row: 2; position: relative;">
+                        <a href="${imageUrls[3]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 4" class="position-relative d-block">
+                            <img src="${imageUrls[3]}" alt="Hình ảnh 4" class="w-100 rounded" style="height: 100px; object-fit: cover; filter: brightness(50%); cursor: pointer;">
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-white" style="font-size: 1.1rem; font-weight: bold; background-color: rgba(0,0,0,0.4); border-radius: var(--bs-border-radius);">
+                                +${remainingCount}
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>`;
+
+            // Thêm các ảnh còn lại vào lightbox nhưng không hiển thị
+            for (let i = 4; i < imageUrls.length; i++) {
+                imagesContent += `<a href="${imageUrls[i]}" data-lightbox="${msgGroup}" data-title="Hình ảnh ${i+1}" style="display: none;"></a>`;
+            }
         }
 
-        // Nếu có văn bản thì hiển thị văn bản
-        if (message.text) {
-            messageContent += `<div class="message-text">${message.text}</div>`;
-        }
+        // Sử dụng senderInfo để lấy tên, fallback về 'Khách hàng' nếu không có hoặc là admin
+        const senderName = senderType === 'client' ? (senderInfo?.name || 'Khách hàng') : 'Admin';
 
-        if (sender === 'client') {
+        // Sử dụng senderType để quyết định layout
+        if (senderType === 'client') {
             messageDiv.innerHTML = `
                 <div class="d-flex">
                     <div class="message-bubble bg-light p-2 rounded">
-                        <div class="message-sender text-muted small">${message.sender?.name || 'Khách hàng'}</div>
-                        ${messageContent}
-                        <div class="message-time text-muted small">${message.sent_at || new Date().toLocaleString()}</div>
+                        <div class="message-sender text-muted small">${senderName}</div>
+                        ${imagesContent}
+                        <div class="message-time text-muted small">${sentTime}</div>
                     </div>
                 </div>
             `;
-        } else {
+        } else { // senderType === 'admin'
             messageDiv.innerHTML = `
                 <div class="d-flex justify-content-end">
                     <div class="message-bubble bg-primary text-white p-2 rounded">
-                        <div class="message-sender text-white-50 small">Admin</div>
-                        ${messageContent}
-                        <div class="message-time text-white-50 small">${message.sent_at || new Date().toLocaleString()}</div>
+                        <div class="message-sender text-white-50 small">${senderName}</div>
+                        ${imagesContent}
+                        <div class="message-time text-white-50 small">${sentTime}</div>
                     </div>
                 </div>
             `;
@@ -635,6 +696,76 @@ document.addEventListener('DOMContentLoaded', function() {
 
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Khởi tạo lại lightbox nếu cần
+        if (typeof lightbox !== 'undefined') {
+            lightbox.option({
+                'resizeDuration': 200,
+                'wrapAround': true,
+                'albumLabel': "Hình ảnh %1 / %2"
+            });
+        }
+    }
+
+    // Thêm tin nhắn vào khung chat (Cập nhật để chỉ xử lý text hoặc ảnh đơn)
+    function addMessageToChat(message, senderType) { // Đổi tên tham số sender thành senderType cho rõ ràng
+        const messageDiv = document.createElement('div');
+        // Sử dụng senderType cho class
+        messageDiv.className = `message ${senderType}-message mb-3`;
+
+        let messageContent = '';
+        const sentTime = message.sent_at || new Date().toLocaleString();
+         // Lấy tên từ message.sender, fallback nếu cần
+        const senderName = senderType === 'client' ? (message.sender?.name || 'Khách hàng') : 'Admin';
+
+        // Nếu là tin nhắn ảnh đơn lẻ
+        if (message.image && !message.text) {
+            const msgGroup = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+            messageContent += `<div class="message-image mb-2">
+                <a href="${message.image}" data-lightbox="${msgGroup}" data-title="Hình ảnh">
+                    <img src="${message.image}" alt="Hình ảnh" class="img-fluid rounded" style="max-height: 200px; cursor: pointer;">
+                </a>
+            </div>`;
+        } else if (message.text) {
+            // Nếu có văn bản thì hiển thị văn bản
+            messageContent += `<div class="message-text">${message.text}</div>`;
+        }
+
+        // Phần còn lại của hàm giữ nguyên...
+        // Sử dụng senderType để quyết định layout
+        if (senderType === 'client') {
+            messageDiv.innerHTML = `
+                <div class="d-flex">
+                    <div class="message-bubble bg-light p-2 rounded">
+                        <div class="message-sender text-muted small">${senderName}</div>
+                        ${messageContent}
+                        <div class="message-time text-muted small">${sentTime}</div>
+                    </div>
+                </div>
+            `;
+        } else { // senderType === 'admin'
+            messageDiv.innerHTML = `
+                <div class="d-flex justify-content-end">
+                    <div class="message-bubble bg-primary text-white p-2 rounded">
+                        <div class="message-sender text-white-50 small">${senderName}</div>
+                        ${messageContent}
+                        <div class="message-time text-white-50 small">${sentTime}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Khởi tạo lại lightbox nếu cần
+        if (message.image && typeof lightbox !== 'undefined') {
+            lightbox.option({
+                'resizeDuration': 200,
+                'wrapAround': true,
+                'albumLabel': "Hình ảnh %1 / %2"
+            });
+        }
     }
 
     // Bật chức năng chat
@@ -654,412 +785,261 @@ document.addEventListener('DOMContentLoaded', function() {
         chattingWith.textContent = "Chưa chọn người dùng";
     }
 
-    // Gửi tin nhắn
+    // Gửi tin nhắn (Cập nhật để xử lý cả text và ảnh)
     function sendMessage() {
         const text = messageInput.value.trim();
+        const hasImages = selectedImageFiles.length > 0;
 
-        // Nếu không có text và không có ảnh được chọn, không làm gì cả
-        if (!text && !selectedImageFiles.length) return;
+        if (!currentUserId || (!text && !hasImages)) return;
 
-        // Nếu không có người dùng được chọn, không làm gì cả
-        if (!currentUserId) return;
-
-        // Nếu có ảnh được chọn, xử lý cả ảnh và text
-        if (selectedImageFiles.length > 0) {
-            uploadAndSendImagesWithText(text);
-            return;
-        }
-
-        // Nếu chỉ có text, xử lý gửi tin nhắn text
+        // Ưu tiên gửi ảnh nếu có
+        if (hasImages) {
+            uploadAndSendAdminImages();
+        } else if (text) {
+            // Gửi tin nhắn văn bản
         const messageData = {
             text: text,
             userId: currentUserId
         };
 
-        // Gửi tin nhắn qua socket
         socket.emit('adminMessage', messageData, (response) => {
             if (response.success) {
-                console.log('Tin nhắn đã được gửi thành công');
-                addDebugInfo(`Tin nhắn đã được gửi thành công tới ${currentUserId}`);
-
-                // Thêm tin nhắn vào khung chat
-                addMessageToChat({
-                    text: text,
-                    sent_at: new Date().toLocaleString()
-                }, 'admin');
-
-                // Xóa nội dung input
-                messageInput.value = '';
-                messageInput.focus();
-            } else {
-                console.error('Lỗi khi gửi tin nhắn:', response.error);
-                addDebugInfo(`Lỗi khi gửi tin nhắn: ${response.error}`, "error");
-                alert('Không thể gửi tin nhắn: ' + response.error);
-            }
-        });
-    }
-
-    // Xử lý upload và gửi nhiều ảnh kèm text
-    function uploadAndSendImagesWithText(text) {
-        if (selectedImageFiles.length === 0 || !currentUserId) return;
-
-        // Hiển thị progress bar
-        uploadProgressContainer.style.display = 'block';
-        uploadStatus.textContent = 'Đang tải lên...';
-
-        // Sử dụng endpoint upload nhiều ảnh
-        const formData = new FormData();
-        selectedImageFiles.forEach(file => {
-            formData.append('images', file);
-        });
-
-        // Create XMLHttpRequest
-        const xhr = new XMLHttpRequest();
-
-        // Set up upload progress event
-        xhr.upload.addEventListener('progress', (event) => {
-            if (event.lengthComputable) {
-                const percentComplete = Math.round((event.loaded / event.total) * 100);
-                uploadProgressBar.style.width = percentComplete + '%';
-                uploadProgressBar.textContent = percentComplete + '%';
-                uploadProgressBar.setAttribute('aria-valuenow', percentComplete);
-            }
-        });
-
-        // Set up load complete event
-        xhr.addEventListener('load', () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                const response = JSON.parse(xhr.responseText);
-
-                if (response.success) {
-                    uploadStatus.textContent = 'Tải lên thành công!';
-
-                    // Gửi text trước nếu có
-                    if (text) {
-                        const textMessageData = {
-                            text: text,
-                            userId: currentUserId
-                        };
-
-                        socket.emit('adminMessage', textMessageData, (textResponse) => {
-                            if (textResponse.success) {
-                                addMessageToChat({
-                                    text: text,
-                                    sent_at: new Date().toLocaleString()
-                                }, 'admin');
-
-                                // Sau khi gửi text thì gửi hình ảnh
-                                sendUploadedImages(response.files);
-                            }
-                        });
-                    } else {
-                        // Nếu không có text thì gửi ảnh luôn
-                        sendUploadedImages(response.files);
-                    }
-
-                    // Xóa nội dung input
-                    messageInput.value = '';
+                    console.log('Tin nhắn văn bản đã được gửi thành công');
+                    addMessageToChat({ text: text, sent_at: new Date().toLocaleString() }, 'admin');
+                    messageInput.value = ''; // Clear input sau khi gửi thành công
+                    updateSendButtonState();
                 } else {
-                    uploadStatus.textContent = 'Lỗi: ' + response.message;
-                    uploadProgressBar.classList.remove('bg-success');
-                    uploadProgressBar.classList.add('bg-danger');
+                    console.error('Lỗi khi gửi tin nhắn văn bản:', response.error);
+                    // addDebugInfo(`Lỗi khi gửi tin nhắn văn bản: ${response.error}`, "error");
+                    alert('Không thể gửi tin nhắn văn bản: ' + response.error);
                 }
-            } else {
-                uploadStatus.textContent = 'Lỗi khi tải lên: ' + xhr.statusText;
-                uploadProgressBar.classList.remove('bg-success');
-                uploadProgressBar.classList.add('bg-danger');
-            }
-        });
-
-        // Set up error event
-        xhr.addEventListener('error', () => {
-            uploadStatus.textContent = 'Lỗi kết nối khi tải lên ảnh';
-            uploadProgressBar.classList.remove('bg-success');
-            uploadProgressBar.classList.add('bg-danger');
-        });
-
-        // Set up abort event
-        xhr.addEventListener('abort', () => {
-            uploadStatus.textContent = 'Đã hủy tải lên';
-        });
-
-        // Open connection and send the request
-        xhr.open('POST', 'http://localhost:3002/upload-multiple', true);
-        xhr.setRequestHeader('Authorization', 'Bearer ' + adminToken);
-        xhr.send(formData);
-    }
-
-    // Hàm gửi ảnh đã upload
-    function sendUploadedImages(files) {
-        const messageData = {
-            images: files.map(file => file.url),
-            userId: currentUserId
-        };
-
-        socket.emit('adminMultipleImagesUpload', messageData, (socketResponse) => {
-            if (socketResponse.success) {
-                console.log('Tất cả ảnh đã được gửi thành công');
-                addDebugInfo(`${files.length} ảnh đã được gửi thành công tới ${currentUserId}`);
-
-                // Hiển thị tất cả ảnh trong một nhóm thay vì từng ảnh một
-                addImageGroupToChat(files.map(file => file.url), new Date().toLocaleString(), 'admin');
-
-                // Reset sau khi gửi thành công
-                resetImageUpload();
-            } else {
-                console.error('Lỗi khi gửi ảnh:', socketResponse.error);
-                addDebugInfo(`Lỗi khi gửi ảnh: ${socketResponse.error}`, "error");
-                alert('Không thể gửi ảnh: ' + socketResponse.error);
-
-                uploadStatus.textContent = 'Lỗi khi gửi ảnh!';
-                uploadProgressBar.classList.remove('bg-success');
-                uploadProgressBar.classList.add('bg-danger');
-            }
-        });
-    }
-
-    // Thêm nhóm ảnh vào khung chat
-    function addImageGroupToChat(imageUrls, sentTime, sender) {
-        if (!imageUrls || imageUrls.length === 0) return;
-
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}-message mb-3`;
-
-        let imagesContent = '';
-
-        if (imageUrls.length === 1) {
-            // Nếu chỉ có 1 ảnh thì hiển thị bình thường
-            imagesContent = `<div class="message-image mb-2">
-                <a href="${imageUrls[0]}" data-lightbox="msg-${Date.now()}" data-title="Hình ảnh">
-                    <img src="${imageUrls[0]}" alt="Hình ảnh" class="img-fluid rounded" style="max-height: 200px;">
-                </a>
-            </div>`;
-        } else if (imageUrls.length === 2) {
-            // Nếu có 2 ảnh, hiển thị cạnh nhau 50-50
-            imagesContent = `<div class="message-images-grid mb-2">
-                <div class="d-flex" style="gap: 2px;">
-                    <div style="width: 50%;">
-                        <a href="${imageUrls[0]}" data-lightbox="msg-${Date.now()}" data-title="Hình ảnh 1">
-                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded" style="height: 120px; object-fit: cover;">
-                        </a>
-                    </div>
-                    <div style="width: 50%;">
-                        <a href="${imageUrls[1]}" data-lightbox="msg-${Date.now()}" data-title="Hình ảnh 2">
-                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded" style="height: 120px; object-fit: cover;">
-                        </a>
-                    </div>
-                </div>
-            </div>`;
-        } else if (imageUrls.length === 3) {
-            // Nếu có 3 ảnh, hiển thị 2 ảnh trên 1 ảnh dưới
-            const msgGroup = `msg-${Date.now()}`;
-            imagesContent = `<div class="message-images-grid mb-2">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 2px;">
-                    <div style="grid-column: 1; grid-row: 1;">
-                        <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
-                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded" style="height: 100px; object-fit: cover;">
-                        </a>
-                    </div>
-                    <div style="grid-column: 2; grid-row: 1;">
-                        <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
-                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded" style="height: 100px; object-fit: cover;">
-                        </a>
-                    </div>
-                    <div style="grid-column: span 2; grid-row: 2;">
-                        <a href="${imageUrls[2]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 3">
-                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded" style="height: 100px; object-fit: cover;">
-                        </a>
-                    </div>
-                </div>
-            </div>`;
-        } else {
-            // Nếu có 4+ ảnh, hiển thị 3 ảnh đầu + ảnh cuối với overlay +X
-            const remainingCount = imageUrls.length - 3;
-            const msgGroup = `msg-${Date.now()}`;
-
-            imagesContent = `<div class="message-images-grid mb-2">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 2px;">
-                    <div style="grid-column: 1; grid-row: 1;">
-                        <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
-                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded" style="height: 100px; object-fit: cover;">
-                        </a>
-                    </div>
-                    <div style="grid-column: 2; grid-row: 1;">
-                        <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
-                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded" style="height: 100px; object-fit: cover;">
-                        </a>
-                    </div>
-                    <div style="grid-column: 1; grid-row: 2; position: relative;">
-                        <a href="${imageUrls[2]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 3">
-                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded" style="height: 100px; object-fit: cover;">
-                        </a>
-                    </div>
-                    <div style="grid-column: 2; grid-row: 2; position: relative;">
-                        <a href="${imageUrls[3]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 4" class="position-relative d-block">
-                            <img src="${imageUrls[3]}" alt="Hình ảnh 4" class="w-100 rounded" style="height: 100px; object-fit: cover; filter: brightness(50%);">
-                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-white" style="font-size: 24px; font-weight: bold;">
-                                +${remainingCount}
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </div>`;
-
-            // Thêm các ảnh còn lại vào lightbox nhưng không hiển thị
-            for (let i = 4; i < imageUrls.length; i++) {
-                imagesContent += `<a href="${imageUrls[i]}" data-lightbox="${msgGroup}" data-title="Hình ảnh ${i+1}" style="display: none;"></a>`;
-            }
-        }
-
-        if (sender === 'client') {
-            messageDiv.innerHTML = `
-                <div class="d-flex">
-                    <div class="message-bubble bg-light p-2 rounded">
-                        <div class="message-sender text-muted small">Khách hàng</div>
-                        ${imagesContent}
-                        <div class="message-time text-muted small">${sentTime}</div>
-                    </div>
-                </div>
-            `;
-        } else {
-            messageDiv.innerHTML = `
-                <div class="d-flex justify-content-end">
-                    <div class="message-bubble bg-primary text-white p-2 rounded">
-                        <div class="message-sender text-white-50 small">Admin</div>
-                        ${imagesContent}
-                        <div class="message-time text-white-50 small">${sentTime}</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        chatBox.appendChild(messageDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        // Khởi tạo lại lightbox
-        if (typeof lightbox !== 'undefined') {
-            lightbox.option({
-                'resizeDuration': 200,
-                'wrapAround': true,
-                'albumLabel': "Hình ảnh %1 / %2"
             });
         }
     }
 
-    // Reset trạng thái upload ảnh
-    function resetImageUpload() {
-        selectedImageFiles = [];
-        imageInput.value = '';
-        imagePreviewContainer.style.display = 'none';
-        uploadProgressContainer.style.display = 'none';
+    // Hàm upload và gửi nhiều ảnh từ Admin
+    async function uploadAndSendAdminImages() {
+        if (selectedImageFiles.length === 0 || !currentUserId || !socket?.connected) {
+            // addDebugInfo("❌ Không thể gửi ảnh: Chưa chọn ảnh, chưa chọn người dùng hoặc mất kết nối", "error");
+            return;
+        }
+
+        // Disable nút gửi và upload
+        sendMessageBtn.disabled = true;
+        imageUploadBtn.disabled = true;
+        messageInput.disabled = true;
+        uploadProgressContainer.style.display = 'block';
+        uploadStatus.textContent = `Đang chuẩn bị upload 0/${selectedImageFiles.length}...`;
         uploadProgressBar.style.width = '0%';
         uploadProgressBar.textContent = '0%';
-        uploadProgressBar.setAttribute('aria-valuenow', 0);
-        uploadProgressBar.classList.remove('bg-danger');
-        uploadProgressBar.classList.add('bg-primary');
-    }
 
-    // Xử lý upload và gửi nhiều ảnh (không có text)
-    function uploadAndSendImages() {
-        uploadAndSendImagesWithText("");
-    }
+        const uploadedUrls = [];
+        let failedUploads = 0;
+        let totalProgress = 0;
+        const totalFiles = selectedImageFiles.length;
 
-    // Xử lý sự kiện chọn ảnh
-    imageInput.addEventListener('change', function(e) {
-        if (this.files && this.files.length > 0) {
-            selectedImageFiles = Array.from(this.files);
+        const uploadPromises = selectedImageFiles.map((file, index) => {
+            return new Promise(async (resolve, reject) => {
+                const formData = new FormData();
+                formData.append('image', file);
 
-            // Xóa tất cả preview cũ
-            const previewList = document.getElementById('preview-list');
-            previewList.innerHTML = '';
+                try {
+                    // Sử dụng fetch để upload (hoặc XMLHttpRequest nếu cần theo dõi progress chi tiết hơn)
+                    const response = await fetch('http://localhost:3002/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${adminToken}`,
+                            'Accept': 'application/json',
+                            // 'Content-Type': 'multipart/form-data' // Fetch tự đặt header này
+                        },
+                        body: formData
+                    });
 
-            // Cập nhật counter
-            document.getElementById('selected-count').textContent = `${selectedImageFiles.length} ảnh được chọn`;
+                    const result = await response.json();
 
-            // Thêm preview cho mỗi ảnh
-            selectedImageFiles.forEach((file, index) => {
-                const previewItem = document.createElement('div');
-                previewItem.className = 'preview-item position-relative m-1';
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewItem.innerHTML = `
-                        <img src="${e.target.result}" alt="Preview ${index + 1}" style="height: 60px; width: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #dee2e6;">
-                        <button class="btn btn-sm btn-danger position-absolute top-0 right-0 rounded-circle p-0" style="width: 20px; height: 20px; font-size: 10px; line-height: 0; top: -5px; right: -5px;"
-                                onclick="removePreviewImage(${index})">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    `;
-                    previewList.appendChild(previewItem);
-                };
-                reader.readAsDataURL(file);
+                    if (response.ok && result.success && result.file?.url) {
+                        uploadedUrls.push(result.file.url);
+                        totalProgress += (100 / totalFiles); // Cập nhật tiến trình tổng thể
+                        uploadProgressBar.style.width = `${Math.min(totalProgress, 100)}%`;
+                        uploadProgressBar.textContent = `${Math.round(Math.min(totalProgress, 100))}%`;
+                        uploadStatus.textContent = `Đã upload ${uploadedUrls.length}/${totalFiles}...`;
+                        resolve(result.file.url);
+                    } else {
+                        console.error(`Lỗi upload ảnh ${index + 1}:`, result.message || response.statusText);
+                        failedUploads++;
+                        reject(new Error(result.message || `HTTP error ${response.status}`));
+                    }
+                } catch (error) {
+                    console.error(`Lỗi mạng khi upload ảnh ${index + 1}:`, error);
+                    failedUploads++;
+                    reject(error);
+                }
             });
+        });
 
-            // Hiển thị container
-            imagePreviewContainer.style.display = 'block';
-        }
-    });
+        try {
+            // Chờ tất cả các promise hoàn thành (hoặc thất bại)
+            await Promise.allSettled(uploadPromises);
 
-    // Hàm xóa một ảnh khỏi danh sách preview
-    window.removePreviewImage = function(index) {
-        if (index >= 0 && index < selectedImageFiles.length) {
-            // Xóa file khỏi danh sách
-            selectedImageFiles.splice(index, 1);
+            if (uploadedUrls.length > 0) {
+                // Gửi sự kiện adminMultipleImagesUpload qua socket
+                const messageData = {
+                    userId: currentUserId, // ID người nhận
+                    images: uploadedUrls
+                };
 
-            // Cập nhật lại UI
-            const previewList = document.getElementById('preview-list');
-            previewList.innerHTML = '';
-
-            if (selectedImageFiles.length === 0) {
-                // Nếu không còn ảnh nào, ẩn container
-                imagePreviewContainer.style.display = 'none';
-                return;
+                socket.emit('adminMultipleImagesUpload', messageData, (response) => {
+                    if (response.success) {
+                        console.log('✅ Nhóm ảnh đã được gửi thành công qua socket');
+                        // Hiển thị nhóm ảnh đã gửi trong chat của admin
+                        addImageGroupToChat(uploadedUrls, new Date().toLocaleString(), 'admin', { name: 'Admin' }); // Truyền senderInfo đơn giản
+                        // if (failedUploads > 0) {
+                        //     addDebugInfo(`⚠️ ${failedUploads}/${totalFiles} ảnh upload thất bại.`, "warning");
+                        // }
+                    } else {
+                        console.error('❌ Lỗi khi gửi nhóm ảnh qua socket:', response.error);
+                        // addDebugInfo(`Lỗi gửi nhóm ảnh qua socket: ${response.error}`, "error");
+                        alert('Không thể gửi nhóm ảnh qua socket: ' + response.error);
+                    }
+                });
+            } else {
+                 //  addDebugInfo(`❌ Upload tất cả ${totalFiles} ảnh thất bại.`, "error");
+                 alert(`Upload tất cả ${totalFiles} ảnh thất bại.`);
             }
 
-            // Cập nhật counter
-            document.getElementById('selected-count').textContent = `${selectedImageFiles.length} ảnh được chọn`;
-
-            // Tạo lại các preview
-            selectedImageFiles.forEach((file, idx) => {
-                const previewItem = document.createElement('div');
-                previewItem.className = 'preview-item position-relative m-1';
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewItem.innerHTML = `
-                        <img src="${e.target.result}" alt="Preview ${idx + 1}" style="height: 60px; width: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #dee2e6;">
-                        <button class="btn btn-sm btn-danger position-absolute top-0 right-0 rounded-circle p-0" style="width: 20px; height: 20px; font-size: 10px; line-height: 0; top: -5px; right: -5px;"
-                                onclick="removePreviewImage(${idx})">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    `;
-                    previewList.appendChild(previewItem);
-                };
-                reader.readAsDataURL(file);
-            });
+        } catch (error) {
+            // Lỗi không mong muốn trong quá trình xử lý promises
+            console.error("Lỗi không mong muốn khi xử lý upload:", error);
+            // addDebugInfo("Lỗi không mong muốn khi xử lý upload.", "error");
+        } finally {
+            // Reset trạng thái sau khi hoàn tất (hoặc lỗi)
+            selectedImageFiles = [];
+            imageInput.value = null;
+            updateImagePreview();
+            uploadProgressContainer.style.display = 'none';
+            // Kích hoạt lại các nút
+            enableChat(); // Hàm enableChat đã có sẵn
+            updateSendButtonState();
         }
-    };
+    }
 
-    // Xử lý sự kiện click nút upload ảnh
-    imageUploadBtn.addEventListener('click', function() {
-        imageInput.click();
-    });
-
-    // Xử lý sự kiện hủy upload ảnh
-    cancelUpload.addEventListener('click', function() {
-        resetImageUpload();
-    });
-
-    // Xử lý sự kiện nút gửi
+    // Xử lý sự kiện nút gửi (đã được sửa ở trên)
     sendMessageBtn.addEventListener('click', sendMessage);
 
-    // Xử lý sự kiện nhấn Enter
-    messageInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
+    // Xử lý sự kiện chọn ảnh
+    imageInput.addEventListener('change', function(event) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        selectedImageFiles = Array.from(files);
+        updateImagePreview();
+    });
+
+    // Hàm cập nhật khu vực preview
+    function updateImagePreview() {
+        previewList.innerHTML = ''; // Xóa preview cũ
+        selectedImageFiles.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-item position-relative';
+                previewItem.innerHTML = `
+                    <img src="${e.target.result}" alt="${file.name}" style="max-height: 60px; max-width: 60px; object-fit: cover; border-radius: 4px;">
+                    <button class="btn btn-sm btn-danger position-absolute top-0 end-0 p-0 m-0"
+                            style="width: 18px; height: 18px; line-height: 1; font-size: 10px;"
+                            data-index="${index}"
+                            title="Xóa ảnh này">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                previewList.appendChild(previewItem);
+            }
+            reader.readAsDataURL(file);
+        });
+
+        selectedCountSpan.textContent = `${selectedImageFiles.length} ảnh được chọn`;
+        imagePreviewContainer.style.display = selectedImageFiles.length > 0 ? 'block' : 'none';
+
+        // Kích hoạt/Vô hiệu hóa nút gửi dựa trên việc có ảnh hoặc text
+        updateSendButtonState();
+    }
+
+    // Xử lý xóa ảnh đơn lẻ từ preview
+    previewList.addEventListener('click', function(event) {
+        if (event.target.closest('button') && event.target.closest('button').dataset.index !== undefined) {
+            const indexToRemove = parseInt(event.target.closest('button').dataset.index, 10);
+            selectedImageFiles.splice(indexToRemove, 1); // Xóa file khỏi mảng
+            updateImagePreview(); // Cập nhật lại preview
         }
     });
+
+    // Xử lý hủy toàn bộ ảnh đã chọn
+    cancelUpload.addEventListener('click', function() {
+        selectedImageFiles = [];
+        imageInput.value = null; // Reset input file
+        updateImagePreview();
+    });
+
+    // Hàm cập nhật trạng thái nút Gửi
+    function updateSendButtonState() {
+        const hasText = messageInput.value.trim().length > 0;
+        const hasImages = selectedImageFiles.length > 0;
+        sendMessageBtn.disabled = (!hasText && !hasImages) || !currentUserId;
+        // Có thể thêm logic disable nút upload nếu đã chọn ảnh...
+        imageUploadBtn.disabled = !currentUserId;
+    }
+
+    // Gọi updateSendButtonState khi input text thay đổi
+    messageInput.addEventListener('input', updateSendButtonState);
+
+    // Kích hoạt nút upload ảnh
+    imageUploadBtn.addEventListener('click', function() {
+        imageInput.click(); // Mở hộp thoại chọn file
+    });
+
+    // Hàm xử lý bộ đệm ảnh từ client
+    function processClientImageBuffer() {
+        const bufferedCount = pendingClientImages.length;
+        console.log(`⏳ [Admin Buffer] Gọi processClientImageBuffer - Số ảnh trong buffer: ${bufferedCount}`);
+        if (bufferedCount > 0) {
+            console.log(`⏳ [Admin Buffer] Đang xử lý ${bufferedCount} ảnh trong buffer.`);
+            if (bufferedCount > 1) {
+                // Tạo nhóm ảnh
+                console.log("⏳ [Admin Buffer] Tạo nhóm ảnh.");
+                const firstImageMsg = pendingClientImages[0];
+                if (currentUserId === firstImageMsg.sender_id) {
+                    addImageGroupToChat(
+                        pendingClientImages.map(msg => msg.image),
+                        new Date(firstImageMsg.sent_at || Date.now()).toLocaleString(),
+                        'client',
+                        firstImageMsg.sender // Truyền sender object nếu có
+                    );
+                    console.log("✅ [Admin Buffer] Đã hiển thị nhóm ảnh.");
+                } else {
+                     highlightUserWithNewMessage(firstImageMsg.sender_id);
+                     console.log(`✨ [Admin Buffer] Đã highlight user ${firstImageMsg.sender_id} cho nhóm ảnh.`);
+                }
+            } else {
+                // Xử lý ảnh đơn
+                console.log("⏳ [Admin Buffer] Xử lý ảnh đơn.");
+                const singleImageMsg = pendingClientImages[0];
+                 if (currentUserId === singleImageMsg.sender_id) {
+                    addMessageToChat(singleImageMsg, 'client');
+                     console.log("✅ [Admin Buffer] Đã hiển thị ảnh đơn.");
+                 } else {
+                     highlightUserWithNewMessage(singleImageMsg.sender_id);
+                     console.log(`✨ [Admin Buffer] Đã highlight user ${singleImageMsg.sender_id} cho ảnh đơn.`);
+                 }
+            }
+            pendingClientImages = []; // Xóa bộ đệm
+            console.log("🗑️ [Admin Buffer] Đã xóa bộ đệm.");
+        }
+        if (clientImageBufferTimeout) {
+            clearTimeout(clientImageBufferTimeout);
+            clientImageBufferTimeout = null;
+            console.log("⏱️ [Admin Buffer] Đã xóa timeout.");
+        }
+    }
 
     // Kết nối đến socket khi trang load xong
     connectToSocket();
