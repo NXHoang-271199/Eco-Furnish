@@ -12,7 +12,6 @@ import { motion } from "framer-motion";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [imageLoadError, setImageLoadError] = useState({});
   const [filterOpen, setFilterOpen] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 10000000]);
@@ -58,12 +57,9 @@ const Products = () => {
           //   console.log("gia", product.variants?.discount_price);
           // });
           setProducts(response.data.data.data);
-          setFilteredProducts(response.data.data.data);
         }
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
 

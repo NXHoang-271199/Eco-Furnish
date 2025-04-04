@@ -109,9 +109,7 @@ const Header = () => {
               className="text-gray-700 hover:text-black relative"
             >
             </Link> */}
-            <Link to="/wishlist" className="text-gray-700 hover:text-black">
-              <AiOutlineHeart size={20} />
-            </Link>
+
             <Link
               to="/cart"
               className="text-gray-700 hover:text-black relative"

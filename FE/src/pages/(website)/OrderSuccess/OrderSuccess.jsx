@@ -1,35 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const OrderSuccess = () => {
-  const [orderInfo, setOrderInfo] = useState({
-    order_id: "",
-    total: 0,
-    items: 0,
-    shipping_method: "",
-    payment_method: "",
-  });
+  const [orderInfo, setOrderInfo] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     // Lấy thông tin đơn hàng từ localStorage
-    const lastOrderInfo = localStorage.getItem("lastOrderInfo");
-    if (lastOrderInfo) {
-      setOrderInfo(JSON.parse(lastOrderInfo));
+    const savedOrderInfo = JSON.parse(localStorage.getItem("orderInfo"));
+    if (savedOrderInfo) {
+      setOrderInfo(savedOrderInfo);
     }
 
-    // Lấy ngày hiện tại để hiển thị
-    const today = new Date();
-    const options = {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    };
+    console.log(savedOrderInfo);
 
-    setCurrentDate(new Intl.DateTimeFormat("vi-VN", options).format(today));
-  }, []);
-
-  const [currentDate, setCurrentDate] = useState("");
+    // Lấy thông tin đơn hàng từ URL query params (nếu có)
+    const queryParams = new URLSearchParams(location.search);
+    if (queryParams.get("orderId")) {
+      // Có thể thực hiện một API call để lấy thông tin đơn hàng từ server
+      // dựa vào orderId nếu cần thiết
+    }
+  }, [location]);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -38,17 +29,14 @@ const OrderSuccess = () => {
     }).format(price);
   };
 
-  const getPaymentMethodText = (method) => {
-    switch (method) {
-      case "COD":
-        return "Thanh toán khi nhận hàng";
-      case "VNPAY":
-        return "Thanh toán qua VNPAY";
-      case "MoMo":
-        return "Thanh toán qua Ví MoMo";
-      default:
-        return method;
-    }
+  const formatDate = (dateString) => {
+    const options = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Date(dateString).toLocaleDateString("vi-VN", options);
   };
 
   return (
@@ -63,43 +51,69 @@ const OrderSuccess = () => {
             Cảm ơn bạn! 🎉
           </p>
           <p className="text-gray-700 mt-1 text-lg">
-            Đơn hàng của bạn đã được tiếp nhận và sẽ được chuẩn bị.
+            Đơn hàng của bạn đã được thanh toán thành công và sẽ được chuẩn bị.
           </p>
 
-          <div className="flex justify-center space-x-4 my-5">
-            <div className="relative">
-              <div className="rounded-lg w-16 h-16 bg-gray-200 flex items-center justify-center">
-                <span className="text-xl font-bold">{orderInfo.items}</span>
+          {orderInfo && (
+            <>
+              <div className="flex justify-center space-x-4 my-5">
+                {orderInfo.products &&
+                  orderInfo.products.slice(0, 3).map((item, index) => (
+                    <div className="relative" key={index}>
+                      <img
+                        src={`http://localhost:8000/storage/${item.product?.image_thumnail}`}
+                        alt={item.product?.name}
+                        className="rounded-lg w-12 h-12 object-cover"
+                        onError={(e) => {
+                          e.target.src = "https://picsum.photos/200/300";
+                        }}
+                      />
+                      <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                        {item.quantity}
+                      </span>
+                    </div>
+                  ))}
+                {orderInfo.products && orderInfo.products.length > 3 && (
+                  <div className="relative">
+                    <div className="rounded-lg w-12 h-12 bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-700 font-bold">
+                        +{orderInfo.products.length - 3}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
-              <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                {orderInfo.items}
-              </span>
-            </div>
-          </div>
 
-          <div className="mt-4 flex justify-center">
-            <div className="text-left space-y-2">
-              <p>
-                <span className="font-semibold">Mã đơn hàng:</span>{" "}
-                {orderInfo.order_id || "Đang xử lý"}
-              </p>
-              <p>
-                <span className="font-semibold">Ngày:</span> {currentDate}
-              </p>
-              <p>
-                <span className="font-semibold">Tổng cộng:</span>{" "}
-                {formatPrice(orderInfo.total)}
-              </p>
-              <p>
-                <span className="font-semibold">Phương thức vận chuyển:</span>{" "}
-                {orderInfo.shipping_method}
-              </p>
-              <p>
-                <span className="font-semibold">Phương thức thanh toán:</span>{" "}
-                {getPaymentMethodText(orderInfo.payment_method)}
-              </p>
-            </div>
-          </div>
+              <div className="mt-4 flex justify-center">
+                <div className="text-left space-y-2">
+                  <p>
+                    <span className="font-semibold">Mã đơn hàng:</span>{" "}
+                    {orderInfo.order_code}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Ngày:</span>{" "}
+                    {orderInfo.order_date
+                      ? formatDate(orderInfo.order_date)
+                      : formatDate(new Date())}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Tổng cộng:</span>{" "}
+                    {formatPrice(orderInfo.total)}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      Phương thức thanh toán:
+                    </span>{" "}
+                    {orderInfo.payment_method === "MoMo"
+                      ? "Ví MoMo"
+                      : orderInfo.payment_method === "VNPAY"
+                      ? "VNPAY"
+                      : "Thanh toán khi nhận hàng"}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="flex justify-center my-8 gap-x-20">
             <Link
@@ -109,7 +123,7 @@ const OrderSuccess = () => {
               Trang chủ
             </Link>
             <Link
-              to="/account/orders"
+              to="/list-order"
               className="mt-6 inline-block bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
             >
               Lịch sử mua hàng

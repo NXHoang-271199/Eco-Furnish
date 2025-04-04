@@ -17,19 +17,15 @@ const SignIn = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-
+  const baseURL = "http://localhost:8000/api";
   const onSubmit = async (data) => {
     try {
-      const response = await axios.post(
-        `http://127.0.0.1:8000/api/users/login`,
-        data,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+      const response = await axios.post(`${baseURL}/users/login`, data, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
 
       if (response.data.status === "success") {
         // Lưu token và thông tin user
@@ -57,11 +53,10 @@ const SignIn = () => {
     }
   };
 
-  // phải thông qua email-vẻ
   const refreshToken = async () => {
     try {
       const response = await axios.post(
-        `http://127.0.0.1:8000/api/users/refresh-token`,
+        `${baseURL}/users/refresh-token`,
         {
           refresh_token: localStorage.getItem("refreshToken"), // Lưu refresh token trong localStorage
         },

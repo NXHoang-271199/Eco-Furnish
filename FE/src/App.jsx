@@ -24,6 +24,7 @@ import ChatBot from "./components/ChatBot";
 import OrderSuccess from "./pages/(website)/OrderSuccess/OrderSuccess";
 import OrderHistory from "./pages/(website)/UserAccount/OrderHistory/OrderHistory";
 import { useEffect } from "react";
+import OrderDetail from "./pages/(website)/UserAccount/OrderHistory/OrderDetail";
 
 function App() {
   // Đồng bộ token khi ứng dụng khởi động
@@ -58,11 +59,11 @@ function App() {
           <Route path="payment" element={<Payment />} />
           <Route path="order-success" element={<OrderSuccess />} />
           <Route path="account" element={<LayoutAccount />}>
-            <Route path="order-history" element={<OrderHistory />} />
             <Route index element={<Account />} />
             <Route path="address" element={<Address />} />
             <Route path="password" element={<Edit_Pass />} />
             <Route path="list_order" element={<OrderHistory />} />
+            <Route path="order-detail/:id" element={<OrderDetail />} />
           </Route>
         </Route>
         <Route path="/sign-in" element={<SignIn />} />

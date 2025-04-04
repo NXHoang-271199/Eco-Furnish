@@ -15,7 +15,7 @@ const Aside = () => {
       if (!token) {
         console.log("Không tìm thấy token");
         localStorage.clear();
-        window.location.href = "/signin";
+        window.location.href = "/sign-in";
         return;
       }
 
@@ -70,14 +70,6 @@ const Aside = () => {
               Tài khoản
             </Link>
           </li>
-          {/* <li className="py-2 border-b">
-            <Link
-              to="/account/editpass"
-              className="text-gray-700 hover:text-black"
-            >
-              Thay đổi mật khẩu
-            </Link>
-          </li> */}
           <li className="py-2 border-b">
             <Link
               to="/account/address"
@@ -88,7 +80,7 @@ const Aside = () => {
           </li>
           <li className="py-2 border-b">
             <Link
-              to="/account/order-history"
+              to="/account/list_order"
               className="text-gray-700 hover:text-black"
             >
               Đơn hàng

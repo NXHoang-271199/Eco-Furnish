@@ -19,7 +19,7 @@ const Account = () => {
           console.log("Token không hợp lệ, chuyển hướng đến trang đăng nhập");
           localStorage.removeItem("authToken");
           localStorage.removeItem("userData");
-          navigate("/signin");
+          navigate("/sign-in");
           return;
         }
 
@@ -87,7 +87,7 @@ const Account = () => {
             localStorage.removeItem("userData");
             localStorage.removeItem("authToken");
 
-            navigate("/signin");
+            navigate("/sign-in");
           }
 
           setError(

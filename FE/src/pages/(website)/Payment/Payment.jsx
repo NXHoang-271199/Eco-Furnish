@@ -29,6 +29,7 @@ const Payment = () => {
   const [discountAmount, setDiscountAmount] = useState(0); // Lưu giá trị giảm giá (số)
   const [voucherId, setVoucherId] = useState(null); // Lưu ID của voucher được áp dụng
   const [paymentMethods, setPaymentMethods] = useState([]);
+  const [orderCode, setOrderCode] = useState("");
   useEffect(() => {
     // Lấy địa chỉ từ localStorage khi component mount
     const savedAddress = JSON.parse(localStorage.getItem("userAddress")) || {};
@@ -150,17 +151,6 @@ const Payment = () => {
     // Lưu địa chỉ vào localStorage
     localStorage.setItem("userAddress", JSON.stringify(address));
 
-    // Lưu thông tin đơn hàng vào localStorage
-    localStorage.setItem(
-      "orderInfo",
-      JSON.stringify({
-        products: selectedProducts,
-        total: calculateTotal(),
-        payment_method: paymentMethod,
-        order_date: new Date().toISOString(),
-      })
-    );
-
     try {
       const token = localStorage.getItem("authToken");
       const orderData = {
@@ -190,7 +180,21 @@ const Payment = () => {
       );
 
       // Kiểm tra response
-      console.log("Order response:", response.data);
+      const newOrderCode = response.data.data.order_code;
+      setOrderCode(newOrderCode);
+      console.log(newOrderCode);
+
+      // Lưu thông tin đơn hàng vào localStorage
+      localStorage.setItem(
+        "orderInfo",
+        JSON.stringify({
+          order_code: newOrderCode,
+          products: selectedProducts,
+          total: calculateTotal(),
+          payment_method: paymentMethod,
+          order_date: new Date().toISOString(),
+        })
+      );
 
       if (response.status === 200 || response.status === 201) {
         const selectedMethod = paymentMethods.find(
