@@ -65,12 +65,12 @@ const Header = () => {
               to="/blogs"
               className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
             >
-              {/* Bài viết
+              Bài viết
             </Link>
             <Link
               to="/contact"
               className="text-gray-700 hover:text-green-600 text-base font-medium transition-all duration-300 hover:-translate-y-0.5 relative after:content-[''] after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-green-600 after:transition-all after:duration-300 hover:after:w-full"
-            > */}
+            >
               Liên hệ
             </Link>
           </nav>

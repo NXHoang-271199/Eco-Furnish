@@ -19,9 +19,9 @@ const ChatRealTime = () => {
     const [lastError, setLastError] = useState("");
     const [unreadCount, setUnreadCount] = useState(0);
     // States cho upload ảnh
-    // const [selectedImages, setSelectedImages] = useState([]); // Comment out
-    // const [isUploading, setIsUploading] = useState(false); // Comment out
-    // const [imagePreviews, setImagePreviews] = useState([]); // Comment out
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [imagePreviews, setImagePreviews] = useState([]);
     // Thêm state để theo dõi quá trình nhóm ảnh (Thêm lại do vẫn được dùng)
     const [imageGroups, setImageGroups] = useState({});
     // State cho lightbox
@@ -31,12 +31,10 @@ const ChatRealTime = () => {
 
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
-    // const imageInputRef = useRef(null); // Comment out
+    const imageInputRef = useRef(null);
 
     // Ref để theo dõi tin nhắn đã xử lý
     const processedImageIds = useRef(new Set());
-    // const pendingAdminImagesRef = useRef([]); // Comment out
-    // const imageBufferTimeoutRef = useRef(null); // Comment out
 
     // Cải thiện hàm phân tích tin nhắn từ admin
     const analyzeAdminMessages = (message) => {
@@ -161,6 +159,10 @@ const ChatRealTime = () => {
 
         return processedMessages;
     };
+
+    // Refs cho cơ chế đệm ảnh từ admin (GIỮ LẠI KHAI BÁO NÀY)
+    const pendingAdminImagesRef = useRef([]);
+    const imageBufferTimeoutRef = useRef(null);
 
     // Hàm lấy lịch sử chat từ server
     const loadChatHistory = async (userId) => {
@@ -471,8 +473,7 @@ const ChatRealTime = () => {
     useEffect(() => {
         if (socket && userData) { // Đảm bảo userData tồn tại để so sánh sender_id
 
-            // --- Hàm xử lý bộ đệm ảnh từ admin ---
-            /* // Comment out image buffer logic
+            // --- Hàm xử lý bộ đệm ảnh từ admin --- 
             const processAdminImageBuffer = () => {
                 const bufferedImages = pendingAdminImagesRef.current;
                 if (bufferedImages.length > 0) {
@@ -518,17 +519,15 @@ const ChatRealTime = () => {
                     imageBufferTimeoutRef.current = null;
                 }
             };
-            */
 
-            // --- Handler cho sự kiện adminResponse ---
+            // --- Handler cho sự kiện adminResponse --- 
             const adminResponseHandler = (data) => {
                 console.log("📩 Nhận phản hồi từ admin:", data);
 
                 // Kiểm tra xem có phải tin nhắn từ admin không (sender_id tồn tại và khác user hiện tại)
                 const isAdminMessage = data.sender_id && userData && data.sender_id !== userData.id;
-                // const isImageOnly = !!(data.image && !data.text); // Comment out image check
+                const isImageOnly = !!(data.image && !data.text); // Dùng !! để đảm bảo là boolean
 
-                /* // Comment out image buffer logic
                 if (isAdminMessage && isImageOnly) {
                     // Nếu là ảnh đơn từ admin -> đưa vào buffer
                     console.log("⏳ Thêm ảnh admin vào buffer:", data);
@@ -541,29 +540,26 @@ const ChatRealTime = () => {
                     // Đặt timeout mới để xử lý buffer sau 1.2 giây
                     imageBufferTimeoutRef.current = setTimeout(processAdminImageBuffer, 1200);
                 } else {
-                 */
-                // Nếu là tin nhắn text từ admin, hoặc tin nhắn từ client (không phải ảnh admin đơn lẻ)
-                // Xử lý buffer ngay lập tức (nếu có ảnh đang chờ)
-                // processAdminImageBuffer(); // Comment out
+                    // Nếu là tin nhắn text từ admin, hoặc tin nhắn từ client (không phải ảnh admin đơn lẻ)
+                    // Xử lý buffer ngay lập tức (nếu có ảnh đang chờ)
+                    processAdminImageBuffer();
 
-                // Thêm tin nhắn hiện tại vào messages
-                setMessages((prev) => [...prev, data]);
+                    // Thêm tin nhắn hiện tại vào messages
+                    setMessages((prev) => [...prev, data]);
 
-                // Xử lý unread count và thông báo cho tin nhắn text từ admin
-                // if (isAdminMessage && !isImageOnly && !isOpen) { // Modify condition
-                if (isAdminMessage && !isOpen) { // Check only if admin message and chat is closed
-                    setUnreadCount(prev => prev + 1);
-                    const audio = new Audio('/notification.mp3');
-                    audio.play().catch(() => console.log("Không thể phát âm thanh"));
-                } else if (isOpen) {
-                    // Nếu chat đang mở, đánh dấu đã đọc
-                    markMessagesAsRead();
+                    // Xử lý unread count và thông báo cho tin nhắn text từ admin
+                    if (isAdminMessage && !isImageOnly && !isOpen) {
+                        setUnreadCount(prev => prev + 1);
+                        const audio = new Audio('/notification.mp3');
+                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                    } else if (isOpen) {
+                        // Nếu chat đang mở, đánh dấu đã đọc
+                        markMessagesAsRead();
+                    }
                 }
-                // } // End of commented out else block
             };
 
-            // --- Handler cho sự kiện adminMultipleImagesUpload ---
-            /* // Comment out multiple image handler
+            // --- Handler cho sự kiện adminMultipleImagesUpload --- 
             const adminMultipleImagesHandler = (data) => {
                 console.log("🖼️ Nhận nhiều ảnh từ admin (sự kiện riêng):", data);
                 // Xử lý buffer cũ trước khi thêm nhóm mới (tránh trùng lặp nếu server gửi cả 2)
@@ -596,24 +592,22 @@ const ChatRealTime = () => {
                     }
                 }
             };
-            */
 
             // --- Đăng ký listeners ---
             socket.on("adminResponse", adminResponseHandler);
-            // socket.on("adminMultipleImagesUpload", adminMultipleImagesHandler); // Comment out
+            socket.on("adminMultipleImagesUpload", adminMultipleImagesHandler);
         }
 
         // ƯU TIÊN CLEANUP VÀ DEPENDENCY TỪ STASH
         return () => {
             if (socket) {
                 socket.off("adminResponse");
-                // socket.off("adminMultipleImagesUpload"); // Comment out
+                socket.off("adminMultipleImagesUpload");
             }
         };
-    }, [socket, isOpen, userData, markMessagesAsRead]); // Updated dependencies
+    }, [socket, isOpen]);
 
     // Hàm xử lý khi chọn ảnh
-    /* // Comment out image selection logic
     const handleImageSelect = (e) => {
         if (e.target.files && e.target.files.length > 0) {
             const files = Array.from(e.target.files);
@@ -655,10 +649,8 @@ const ChatRealTime = () => {
             });
         }
     };
-    */
 
     // Hàm hủy upload ảnh
-    /* // Comment out cancel image upload
     const cancelImageUpload = () => {
         setSelectedImages([]);
         setImagePreviews([]);
@@ -666,18 +658,14 @@ const ChatRealTime = () => {
             imageInputRef.current.value = "";
         }
     };
-    */
 
     // Hàm xóa một ảnh cụ thể khỏi danh sách
-    /* // Comment out remove image
     const removeImage = (index) => {
         setSelectedImages(prev => prev.filter((_, i) => i !== index));
         setImagePreviews(prev => prev.filter((_, i) => i !== index));
     };
-    */
 
     // Hàm upload nhiều ảnh và gửi tin nhắn
-    /* // Comment out upload and send multiple images
     const uploadAndSendMultipleImages = async () => {
         if (selectedImages.length === 0 || !isAuthenticated || !socket || !isConnected) {
             console.error("❌ Không thể gửi ảnh: Chưa chọn ảnh, chưa đăng nhập hoặc mất kết nối");
@@ -866,7 +854,6 @@ const ChatRealTime = () => {
             setIsUploading(false);
         }
     };
-    */
 
     const sendMessage = () => {
         if (!isAuthenticated || !socket || !isConnected) {
@@ -876,12 +863,10 @@ const ChatRealTime = () => {
         }
 
         // Nếu có ảnh được chọn, ưu tiên gửi ảnh
-        /* // Comment out image sending logic
         if (selectedImages.length > 0) {
             uploadAndSendMultipleImages();
             return;
         }
-        */
 
         if (message.trim() !== "") {
             const messageData = {
@@ -1222,7 +1207,6 @@ const ChatRealTime = () => {
                     </div>
 
                     {/* Image Preview */}
-                    {/* // Comment out Image Preview section
                     {imagePreviews.length > 0 && (
                         <div className="px-4 pt-2">
                             <div className="flex flex-wrap gap-2">
@@ -1250,7 +1234,6 @@ const ChatRealTime = () => {
                             </div>
                         </div>
                     )}
-                    */}
 
                     {/* Input Area */}
                     <div className="p-4 bg-white border-t border-gray-200">
@@ -1262,26 +1245,22 @@ const ChatRealTime = () => {
                                 placeholder="Nhập tin nhắn..."
                                 className="flex-1 resize-none rounded-full px-4 py-2 border border-gray-300 focus:outline-none focus:border-green-500 text-sm min-h-[40px] max-h-[100px]"
                                 rows="1"
-                                // disabled={!isConnected || isUploading} // Modify disabled condition
-                                disabled={!isConnected}
+                                disabled={!isConnected || isUploading}
                             />
 
                             {/* Nút chọn ảnh */}
-                            {/* // Comment out image selection button
                             <button
                                 onClick={() => imageInputRef.current?.click()}
                                 disabled={!isConnected || isUploading}
                                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isConnected && !isUploading
-                                        ? "bg-blue-500 hover:bg-blue-600 text-white"
-                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    ? "bg-blue-500 hover:bg-blue-600 text-white"
+                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                     }`}
                             >
                                 <MdImage className="text-lg" />
                             </button>
-                            */}
 
                             {/* Input file ẩn - hỗ trợ chọn nhiều file */}
-                            {/* // Comment out hidden file input
                             <input
                                 type="file"
                                 ref={imageInputRef}
@@ -1290,15 +1269,12 @@ const ChatRealTime = () => {
                                 multiple // Thêm multiple để cho phép chọn nhiều ảnh
                                 className="hidden"
                             />
-                            */}
 
                             {/* Nút gửi */}
                             <button
                                 onClick={sendMessage}
-                                // disabled={(!message.trim() && selectedImages.length === 0) || !isConnected || isUploading} // Modify disabled condition
-                                disabled={!message.trim() || !isConnected}
-                                // className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${(message.trim() || selectedImages.length > 0) && isConnected && !isUploading // Modify className condition
-                                className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${message.trim() && isConnected
+                                disabled={(!message.trim() && selectedImages.length === 0) || !isConnected || isUploading}
+                                className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${(message.trim() || selectedImages.length > 0) && isConnected && !isUploading
                                     ? "bg-green-500 hover:bg-green-600"
                                     : "bg-gray-300 cursor-not-allowed"
                                     }`}
