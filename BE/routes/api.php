@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
+use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
 
@@ -39,10 +40,15 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/search', [ProductController::class, 'search']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
+// Thêm route để lấy sản phẩm bán chạy
+Route::get('/best-sellers', [ProductController::class, 'getBestSellers']);
 
 // Category routes
 Route::get('/categories', [CategoryApiController::class, 'index']);
 Route::get('/categories/{slug}', [CategoryApiController::class, 'show']);
+
+// Variant routes
+Route::get('/variants', [VariantApiController::class, 'index']);
 
 // Chat routes
 Route::post('/chat', [ChatController::class, 'chat']);
@@ -181,7 +187,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
     Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
     Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
-    // Route::post('/cart-items/update-quantity', [CartController::class, 'updateCartItemQuantity']); // API mới cập nhật số lượng
 });
 
 // Payment Method routes
@@ -208,3 +213,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
 });
 Route::get('/products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
+

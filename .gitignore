@@ -1,2 +1,3 @@
 # Chat message images
 BE/public/uploads/messages/*.jpg
+.cursor/rules/my-rule.mdc

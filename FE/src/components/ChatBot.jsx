@@ -1,37 +1,24 @@
-import { useState, useRef, useEffect } from "react";
-import axios from "axios";
-import {
-  FaRobot,
-  FaPaperPlane,
-  FaTimes,
-  FaTrash,
-  FaShoppingCart,
-  FaExternalLinkAlt,
-} from "react-icons/fa";
+import { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+import { FaRobot, FaPaperPlane, FaTimes, FaTrash, FaShoppingCart, FaExternalLinkAlt } from 'react-icons/fa';
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
-  const [hasWelcomeMessage, setHasWelcomeMessage] = useState(false);
+  const [welcomeMessageSent, setWelcomeMessageSent] = useState(false);
 
   // Load chat history from localStorage when component mounts
   useEffect(() => {
-    const savedMessages = localStorage.getItem("chatHistory");
+    const savedMessages = localStorage.getItem('chatHistory');
     if (savedMessages) {
       try {
-        const parsedMessages = JSON.parse(savedMessages);
-        setMessages(parsedMessages);
-        // Kiểm tra xem đã có tin nhắn chào hay chưa
-        const hasWelcome = parsedMessages.some(
-          (msg) => msg.sender === "bot" && msg.type === "welcome"
-        );
-        setHasWelcomeMessage(hasWelcome);
+        setMessages(JSON.parse(savedMessages));
       } catch (error) {
-        console.error("Error parsing saved messages:", error);
-        localStorage.removeItem("chatHistory");
+        console.error('Error parsing saved messages:', error);
+        localStorage.removeItem('chatHistory');
       }
     }
   }, []);
@@ -39,49 +26,87 @@ const ChatBot = () => {
   // Save messages to localStorage whenever they change
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem("chatHistory", JSON.stringify(messages));
+      localStorage.setItem('chatHistory', JSON.stringify(messages));
     }
   }, [messages]);
 
-  // Gửi yêu cầu tin nhắn chào mừng khi mở chatbot và chưa có tin nhắn chào
-  const sendWelcomeMessage = async () => {
-    if (!hasWelcomeMessage && messages.length === 0) {
-      setIsLoading(true);
-      try {
-        const response = await axios.get("/api/chat/welcome", {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        });
+  // Theo dõi hoạt động của người dùng và lưu trữ vào localStorage
+  const trackUserActivity = (activity) => {
+    try {
+      // Lấy dữ liệu hoạt động hiện có
+      const storedActivities = localStorage.getItem('userActivities') || '[]';
+      const activities = JSON.parse(storedActivities);
 
-        if (response.data && response.data.success) {
-          const welcomeMessage = {
-            text: response.data.reply,
-            sender: "bot",
-            timestamp: new Date().toISOString(),
-            type: "welcome",
-          };
+      // Thêm hoạt động mới và giới hạn số lượng hoạt động lưu trữ
+      const newActivities = [activity, ...activities].slice(0, 30);
 
-          setMessages([welcomeMessage]);
-          setHasWelcomeMessage(true);
-        }
-      } catch (error) {
-        console.error("Error getting welcome message:", error);
-      } finally {
-        setIsLoading(false);
-      }
+      // Lưu lại vào localStorage
+      localStorage.setItem('userActivities', JSON.stringify(newActivities));
+
+      // Chia sẻ dữ liệu này với các component khác thông qua localStorage event
+      const event = new CustomEvent('userActivityUpdate', {
+        detail: { activity, activities: newActivities }
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Error tracking user activity:', error);
     }
   };
 
-  const toggleChat = () => {
-    const newIsOpen = !isOpen;
-    setIsOpen(newIsOpen);
+  // Phương thức công khai để các component khác có thể sử dụng
+  useEffect(() => {
+    // Đính kèm phương thức vào window để các component khác có thể gọi
+    window.trackProductView = (productId, productName, category) => {
+      trackUserActivity({
+        type: 'view_product',
+        productId,
+        productName,
+        category,
+        timestamp: new Date().toISOString()
+      });
+    };
 
-    // Nếu đang mở chatbot, gửi tin nhắn chào
-    if (newIsOpen) {
-      sendWelcomeMessage();
+    window.trackAddToCart = (productId, productName, category) => {
+      trackUserActivity({
+        type: 'add_to_cart',
+        productId,
+        productName,
+        category,
+        timestamp: new Date().toISOString()
+      });
+    };
+
+    window.trackProductSearch = (keyword) => {
+      trackUserActivity({
+        type: 'search_product',
+        keyword,
+        timestamp: new Date().toISOString()
+      });
+    };
+
+    // Cleanup function
+    return () => {
+      delete window.trackProductView;
+      delete window.trackAddToCart;
+      delete window.trackProductSearch;
+    };
+  }, []);
+
+  // Tự động gửi tin nhắn chào khi mở chatbot
+  useEffect(() => {
+    if (isOpen && !welcomeMessageSent && messages.length === 0) {
+      const welcomeMessage = {
+        text: 'Xin chào! Tôi là trợ lý AI của Eco-Furnish. Tôi có thể giúp bạn tìm kiếm sản phẩm, cung cấp thông tin về chất liệu, hoặc gợi ý sản phẩm phù hợp với nhu cầu của bạn. Bạn cần hỗ trợ gì không?',
+        sender: 'bot',
+        timestamp: new Date().toISOString()
+      };
+      setMessages([welcomeMessage]);
+      setWelcomeMessageSent(true);
     }
+  }, [isOpen, welcomeMessageSent, messages.length]);
+
+  const toggleChat = () => {
+    setIsOpen(!isOpen);
   };
 
   const handleInputChange = (e) => {
@@ -89,7 +114,7 @@ const ChatBot = () => {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -98,165 +123,105 @@ const ChatBot = () => {
 
   const clearChat = () => {
     setMessages([]);
-    setHasWelcomeMessage(false);
-    localStorage.removeItem("chatHistory");
+    localStorage.removeItem('chatHistory');
+    setWelcomeMessageSent(false);
   };
-
-  // Xử lý thông báo đặt hàng thành công
-  const processOrderSuccess = async (orderId, orderTotal, products) => {
-    setIsLoading(true);
-    try {
-      const response = await axios.post(
-        "/api/chat/order-success",
-        {
-          order_id: orderId,
-          order_total: orderTotal,
-          products: products,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
-
-      if (response.data && response.data.success) {
-        const botMessage = {
-          text: response.data.reply,
-          sender: "bot",
-          timestamp: new Date().toISOString(),
-          products: response.data.products || [],
-          isProductSearch: false,
-          categories: response.data.categories || [],
-          type: "order_success",
-        };
-
-        setMessages((prevMessages) => [...prevMessages, botMessage]);
-
-        // Mở chatbot để hiển thị thông báo
-        setIsOpen(true);
-      }
-    } catch (error) {
-      console.error("Error processing order success message:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Gắn hàm processOrderSuccess vào window để có thể gọi từ bên ngoài
-  useEffect(() => {
-    window.chatbotProcessOrderSuccess = processOrderSuccess;
-
-    // Cleanup function
-    return () => {
-      delete window.chatbotProcessOrderSuccess;
-    };
-  }, []);
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (input.trim() === "") return;
+    if (input.trim() === '') return;
 
     const userMessage = {
       text: input,
-      sender: "user",
-      timestamp: new Date().toISOString(),
+      sender: 'user',
+      timestamp: new Date().toISOString()
     };
 
     setMessages([...messages, userMessage]);
-    setInput("");
+    setInput('');
     setIsLoading(true);
 
     try {
       // Tạo một bản sao của input để sử dụng trong API call
       const messageToSend = input.trim();
 
-      console.log("Sending message to API:", messageToSend);
+      console.log('Sending message to API:', messageToSend);
+
+      // Lấy hoạt động gần đây của người dùng để gửi làm context
+      const userActivities = localStorage.getItem('userActivities') || '{}';
+      const activities = JSON.parse(userActivities);
 
       // Sử dụng đường dẫn tương đối để tận dụng proxy trong Vite
-      const response = await axios.post(
-        "/api/chat",
-        {
-          message: messageToSend,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
+      const response = await axios.post('/api/chat', {
+        message: messageToSend,
+        userActivities: activities // Gửi toàn bộ đối tượng activities
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
-      );
+      });
 
-      console.log("API response:", response.data);
+      console.log('API response:', response.data);
       // Debug thêm thông tin danh mục
-      console.log("Categories from API:", response.data.categories);
-      console.log("Products from API:", response.data.products);
+      console.log('Categories from API:', response.data.categories);
+      console.log('Products from API:', response.data.products);
 
       // Kiểm tra dữ liệu trả về để tránh lỗi null
-      let botReply = "Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn.";
+      let botReply = 'Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn.';
       let products = [];
-      let searchKeywords = "";
+      let searchKeywords = '';
       let isProductSearch = false;
       let categories = [];
 
-      if (response.data && typeof response.data.reply === "string") {
+      if (response.data && typeof response.data.reply === 'string') {
         botReply = response.data.reply;
       }
 
       // Kiểm tra xem có phải là tìm kiếm sản phẩm không
-      if (response.data && response.data.hasOwnProperty("has_products")) {
+      if (response.data && response.data.hasOwnProperty('has_products')) {
         // Chỉ đánh dấu là tìm kiếm sản phẩm nếu có từ khóa tìm kiếm
-        if (
-          response.data.hasOwnProperty("search_keywords") &&
-          response.data.search_keywords.trim() !== ""
-        ) {
+        if (response.data.hasOwnProperty('search_keywords') && response.data.search_keywords.trim() !== '') {
           isProductSearch = true;
           searchKeywords = response.data.search_keywords;
+
+          // Theo dõi hoạt động tìm kiếm sản phẩm
+          window.trackProductSearch(response.data.search_keywords);
         }
 
         // Kiểm tra xem có sản phẩm được trả về không
-        if (
-          response.data.has_products &&
-          Array.isArray(response.data.products)
-        ) {
+        if (response.data.has_products && Array.isArray(response.data.products)) {
           products = response.data.products;
         }
 
         // Lấy danh mục từ phản hồi API
-        if (
-          response.data.hasOwnProperty("categories") &&
-          Array.isArray(response.data.categories)
-        ) {
+        if (response.data.hasOwnProperty('categories') && Array.isArray(response.data.categories)) {
           categories = response.data.categories;
         }
       }
 
       const botMessage = {
         text: botReply,
-        sender: "bot",
+        sender: 'bot',
         timestamp: new Date().toISOString(),
         products: products,
         isProductSearch: isProductSearch,
         searchKeywords: searchKeywords,
-        categories: categories,
+        categories: categories
       };
 
-      setMessages((prevMessages) => [...prevMessages, botMessage]);
+      setMessages(prevMessages => [...prevMessages, botMessage]);
     } catch (error) {
-      console.error("Error sending message:", error);
-      console.error(
-        "Error details:",
-        error.response ? error.response.data : "No response data"
-      );
+      console.error('Error sending message:', error);
+      console.error('Error details:', error.response ? error.response.data : 'No response data');
 
       const errorMessage = {
         text: `Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn. Vui lòng thử lại sau. (${error.message})`,
-        sender: "bot",
-        timestamp: new Date().toISOString(),
+        sender: 'bot',
+        timestamp: new Date().toISOString()
       };
 
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      setMessages(prevMessages => [...prevMessages, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -264,7 +229,7 @@ const ChatBot = () => {
 
   // Handle Enter key press
   const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage(e);
     }
@@ -273,10 +238,17 @@ const ChatBot = () => {
   // Component hiển thị sản phẩm
   const ProductCard = ({ product }) => {
     const formatPrice = (price) => {
-      return new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-      }).format(price);
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+    };
+
+    // Thêm theo dõi khi người dùng xem chi tiết sản phẩm
+    const handleViewProduct = () => {
+      window.trackProductView(product.id, product.name, product.category);
+    };
+
+    // Thêm theo dõi khi người dùng thêm sản phẩm vào giỏ hàng
+    const handleAddToCart = () => {
+      window.trackAddToCart(product.id, product.name, product.category);
     };
 
     return (
@@ -292,18 +264,12 @@ const ChatBot = () => {
                   console.log("Lỗi tải ảnh:", e.target.src);
                   e.target.onerror = null;
                   // Sử dụng Bootstrap icons
-                  e.target.parentNode.innerHTML =
-                    '<div class="flex items-center justify-center w-full h-full text-gray-400"><svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/></svg></div>';
+                  e.target.parentNode.innerHTML = '<div class="flex items-center justify-center w-full h-full text-gray-400"><svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16"><path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/></svg></div>';
                 }}
               />
             ) : (
               <div className="flex items-center justify-center w-full h-full text-gray-400">
-                <svg
-                  width="32"
-                  height="32"
-                  fill="currentColor"
-                  viewBox="0 0 16 16"
-                >
+                <svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
                   <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
                   <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
                 </svg>
@@ -311,34 +277,27 @@ const ChatBot = () => {
             )}
           </div>
           <div className="p-2 flex-1">
-            <h4 className="font-medium text-sm text-gray-800 line-clamp-1">
-              {product.name}
-            </h4>
+            <h4 className="font-medium text-sm text-gray-800 line-clamp-1">{product.name}</h4>
             <p className="text-xs text-gray-500 mb-1">{product.category}</p>
             <div className="flex items-center">
               {product.discount_price ? (
                 <>
-                  <span className="text-sm font-bold text-red-600">
-                    {formatPrice(product.discount_price)}
-                  </span>
-                  <span className="text-xs text-gray-400 line-through ml-1">
-                    {formatPrice(product.price)}
-                  </span>
+                  <span className="text-sm font-bold text-red-600">{formatPrice(product.discount_price)}</span>
+                  <span className="text-xs text-gray-400 line-through ml-1">{formatPrice(product.price)}</span>
                 </>
               ) : (
-                <span className="text-sm font-bold text-gray-700">
-                  {formatPrice(product.price)}
-                </span>
+                <span className="text-sm font-bold text-gray-700">{formatPrice(product.price)}</span>
               )}
             </div>
           </div>
         </div>
         <div className="bg-gray-50 p-2 flex justify-between border-t">
           <a
-            href={`/product/${product.id}`}
+            href={`/product-detail/${product.id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+            onClick={handleViewProduct}
           >
             <FaExternalLinkAlt className="mr-1" size={10} />
             Xem chi tiết
@@ -346,6 +305,7 @@ const ChatBot = () => {
           <a
             href={`/cart/add/${product.id}`}
             className="text-xs text-green-600 hover:text-green-800 flex items-center"
+            onClick={handleAddToCart}
           >
             <FaShoppingCart className="mr-1" size={10} />
             Thêm vào giỏ
@@ -400,36 +360,26 @@ const ChatBot = () => {
               <div className="text-center text-gray-500 py-8">
                 <FaRobot className="mx-auto mb-2 text-gray-400" size={24} />
                 <p>Xin chào! Tôi có thể giúp gì cho bạn?</p>
-                <p className="text-sm mt-2">
-                  Hãy đặt câu hỏi về sản phẩm, dịch vụ hoặc bất kỳ thông tin nào
-                  bạn cần.
-                </p>
+                <p className="text-sm mt-2">Hãy đặt câu hỏi về sản phẩm, dịch vụ hoặc bất kỳ thông tin nào bạn cần.</p>
               </div>
             ) : (
               messages.map((msg, index) => (
                 <div
                   key={index}
-                  className={`mb-3 flex ${
-                    msg.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  className={`mb-3 flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      msg.sender === "user"
-                        ? "bg-blue-600 text-white rounded-br-none"
-                        : "bg-gray-200 text-gray-800 rounded-bl-none"
-                    }`}
+                    className={`max-w-[80%] rounded-lg p-3 ${msg.sender === 'user'
+                      ? 'bg-blue-600 text-white rounded-br-none'
+                      : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                      }`}
                   >
-                    <p className="whitespace-pre-wrap">
-                      {msg.text || "Không có nội dung"}
-                    </p>
+                    <p className="whitespace-pre-wrap">{msg.text || 'Không có nội dung'}</p>
 
                     {/* Hiển thị sản phẩm nếu có */}
                     {msg.products && msg.products.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-300">
-                        <p className="text-xs font-medium mb-2">
-                          Sản phẩm gợi ý cho bạn:
-                        </p>
+                        <p className="text-xs font-medium mb-2">Sản phẩm gợi ý cho bạn:</p>
 
                         {/* Nếu có thông tin danh mục, hiển thị theo từng danh mục */}
                         {msg.categories && msg.categories.length > 0 ? (
@@ -448,10 +398,7 @@ const ChatBot = () => {
                                 </h4>
                                 <div className="space-y-2">
                                   {categoryProducts.map((product) => (
-                                    <ProductCard
-                                      key={product.id}
-                                      product={product}
-                                    />
+                                    <ProductCard key={product.id} product={product} />
                                   ))}
                                 </div>
                               </div>
@@ -469,42 +416,27 @@ const ChatBot = () => {
                     )}
 
                     {/* Hiển thị thông báo khi không tìm thấy sản phẩm */}
-                    {msg.isProductSearch &&
-                      msg.products &&
-                      msg.products.length === 0 && (
-                        <div className="mt-3 pt-3 border-t border-gray-300">
-                          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded">
-                            <div className="flex">
-                              <div className="flex-shrink-0">
-                                <svg
-                                  className="h-5 w-5 text-yellow-400"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              </div>
-                              <div className="ml-3">
-                                <p className="text-xs text-yellow-700">
-                                  Không tìm thấy sản phẩm nào phù hợp với từ
-                                  khóa "{msg.searchKeywords}".
-                                </p>
-                              </div>
+                    {msg.isProductSearch && msg.products && msg.products.length === 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-300">
+                        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded">
+                          <div className="flex">
+                            <div className="flex-shrink-0">
+                              <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div className="ml-3">
+                              <p className="text-xs text-yellow-700">
+                                Không tìm thấy sản phẩm nào phù hợp với từ khóa "{msg.searchKeywords}".
+                              </p>
                             </div>
                           </div>
                         </div>
-                      )}
+                      </div>
+                    )}
 
                     <span className="text-xs opacity-70 block mt-1">
-                      {new Date(msg.timestamp).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>
@@ -525,10 +457,7 @@ const ChatBot = () => {
           </div>
 
           {/* Chat Input */}
-          <form
-            onSubmit={sendMessage}
-            className="border-t border-gray-200 p-3 flex"
-          >
+          <form onSubmit={sendMessage} className="border-t border-gray-200 p-3 flex">
             <input
               type="text"
               value={input}
@@ -540,12 +469,9 @@ const ChatBot = () => {
             />
             <button
               type="submit"
-              className={`bg-blue-600 text-white px-4 rounded-r-lg flex items-center justify-center ${
-                isLoading || input.trim() === ""
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-blue-700"
-              }`}
-              disabled={isLoading || input.trim() === ""}
+              className={`bg-blue-600 text-white px-4 rounded-r-lg flex items-center justify-center ${isLoading || input.trim() === '' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+                }`}
+              disabled={isLoading || input.trim() === ''}
             >
               <FaPaperPlane />
             </button>
