@@ -19,9 +19,9 @@ const ChatRealTime = () => {
     const [lastError, setLastError] = useState("");
     const [unreadCount, setUnreadCount] = useState(0);
     // States cho upload ảnh
-    const [selectedImages, setSelectedImages] = useState([]);
-    const [isUploading, setIsUploading] = useState(false);
-    const [imagePreviews, setImagePreviews] = useState([]);
+    // const [selectedImages, setSelectedImages] = useState([]); // Comment out
+    // const [isUploading, setIsUploading] = useState(false); // Comment out
+    // const [imagePreviews, setImagePreviews] = useState([]); // Comment out
     // Thêm state để theo dõi quá trình nhóm ảnh (Thêm lại do vẫn được dùng)
     const [imageGroups, setImageGroups] = useState({});
     // State cho lightbox
@@ -31,16 +31,18 @@ const ChatRealTime = () => {
 
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
-    const imageInputRef = useRef(null);
-    
+    // const imageInputRef = useRef(null); // Comment out
+
     // Ref để theo dõi tin nhắn đã xử lý
     const processedImageIds = useRef(new Set());
+    // const pendingAdminImagesRef = useRef([]); // Comment out
+    // const imageBufferTimeoutRef = useRef(null); // Comment out
 
     // Cải thiện hàm phân tích tin nhắn từ admin
     const analyzeAdminMessages = (message) => {
         // Kiểm tra nếu tin nhắn có chứa "admin" trong ID hoặc từ admin
         return message &&
-               (!message.isCurrentUser && userData && // Thêm kiểm tra userData tồn tại
+            (!message.isCurrentUser && userData && // Thêm kiểm tra userData tồn tại
                 (message.sender_id.toString() !== userData.id?.toString()));
     };
 
@@ -71,12 +73,12 @@ const ChatRealTime = () => {
                 continue;
             }
 
-             // Bỏ qua nếu đã xử lý trong lần chạy này
+            // Bỏ qua nếu đã xử lý trong lần chạy này
             const msgId = currentMsg.id || `msg-${currentMsg.sender_id}-${currentMsg.sent_at}-${Math.random()}`;
-             if (processedImageIds.current.has(msgId)) {
-                 i++; // Chỉ tăng i, không push lại vào processedMessages
-                 continue;
-             }
+            if (processedImageIds.current.has(msgId)) {
+                i++; // Chỉ tăng i, không push lại vào processedMessages
+                continue;
+            }
 
 
             // Kiểm tra xem tin nhắn hiện tại có phải là ảnh không
@@ -107,10 +109,10 @@ const ChatRealTime = () => {
                     const nextMsgId = messages[nextIndex].id || `msg-${messages[nextIndex].sender_id}-${messages[nextIndex].sent_at}-${Math.random()}`;
 
                     // Bỏ qua nếu đã xử lý hoặc là tin nhắn nhóm
-                     if (processedImageIds.current.has(nextMsgId)) {
-                         nextIndex++;
-                         continue;
-                     }
+                    if (processedImageIds.current.has(nextMsgId)) {
+                        nextIndex++;
+                        continue;
+                    }
 
                     // Kiểm tra ngưỡng thời gian (ví dụ: 1.5 phút = 90000 ms)
                     const timeDiff = Math.abs(new Date(messages[nextIndex].sent_at) - baseSentTime);
@@ -160,21 +162,17 @@ const ChatRealTime = () => {
         return processedMessages;
     };
 
-    // Refs cho cơ chế đệm ảnh từ admin (GIỮ LẠI KHAI BÁO NÀY)
-    const pendingAdminImagesRef = useRef([]);
-    const imageBufferTimeoutRef = useRef(null);
-
     // Hàm lấy lịch sử chat từ server
     const loadChatHistory = async (userId) => {
         if (!userId) return;
-        
+
         try {
             setIsLoading(true);
             const token = localStorage.getItem("authToken");
-            
+
             console.log("🔍 Đang tải lịch sử cho user:", userId);
             console.log("🔑 Token:", token?.substring(0, 15) + "...");
-            
+
             // Gọi API lấy lịch sử tin nhắn
             const response = await axios.get(
                 `http://localhost:8000/api/messages/user/${userId}`,
@@ -186,12 +184,12 @@ const ChatRealTime = () => {
                     }
                 }
             );
-            
+
             console.log("✅ Phản hồi API:", response.status, response.statusText);
-            
+
             if (response.data && Array.isArray(response.data)) {
                 console.log("📜 Lịch sử tin nhắn:", response.data);
-                
+
                 // Đảm bảo tất cả tin nhắn có trạng thái is_read và isCurrentUser
                 const messagesWithStatus = response.data.map(msg => ({
                     ...msg,
@@ -199,16 +197,16 @@ const ChatRealTime = () => {
                     isCurrentUser: userData && msg.sender_id === userData.id,
                     isAdmin: !msg.sender_id || (userData && msg.sender_id !== userData.id) // Thêm logic xác định admin
                 }));
-                
+
                 // Xử lý nhóm ảnh trước khi set messages
                 const groupedMessages = processMessagesWithImageGroups(messagesWithStatus);
                 setMessages(groupedMessages);
-                
+
                 // Đếm tin nhắn chưa đọc
-                const unread = messagesWithStatus.filter(msg => 
+                const unread = messagesWithStatus.filter(msg =>
                     !msg.isCurrentUser && !msg.is_read // Chỉ đếm tin nhắn từ người khác và chưa đọc
                 ).length;
-                
+
                 setUnreadCount(unread);
                 console.log("📬 Số tin nhắn chưa đọc:", unread);
 
@@ -238,7 +236,7 @@ const ChatRealTime = () => {
         try {
             console.log("🔌 Đang kiểm tra kết nối socket...");
             const socketConnection = getSocket();
-            
+
             if (socketConnection) {
                 setSocket(socketConnection);
                 setIsConnected(socketConnection.connected);
@@ -260,43 +258,43 @@ const ChatRealTime = () => {
         // Kiểm tra đăng nhập
         const authToken = localStorage.getItem("authToken");
         const userDataStr = localStorage.getItem("userData");
-        
+
         if (authToken && userDataStr) {
             try {
                 const parsedUserData = JSON.parse(userDataStr);
                 setUserData(parsedUserData);
                 setIsAuthenticated(true);
-                
+
                 // Khởi tạo kết nối socket
                 const socketConnection = connectSocket();
-                
+
                 if (socketConnection) {
                     // Kiểm tra kết nối
                     socketConnection.on("connect", () => {
                         console.log("✅ Socket kết nối thành công");
                         setIsConnected(true);
                         setLastError("");
-                        
+
                         // Thông báo server rằng client đã kết nối
                         socketConnection.emit("clientConnect");
                         console.log("📣 Đã gửi sự kiện clientConnect");
-                        
+
                         // Tải lịch sử tin nhắn khi kết nối thành công
                         loadChatHistory(parsedUserData.id);
                     });
-                    
+
                     socketConnection.on("disconnect", () => {
                         console.log("❌ Socket ngắt kết nối");
                         setIsConnected(false);
                         setLastError("Mất kết nối với server");
                     });
-                    
+
                     socketConnection.on("connect_error", (error) => {
                         console.error("❌ Lỗi kết nối socket:", error.message);
                         setIsConnected(false);
                         setLastError("Lỗi kết nối: " + error.message);
                     });
-                    
+
                     socketConnection.on("newClientMessage", (data) => {
                         console.log("📩 Nhận tin nhắn mới từ client:", data);
                         setMessages(prev => processMessagesWithImageGroups([...prev, data]));
@@ -311,7 +309,7 @@ const ChatRealTime = () => {
             console.log("❌ Người dùng chưa đăng nhập");
             setIsAuthenticated(false);
         }
-        
+
         // Cleanup khi unmount
         return () => {
             if (socket) {
@@ -322,19 +320,19 @@ const ChatRealTime = () => {
             }
         };
     }, []);
-    
+
     // Theo dõi sự thay đổi đăng nhập
     useEffect(() => {
         const handleAuthChange = () => {
             const authToken = localStorage.getItem("authToken");
             const userDataStr = localStorage.getItem("userData");
-            
+
             if (authToken && userDataStr) {
                 try {
                     const parsedUserData = JSON.parse(userDataStr);
                     setUserData(parsedUserData);
                     setIsAuthenticated(true);
-                    
+
                     // Tải lại lịch sử khi đăng nhập
                     loadChatHistory(parsedUserData.id);
                 } catch (error) {
@@ -347,10 +345,10 @@ const ChatRealTime = () => {
                 setMessages([]);
             }
         };
-        
+
         window.addEventListener("auth-change", handleAuthChange);
         window.addEventListener("storage", handleAuthChange);
-        
+
         return () => {
             window.removeEventListener("auth-change", handleAuthChange);
             window.removeEventListener("storage", handleAuthChange);
@@ -368,20 +366,20 @@ const ChatRealTime = () => {
     useEffect(() => {
         const handleAuthChangeForSocket = () => {
             console.log("🔄 Nhận sự kiện auth-change, đang khởi tạo lại socket...");
-            
+
             // Kiểm tra token
             const authToken = localStorage.getItem("authToken");
             const userDataStr = localStorage.getItem("userData");
-            
+
             if (authToken && userDataStr) {
                 try {
                     const parsedUserData = JSON.parse(userDataStr);
                     setUserData(parsedUserData);
                     setIsAuthenticated(true);
-                    
+
                     // Khởi tạo kết nối socket mới
                     const socketConnection = connectSocket();
-                    
+
                     if (socketConnection) {
                         console.log("🔌 Đã khởi tạo lại socket sau sự kiện auth-change");
                     }
@@ -391,10 +389,10 @@ const ChatRealTime = () => {
                 }
             }
         };
-        
+
         // Đăng ký sự kiện
         window.addEventListener("auth-change", handleAuthChangeForSocket);
-        
+
         return () => {
             window.removeEventListener("auth-change", handleAuthChangeForSocket);
         };
@@ -407,7 +405,7 @@ const ChatRealTime = () => {
                 console.log("📬 Nhận sự kiện messagesMarkedAsRead:", data);
                 if (data.success) {
                     // Cập nhật trạng thái đã đọc cho tất cả tin nhắn
-                    setMessages(prevMessages => 
+                    setMessages(prevMessages =>
                         prevMessages.map(msg => {
                             // Nếu là tin nhắn của người dùng hiện tại (từ sender_id), đánh dấu là đã đọc
                             if (msg.sender_id === userData?.id) {
@@ -420,7 +418,7 @@ const ChatRealTime = () => {
                 }
             });
         }
-        
+
         return () => {
             if (socket) {
                 socket.off("messagesMarkedAsRead");
@@ -431,10 +429,10 @@ const ChatRealTime = () => {
     // Hàm đánh dấu tin nhắn đã đọc
     const markMessagesAsRead = async () => {
         if (!isAuthenticated || !userData?.id) return;
-        
+
         try {
             const token = localStorage.getItem("authToken");
-            
+
             // Gọi API đánh dấu tất cả tin nhắn là đã đọc
             await axios.patch(
                 `http://localhost:8000/api/messages/read-all/${userData.id}`,
@@ -447,14 +445,14 @@ const ChatRealTime = () => {
                     }
                 }
             );
-            
+
             // Cập nhật UI
             setUnreadCount(0);
             setMessages(prev => prev.map(msg => ({
                 ...msg,
                 is_read: true
             })));
-            
+
             console.log("✅ Đã đánh dấu tất cả tin nhắn là đã đọc");
         } catch (error) {
             console.error("❌ Lỗi khi đánh dấu tin nhắn đã đọc:", error.message);
@@ -473,7 +471,8 @@ const ChatRealTime = () => {
     useEffect(() => {
         if (socket && userData) { // Đảm bảo userData tồn tại để so sánh sender_id
 
-            // --- Hàm xử lý bộ đệm ảnh từ admin --- 
+            // --- Hàm xử lý bộ đệm ảnh từ admin ---
+            /* // Comment out image buffer logic
             const processAdminImageBuffer = () => {
                 const bufferedImages = pendingAdminImagesRef.current;
                 if (bufferedImages.length > 0) {
@@ -488,7 +487,7 @@ const ChatRealTime = () => {
                                 isUploading: false,
                                 uploadProgress: 100,
                             },
-                            sender_id: firstImageMsg.sender_id, 
+                            sender_id: firstImageMsg.sender_id,
                             sent_at: firstImageMsg.sent_at || new Date().toISOString(), // Lấy thời gian của ảnh đầu tiên
                             isCurrentUser: false,
                             is_read: isOpen
@@ -504,7 +503,7 @@ const ChatRealTime = () => {
                     setMessages((prev) => [...prev, messageToAdd]);
                     pendingAdminImagesRef.current = []; // Xóa bộ đệm
 
-                     // Xử lý unread count và thông báo khi buffer được xử lý
+                    // Xử lý unread count và thông báo khi buffer được xử lý
                     if (!isOpen) {
                         setUnreadCount(prev => prev + 1);
                         const audio = new Audio('/notification.mp3');
@@ -519,15 +518,17 @@ const ChatRealTime = () => {
                     imageBufferTimeoutRef.current = null;
                 }
             };
+            */
 
-            // --- Handler cho sự kiện adminResponse --- 
+            // --- Handler cho sự kiện adminResponse ---
             const adminResponseHandler = (data) => {
                 console.log("📩 Nhận phản hồi từ admin:", data);
 
                 // Kiểm tra xem có phải tin nhắn từ admin không (sender_id tồn tại và khác user hiện tại)
                 const isAdminMessage = data.sender_id && userData && data.sender_id !== userData.id;
-                const isImageOnly = !!(data.image && !data.text); // Dùng !! để đảm bảo là boolean
+                // const isImageOnly = !!(data.image && !data.text); // Comment out image check
 
+                /* // Comment out image buffer logic
                 if (isAdminMessage && isImageOnly) {
                     // Nếu là ảnh đơn từ admin -> đưa vào buffer
                     console.log("⏳ Thêm ảnh admin vào buffer:", data);
@@ -538,32 +539,35 @@ const ChatRealTime = () => {
                     // Thêm ảnh vào buffer
                     pendingAdminImagesRef.current.push(data);
                     // Đặt timeout mới để xử lý buffer sau 1.2 giây
-                    imageBufferTimeoutRef.current = setTimeout(processAdminImageBuffer, 1200); 
+                    imageBufferTimeoutRef.current = setTimeout(processAdminImageBuffer, 1200);
                 } else {
-                    // Nếu là tin nhắn text từ admin, hoặc tin nhắn từ client (không phải ảnh admin đơn lẻ)
-                    // Xử lý buffer ngay lập tức (nếu có ảnh đang chờ)
-                    processAdminImageBuffer(); 
-                    
-                    // Thêm tin nhắn hiện tại vào messages
-                    setMessages((prev) => [...prev, data]);
+                 */
+                // Nếu là tin nhắn text từ admin, hoặc tin nhắn từ client (không phải ảnh admin đơn lẻ)
+                // Xử lý buffer ngay lập tức (nếu có ảnh đang chờ)
+                // processAdminImageBuffer(); // Comment out
 
-                    // Xử lý unread count và thông báo cho tin nhắn text từ admin
-                    if (isAdminMessage && !isImageOnly && !isOpen) {
-                        setUnreadCount(prev => prev + 1);
-                        const audio = new Audio('/notification.mp3');
-                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
-                    } else if (isOpen) {
-                        // Nếu chat đang mở, đánh dấu đã đọc
-                        markMessagesAsRead();
-                    }
+                // Thêm tin nhắn hiện tại vào messages
+                setMessages((prev) => [...prev, data]);
+
+                // Xử lý unread count và thông báo cho tin nhắn text từ admin
+                // if (isAdminMessage && !isImageOnly && !isOpen) { // Modify condition
+                if (isAdminMessage && !isOpen) { // Check only if admin message and chat is closed
+                    setUnreadCount(prev => prev + 1);
+                    const audio = new Audio('/notification.mp3');
+                    audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                } else if (isOpen) {
+                    // Nếu chat đang mở, đánh dấu đã đọc
+                    markMessagesAsRead();
                 }
+                // } // End of commented out else block
             };
 
-            // --- Handler cho sự kiện adminMultipleImagesUpload --- 
+            // --- Handler cho sự kiện adminMultipleImagesUpload ---
+            /* // Comment out multiple image handler
             const adminMultipleImagesHandler = (data) => {
                 console.log("🖼️ Nhận nhiều ảnh từ admin (sự kiện riêng):", data);
-                 // Xử lý buffer cũ trước khi thêm nhóm mới (tránh trùng lặp nếu server gửi cả 2)
-                 processAdminImageBuffer(); 
+                // Xử lý buffer cũ trước khi thêm nhóm mới (tránh trùng lặp nếu server gửi cả 2)
+                processAdminImageBuffer();
 
                 if (data.images && data.images.length > 0) {
                     // Tạo tin nhắn nhóm ảnh
@@ -576,10 +580,10 @@ const ChatRealTime = () => {
                         },
                         sender_id: data.sender_id, // Lấy sender_id từ data sự kiện
                         sent_at: data.sent_at || new Date().toISOString(),
-                        isCurrentUser: false, 
-                        is_read: isOpen 
+                        isCurrentUser: false,
+                        is_read: isOpen
                     };
-                    
+
                     setMessages((prev) => [...prev, imageGroupMessage]);
 
                     // Xử lý unread count và thông báo
@@ -592,26 +596,28 @@ const ChatRealTime = () => {
                     }
                 }
             };
-            
+            */
+
             // --- Đăng ký listeners ---
             socket.on("adminResponse", adminResponseHandler);
-            socket.on("adminMultipleImagesUpload", adminMultipleImagesHandler);
+            // socket.on("adminMultipleImagesUpload", adminMultipleImagesHandler); // Comment out
         }
-        
+
         // ƯU TIÊN CLEANUP VÀ DEPENDENCY TỪ STASH
         return () => {
             if (socket) {
                 socket.off("adminResponse");
-                socket.off("adminMultipleImagesUpload");
+                // socket.off("adminMultipleImagesUpload"); // Comment out
             }
         };
-    }, [socket, isOpen]);
+    }, [socket, isOpen, userData, markMessagesAsRead]); // Updated dependencies
 
     // Hàm xử lý khi chọn ảnh
+    /* // Comment out image selection logic
     const handleImageSelect = (e) => {
         if (e.target.files && e.target.files.length > 0) {
             const files = Array.from(e.target.files);
-            
+
             // Kiểm tra loại file và kích thước
             const validFiles = files.filter(file => {
                 // Kiểm tra loại file
@@ -619,22 +625,22 @@ const ChatRealTime = () => {
                     setLastError("Chỉ cho phép tải lên file ảnh");
                     return false;
                 }
-                
+
                 // Kiểm tra kích thước file (giới hạn 5MB)
                 if (file.size > 5 * 1024 * 1024) {
                     setLastError("Kích thước ảnh không được vượt quá 5MB");
                     return false;
                 }
-                
+
                 return true;
             });
-            
+
             if (validFiles.length === 0) {
                 return;
             }
-            
+
             setSelectedImages(validFiles);
-            
+
             // Tạo preview URLs
             const newPreviews = [];
             validFiles.forEach(file => {
@@ -649,8 +655,10 @@ const ChatRealTime = () => {
             });
         }
     };
+    */
 
     // Hàm hủy upload ảnh
+    /* // Comment out cancel image upload
     const cancelImageUpload = () => {
         setSelectedImages([]);
         setImagePreviews([]);
@@ -658,27 +666,31 @@ const ChatRealTime = () => {
             imageInputRef.current.value = "";
         }
     };
+    */
 
     // Hàm xóa một ảnh cụ thể khỏi danh sách
+    /* // Comment out remove image
     const removeImage = (index) => {
         setSelectedImages(prev => prev.filter((_, i) => i !== index));
         setImagePreviews(prev => prev.filter((_, i) => i !== index));
     };
+    */
 
     // Hàm upload nhiều ảnh và gửi tin nhắn
+    /* // Comment out upload and send multiple images
     const uploadAndSendMultipleImages = async () => {
         if (selectedImages.length === 0 || !isAuthenticated || !socket || !isConnected) {
             console.error("❌ Không thể gửi ảnh: Chưa chọn ảnh, chưa đăng nhập hoặc mất kết nối");
             setLastError("Không thể gửi ảnh: Chưa chọn ảnh, chưa đăng nhập hoặc mất kết nối");
             return;
         }
-        
+
         try {
             setIsUploading(true);
-            
+
             // Tạo ID nhóm cho lần gửi nhiều ảnh này
             const groupId = Date.now().toString();
-            
+
             // Thêm một tin nhắn tạm thời cho cả nhóm ảnh
             setMessages(prev => [...prev, {
                 imageGroup: {
@@ -692,46 +704,46 @@ const ChatRealTime = () => {
                 isCurrentUser: true,
                 is_read: false
             }]);
-            
+
             // Tạo mảng promises cho việc upload từng ảnh
             const uploadPromises = selectedImages.map((file, index) => {
                 return new Promise((resolve, reject) => {
                     // Tạo FormData để upload ảnh
                     const formData = new FormData();
                     formData.append('image', file);
-                    
+
                     // Lấy token xác thực
                     const token = localStorage.getItem("authToken");
-                    
+
                     // Tạo request với XMLHttpRequest để theo dõi tiến trình
                     const xhr = new XMLHttpRequest();
-                    
+
                     // Cập nhật tiến trình upload
                     xhr.upload.addEventListener('progress', (event) => {
                         if (event.lengthComputable) {
                             const progress = Math.round((event.loaded / event.total) * 100);
-                            
+
                             // Cập nhật trạng thái upload trong tin nhắn nhóm
-                            setMessages(prev => 
-                                prev.map(msg => 
+                            setMessages(prev =>
+                                prev.map(msg =>
                                     msg.imageGroup && msg.imageGroup.groupId === groupId
-                                        ? { 
-                                            ...msg, 
+                                        ? {
+                                            ...msg,
                                             imageGroup: {
                                                 ...msg.imageGroup,
                                                 uploadProgress: Math.min(
-                                                    msg.imageGroup.uploadProgress + (progress / selectedImages.length), 
+                                                    msg.imageGroup.uploadProgress + (progress / selectedImages.length),
                                                     99
                                                 )
-                                            } 
-                                          }
+                                            }
+                                        }
                                         : msg
                                 )
                             );
                         }
                     });
-                    
-                    xhr.onload = function() {
+
+                    xhr.onload = function () {
                         if (xhr.status >= 200 && xhr.status < 300) {
                             try {
                                 const response = JSON.parse(xhr.responseText);
@@ -748,27 +760,27 @@ const ChatRealTime = () => {
                             reject(new Error(xhr.statusText || "HTTP error"));
                         }
                     };
-                    
-                    xhr.onerror = function() {
+
+                    xhr.onerror = function () {
                         console.error(`❌ Lỗi khi upload ảnh ${index}`);
                         // Đánh dấu thất bại trong tin nhắn nhóm
-                        setMessages(prev => 
-                            prev.map(msg => 
+                        setMessages(prev =>
+                            prev.map(msg =>
                                 msg.imageGroup && msg.imageGroup.groupId === groupId
-                                    ? { 
-                                        ...msg, 
+                                    ? {
+                                        ...msg,
                                         imageGroup: {
                                             ...msg.imageGroup,
                                             isUploading: false,
                                             uploadFailed: true
-                                        } 
-                                      }
+                                        }
+                                    }
                                     : msg
                             )
                         );
                         reject(new Error("Lỗi kết nối"));
                     };
-                    
+
                     // Gửi request
                     xhr.open('POST', 'http://localhost:3002/upload', true);
                     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -776,7 +788,7 @@ const ChatRealTime = () => {
                     xhr.send(formData);
                 });
             });
-            
+
             // Chờ tất cả ảnh upload xong
             Promise.all(uploadPromises.map(p => p.catch((err) => {
                 console.error("Lỗi upload:", err.message);
@@ -785,13 +797,13 @@ const ChatRealTime = () => {
                 .then(results => {
                     // Lọc ra các URL thành công (loại bỏ các lỗi)
                     const successfulUrls = results.filter(result => typeof result === 'string');
-                    
+
                     if (successfulUrls.length > 0) {
                         // Gửi tất cả URL ảnh thành công qua socket
                         socket.emit("clientMultipleImagesUpload", { images: successfulUrls }, (socketResponse) => {
                             if (socketResponse.success) {
                                 console.log("✅ Tất cả ảnh đã được gửi thành công");
-                                
+
                                 // Cập nhật tin nhắn tạm thời thành tin nhắn thật với URLs từ server
                                 setMessages(prev => prev.map(msg => {
                                     // Nếu là tin nhắn nhóm với groupId phù hợp
@@ -807,30 +819,30 @@ const ChatRealTime = () => {
                                     }
                                     return msg;
                                 }));
-                                
+
                                 // Lưu nhóm ảnh vào state để tham chiếu sau này
                                 setImageGroups(prev => ({
                                     ...prev,
                                     [groupId]: successfulUrls
                                 }));
-                                
+
                                 setLastError("");
                             } else {
                                 console.error("❌ Lỗi gửi ảnh:", socketResponse.error);
                                 setLastError("Lỗi gửi ảnh: " + (socketResponse.error || "Không xác định"));
-                                
+
                                 // Đánh dấu tin nhắn nhóm là upload thất bại
-                                setMessages(prev => 
-                                    prev.map(msg => 
+                                setMessages(prev =>
+                                    prev.map(msg =>
                                         msg.imageGroup && msg.imageGroup.groupId === groupId
-                                            ? { 
-                                                ...msg, 
+                                            ? {
+                                                ...msg,
                                                 imageGroup: {
                                                     ...msg.imageGroup,
                                                     isUploading: false,
                                                     uploadFailed: true
-                                                } 
-                                              }
+                                                }
+                                            }
                                             : msg
                                     )
                                 );
@@ -847,13 +859,14 @@ const ChatRealTime = () => {
                     }
                     setIsUploading(false);
                 });
-            
+
         } catch (uploadError) {
             console.error("❌ Lỗi khi gửi nhiều ảnh:", uploadError.message);
             setLastError(`Lỗi gửi ảnh: ${uploadError.message}`);
             setIsUploading(false);
         }
     };
+    */
 
     const sendMessage = () => {
         if (!isAuthenticated || !socket || !isConnected) {
@@ -861,13 +874,15 @@ const ChatRealTime = () => {
             setLastError("Không thể gửi tin nhắn: Chưa đăng nhập hoặc mất kết nối");
             return;
         }
-        
+
         // Nếu có ảnh được chọn, ưu tiên gửi ảnh
+        /* // Comment out image sending logic
         if (selectedImages.length > 0) {
             uploadAndSendMultipleImages();
             return;
         }
-        
+        */
+
         if (message.trim() !== "") {
             const messageData = {
                 text: message
@@ -901,7 +916,7 @@ const ChatRealTime = () => {
                 isCurrentUser: true,
                 is_read: false // Tin nhắn mới gửi luôn ở trạng thái chưa đọc
             };
-            
+
             setMessages((prev) => [...prev, displayMessage]);
             setMessage("");
         }
@@ -956,9 +971,8 @@ const ChatRealTime = () => {
             {/* Chat Bubble Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-110 ${
-                    isOpen ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
-                }`}
+                className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+                    }`}
             >
                 {isOpen ? <BsXLg className="text-2xl" /> : <BsChatDots className="text-2xl" />}
                 {!isOpen && unreadCount > 0 && (
@@ -1006,9 +1020,8 @@ const ChatRealTime = () => {
                                 {messages.map((msg, index) => (
                                     <div key={index} className={`flex ${msg.sender_id === userData?.id || msg.isCurrentUser ? "justify-end" : "justify-start"}`}>
                                         <div
-                                            className={`max-w-[80%] rounded-lg p-3 ${
-                                                msg.sender_id === userData?.id || msg.isCurrentUser ? "bg-green-500 text-white rounded-br-sm" : "bg-gray-200 text-gray-800 rounded-bl-sm"
-                                            }`}
+                                            className={`max-w-[80%] rounded-lg p-3 ${msg.sender_id === userData?.id || msg.isCurrentUser ? "bg-green-500 text-white rounded-br-sm" : "bg-gray-200 text-gray-800 rounded-bl-sm"
+                                                }`}
                                         >
                                             {/* Hiển thị nhóm ảnh nếu có */}
                                             {msg.imageGroup && (
@@ -1019,9 +1032,9 @@ const ChatRealTime = () => {
                                                             <div className="flex flex-wrap gap-1 mb-1">
                                                                 {msg.imageGroup.previews.map((preview, idx) => (
                                                                     <div key={idx} className="relative">
-                                                                        <img 
-                                                                            src={preview} 
-                                                                            alt={`Preview ${idx + 1}`} 
+                                                                        <img
+                                                                            src={preview}
+                                                                            alt={`Preview ${idx + 1}`}
                                                                             className="h-[80px] w-[80px] object-cover rounded opacity-70"
                                                                         />
                                                                     </div>
@@ -1029,9 +1042,9 @@ const ChatRealTime = () => {
                                                             </div>
                                                             {/* Progress bar cho upload nhóm */}
                                                             <div className="w-full bg-white bg-opacity-30 h-1 mt-1 rounded overflow-hidden">
-                                                                <div 
-                                                                    className="h-full bg-white" 
-                                                                    style={{width: `${msg.imageGroup.uploadProgress || 0}%`}} 
+                                                                <div
+                                                                    className="h-full bg-white"
+                                                                    style={{ width: `${msg.imageGroup.uploadProgress || 0}%` }}
                                                                 ></div>
                                                             </div>
                                                             <p className="text-white text-xs text-center mt-1">
@@ -1049,13 +1062,13 @@ const ChatRealTime = () => {
                                                                 <>
                                                                     {msg.imageGroup.urls.length === 1 ? (
                                                                         // Nếu chỉ có 1 ảnh, hiển thị to hơn
-                                                                        <div 
-                                                                            className="cursor-pointer" 
+                                                                        <div
+                                                                            className="cursor-pointer"
                                                                             onClick={() => openLightbox(msg.imageGroup.urls, 0)}
                                                                         >
-                                                                            <img 
-                                                                                src={msg.imageGroup.urls[0]} 
-                                                                                alt="Hình ảnh" 
+                                                                            <img
+                                                                                src={msg.imageGroup.urls[0]}
+                                                                                alt="Hình ảnh"
                                                                                 className="rounded max-w-full max-h-[200px] object-contain"
                                                                             />
                                                                         </div>
@@ -1063,15 +1076,15 @@ const ChatRealTime = () => {
                                                                         // Nếu có 2 ảnh, hiển thị dạng 50-50
                                                                         <div className="grid grid-cols-2 gap-1">
                                                                             {msg.imageGroup.urls.map((url, idx) => (
-                                                                                <div 
-                                                                                    key={idx} 
-                                                                                    className="cursor-pointer" 
+                                                                                <div
+                                                                                    key={idx}
+                                                                                    className="cursor-pointer"
                                                                                     onClick={() => openLightbox(msg.imageGroup.urls, idx)}
                                                                                 >
-                                                                                    <img 
-                                                                                        src={url} 
-                                                                                        alt={`Hình ảnh ${idx + 1}`} 
-                                                                                        className="w-full h-[100px] object-cover rounded" 
+                                                                                    <img
+                                                                                        src={url}
+                                                                                        alt={`Hình ảnh ${idx + 1}`}
+                                                                                        className="w-full h-[100px] object-cover rounded"
                                                                                     />
                                                                                 </div>
                                                                             ))}
@@ -1080,26 +1093,26 @@ const ChatRealTime = () => {
                                                                         // Nếu có 3 ảnh, hiển thị 2 ảnh trên, 1 ảnh dưới
                                                                         <div className="grid grid-cols-2 gap-1">
                                                                             {msg.imageGroup.urls.slice(0, 2).map((url, idx) => (
-                                                                                <div 
-                                                                                    key={idx} 
-                                                                                    className="cursor-pointer" 
+                                                                                <div
+                                                                                    key={idx}
+                                                                                    className="cursor-pointer"
                                                                                     onClick={() => openLightbox(msg.imageGroup.urls, idx)}
                                                                                 >
-                                                                                    <img 
-                                                                                        src={url} 
-                                                                                        alt={`Hình ảnh ${idx + 1}`} 
-                                                                                        className="w-full h-[80px] object-cover rounded" 
+                                                                                    <img
+                                                                                        src={url}
+                                                                                        alt={`Hình ảnh ${idx + 1}`}
+                                                                                        className="w-full h-[80px] object-cover rounded"
                                                                                     />
                                                                                 </div>
                                                                             ))}
-                                                                            <div 
-                                                                                className="col-span-2 cursor-pointer" 
+                                                                            <div
+                                                                                className="col-span-2 cursor-pointer"
                                                                                 onClick={() => openLightbox(msg.imageGroup.urls, 2)}
                                                                             >
-                                                                                <img 
-                                                                                    src={msg.imageGroup.urls[2]} 
-                                                                                    alt="Hình ảnh 3" 
-                                                                                    className="w-full h-[80px] object-cover rounded" 
+                                                                                <img
+                                                                                    src={msg.imageGroup.urls[2]}
+                                                                                    alt="Hình ảnh 3"
+                                                                                    className="w-full h-[80px] object-cover rounded"
                                                                                 />
                                                                             </div>
                                                                         </div>
@@ -1107,36 +1120,36 @@ const ChatRealTime = () => {
                                                                         // Nếu có 4+ ảnh, hiển thị dạng lưới với ảnh cuối "+X"
                                                                         <div className="grid grid-cols-2 gap-1">
                                                                             {msg.imageGroup.urls.slice(0, 2).map((url, idx) => (
-                                                                                <div 
-                                                                                    key={idx} 
-                                                                                    className="cursor-pointer" 
+                                                                                <div
+                                                                                    key={idx}
+                                                                                    className="cursor-pointer"
                                                                                     onClick={() => openLightbox(msg.imageGroup.urls, idx)}
                                                                                 >
-                                                                                    <img 
-                                                                                        src={url} 
-                                                                                        alt={`Hình ảnh ${idx + 1}`} 
-                                                                                        className="w-full h-[80px] object-cover rounded" 
+                                                                                    <img
+                                                                                        src={url}
+                                                                                        alt={`Hình ảnh ${idx + 1}`}
+                                                                                        className="w-full h-[80px] object-cover rounded"
                                                                                     />
                                                                                 </div>
                                                                             ))}
-                                                                            <div 
-                                                                                className="cursor-pointer" 
+                                                                            <div
+                                                                                className="cursor-pointer"
                                                                                 onClick={() => openLightbox(msg.imageGroup.urls, 2)}
                                                                             >
-                                                                                <img 
-                                                                                    src={msg.imageGroup.urls[2]} 
-                                                                                    alt="Hình ảnh 3" 
-                                                                                    className="w-full h-[80px] object-cover rounded" 
+                                                                                <img
+                                                                                    src={msg.imageGroup.urls[2]}
+                                                                                    alt="Hình ảnh 3"
+                                                                                    className="w-full h-[80px] object-cover rounded"
                                                                                 />
                                                                             </div>
-                                                                            <div 
-                                                                                className="cursor-pointer relative" 
+                                                                            <div
+                                                                                className="cursor-pointer relative"
                                                                                 onClick={() => openLightbox(msg.imageGroup.urls, 3)}
                                                                             >
-                                                                                <img 
-                                                                                    src={msg.imageGroup.urls[3]} 
-                                                                                    alt="Hình ảnh 4+" 
-                                                                                    className="w-full h-[80px] object-cover rounded brightness-50" 
+                                                                                <img
+                                                                                    src={msg.imageGroup.urls[3]}
+                                                                                    alt="Hình ảnh 4+"
+                                                                                    className="w-full h-[80px] object-cover rounded brightness-50"
                                                                                 />
                                                                                 <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl">
                                                                                     +{msg.imageGroup.urls.length - 3}
@@ -1150,26 +1163,26 @@ const ChatRealTime = () => {
                                                     )}
                                                 </div>
                                             )}
-                                            
+
                                             {/* Hiển thị ảnh đơn lẻ (cho tin nhắn cũ) */}
                                             {msg.image && !msg.imageGroup && (
-                                                <div 
-                                                    className="mb-2 relative cursor-pointer" 
+                                                <div
+                                                    className="mb-2 relative cursor-pointer"
                                                     onClick={() => openLightbox([msg.image], 0)}
                                                 >
-                                                    <img 
-                                                        src={msg.image} 
-                                                        alt="Hình ảnh" 
+                                                    <img
+                                                        src={msg.image}
+                                                        alt="Hình ảnh"
                                                         className="rounded max-w-full max-h-[200px] object-contain"
                                                     />
-                                                    
+
                                                     {/* Hiển thị progress bar nếu đang upload */}
                                                     {msg.isUploading && (
                                                         <div className="absolute bottom-0 left-0 w-full bg-black bg-opacity-50 p-1">
                                                             <div className="h-1 bg-white rounded overflow-hidden">
-                                                                <div 
-                                                                    className="h-full bg-green-300" 
-                                                                    style={{width: `${msg.uploadProgress || 0}%`}} 
+                                                                <div
+                                                                    className="h-full bg-green-300"
+                                                                    style={{ width: `${msg.uploadProgress || 0}%` }}
                                                                 ></div>
                                                             </div>
                                                             <p className="text-white text-xs text-center mt-1">
@@ -1177,7 +1190,7 @@ const ChatRealTime = () => {
                                                             </p>
                                                         </div>
                                                     )}
-                                                    
+
                                                     {/* Hiển thị icon lỗi nếu upload thất bại */}
                                                     {msg.uploadFailed && (
                                                         <div className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full text-xs">
@@ -1186,10 +1199,10 @@ const ChatRealTime = () => {
                                                     )}
                                                 </div>
                                             )}
-                                            
+
                                             {/* Hiển thị text nếu có */}
                                             {msg.text && <p className="text-sm">{msg.text}</p>}
-                                            
+
                                             <div className="flex justify-between items-center mt-1">
                                                 <span className="text-xs opacity-70">
                                                     {new Date(msg.sent_at).toLocaleTimeString()}
@@ -1209,17 +1222,18 @@ const ChatRealTime = () => {
                     </div>
 
                     {/* Image Preview */}
+                    {/* // Comment out Image Preview section
                     {imagePreviews.length > 0 && (
                         <div className="px-4 pt-2">
                             <div className="flex flex-wrap gap-2">
                                 {imagePreviews.map((preview, index) => (
                                     <div key={index} className="relative inline-block">
-                                        <img 
-                                            src={preview} 
-                                            alt={`Preview ${index + 1}`} 
-                                            className="h-20 rounded border border-gray-300 object-cover" 
+                                        <img
+                                            src={preview}
+                                            alt={`Preview ${index + 1}`}
+                                            className="h-20 rounded border border-gray-300 object-cover"
                                         />
-                                        <button 
+                                        <button
                                             onClick={() => removeImage(index)}
                                             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
                                         >
@@ -1236,6 +1250,7 @@ const ChatRealTime = () => {
                             </div>
                         </div>
                     )}
+                    */}
 
                     {/* Input Area */}
                     <div className="p-4 bg-white border-t border-gray-200">
@@ -1247,23 +1262,26 @@ const ChatRealTime = () => {
                                 placeholder="Nhập tin nhắn..."
                                 className="flex-1 resize-none rounded-full px-4 py-2 border border-gray-300 focus:outline-none focus:border-green-500 text-sm min-h-[40px] max-h-[100px]"
                                 rows="1"
-                                disabled={!isConnected || isUploading}
+                                // disabled={!isConnected || isUploading} // Modify disabled condition
+                                disabled={!isConnected}
                             />
-                            
+
                             {/* Nút chọn ảnh */}
+                            {/* // Comment out image selection button
                             <button
                                 onClick={() => imageInputRef.current?.click()}
                                 disabled={!isConnected || isUploading}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                    isConnected && !isUploading 
-                                    ? "bg-blue-500 hover:bg-blue-600 text-white" 
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isConnected && !isUploading
+                                        ? "bg-blue-500 hover:bg-blue-600 text-white"
+                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    }`}
                             >
                                 <MdImage className="text-lg" />
                             </button>
-                            
+                            */}
+
                             {/* Input file ẩn - hỗ trợ chọn nhiều file */}
+                            {/* // Comment out hidden file input
                             <input
                                 type="file"
                                 ref={imageInputRef}
@@ -1272,16 +1290,18 @@ const ChatRealTime = () => {
                                 multiple // Thêm multiple để cho phép chọn nhiều ảnh
                                 className="hidden"
                             />
-                            
+                            */}
+
                             {/* Nút gửi */}
                             <button
                                 onClick={sendMessage}
-                                disabled={(!message.trim() && selectedImages.length === 0) || !isConnected || isUploading}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${
-                                    (message.trim() || selectedImages.length > 0) && isConnected && !isUploading
-                                    ? "bg-green-500 hover:bg-green-600" 
+                                // disabled={(!message.trim() && selectedImages.length === 0) || !isConnected || isUploading} // Modify disabled condition
+                                disabled={!message.trim() || !isConnected}
+                                // className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${(message.trim() || selectedImages.length > 0) && isConnected && !isUploading // Modify className condition
+                                className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${message.trim() && isConnected
+                                    ? "bg-green-500 hover:bg-green-600"
                                     : "bg-gray-300 cursor-not-allowed"
-                                }`}
+                                    }`}
                             >
                                 <IoMdSend className="text-lg" />
                             </button>

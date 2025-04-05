@@ -227,11 +227,10 @@ const Blogs = () => {
             </h2>
             <div className="flex flex-wrap justify-center gap-4">
               <button
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
-                  activeCategory === "all"
-                    ? "bg-amber-300 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-amber-100"
-                }`}
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${activeCategory === "all"
+                  ? "bg-amber-300 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-amber-100"
+                  }`}
                 onClick={() => handleCategoryClick("all")}
               >
                 Tất cả bài viết
@@ -240,11 +239,10 @@ const Blogs = () => {
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
-                    activeCategory === category.slug
-                      ? "bg-amber-300 text-white shadow-md"
-                      : "bg-white text-gray-600 hover:bg-amber-100"
-                  }`}
+                  className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${activeCategory === category.slug
+                    ? "bg-amber-300 text-white shadow-md"
+                    : "bg-white text-gray-600 hover:bg-amber-100"
+                    }`}
                   onClick={() => handleCategoryClick(category.slug)}
                 >
                   {category.title}
@@ -264,9 +262,8 @@ const Blogs = () => {
               <div className="text-center py-10">
                 <h3 className="text-xl font-semibold mb-2">
                   {activeCategory !== "all" &&
-                    `Danh mục: ${
-                      categories.find((c) => c.slug === activeCategory)
-                        ?.title || activeCategory
+                    `Danh mục: ${categories.find((c) => c.slug === activeCategory)
+                      ?.title || activeCategory
                     }`}
                 </h3>
                 <p className="text-red-500">{error}</p>
@@ -302,8 +299,8 @@ const Blogs = () => {
                                     ? post.thumbnail.startsWith("http")
                                       ? post.thumbnail
                                       : post.thumbnail.startsWith("/")
-                                      ? `http://localhost:8000${post.thumbnail}`
-                                      : `http://localhost:8000/${post.thumbnail}`
+                                        ? `http://localhost:8000${post.thumbnail}`
+                                        : `http://localhost:8000/${post.thumbnail}`
                                     : "http://localhost:5173/src/assets/img/banners/homepage01-slide2.jpg"
                                 }
                                 alt={post.title}
@@ -361,11 +358,10 @@ const Blogs = () => {
                         <p className="text-gray-500">
                           {activeCategory === "all"
                             ? "Hiện tại chưa có bài viết nào được đăng tải. Vui lòng quay lại sau."
-                            : `Chưa có bài viết nào thuộc danh mục "${
-                                categories.find(
-                                  (c) => c.slug === activeCategory
-                                )?.title || activeCategory
-                              }". Vui lòng chọn danh mục khác.`}
+                            : `Chưa có bài viết nào thuộc danh mục "${categories.find(
+                              (c) => c.slug === activeCategory
+                            )?.title || activeCategory
+                            }". Vui lòng chọn danh mục khác.`}
                         </p>
                       </div>
                     </div>

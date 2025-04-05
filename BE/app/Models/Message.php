@@ -12,6 +12,7 @@ class Message extends Model
     protected $fillable = [
         'text',
         'image',
+        // 'images',
         'sender_id',
         'receiver_id',
         'is_read',
@@ -20,8 +21,10 @@ class Message extends Model
 
     protected $casts = [
         'sent_at' => 'datetime',
-        'is_read' => 'boolean'
+        'is_read' => 'boolean',
+        // 'images' => 'array'
     ];
+
 
     /**
      * Lấy thông tin người gửi

@@ -257,40 +257,48 @@ const Payment = () => {
           },
         }
       );
+      console.log(response.data);
 
-      // Kiểm tra response
-      const newOrderCode = response.data.data.order_code;
+      // Lấy mã đơn hàng từ response API
+      const newOrderCode = response.data.order?.order_code || response.data.order_code || response.data.data?.order_code;
+      if (!newOrderCode) {
+        console.error("Không thể lấy mã đơn hàng từ response API:", response.data);
+      }
       setOrderCode(newOrderCode);
 
-      // Lưu thông tin đơn hàng vào localStorage
+      // Lấy tên phương thức thanh toán đã chọn
+      const selectedMethod = paymentMethods.find(
+        (method) => method.id === Number(paymentMethod)
+      );
+      const paymentMethodName = selectedMethod ? selectedMethod.name : "Không xác định";
+
+      // Lưu thông tin đơn hàng vào localStorage với tên phương thức thanh toán
       localStorage.setItem(
         "orderInfo",
         JSON.stringify({
           order_code: newOrderCode,
           products: selectedProducts,
           total: calculateTotal(),
-          payment_method: paymentMethod,
+          payment_method: paymentMethodName, // Lưu tên thay vì ID
           order_date: new Date().toISOString(),
         })
       );
 
       if (response.status === 200 || response.status === 201) {
-        const selectedMethod = paymentMethods.find(
-          (method) => method.id === Number(paymentMethod)
-        );
-        if (selectedMethod.name === "MoMo") {
+        // Chuyển hướng dựa trên phương thức thanh toán
+        if (paymentMethodName === "MoMo") {
           if (response.data && response.data.payUrl) {
             window.location.href = response.data.payUrl;
           } else {
-            setError("Không tìm thấy đường dẫn thanh toán");
+            setError("Không tìm thấy đường dẫn thanh toán MoMo");
           }
-        } else if (selectedMethod.name === "VNPAY") {
+        } else if (paymentMethodName === "VNPAY") {
           if (response.data && response.data.data) {
             window.location.href = response.data.data;
           } else {
             setError("Không nhận được đường dẫn thanh toán từ VNPAY");
           }
-        } else {
+        } else { // Mặc định là thanh toán tiền mặt hoặc các phương thức khác không cần redirect
           navigate("/order-success");
         }
       }
@@ -425,6 +433,7 @@ const Payment = () => {
                         ? "Thanh toán khi nhận hàng"
                         : method.name}
                     </span>{" "}
+                    {/* Giả sử API trả về field "name" */}
                   </label>
                 ))
               ) : (
@@ -499,7 +508,7 @@ const Payment = () => {
             {selectedProducts.map((item) => {
               const price = item.product_variant
                 ? item.product_variant.discount_price ||
-                  item.product_variant.price
+                item.product_variant.price
                 : item.product.discount_price || item.product.price;
 
               return (

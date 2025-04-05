@@ -8,9 +8,6 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\CategoryPostApiController;
-<<<<<<< HEAD
-use Illuminate\Support\Facades\Auth;
-=======
 use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\BannerController;
@@ -18,7 +15,6 @@ use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\MessageController;
->>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -111,91 +107,13 @@ Route::post('/send-message', function (Request $request) {
 
 // Message routes
 Route::prefix('messages')->group(function () {
-<<<<<<< HEAD
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/', [MessageController::class, 'store']); // Lưu tin nhắn
-=======
     Route::post('/', [MessageController::class, 'store']); // Lưu tin nhắn từ socket.io
 
     // Routes yêu cầu xác thực
     Route::middleware('auth:sanctum')->group(function () {
->>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
         Route::get('/user/{userId}', [MessageController::class, 'getUserMessages']); // Lấy tin nhắn theo user
         Route::get('/unread', [MessageController::class, 'getUnreadMessages']); // Lấy tin chưa đọc
         Route::patch('/read/{messageId}', [MessageController::class, 'markAsRead']); // Đánh dấu đã đọc
         Route::post('/admin/send', [MessageController::class, 'sendByAdmin']); // Admin gửi tin nhắn
     });
-<<<<<<< HEAD
-});
-
-// Route xác thực token cho socket server
-Route::middleware('auth:sanctum')->post('/auth/verify-token', function (Request $request) {
-    $user = $request->user();
-
-    // Chuẩn hóa role
-    // Kiểm tra xem request có chứa header Origin không (để biết nó đến từ đâu)
-    $origin = $request->header('Origin');
-
-    // Nếu request đến từ trang admin, luôn trả về role là admin
-    if (strpos($origin, 'admin') !== false) {
-        $role = 'admin';
-    } else {
-        // Xử lý thông thường cho các trường hợp khác
-        $role = is_string($user->role) ? $user->role : 'user';
-        if (is_object($user->role)) {
-            $role = $user->role->name === 'admin' ? 'admin' : 'user';
-        }
-    }
-
-    return response()->json([
-        'user' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $role,
-            'avatar' => $user->avatar
-        ],
-        'verified' => true
-    ]);
-});
-
-// Route đơn giản để kiểm tra token
-Route::get('/auth/check-token', function (Request $request) {
-    return response()->json(['message' => 'Bạn có quyền truy cập API này', 'token_valid' => true]);
-})->middleware('auth:sanctum');
-
-// Route test kiểm tra xác thực
-Route::get('/test-auth', function (Request $request) {
-    $user = Auth::user();
-    if ($user) {
-        return response()->json([
-            'success' => true,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'role_id' => $user->role_id ?? null
-            ],
-            'token' => $request->bearerToken()
-        ]);
-    }
-    return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-})->middleware('auth:sanctum');
-
-// API đơn giản để lấy thông tin người dùng từ ID (cho socket server)
-Route::get('/users/{id}', function ($id) {
-    $user = \App\Models\User::find($id);
-    if (!$user) {
-        return response()->json(['error' => 'User not found'], 404);
-    }
-
-    return response()->json([
-        'id' => $user->id,
-        'name' => $user->name,
-        'email' => $user->email,
-        'role_id' => $user->role_id
-    ]);
-=======
->>>>>>> 2e14406b3e596a8478022de3f9eb13f92e5eddb7
 });

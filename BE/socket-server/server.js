@@ -38,10 +38,10 @@ if (!fs.existsSync(uploadDir)) {
 
 // Cấu hình multer để lưu file upload
 const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
+    destination: function (req, file, cb) {
         cb(null, uploadDir)
     },
-    filename: function(req, file, cb) {
+    filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const fileExt = path.extname(file.originalname);
         cb(null, 'chat-image-' + uniqueSuffix + fileExt);
@@ -416,7 +416,7 @@ io.on("connection", (socket) => {
     /**
      * 📌 Xử lý tin nhắn từ Client gửi đến Admin
      */
-    socket.on("clientMessage", async (data, callback = () => {}) => {
+    socket.on("clientMessage", async (data, callback = () => { }) => {
         try {
             // Kiểm tra xem người dùng có tồn tại không
             if (socket.user.role === 'admin') {
@@ -477,7 +477,7 @@ io.on("connection", (socket) => {
     /**
      * 📌 Xử lý tin nhắn từ Admin gửi đến Client
      */
-    socket.on("adminMessage", async (data, callback = () => {}) => {
+    socket.on("adminMessage", async (data, callback = () => { }) => {
         try {
             // Kiểm tra xem người dùng có phải là admin không
             if (socket.user.role !== 'admin') {
@@ -538,7 +538,7 @@ io.on("connection", (socket) => {
     });
 
     // Thêm xử lý upload ảnh từ client
-    socket.on("clientImageUpload", async (data, callback = () => {}) => {
+    socket.on("clientImageUpload", async (data, callback = () => { }) => {
         try {
             // Kiểm tra xem người dùng có tồn tại không
             if (socket.user.role === 'admin') {
@@ -601,7 +601,7 @@ io.on("connection", (socket) => {
     });
 
     // Thêm xử lý upload ảnh từ admin
-    socket.on("adminImageUpload", async (data, callback = () => {}) => {
+    socket.on("adminImageUpload", async (data, callback = () => { }) => {
         try {
             // Kiểm tra xem người dùng có phải là admin không
             if (socket.user.role !== 'admin') {
@@ -666,7 +666,7 @@ io.on("connection", (socket) => {
     });
 
     // Thêm xử lý upload nhiều ảnh từ client
-    socket.on("clientMultipleImagesUpload", async (data, callback = () => {}) => {
+    socket.on("clientMultipleImagesUpload", async (data, callback = () => { }) => {
         try {
             // Kiểm tra xem người dùng có tồn tại không
             if (socket.user.role === 'admin') {
@@ -738,7 +738,7 @@ io.on("connection", (socket) => {
     });
 
     // Thêm xử lý upload nhiều ảnh từ admin
-    socket.on("adminMultipleImagesUpload", async (data, callback = () => {}) => {
+    socket.on("adminMultipleImagesUpload", async (data, callback = () => { }) => {
         try {
             // Kiểm tra xem người dùng có phải là admin không
             if (socket.user.role !== 'admin') {
@@ -852,7 +852,7 @@ io.on("connection", (socket) => {
     });
 
     // Thêm event listener mới cho sự kiện đánh dấu đã đọc
-    socket.on("markMessagesAsRead", async (data, callback = () => {}) => {
+    socket.on("markMessagesAsRead", async (data, callback = () => { }) => {
         try {
             // Kiểm tra người dùng
             if (!data.userId) {
