@@ -28,7 +28,7 @@
 <div class="container-fluid p-0 px-4 dashboard-container">
 
     <div class="row g-0">
-        <div class="col-xl-9">
+        <div class="col-xl-12">
 
             <div class="h-100">
                 <div class="row mb-3 pb-1">
@@ -50,7 +50,7 @@
                                             </div>
                                         </div>
                                         <!--end col-->
-                                 
+
                                         <div class="col-auto">
                                             <button type="button" class="btn btn-soft-info btn-icon waves-effect material-shadow-none waves-light layout-rightside-btn"><i class="ri-pulse-line"></i></button>
                                         </div>
@@ -66,7 +66,7 @@
                 <!--end row-->
 
                 <div class="row">
-                    <div class="col-xl-3 col-md-6">
+                    <div class="col-xl-4 col-md-6">
                         <!-- card -->
                         <div class="card card-animate">
                             <div class="card-body">
@@ -95,7 +95,7 @@
                         </div><!-- end card -->
                     </div><!-- end col -->
 
-                    <div class="col-xl-3 col-md-6">
+                    <div class="col-xl-4 col-md-6">
                         <!-- card -->
                         <div class="card card-animate">
                             <div class="card-body">
@@ -124,7 +124,7 @@
                         </div><!-- end card -->
                     </div><!-- end col -->
 
-                    <div class="col-xl-3 col-md-6">
+                    <div class="col-xl-4 col-md-6">
                         <!-- card -->
                         <div class="card card-animate">
                             <div class="card-body">
@@ -153,7 +153,7 @@
                         </div><!-- end card -->
                     </div><!-- end col -->
 
-                    <div class="col-xl-3 col-md-6">
+                    {{-- <div class="col-xl-3 col-md-6">
                         <!-- card -->
                         <div class="card card-animate">
                             <div class="card-body">
@@ -180,7 +180,7 @@
                                 </div>
                             </div><!-- end card body -->
                         </div><!-- end card -->
-                    </div><!-- end col -->
+                    </div><!-- end col --> --}}
                 </div> <!-- end row-->
 
                 <div class="row">
@@ -250,7 +250,7 @@
                         </div><!-- end card -->
                     </div><!-- end col -->
 
-                 
+
                 </div>
 
                 <div class="row">
@@ -519,7 +519,7 @@
 
         </div> <!-- end col -->
 
-        <div class="col-xl-3 layout-rightside-col px-0">
+        {{-- <div class="col-xl-3 layout-rightside-col px-0">
             <div class="overlay"></div>
             <div class="layout-rightside w-100">
                 <div class="card h-100 rounded-0">
@@ -715,7 +715,7 @@
                 </div> <!-- end card-->
             </div> <!-- end .rightbar-->
 
-        </div> <!-- end col -->
+        </div> <!-- end col --> --}}
     </div>
 
 </div>
@@ -761,14 +761,14 @@
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.xlsx, .xls, .csv';
-            
+
             input.onchange = function(event) {
                 const file = event.target.files[0];
                 if (file) {
                     importFromExcel(file);
                 }
             };
-            
+
             input.click();
         });
 
@@ -787,7 +787,7 @@
                 if (orderTable) {
                     headers = Array.from(orderTable.querySelectorAll('thead th')).map(th => th.textContent.trim());
                     const rows = orderTable.querySelectorAll('tbody tr');
-                    
+
                     rows.forEach(row => {
                         const rowData = Array.from(row.querySelectorAll('td')).map(td => {
                             // Xử lý đặc biệt cho trường hợp td có chứa các thẻ con
@@ -796,7 +796,7 @@
                         });
                         data.push(rowData);
                     });
-                    
+
                     // Không cần thêm dòng tổng cho đơn hàng
                     needTotalRow = false;
                     console.log('Dữ liệu đơn hàng:', data.length, 'dòng');
@@ -804,11 +804,11 @@
             } else if (reportType === 'topbuyers') {
                 // Thu thập dữ liệu từ bảng khách hàng mua nhiều nhất
                 headers = ['Khách hàng', 'Email', 'Loại khách', 'Số đơn hàng', 'Tổng chi tiêu', 'Tỷ lệ hoàn thành'];
-                
+
                 // Tìm tất cả các card-title
                 const titles = document.querySelectorAll('.card-title');
                 let buyerTable = null;
-                
+
                 for (let i = 0; i < titles.length; i++) {
                     if (titles[i].textContent.includes('Xếp hạng người mua')) {
                         const buyerCard = titles[i].closest('.card');
@@ -818,21 +818,21 @@
                         }
                     }
                 }
-                
+
                 if (buyerTable) {
                     const rows = buyerTable.querySelectorAll('tbody tr');
-                    
+
                     rows.forEach(row => {
                         const nameElement = row.querySelector('.fw-medium');
                         const emailElement = row.querySelector('.text-muted');
-                        
+
                         // Lấy dữ liệu từ các ô dựa vào cấu trúc thẻ td
                         const cells = row.querySelectorAll('td');
                         const buyerName = nameElement ? nameElement.textContent.trim() : '';
                         const email = emailElement ? emailElement.textContent.trim() : '';
-                        
+
                         let type = '', orders = '', spent = '', rate = '';
-                        
+
                         if (cells.length >= 2) type = cells[1].textContent.trim();
                         if (cells.length >= 3) orders = cells[2].textContent.trim();
                         if (cells.length >= 4) spent = cells[3].textContent.trim();
@@ -850,10 +850,10 @@
                                 rate = cells[4].textContent.trim();
                             }
                         }
-                        
+
                         data.push([buyerName, email, type, orders, spent, rate]);
                     });
-                    
+
                     // Không cần thêm dòng tổng cho người mua
                     needTotalRow = false;
                     console.log('Dữ liệu người mua:', data.length, 'dòng');
@@ -863,47 +863,47 @@
             } else if (reportType === 'revenue') {
                 // Thu thập dữ liệu cho báo cáo doanh thu
                 headers = ['Tháng', 'Đơn hàng', 'Doanh thu', 'Hoàn tiền', 'Tỷ lệ chuyển đổi'];
-                
+
                 // Tìm card doanh thu
                 const revenueTitles = document.querySelectorAll('.card-title');
                 let revenueCard = null;
-                
+
                 for (let i = 0; i < revenueTitles.length; i++) {
                     if (revenueTitles[i].textContent.includes('Doanh thu')) {
                         revenueCard = revenueTitles[i].closest('.card');
                         break;
                     }
                 }
-                
+
                 if (revenueCard) {
                     // Lấy thông tin từ card
                     const statsEls = revenueCard.querySelectorAll('.border-dashed');
-                    
+
                     let ordersTotal = '';
                     let revenueTotal = '';
                     let refundsTotal = '';
                     let conversionRate = '';
-                    
+
                     if (statsEls.length >= 1) {
                         const orderEl = statsEls[0].querySelector('h5');
                         if (orderEl) ordersTotal = orderEl.textContent.trim();
                     }
-                    
+
                     if (statsEls.length >= 2) {
                         const revenueEl = statsEls[1].querySelector('h5');
                         if (revenueEl) revenueTotal = revenueEl.textContent.trim();
                     }
-                    
+
                     if (statsEls.length >= 3) {
                         const refundEl = statsEls[2].querySelector('h5');
                         if (refundEl) refundsTotal = refundEl.textContent.trim();
                     }
-                    
+
                     if (statsEls.length >= 4) {
                         const conversionEl = statsEls[3].querySelector('h5');
                         if (conversionEl) conversionRate = conversionEl.textContent.trim();
                     }
-                    
+
                     // Dữ liệu từ biểu đồ doanh thu (sử dụng dữ liệu từ backend nếu có hoặc dữ liệu mẫu)
                     monthlyData = [
                         { month: 'Tháng 1', orders: 450, revenue: '$9,250', refunds: 21, conversion: '15.3%' },
@@ -919,26 +919,26 @@
                         { month: 'Tháng 11', orders: 530, revenue: '$11,800', refunds: 26, conversion: '16.7%' },
                         { month: 'Tháng 12', orders: 390, revenue: '$8,400', refunds: 19, conversion: '14.8%' }
                     ];
-                    
+
                     // Thêm dữ liệu hàng tháng
                     monthlyData.forEach(item => {
                         data.push([item.month, item.orders, item.revenue, item.refunds, item.conversion]);
                     });
-                    
+
                     // Dòng tổng cộng cho doanh thu
                     const totalOrders = monthlyData.reduce((sum, item) => sum + parseInt(item.orders), 0);
                     const totalRefunds = monthlyData.reduce((sum, item) => sum + parseInt(item.refunds), 0);
-                    
+
                     data.push(['Tổng cộng', totalOrders, revenueTotal, totalRefunds, conversionRate]);
                     needTotalRow = true;
                     console.log('Dữ liệu doanh thu:', data.length, 'dòng');
                 }
             }
-            
+
             // Kiểm tra và debug
             console.log('Tiêu đề:', headers);
             console.log('Dữ liệu:', data);
-            
+
             if (data.length > 0 && headers.length > 0) {
                 try {
                     // Tạo workbook mới
@@ -947,10 +947,10 @@
                     workbook.lastModifiedBy = '{{ Auth::user()->name }}';
                     workbook.created = new Date();
                     workbook.modified = new Date();
-                    
+
                     // Tạo sheet thông tin
                     const infoSheet = workbook.addWorksheet('Thông tin báo cáo');
-                    
+
                     // Thiết lập style cho tiêu đề
                     const titleStyle = {
                         font: { size: 18, bold: true, color: { argb: '2E75B6' } },
@@ -963,33 +963,33 @@
                             right: { style: 'medium', color: { argb: '2E75B6' } }
                         }
                     };
-                    
+
                     // Tiêu đề báo cáo
                     infoSheet.mergeCells('A1:G1');
                     const titleCell = infoSheet.getCell('A1');
                     titleCell.value = 'BÁO CÁO ' + reportTitle.toUpperCase();
                     Object.assign(titleCell, titleStyle);
-                    
+
                     // Thông tin báo cáo
                     infoSheet.mergeCells('A3:D3');
                     infoSheet.getCell('A3').value = 'Ngày xuất báo cáo: ' + new Date().toLocaleDateString('vi-VN');
                     infoSheet.getCell('A3').font = { size: 11 };
-                    
+
                     infoSheet.mergeCells('A4:D4');
                     infoSheet.getCell('A4').value = 'Người xuất báo cáo: {{ Auth::user()->name }}';
                     infoSheet.getCell('A4').font = { size: 11 };
-                    
+
                     infoSheet.mergeCells('A7:G7');
                     infoSheet.getCell('A7').value = 'Báo cáo được tạo tự động từ hệ thống Eco-Furnish';
                     infoSheet.getCell('A7').font = { size: 10, italic: true, color: { argb: '4472C4' } };
                     infoSheet.getCell('A7').alignment = { horizontal: 'center' };
-                    
+
                     // Tạo sheet dữ liệu
                     const dataSheet = workbook.addWorksheet('Dữ liệu');
-                    
+
                     // Thêm headers
                     const headerRow = dataSheet.addRow(headers);
-                    
+
                     // Định dạng header - Style cho hàng đầu tiên
                     headerRow.eachCell((cell) => {
                         cell.fill = {
@@ -1013,7 +1013,7 @@
                             right: { style: 'medium', color: { argb: 'FFFFFF' } }
                         };
                     });
-                    
+
                     // Tạo style cho dòng tổng
                     const totalRowStyle = {
                         fill: {
@@ -1033,18 +1033,18 @@
                             right: { style: 'medium', color: { argb: 'FFFFFF' } }
                         }
                     };
-                    
+
                     // Thêm dữ liệu
                     data.forEach((rowData, index) => {
                         const row = dataSheet.addRow(rowData);
-                        
+
                         // Màu nền xen kẽ cho các hàng
                         const isAlternateRow = index % 2 === 1;
                         const rowColor = isAlternateRow ? 'F2F9FF' : 'FFFFFF';
-                        
+
                         // Kiểm tra nếu là hàng cuối VÀ cần tổng
                         const isTotalRow = needTotalRow && index === data.length - 1;
-                        
+
                         row.eachCell((cell, colNumber) => {
                             if (isTotalRow) {
                                 // Định dạng hàng tổng cộng giống header
@@ -1065,15 +1065,15 @@
                                     right: { style: 'thin', color: { argb: 'D0D7E5' } }
                                 };
                             }
-                            
+
                             // Định dạng đặc biệt cho các cột
-                            if ((reportType === 'topbuyers' && colNumber === 5) || 
+                            if ((reportType === 'topbuyers' && colNumber === 5) ||
                                 (reportType === 'revenue' && colNumber === 3) ||
                                 (reportType === 'orders' && colNumber === 4)) {
                                 // Cột tiền tệ
                                 cell.numFmt = '"$"#,##0.00';
                                 cell.alignment = { horizontal: 'right' };
-                            } else if ((reportType === 'topbuyers' && colNumber === 6) || 
+                            } else if ((reportType === 'topbuyers' && colNumber === 6) ||
                                       (reportType === 'revenue' && colNumber === 5)) {
                                 // Cột phần trăm
                                 cell.numFmt = '0.0%';
@@ -1081,21 +1081,21 @@
                             }
                         });
                     });
-                    
+
                     // Thiết lập độ rộng cột
                     headers.forEach((header, i) => {
                         const column = dataSheet.getColumn(i + 1);
                         column.width = Math.max(header.length * 1.5, 15);
                     });
-                    
+
                     // Thiết lập chiều cao hàng tiêu đề
                     headerRow.height = 30;
-                    
+
                     // Xuất file Excel
                     const buffer = await workbook.xlsx.writeBuffer();
                     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                     saveAs(blob, `${reportTitle}_${new Date().toISOString().slice(0, 10)}.xlsx`);
-                    
+
                     // Hiển thị thông báo
                     Toastify({
                         text: "Báo cáo đã được tải xuống!",
@@ -1132,27 +1132,27 @@
         document.querySelectorAll = document.querySelectorAll || function(selector) {
             return document.querySelectorAll(selector);
         };
-        
+
         // Thêm hàm tìm kiếm text trong các phần tử
         Element.prototype.contains = Element.prototype.contains || function(text) {
             return this.textContent.includes(text);
         };
-        
+
         // Hàm nhập dữ liệu từ Excel
         async function importFromExcel(file) {
             try {
                 const reader = new FileReader();
-                
+
                 reader.onload = async function(e) {
                     const data = e.target.result;
                     const workbook = new ExcelJS.Workbook();
                     await workbook.xlsx.load(data);
-                    
+
                     const worksheet = workbook.getWorksheet(1);
                     if (!worksheet) {
                         throw new Error('Không thể đọc dữ liệu từ file Excel');
                     }
-                    
+
                     const jsonData = [];
                     worksheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
                         if (rowNumber > 1) { // Bỏ qua hàng tiêu đề
@@ -1164,10 +1164,10 @@
                             jsonData.push(rowData);
                         }
                     });
-                    
+
                     if (jsonData.length > 0) {
                         console.log('Dữ liệu nhập:', jsonData);
-                        
+
                         // Hiển thị thông báo thành công
                         Toastify({
                             text: "Đã nhập dữ liệu thành công!",
@@ -1188,18 +1188,18 @@
                         }).showToast();
                     }
                 };
-                
+
                 reader.onerror = function() {
                     Toastify({
                         text: "Lỗi khi đọc file!",
                         duration: 3000,
                         close: true,
                         gravity: "top",
-                        position: "right", 
+                        position: "right",
                         backgroundColor: "#f44336",
                     }).showToast();
                 };
-                
+
                 reader.readAsArrayBuffer(file);
             } catch (error) {
                 console.error('Error importing Excel:', error);

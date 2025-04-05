@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaRegEyeSlash, FaEye } from "react-icons/fa";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { motion } from "framer-motion"; // npm install framer-motion để chạy hiệu ứng
 import { useForm } from "react-hook-form";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { resetSocket } from "../../../utils/socketConfig";
 
 const SignIn = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

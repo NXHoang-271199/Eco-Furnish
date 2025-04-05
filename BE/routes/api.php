@@ -1,12 +1,16 @@
 <?php
 
+use App\Events\MessageSent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\BannerController;
+use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserApiController;
@@ -15,7 +19,6 @@ use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
-use App\Http\Controllers\Api\ReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -101,11 +104,87 @@ Route::get('/products/{product}/comments', [CommentController::class, 'getProduc
 // Banner routes
 Route::get('/banners', [BannerController::class, 'index']);
 
+Route::post('/send-message', function (Request $request) {
+    $message = $request->input('message');
+    event(new MessageSent($message));
+    return response()->json(['status' => 'Message sent']);
+});
+
+Route::prefix('messages')->group(function () {
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/', [MessageController::class, 'store']); // Lưu tin nhắn
+        Route::get('/user/{userId}', [MessageController::class, 'getUserMessages']); // Lấy tin nhắn theo user
+        Route::get('/unread', [MessageController::class, 'getUnreadMessages']); // Lấy tin chưa đọc
+        Route::patch('/read/{messageId}', [MessageController::class, 'markAsRead']); // Đánh dấu đã đọc
+        Route::patch('/read-all/{userId}', [MessageController::class, 'markAllAsRead']); // Đánh dấu tất cả là đã đọc
+        Route::post('/admin/send', [MessageController::class, 'sendByAdmin']); // Admin gửi tin nhắn
+    });
+});
+
+// Route xác thực token cho socket server
+Route::middleware('auth:sanctum')->post('/auth/verify-token', function (Request $request) {
+    $user = $request->user();
+
+    // Chuẩn hóa role
+    // Kiểm tra xem request có chứa header Origin không (để biết nó đến từ đâu)
+    $origin = $request->header('Origin');
+
+    // Nếu request đến từ trang admin, luôn trả về role là admin
+    if (strpos($origin, 'admin') !== false) {
+        $role = 'admin';
+    } else {
+        // Xử lý thông thường cho các trường hợp khác
+        $role = is_string($user->role) ? $user->role : 'user';
+        if (is_object($user->role)) {
+            $role = $user->role->name === 'admin' ? 'admin' : 'user';
+        }
+    }
+
+    return response()->json([
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $role,
+            'avatar' => $user->avatar
+        ],
+        'verified' => true
+    ]);
+});
+
+// Route đơn giản để kiểm tra token
+Route::get('/auth/check-token', function (Request $request) {
+    return response()->json(['message' => 'Bạn có quyền truy cập API này', 'token_valid' => true]);
+})->middleware('auth:sanctum');
+
+// Route test kiểm tra xác thực
+Route::middleware('auth:sanctum')->get('/auth/check', function (Request $request) {
+    return response()->json([
+        'message' => 'Bạn đã đăng nhập thành công',
+        'user' => $request->user()
+    ]);
+});
+
+// API đơn giản để lấy thông tin người dùng từ ID (cho socket server)
+Route::get('/users/{id}', function ($id) {
+    $user = \App\Models\User::find($id);
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
+    }
+
+    return response()->json([
+        'id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email,
+        'role_id' => $user->role_id
+    ]);
+});
+// Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động // FE ko được động tới
 // Cart Routers
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cart', [CartController::class, 'index']); // Lấy giỏ hàng
     Route::post('/cart/add', [CartController::class, 'addToCart']); // Thêm vào giỏ hàng
-    Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng 
+    Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
     Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
     Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
 });
@@ -127,6 +206,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{id}/request-refund', [OrderController::class, 'requestRefund']); // Gửi yêu cầu hoàn hàng
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
     Route::post('/orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
+    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
 });
 // review routes
 Route::middleware('auth:sanctum')->group(function () {

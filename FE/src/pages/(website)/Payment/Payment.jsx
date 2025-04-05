@@ -425,7 +425,6 @@ const Payment = () => {
                         ? "Thanh toán khi nhận hàng"
                         : method.name}
                     </span>{" "}
-                    {/* Giả sử API trả về field "name" */}
                   </label>
                 ))
               ) : (

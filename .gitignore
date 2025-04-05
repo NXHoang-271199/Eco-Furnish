@@ -1,2 +1,7 @@
+<<<<<<< HEAD
+# Chat message images
+BE/public/uploads/messages/*.jpg
+=======
 .cursor/rules/my-rule.mdc
 .gitignore
+>>>>>>> 119f27dffbe03a3dba4f17077feb762ecf36e9a0
