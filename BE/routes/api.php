@@ -32,7 +32,14 @@ use App\Http\Controllers\Api\CategoryPostApiController;
 */
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+    $user = $request->user();
+    return response()->json([
+        'id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email,
+        'role_id' => $user->role_id,
+        'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
+    ]);
 });
 
 // Product routes
@@ -66,8 +73,9 @@ Route::prefix('users')->group(function () {
     Route::post('/refresh-token', [UserApiController::class, 'refreshToken']);
     Route::post('/verify-email', [UserApiController::class, 'verifyEmail']);
     Route::post('/resend-verification', [UserApiController::class, 'resendVerification']);
-
+    Route::put('/update/{id}', [UserApiController::class, 'updateProfile']);
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/upload-avatar/{id}', [UserApiController::class, 'uploadAvatar']);
         Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
         Route::post('/logout', [UserApiController::class, 'apiLogout']);
     });
@@ -146,7 +154,7 @@ Route::middleware('auth:sanctum')->post('/auth/verify-token', function (Request 
             'name' => $user->name,
             'email' => $user->email,
             'role' => $role,
-            'avatar' => $user->avatar
+            'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
         ],
         'verified' => true
     ]);
@@ -159,9 +167,16 @@ Route::get('/auth/check-token', function (Request $request) {
 
 // Route test kiểm tra xác thực
 Route::middleware('auth:sanctum')->get('/auth/check', function (Request $request) {
+    $user = $request->user();
     return response()->json([
         'message' => 'Bạn đã đăng nhập thành công',
-        'user' => $request->user()
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role_id' => $user->role_id,
+            'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
+        ]
     ]);
 });
 
@@ -176,7 +191,8 @@ Route::get('/users/{id}', function ($id) {
         'id' => $user->id,
         'name' => $user->name,
         'email' => $user->email,
-        'role_id' => $user->role_id
+        'role_id' => $user->role_id,
+        'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
     ]);
 });
 // Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động // FE ko được động tới

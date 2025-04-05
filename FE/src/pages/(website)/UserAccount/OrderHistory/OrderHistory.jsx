@@ -54,6 +54,35 @@ const OrderHistory = () => {
     return statusMap[statusValue] || "Không xác định";
   };
 
+  // Thêm hàm format tiền tệ
+  const formatCurrency = (amount) => {
+    let numericAmount = amount;
+    // Cố gắng chuyển đổi nếu là chuỗi số
+    if (typeof amount === 'string') {
+      numericAmount = parseFloat(amount.replace(/[^\d.-]/g, '')); // Loại bỏ ký tự không phải số trước khi parse
+    }
+
+    if (typeof numericAmount !== 'number' || isNaN(numericAmount)) {
+      console.warn("formatCurrency received invalid amount:", amount); // Log giá trị không hợp lệ
+      return '0 ₫';
+    }
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(numericAmount);
+  };
+
+  // Hàm tính tổng tiền đơn hàng
+  const calculateOrderTotal = (orderItems) => {
+    if (!Array.isArray(orderItems)) return 0;
+    return orderItems.reduce((total, item) => {
+      const itemTotal = (item.price || 0) * (item.quantity || 0);
+      return total + itemTotal;
+    }, 0);
+  };
+
   // Lấy dữ liệu đơn hàng từ API
   useEffect(() => {
     const fetchOrders = async () => {
@@ -119,12 +148,14 @@ const OrderHistory = () => {
         activeTab === "all" ||
         order.order_status === selectedStatus;
 
-      // Lọc theo từ khóa tìm kiếm
+      // Lọc theo từ khóa tìm kiếm (Mã đơn hàng hoặc Tên sản phẩm)
+      const searchTerm = searchQuery.toLowerCase();
       const searchMatch =
         searchQuery === "" ||
-        order.order_code.toLowerCase().includes(searchQuery.toLowerCase());
-      // Thêm tìm kiếm theo tên sản phẩm nếu cần:
-      // || order.items.some(item => item.product_name.toLowerCase().includes(searchQuery.toLowerCase()));
+        order.order_code.toLowerCase().includes(searchTerm) ||
+        (order.order_items && order.order_items.some(item =>
+          item.product?.name?.toLowerCase().includes(searchTerm)
+        ));
 
       return statusMatch && searchMatch;
     });
@@ -155,7 +186,7 @@ const OrderHistory = () => {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen py-6 px-4">
+    <div className="bg-gray-100 min-h-screen px-4">
       <h1 className="text-2xl font-semibold mb-4">Đơn hàng</h1>
       <div className="max-w-6xl mx-auto bg-white rounded-md shadow-sm">
         {/* <!-- Tab Navigation --> */}
@@ -179,7 +210,7 @@ const OrderHistory = () => {
           <div className="relative">
             <input
               type="text"
-              placeholder="Bạn có thể tìm kiếm theo ID đơn hàng"
+              placeholder="Tìm theo Mã đơn hàng hoặc Tên sản phẩm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500"
@@ -198,22 +229,63 @@ const OrderHistory = () => {
             <p className="p-4 text-center">Không có đơn hàng nào phù hợp.</p>
           ) : (
             filteredOrders.map((order) => (
-              <div key={order.id} className="p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">
-                    Mã đơn hàng: {order.order_code}
-                  </span>
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(order.order_status)}`}>
-                    {getStatusName(order.order_status)}
-                  </span>
+              <div key={order.id} className="p-4 border-b last:border-b-0">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <span className="font-medium block mb-1">
+                      Mã đơn hàng: {order.order_code}
+                    </span>
+                    {order.address && (
+                      <p className="text-sm text-gray-600 mb-1">
+                        Địa chỉ: {order.address?.address_line}, {order.address?.ward}, {order.address?.district}, {order.address?.province}
+                      </p>
+                    )}
+                    {order.created_at && (
+                      <p className="text-sm text-gray-500">
+                        Ngày đặt: {new Date(order.created_at).toLocaleDateString('vi-VN')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <span className={`inline-block px-2 py-1 text-xs rounded-full mb-2 ${getStatusColor(order.order_status)}`}>
+                      {getStatusName(order.order_status)}
+                    </span>
+                    <Link
+                      to={`/account/order_detail/${order.id}`}
+                      className="flex items-center justify-end bg-orange-500 text-white px-3 py-1 rounded-sm text-sm hover:bg-orange-600"
+                    >
+                      <FiEye className="mr-1" /> Chi tiết
+                    </Link>
+                  </div>
                 </div>
-                <div className="flex justify-end">
-                  <Link
-                    to={`/account/order_detail/${order.id}`}
-                    className="flex items-center bg-orange-500 text-white px-3 py-1 rounded-sm text-sm hover:bg-orange-600"
-                  >
-                    <FiEye className="mr-1" /> Chi tiết
-                  </Link>
+
+                {/* Product List */}
+                {order.order_items && order.order_items.length > 0 && (
+                  <div className="mb-3">
+                    <h4 className="text-sm font-medium mb-1 text-gray-700">Sản phẩm:</h4>
+                    <ul className="divide-y divide-gray-200 border rounded-md">
+                      {order.order_items.map((item) => (
+                        <li key={item.id} className="flex items-center justify-between p-2">
+                          <div className="flex items-center">
+                            <div>
+                              <span className="text-sm font-medium">{item.product?.name || 'Tên sản phẩm'}</span>
+                              <span className="block text-xs text-gray-500">SL: {item.quantity}</span>
+                            </div>
+                          </div>
+                          <span className="text-sm font-medium text-orange-600">
+                            {/* Log item nếu giá không hợp lệ */}
+                            {typeof item.price !== 'number' && typeof item.price !== 'string' && console.log('Invalid item price data:', item)}
+                            {formatCurrency(item.price)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Total Amount */}
+                <div className="text-right font-semibold text-lg">
+                  Tổng tiền: {formatCurrency(order.total_amount || calculateOrderTotal(order.order_items))}
                 </div>
               </div>
             ))
