@@ -467,9 +467,11 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = async () => {
+    console.log("handleAddToCart: Checking token...", localStorage.getItem("authToken"));
     const token = localStorage.getItem("authToken");
 
     if (!token) {
+      console.error("handleAddToCart: No token found! Navigating to sign-in.");
       toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
       navigate("/sign-in");
       return;

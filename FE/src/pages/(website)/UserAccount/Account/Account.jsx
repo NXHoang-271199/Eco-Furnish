@@ -80,7 +80,7 @@ const Account = () => {
 
           if (error.response.status === 401) {
             console.log(
-              "Token không hợp lệ hoặc hết hạn, đăng xuất và chuyển hướng"
+              "Token không hợp lệ hoặc hết hạn, chuyển hướng đến trang đăng nhập"
             );
             localStorage.removeItem("userData");
             localStorage.removeItem("authToken");
@@ -90,7 +90,7 @@ const Account = () => {
 
           setError(
             error.response.data?.message ||
-              `Lỗi từ máy chủ: ${error.response.status}`
+            `Lỗi từ máy chủ: ${error.response.status}`
           );
         } else if (error.request) {
           console.error("Không nhận được phản hồi từ máy chủ");
