@@ -283,9 +283,8 @@ const Products = () => {
         <div className="flex gap-6 relative">
           {/* Bộ lọc */}
           <motion.div
-            className={`${
-              filterOpen ? "flex" : "hidden"
-            } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4 h-fit transition-all duration-300`}
+            className={`${filterOpen ? "flex" : "hidden"
+              } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4 h-fit transition-all duration-300`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
@@ -462,9 +461,8 @@ const Products = () => {
                           {[1, 2, 3, 4, 5].map((star) => (
                             <IoStar
                               key={star}
-                              className={`${
-                                star <= 4 ? "text-amber-400" : "text-gray-300"
-                              } w-4 h-4`}
+                              className={`${star <= 4 ? "text-amber-400" : "text-gray-300"
+                                } w-4 h-4`}
                             />
                           ))}
                           <span className="text-gray-500 text-sm ml-2">
@@ -476,10 +474,14 @@ const Products = () => {
                           {product.name}
                         </h3>
 
-                        <div className="text-gray-500 text-sm mb-3 line-clamp-2">
-                          {product.description ||
-                            "Sản phẩm nội thất cao cấp, bền đẹp và thân thiện với môi trường"}
-                        </div>
+                        <div
+                          className="text-gray-500 text-sm mb-3 line-clamp-2"
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              product.description ||
+                              "Sản phẩm nội thất cao cấp, bền đẹp và thân thiện với môi trường",
+                          }}
+                        />
 
                         <div className="flex justify-between items-center">
                           {product.has_variants ? (
@@ -495,7 +497,7 @@ const Products = () => {
                                     }).format(product.price_range.min_discount)}
                                     {product.price_range.max_discount &&
                                       product.price_range.max_discount !==
-                                        product.price_range.min_discount &&
+                                      product.price_range.min_discount &&
                                       ` - ${new Intl.NumberFormat("vi-VN", {
                                         style: "currency",
                                         currency: "VND",
@@ -519,7 +521,7 @@ const Products = () => {
                                   }).format(product.price_range?.min || 0)}
                                   {product.price_range?.max &&
                                     product.price_range.max !==
-                                      product.price_range.min &&
+                                    product.price_range.min &&
                                     ` - ${new Intl.NumberFormat("vi-VN", {
                                       style: "currency",
                                       currency: "VND",
@@ -627,11 +629,10 @@ const Products = () => {
         {[1, 2, 3, "...", 10].map((item, index) => (
           <button
             key={index}
-            className={`${
-              item === 1
-                ? "bg-amber-500 text-white"
-                : "bg-white text-gray-700 hover:bg-amber-100"
-            } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
+            className={`${item === 1
+              ? "bg-amber-500 text-white"
+              : "bg-white text-gray-700 hover:bg-amber-100"
+              } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
           >
             {item}
           </button>
