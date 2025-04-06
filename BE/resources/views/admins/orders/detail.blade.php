@@ -40,10 +40,22 @@
                         <div class="fs-6">{{ $order->user_email ?? 'Không có' }}</div>
                     </div>
                 </div>
-                <div class="d-flex align-items-center justify-content-start pe-3 ">
-                    <div class="w-25 p-3 fw-bold"><span>Tài khoản đặt hàng</span></div>
+                <div class="d-flex align-items-center justify-content-start pe-3 border-bottom">
+                    <div class="w-25 p-3 fw-bold"><span>Tên người đặt</span></div>
                     <div class=" border-start p-3">
-                        <div class="fs-6">{{ $order->user->name ? $order->user->email : 'Không có' }}</div>
+                        <div class="fs-6">{{ $order->user?->name ?? 'Khách vãng lai' }}</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-start pe-3 border-bottom">
+                    <div class="w-25 p-3 fw-bold"><span>Số điện thoại người đặt</span></div>
+                    <div class=" border-start p-3">
+                        <div class="fs-6">{{ $order->user?->phone ?? 'Không có' }}</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-start pe-3 ">
+                    <div class="w-25 p-3 fw-bold"><span>Tài khoản đặt hàng (Email)</span></div>
+                    <div class=" border-start p-3">
+                        <div class="fs-6">{{ $order->user?->email ?? 'Không có' }}</div>
                     </div>
                 </div>
             </div>

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\TokenHandler;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class UserApiController extends Controller
 {
@@ -43,30 +44,31 @@ class UserApiController extends Controller
     // 2. Lấy thông tin chi tiết một user (client)
     public function show($id)
     {
-        $user = User::whereHas('role', function ($query) {
-            $query->where('slug', 'client');
-        })
-            ->where('id', $id)
-            ->where('is_active', 1)
-            ->first();
-
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Không tìm thấy người dùng'
-            ], 404);
-        }
-        return response()->json([
-            'status' => 'success',
-            'data' => [
+        try {
+            $user = User::findOrFail($id);
+            Log::info('User avatar from DB: ' . $user->avatar);
+            
+            $userData = [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'slug' => Str::slug($user->name),
-                'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'phone' => $user->phone,
+                'address' => $user->address,
+                'bio' => $user->bio,
                 'joined_date' => $user->created_at->format('d/m/Y'),
-            ]
-        ]);
+                'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+            ];
+
+            return response()->json([
+                'data' => $userData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi lấy thông tin người dùng: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Không tìm thấy người dùng',
+                'error' => $e->getMessage()
+            ], 404);
+        }
     }
 
     // 3. Đăng ký tài khoản mới
@@ -235,13 +237,6 @@ class UserApiController extends Controller
             ], 401);
         }
 
-        // Kiểm tra xem remember_me có còn hiệu lực không
-        if ($user->remember_me && $user->remember_me_expires_at && now()->gt($user->remember_me_expires_at)) {
-            $user->remember_me = false;
-            $user->remember_me_expires_at = null;
-            $user->save();
-        }
-
         // Tạo token mới với thời hạn tương ứng
         $tokens = $this->generateTokens($user, $user->remember_me);
 
@@ -251,8 +246,6 @@ class UserApiController extends Controller
             'data' => [
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
-                'access_token_expires_at' => $tokens['access_token_expires_at'],
-                'refresh_token_expires_at' => $tokens['refresh_token_expires_at'],
                 'remember_me' => $user->remember_me,
                 'remember_me_expires_at' => $user->remember_me ? $user->remember_me_expires_at : null
             ]
@@ -570,6 +563,56 @@ class UserApiController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Không thể gửi email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload avatar cho người dùng
+     *
+     * @param Request $request
+     * @param int $id - ID của người dùng
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadAvatar(Request $request, $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            
+            // Xác thực yêu cầu
+            $request->validate([
+                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+            
+            // Xóa avatar cũ nếu có
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Log::info('Xóa avatar cũ: ' . $user->avatar);
+                Storage::disk('public')->delete($user->avatar);
+            }
+            
+            // Lưu avatar mới
+            $path = $request->file('avatar')->store('avatars', 'public');
+            Log::info('Đường dẫn avatar mới: ' . $path);
+            
+            // Cập nhật trường avatar của user
+            $user->avatar = $path;
+            $user->save();
+            
+            Log::info('Dữ liệu user sau khi lưu: ', $user->toArray());
+            
+            // Trả về thông tin avatar
+            return response()->json([
+                'message' => 'Avatar đã được cập nhật thành công',
+                'avatar_url' => asset('storage/' . $path),
+                'avatar_path' => $path,
+                'data' => [
+                    'avatar' => asset('storage/' . $path)
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi upload avatar: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Không thể tải lên avatar: ' . $e->getMessage()
             ], 500);
         }
     }

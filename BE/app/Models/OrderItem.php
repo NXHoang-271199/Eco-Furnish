@@ -22,13 +22,13 @@ class OrderItem extends Model
     // Mối quan hệ với model Product
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class)->withTrashed();
     }
 
     // Mối quan hệ với model ProductVariant
     public function productVariant()
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(ProductVariant::class)->withTrashed();
     }
 
     // Mối quan hệ với model Order (nếu cần)

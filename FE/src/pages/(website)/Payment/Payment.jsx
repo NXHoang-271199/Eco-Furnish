@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { clearSelectedItems } from "../../../store/cartSlice";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
-
+import axiosInstance from "../../../utils/axiosConfig";
 const Payment = () => {
   const navigate = useNavigate();
   const { state } = useLocation(); // Lấy dữ liệu từ state của navigate
@@ -158,8 +158,8 @@ const Payment = () => {
       setDiscountError("");
 
       const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        "http://localhost:8000/api/check-voucher",
+      const response = await axiosInstance.post(
+        "/check-voucher",
         {
           voucher_code: discountCode,
           subtotal: calculateSubtotal(),
@@ -196,14 +196,11 @@ const Payment = () => {
     const token = localStorage.getItem("authToken");
     if (token) {
       try {
-        const response = await axios.get(
-          `http://localhost:8000/api/payment-methods`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axiosInstance.get("/payment-methods", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setPaymentMethods(response.data.data);
       } catch (error) {
         console.error("Lỗi khi lấy phương thức thanh toán:", error);
@@ -253,50 +250,63 @@ const Payment = () => {
       }
 
       // Gọi trực tiếp API orders - KHÔNG gọi payment/process
-      const response = await axios.post(
-        "http://localhost:8000/api/orders",
-        orderData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await axiosInstance.post("/orders", orderData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      // console.log(response.data);
 
-      // Kiểm tra response
-      const newOrderCode = response.data.order_code;
+      // Lấy mã đơn hàng từ response API
+      const newOrderCode =
+        response.data.order?.order_code ||
+        response.data.order_code ||
+        response.data.data?.order_code;
+      if (!newOrderCode) {
+        console.error(
+          "Không thể lấy mã đơn hàng từ response API:",
+          response.data
+        );
+      }
       setOrderCode(newOrderCode);
 
-      // Lưu thông tin đơn hàng vào localStorage
+      // Lấy tên phương thức thanh toán đã chọn
+      const selectedMethod = paymentMethods.find(
+        (method) => method.id === Number(paymentMethod)
+      );
+      const paymentMethodName = selectedMethod
+        ? selectedMethod.name
+        : "Không xác định";
+
+      // Lưu thông tin đơn hàng vào localStorage với tên phương thức thanh toán
       localStorage.setItem(
         "orderInfo",
         JSON.stringify({
           order_code: newOrderCode,
           products: selectedProducts,
           total: calculateTotal(),
-          payment_method: paymentMethod,
+          payment_method: paymentMethodName, // Lưu tên thay vì ID
           order_date: new Date().toISOString(),
         })
       );
 
       if (response.status === 200 || response.status === 201) {
-        const selectedMethod = paymentMethods.find(
-          (method) => method.id === Number(paymentMethod)
-        );
-        if (selectedMethod.name === "MoMo") {
+        // Chuyển hướng dựa trên phương thức thanh toán
+        if (paymentMethodName === "MoMo") {
           if (response.data && response.data.payUrl) {
             window.location.href = response.data.payUrl;
           } else {
-            setError("Không tìm thấy đường dẫn thanh toán");
+            setError("Không tìm thấy đường dẫn thanh toán MoMo");
           }
-        } else if (selectedMethod.name === "VNPAY") {
+        } else if (paymentMethodName === "VNPAY") {
           if (response.data && response.data.data) {
             window.location.href = response.data.data;
           } else {
             setError("Không nhận được đường dẫn thanh toán từ VNPAY");
           }
         } else {
+          // Mặc định là thanh toán tiền mặt hoặc các phương thức khác không cần redirect
           navigate("/order-success");
         }
       }
@@ -344,7 +354,7 @@ const Payment = () => {
             </div>
             <div className="mt-2">
               <input
-                type="phone"
+                type="tel"
                 className="w-full border rounded-lg p-2"
                 placeholder="Số điện thoại"
                 value={address.phone}
@@ -506,9 +516,8 @@ const Payment = () => {
             {selectedProducts.map((item) => {
               const price = item.product_variant
                 ? item.product_variant.discount_price ||
-                  item.product_variant.price ||
-                  0
-                : item.product.discount_price || item.product.price || 0;
+                  item.product_variant.price
+                : item.product.discount_price || item.product.price;
 
               return (
                 <div
@@ -519,7 +528,7 @@ const Payment = () => {
                 >
                   <div className="relative w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                     <img
-                      src={`http://localhost:8000/storage/${item.product.image_thumbnail}`}
+                      src={`http://localhost:8000/storage/${item.product.image_thumnail}`}
                       alt={item.product.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {

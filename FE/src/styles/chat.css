@@ -1,0 +1,89 @@
+.message-read {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.message-unread {
+  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.chat-notification-badge {
+  transition: all 0.3s ease;
+}
+
+.chat-notification-badge.has-unread {
+  animation: pulse 2s infinite;
+}
+
+.chat-message {
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.chat-message.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hiệu ứng nhấp nháy cho badge chưa đọc */
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s infinite;
+}
+
+/* Style cho icon đã đọc */
+.message-sent {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Styles cho hiển thị ảnh lưới trong chat */
+.image-grid {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+}
+
+.image-grid img {
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+
+.image-grid img:hover {
+  opacity: 0.9;
+}
+
+/* Hiệu ứng mở chat box */
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease forwards;
+}
+

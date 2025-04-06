@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { clearSelectedItems } from "../../../store/cartSlice";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
-
+import axiosInstance from "../../../utils/axiosConfig";
 const PaymentBuyNow = () => {
   const navigate = useNavigate();
   const { state } = useLocation(); // Lấy dữ liệu từ state của navigate
@@ -158,8 +158,8 @@ const PaymentBuyNow = () => {
       setDiscountError("");
 
       const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        "http://localhost:8000/api/check-voucher",
+      const response = await axiosInstance.post(
+        "/check-voucher",
         {
           voucher_code: discountCode,
           subtotal: calculateSubtotal(),
@@ -196,14 +196,11 @@ const PaymentBuyNow = () => {
     const token = localStorage.getItem("authToken");
     if (token) {
       try {
-        const response = await axios.get(
-          `http://localhost:8000/api/payment-methods`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axiosInstance.get("/payment-methods", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setPaymentMethods(response.data.data);
       } catch (error) {
         console.error("Lỗi khi lấy phương thức thanh toán:", error);
@@ -234,28 +231,31 @@ const PaymentBuyNow = () => {
     setError("");
 
     // Lưu địa chỉ vào localStorage
-    localStorage.setItem("userAddress", JSON.stringify(address));
+    // localStorage.setItem("userAddress", JSON.stringify(address));
 
     try {
       const token = localStorage.getItem("authToken");
+
+      // Lấy thông tin sản phẩm duy nhất từ selectedProducts
+      const singleProductItem = selectedProducts[0];
+      if (!singleProductItem) {
+        setError("Không tìm thấy thông tin sản phẩm để mua ngay.");
+        setLoading(false);
+        return;
+      }
+
       const orderData = {
-        items: selectedProducts.map((item) => ({
-          product_id: item.product.id,
-          variant_id: item.product_variant ? item.product_variant.id : null,
-          quantity: item.quantity,
-          price:
-            item.product_variant &&
-            typeof item.product_variant === "object" &&
-            !Array.isArray(item.product_variant)
-              ? item.product_variant.discount_price ||
-                item.product_variant.price
-              : item.product.discount_price || item.product.price,
-        })),
+        product_id: singleProductItem.product.id,
+        product_variant_id: singleProductItem.product_variant
+          ? singleProductItem.product_variant.id
+          : null,
+        quantity: singleProductItem.quantity,
         user_name: address.name,
         user_email: address.email,
         user_address: `${address.address}, ${address.ward}, ${address.district}, ${address.province}`,
         user_phone: address.phone,
         payment_method_id: Number(paymentMethod),
+        voucher_id: voucherId && discountAmount > 0 ? voucherId : null,
       };
 
       // Thêm voucher_id nếu đã áp dụng mã giảm giá
@@ -264,19 +264,24 @@ const PaymentBuyNow = () => {
       }
 
       // Gọi API orders/buy-now
-      const response = await axios.post(
-        "http://localhost:8000/api/orders/buy-now",
-        orderData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await axiosInstance.post("/orders/buy-now", orderData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-      // Kiểm tra response
-      const newOrderCode = response.data.order_code;
+      // Lấy mã đơn hàng từ response API
+      const newOrderCode =
+        response.data.order?.order_code ||
+        response.data.order_code ||
+        response.data.data?.order_code;
+      if (!newOrderCode) {
+        console.error(
+          "Không thể lấy mã đơn hàng từ response API:",
+          response.data
+        );
+      }
       setOrderCode(newOrderCode);
 
       if (response.status === 200 || response.status === 201) {
@@ -296,6 +301,15 @@ const PaymentBuyNow = () => {
             setError("Không nhận được đường dẫn thanh toán từ VNPAY");
           }
         } else {
+          localStorage.setItem(
+            "orderInfo",
+            JSON.stringify({
+              order_code: newOrderCode,
+              total: calculateTotal(),
+              payment_method: selectedMethod.name,
+              order_date: new Date().toISOString(),
+            })
+          );
           navigate("/order-success");
         }
       }

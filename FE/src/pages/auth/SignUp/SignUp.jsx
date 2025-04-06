@@ -34,8 +34,6 @@ const SignUp = () => {
     } catch (error) {
       if (error.response?.data?.message) {
         alert(error.response.data.message);
-      } else {
-        alert("Đã có lỗi xảy ra khi đăng ký");
       }
     }
   };

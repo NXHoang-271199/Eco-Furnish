@@ -14,7 +14,7 @@ import {
 } from "react-icons/io5";
 import { FaTruck, FaExchangeAlt, FaShieldAlt } from "react-icons/fa";
 import { toast, Toaster } from "react-hot-toast";
-
+import axiosInstance from "../../../utils/axiosConfig";
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -494,15 +494,11 @@ const ProductDetail = () => {
         quantity: quantity,
       };
 
-      const response = await axios.post(
-        "http://localhost:8000/api/cart/add",
-        cartData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.post("/cart/add", cartData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.status === 201) {
         // Lưu hoạt động của người dùng vào localStorage
@@ -620,6 +616,11 @@ const ProductDetail = () => {
       return;
     }
 
+    // Lấy thông tin biến thể nếu có
+    const selectedVariant = selectedVariantId
+      ? product.variants?.find((v) => v.id === selectedVariantId)
+      : null;
+
     // Tạo dữ liệu sản phẩm để chuyển sang trang thanh toán
     const productData = {
       product: {
@@ -627,20 +628,21 @@ const ProductDetail = () => {
         name: product.name,
         discount_price: product.discount_price ?? product.price,
         price: product.price,
-        image_thumbnail: product.image_thumbnail,
+        image_thumbnail: product.image_thumnail,
       },
       product_variant: selectedVariantId
         ? {
             id: selectedVariantId,
-            discount_price: product.discount_price ?? product.price,
-            price: product.price,
-            variant_details:
-              product.variants?.find((v) => v.id === selectedVariantId)
-                ?.variant_details || {}, // Thêm nếu có
+            discount_price:
+              selectedVariant?.discount_price ?? selectedVariant?.price, // Lấy giá từ biến thể
+            price: selectedVariant?.price, // Lấy giá gốc từ biến thể
+            variant_details: selectedVariant?.variant_details || {},
           }
         : null,
       quantity: quantity,
-      total_price: (product.discount_price ?? product.price) * quantity,
+      total_price: selectedVariantId
+        ? (selectedVariant?.discount_price ?? selectedVariant?.price) * quantity // Tính tổng giá dựa trên giá của biến thể
+        : (product.discount_price ?? product.price) * quantity, // Tính tổng giá dựa trên giá của sản phẩm
     };
 
     console.log("productData", productData);
@@ -690,16 +692,12 @@ const ProductDetail = () => {
         });
       }
 
-      const response = await axios.post(
-        "http://localhost:8000/api/reviews",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axiosInstance.post("/reviews", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.data && response.data.success) {
         // Reset input và hiển thị thông báo thành công
