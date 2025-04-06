@@ -2,7 +2,7 @@ import React from "react";
 import { FaCamera } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import axios from "axios";
-
+import axiosInstance from "../utils/axiosConfig";
 const Aside = () => {
   const handleLogout = async (e) => {
     if (e) e.preventDefault();
@@ -18,15 +18,11 @@ const Aside = () => {
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/users/logout",
-        null,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.post("/users/logout", null, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       console.log("API Response:", response.data);
       localStorage.clear();

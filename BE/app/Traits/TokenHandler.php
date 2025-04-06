@@ -12,7 +12,7 @@ trait TokenHandler
         $user->tokens()->delete();
 
         // Tạo access token (30 phút)
-        $accessToken = $user->createToken('access_token', ['*'], now()->addSeconds(30))->plainTextToken;
+        $accessToken = $user->createToken('access_token', ['*'], now()->addMinutes(30))->plainTextToken;
 
         // Tạo refresh token (7 ngày)
         $refreshToken = $user->createToken('refresh_token', ['*'], now()->addDays(7))->plainTextToken;

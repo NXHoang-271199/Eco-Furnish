@@ -52,7 +52,7 @@ import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
 import { Switch } from "../../../../components/ui/switch";
 import OrderHistory from "../OrderHistory/OrderHistory";
-
+import axiosInstance from "../../../../utils/axiosConfig";
 const Account = () => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
@@ -129,16 +129,13 @@ const Account = () => {
         }
 
         // Gọi API để lấy thông tin chi tiết của người dùng
-        const response = await axios.get(
-          `http://localhost:8000/api/users/${userData.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-          }
-        );
+        const response = await axiosInstance.get(`/users/${userData.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
         console.log("Dữ liệu người dùng từ API:", response.data);
 
         // Lưu trữ dữ liệu người dùng từ API
@@ -330,8 +327,8 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
 
       console.log("Đang tải lên avatar cho người dùng ID:", userData.id);
 
-      const response = await axios.post(
-        `http://localhost:8000/api/users/upload-avatar/${userData.id}`,
+      const response = await axiosInstance.post(
+        `/users/upload-avatar/${userData.id}`,
         formData,
         {
           headers: {
@@ -430,7 +427,6 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
         {
           name: userInfo.name,
           phone: userInfo.phone,
-          bio: userInfo.bio,
         },
         {
           headers: {
@@ -547,6 +543,14 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
                       type="email"
                       value={userInfo.email}
                       disabled
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Số điện thoại</Label>
+                    <Input
+                      id="phone"
+                      value={userInfo.phone}
+                      onChange={handleInputChange}
                     />
                   </div>
                   <div className="space-y-2">

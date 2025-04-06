@@ -49,10 +49,12 @@ axiosInstance.interceptors.response.use(
 
       originalRequest._retry = true;
       isRefreshing = true;
+      console.log("axiosConfig: Attempting to refresh token...");
 
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) {
+          console.error("axiosConfig: No refresh token found in localStorage.");
           throw new Error("No refresh token available");
         }
 

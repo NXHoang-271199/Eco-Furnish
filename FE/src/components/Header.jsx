@@ -3,9 +3,28 @@ import { Link } from "react-router-dom";
 import { IoCartOutline } from "react-icons/io5";
 import { AiOutlineUser, AiOutlineSearch, AiOutlineHeart } from "react-icons/ai";
 import CartBadge from "./CartBadge";
-import { ChevronDown, User, Shield, CreditCard, Bolt, Edit, Key, LogOut, BookOpen, CircleUserRound } from "lucide-react";
+import {
+  ChevronDown,
+  User,
+  Shield,
+  CreditCard,
+  Bolt,
+  Edit,
+  Key,
+  LogOut,
+  BookOpen,
+  CircleUserRound,
+} from "lucide-react";
 import { Button } from "./ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -30,7 +49,7 @@ const Header = () => {
           setUserData({
             ...parsedUserData,
             avatar: parsedUserData.avatar || "https://via.placeholder.com/100",
-            role: parsedUserData.role || "Khách hàng"
+            role: parsedUserData.role || "Khách hàng",
           });
         } catch (e) {
           console.error("Lỗi phân tích dữ liệu người dùng:", e);
@@ -48,9 +67,9 @@ const Header = () => {
     // Thêm listener cho sự kiện cập nhật avatar
     const handleAvatarUpdate = (e) => {
       if (e.detail && e.detail.avatar) {
-        setUserData(prevData => ({
+        setUserData((prevData) => ({
           ...prevData,
-          avatar: e.detail.avatar
+          avatar: e.detail.avatar,
         }));
       }
     };
@@ -145,12 +164,6 @@ const Header = () => {
           {/* Icons */}
           <div className="flex items-center space-x-6">
             <Link
-              to="/search"
-              className="text-gray-600 hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full"
-            >
-              <AiOutlineSearch size={20} className="transition-transform" />
-            </Link>
-            <Link
               to="/cart"
               className="text-gray-600 hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full relative"
             >
@@ -168,10 +181,21 @@ const Header = () => {
                   >
                     <Avatar className="h-8 w-8 border-2 border-primary/10 group-hover:border-primary/30 transition-all">
                       <AvatarImage src={userData.avatar} alt={userData.name} />
-                      <AvatarFallback>{userData.name ? userData.name.charAt(0) : "U"}</AvatarFallback>
+                      <AvatarFallback>
+                        {userData.name ? userData.name.charAt(0) : "U"}
+                      </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium text-sm hidden md:inline">{userData.name}</span>
-                    <ChevronDown size={16} strokeWidth={2} className={`ms-1 opacity-60 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                    <span className="font-medium text-sm hidden md:inline">
+                      {userData.name}
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      strokeWidth={2}
+                      className={`ms-1 opacity-60 transition-transform ${
+                        isDropdownOpen ? "rotate-180" : ""
+                      }`}
+                      aria-hidden="true"
+                    />
                   </Button>
                 </DropdownMenuTrigger>
                 {isDropdownOpen && (
@@ -185,7 +209,9 @@ const Header = () => {
                         className="shrink-0 rounded-full"
                       />
                       <div className="flex min-w-0 flex-col">
-                        <span className="truncate text-sm font-medium">{userData.name}</span>
+                        <span className="truncate text-sm font-medium">
+                          {userData.name}
+                        </span>
                         <span className="truncate text-xs text-muted-foreground">
                           {userData.email}
                         </span>
@@ -193,22 +219,48 @@ const Header = () => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                      <DropdownMenuItem onClick={() => handleNavigate('/account')}>
-                        <User size={16} strokeWidth={2} className="mr-2 opacity-60" aria-hidden="true" />
+                      <DropdownMenuItem
+                        onClick={() => handleNavigate("/account")}
+                      >
+                        <User
+                          size={16}
+                          strokeWidth={2}
+                          className="mr-2 opacity-60"
+                          aria-hidden="true"
+                        />
                         <span>Tài khoản của tôi</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleNavigate('/account/list_order')}>
-                        <CreditCard size={16} strokeWidth={2} className="mr-2 opacity-60" aria-hidden="true" />
+                      <DropdownMenuItem
+                        onClick={() => handleNavigate("/account/list_order")}
+                      >
+                        <CreditCard
+                          size={16}
+                          strokeWidth={2}
+                          className="mr-2 opacity-60"
+                          aria-hidden="true"
+                        />
                         <span>Đơn hàng của tôi</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleNavigate('/account/address')}>
-                        <BookOpen size={16} strokeWidth={2} className="mr-2 opacity-60" aria-hidden="true" />
+                      <DropdownMenuItem
+                        onClick={() => handleNavigate("/account/address")}
+                      >
+                        <BookOpen
+                          size={16}
+                          strokeWidth={2}
+                          className="mr-2 opacity-60"
+                          aria-hidden="true"
+                        />
                         <span>Địa chỉ của tôi</span>
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut size={16} strokeWidth={2} className="mr-2 opacity-60" aria-hidden="true" />
+                      <LogOut
+                        size={16}
+                        strokeWidth={2}
+                        className="mr-2 opacity-60"
+                        aria-hidden="true"
+                      />
                       <span>Đăng xuất</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
