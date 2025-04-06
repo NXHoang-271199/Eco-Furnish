@@ -33,7 +33,14 @@ class OrderController extends Controller
     {
         try {
             $userId = Auth::id();
-            $orders = Order::with(['orderItems.product', 'orderItems.productVariant'])
+            $orders = Order::with([
+                'orderItems.product' => function ($query) {
+                    $query->withTrashed(); // Load product even if soft-deleted
+                },
+                'orderItems.productVariant' => function ($query) {
+                    $query->withTrashed(); // Load product variant even if soft-deleted
+                }
+            ])
                 ->where('user_id', $userId)
                 ->latest()
                 ->paginate(10);
@@ -65,7 +72,16 @@ class OrderController extends Controller
     public function show($id)
     {
         try {
-            $order = Order::with(['orderItems.product', 'orderItems.productVariant', 'paymentMethod', 'refundRequest'])
+            $order = Order::with([
+                'orderItems.product' => function ($query) {
+                    $query->withTrashed(); // Load product even if soft-deleted
+                },
+                'orderItems.productVariant' => function ($query) {
+                    $query->withTrashed(); // Load product variant even if soft-deleted
+                },
+                'paymentMethod',
+                'refundRequest'
+            ])
                 ->where('user_id', Auth::id())
                 ->findOrFail($id);
 

@@ -10,6 +10,7 @@ use App\Models\VariantValue;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Models\OrderItem;
 
 class TrashController extends Controller
 {
@@ -135,26 +136,42 @@ class TrashController extends Controller
             switch($type) {
                 case 'trash-products':
                     $item = Product::onlyTrashed()->findOrFail($id);
-                    
-                    // Xóa các product variants trước
-                    $item->variants()->onlyTrashed()->forceDelete();
-                    
-                    // Xóa ảnh thumbnail khỏi storage
-                    if ($item->image_thumnail) {
-                        Storage::disk('public')->delete($item->image_thumnail);
+
+                    // Kiểm tra xem sản phẩm có tồn tại trong bất kỳ OrderItem nào không
+                    $isInOrder = OrderItem::where('product_id', $item->id)->exists();
+
+                    if ($isInOrder) {
+                        // Nếu sản phẩm có trong đơn hàng, trả về lỗi và không xóa
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Sản phẩm này hiện đang có trong Order, không thể xóa sản phẩm'
+                        ], 400); // Sử dụng HTTP status code 400 Bad Request
+                    } else {
+                        // Nếu sản phẩm không có trong đơn hàng, tiến hành xóa vĩnh viễn
+
+                        // Xóa các product variants liên quan (nếu có và đã xóa mềm)
+                        // Đảm bảo chúng ta chỉ xóa variant của sản phẩm này
+                        ProductVariant::where('product_id', $item->id)->onlyTrashed()->forceDelete();
+
+                        // Xóa ảnh thumbnail khỏi storage
+                        if ($item->image_thumnail) {
+                            Storage::disk('public')->delete($item->image_thumnail);
+                        }
+
+                        // Lấy các gallery images trước khi xóa các bản ghi
+                        $galleryImages = $item->gallery()->onlyTrashed()->get();
+
+                        // Xóa files ảnh gallery khỏi storage
+                        foreach ($galleryImages as $image) {
+                            Storage::disk('public')->delete($image->image_url);
+                        }
+
+                        // Xóa các bản ghi gallery
+                        $item->gallery()->onlyTrashed()->forceDelete();
+
+                        // Xóa vĩnh viễn bản ghi sản phẩm
+                        $item->forceDelete();
                     }
-                    
-                    // Lấy các gallery images trước khi xóa các bản ghi
-                    $galleryImages = $item->gallery()->onlyTrashed()->get();
-                    
-                    // Xóa files ảnh gallery khỏi storage
-                    foreach ($galleryImages as $image) {
-                        Storage::disk('public')->delete($image->image_url);
-                    }
-                    
-                    // Xóa các bản ghi gallery
-                    $item->gallery()->onlyTrashed()->forceDelete();
-                    
                     break;
                 case 'trash-categories':
                     $item = Category::onlyTrashed()->findOrFail($id);
@@ -208,8 +225,6 @@ class TrashController extends Controller
                     abort(404);
             }
 
-            $item->forceDelete();
-            
             return response()->json([
                 'success' => true,
                 'message' => 'Xóa vĩnh viễn thành công'

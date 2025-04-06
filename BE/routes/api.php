@@ -36,6 +36,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return response()->json([
         'id' => $user->id,
         'name' => $user->name,
+        'phone' => $user->phone,
         'email' => $user->email,
         'role_id' => $user->role_id,
         'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
@@ -152,6 +153,7 @@ Route::middleware('auth:sanctum')->post('/auth/verify-token', function (Request 
         'user' => [
             'id' => $user->id,
             'name' => $user->name,
+            'phone' => $user->phone,
             'email' => $user->email,
             'role' => $role,
             'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
@@ -173,6 +175,7 @@ Route::middleware('auth:sanctum')->get('/auth/check', function (Request $request
         'user' => [
             'id' => $user->id,
             'name' => $user->name,
+            'phone' => $user->phone,
             'email' => $user->email,
             'role_id' => $user->role_id,
             'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
@@ -190,6 +193,7 @@ Route::get('/users/{id}', function ($id) {
     return response()->json([
         'id' => $user->id,
         'name' => $user->name,
+        'phone' => $user->phone,
         'email' => $user->email,
         'role_id' => $user->role_id,
         'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null

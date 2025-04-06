@@ -186,113 +186,112 @@ const OrderHistory = () => {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen px-4">
-      <h1 className="text-2xl font-semibold mb-4">Đơn hàng</h1>
-      <div className="max-w-6xl mx-auto bg-white rounded-md shadow-sm">
-        {/* <!-- Tab Navigation --> */}
-        <div className="flex border-b overflow-x-auto no-scrollbar">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 whitespace-nowrap font-medium ${activeTab === tab.id
-                ? "text-orange-500 border-b-2 border-orange-500"
-                : "text-gray-600"
-                }`}
-            >
-              {tab.name}
-            </button>
-          ))}
-        </div>
+    // <div className="bg-gray-100 min-h-screen px-4">
+    <div className="max-w-6xl mx-auto bg-white rounded-md shadow-sm">
+      {/* <!-- Tab Navigation --> */}
+      <div className="flex border-b overflow-x-auto no-scrollbar">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-3 whitespace-nowrap font-medium ${activeTab === tab.id
+              ? "text-orange-500 border-b-2 border-orange-500"
+              : "text-gray-600"
+              }`}
+          >
+            {tab.name}
+          </button>
+        ))}
+      </div>
 
-        {/* <!-- Search Bar --> */}
-        <div className="p-4 border-b">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Tìm theo Mã đơn hàng hoặc Tên sản phẩm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500"
-            />
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          </div>
-        </div>
-
-        {/* <!-- Order List --> */}
-        <div className="divide-y">
-          {loading ? (
-            <p className="p-4 text-center">Đang tải...</p>
-          ) : error ? (
-            <p className="p-4 text-center text-red-500">{error}</p>
-          ) : filteredOrders.length === 0 ? (
-            <p className="p-4 text-center">Không có đơn hàng nào phù hợp.</p>
-          ) : (
-            filteredOrders.map((order) => (
-              <div key={order.id} className="p-4 border-b last:border-b-0">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <span className="font-medium block mb-1">
-                      Mã đơn hàng: {order.order_code}
-                    </span>
-                    {order.address && (
-                      <p className="text-sm text-gray-600 mb-1">
-                        Địa chỉ: {order.address?.address_line}, {order.address?.ward}, {order.address?.district}, {order.address?.province}
-                      </p>
-                    )}
-                    {order.created_at && (
-                      <p className="text-sm text-gray-500">
-                        Ngày đặt: {new Date(order.created_at).toLocaleDateString('vi-VN')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <span className={`inline-block px-2 py-1 text-xs rounded-full mb-2 ${getStatusColor(order.order_status)}`}>
-                      {getStatusName(order.order_status)}
-                    </span>
-                    <Link
-                      to={`/account/order_detail/${order.id}`}
-                      className="flex items-center justify-end bg-orange-500 text-white px-3 py-1 rounded-sm text-sm hover:bg-orange-600"
-                    >
-                      <FiEye className="mr-1" /> Chi tiết
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Product List */}
-                {order.order_items && order.order_items.length > 0 && (
-                  <div className="mb-3">
-                    <h4 className="text-sm font-medium mb-1 text-gray-700">Sản phẩm:</h4>
-                    <ul className="divide-y divide-gray-200 border rounded-md">
-                      {order.order_items.map((item) => (
-                        <li key={item.id} className="flex items-center justify-between p-2">
-                          <div className="flex items-center">
-                            <div>
-                              <span className="text-sm font-medium">{item.product?.name || 'Tên sản phẩm'}</span>
-                              <span className="block text-xs text-gray-500">SL: {item.quantity}</span>
-                            </div>
-                          </div>
-                          <span className="text-sm font-medium text-orange-600">
-                            {/* Log item nếu giá không hợp lệ */}
-                            {typeof item.price !== 'number' && typeof item.price !== 'string' && console.log('Invalid item price data:', item)}
-                            {formatCurrency(item.price)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Total Amount */}
-                <div className="text-right font-semibold text-lg">
-                  Tổng tiền: {formatCurrency(order.total_amount || calculateOrderTotal(order.order_items))}
-                </div>
-              </div>
-            ))
-          )}
+      {/* <!-- Search Bar --> */}
+      <div className="p-4 border-b">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Tìm theo Mã đơn hàng hoặc Tên sản phẩm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500"
+          />
+          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
         </div>
       </div>
+
+      {/* <!-- Order List --> */}
+      <div className="divide-y">
+        {loading ? (
+          <p className="p-4 text-center">Đang tải...</p>
+        ) : error ? (
+          <p className="p-4 text-center text-red-500">{error}</p>
+        ) : filteredOrders.length === 0 ? (
+          <p className="p-4 text-center">Không có đơn hàng nào phù hợp.</p>
+        ) : (
+          filteredOrders.map((order) => (
+            <div key={order.id} className="p-4 border-b last:border-b-0">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <span className="font-medium block mb-1">
+                    Mã đơn hàng: {order.order_code}
+                  </span>
+                  {order.address && (
+                    <p className="text-sm text-gray-600 mb-1">
+                      Địa chỉ: {order.address?.address_line}, {order.address?.ward}, {order.address?.district}, {order.address?.province}
+                    </p>
+                  )}
+                  {order.created_at && (
+                    <p className="text-sm text-gray-500">
+                      Ngày đặt: {new Date(order.created_at).toLocaleDateString('vi-VN')}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <span className={`inline-block px-2 py-1 text-xs rounded-full mb-2 ${getStatusColor(order.order_status)}`}>
+                    {getStatusName(order.order_status)}
+                  </span>
+                  <Link
+                    to={`/account/order_detail/${order.id}`}
+                    className="flex items-center justify-end bg-orange-500 text-white px-3 py-1 rounded-sm text-sm hover:bg-orange-600"
+                  >
+                    <FiEye className="mr-1" /> Chi tiết
+                  </Link>
+                </div>
+              </div>
+
+              {/* Product List */}
+              {order.order_items && order.order_items.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="text-sm font-medium mb-1 text-gray-700">Sản phẩm:</h4>
+                  <ul className="divide-y divide-gray-200 border rounded-md">
+                    {order.order_items.map((item) => (
+                      <li key={item.id} className="flex items-center justify-between p-2">
+                        <div className="flex items-center">
+                          <div>
+                            <span className="text-sm font-medium">{item.product?.name || 'Tên sản phẩm'}</span>
+                            <span className="block text-xs text-gray-500">SL: {item.quantity}</span>
+                          </div>
+                        </div>
+                        <span className="text-sm font-medium text-orange-600">
+                          {/* Log item nếu giá không hợp lệ */}
+                          {typeof item.price !== 'number' && typeof item.price !== 'string' && console.log('Invalid item price data:', item)}
+                          {formatCurrency(item.price)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Total Amount */}
+              <div className="text-right font-semibold text-lg">
+                Tổng tiền: {formatCurrency(order.total_amount || calculateOrderTotal(order.order_items))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
+    // </div>
   );
 };
 

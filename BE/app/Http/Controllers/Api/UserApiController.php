@@ -237,6 +237,13 @@ class UserApiController extends Controller
             ], 401);
         }
 
+        // Kiểm tra xem remember_me có còn hiệu lực không
+        if ($user->remember_me && $user->remember_me_expires_at && now()->gt($user->remember_me_expires_at)) {
+            $user->remember_me = false;
+            $user->remember_me_expires_at = null;
+            $user->save();
+        }
+
         // Tạo token mới với thời hạn tương ứng
         $tokens = $this->generateTokens($user, $user->remember_me);
 
@@ -246,6 +253,8 @@ class UserApiController extends Controller
             'data' => [
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
+                'access_token_expires_at' => $tokens['access_token_expires_at'],
+                'refresh_token_expires_at' => $tokens['refresh_token_expires_at'],
                 'remember_me' => $user->remember_me,
                 'remember_me_expires_at' => $user->remember_me ? $user->remember_me_expires_at : null
             ]
@@ -268,6 +277,7 @@ class UserApiController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:255',
+            'phone' => 'nullable|string|max:15',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:15000',
             'current_password' => 'required_with:new_password|string',
             'new_password' => 'string|min:5'
@@ -304,6 +314,10 @@ class UserApiController extends Controller
             $user->name = $request->name;
         }
 
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+
         $user->save();
 
         return response()->json([
@@ -312,6 +326,7 @@ class UserApiController extends Controller
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'phone' => $user->phone,
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
             ]
         ]);
