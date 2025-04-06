@@ -103,18 +103,25 @@ class OrderController extends Controller
      */
     public function show(string $id)
     {
-        $order = Order::with(['orderItems.product'])->findOrFail($id);
+        $order = Order::with([
+            'orderItems.product' => function ($query) {
+                $query->withTrashed(); // Load product even if soft-deleted
+            },
+            'orderItems.productVariant' => function ($query) {
+                $query->withTrashed(); // Load product variant even if soft-deleted
+            }
+        ])->findOrFail($id);
 
         foreach ($order->orderItems as $item) {
             $variantInfo = [];
 
-            if ($item->product_variant_id) {
-                $productVariant = ProductVariant::find($item->product_variant_id);
+            // We already loaded the variant with withTrashed above
+            // Use the loaded relation instead of querying again
+            $productVariant = $item->productVariant; 
 
-                if ($productVariant && !empty($productVariant->variant_details)) {
-                    foreach ($productVariant->variant_details as $detail) {
-                        $variantInfo[] = "{$detail['name']}: {$detail['value']}";
-                    }
+            if ($productVariant && !empty($productVariant->variant_details)) {
+                foreach ($productVariant->variant_details as $detail) {
+                    $variantInfo[] = "{$detail['name']}: {$detail['value']}";
                 }
             }
 

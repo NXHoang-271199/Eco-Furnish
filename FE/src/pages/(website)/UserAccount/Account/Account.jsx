@@ -16,7 +16,7 @@ import {
   Upload,
   AlertCircle,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast, Toaster } from "react-hot-toast";
 
 import { Button } from "../../../../components/ui/button";
 import {
@@ -73,6 +73,15 @@ const Account = () => {
       } catch (error) {
         console.error("Lỗi khi cập nhật avatar trong localStorage:", error);
       }
+    }
+  };
+
+  const updateUserInfo = (updatedInfo) => {
+    if (user && updatedInfo) {
+      setUser(prevUser => ({
+        ...prevUser,
+        ...updatedInfo
+      }));
     }
   };
 
@@ -208,6 +217,7 @@ const Account = () => {
 
   return (
     <div className="container mx-auto pt-0 pb-10 px-4 md:px-6 w-full">
+      <Toaster position="top-right" />
       <div className="flex flex-col gap-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -252,7 +262,7 @@ const Account = () => {
             </TabsList>
 
             <TabsContent value="profile" className="space-y-6">
-              <ProfileSection user={user} updateUserAvatar={updateUserAvatar} />
+              <ProfileSection user={user} updateUserAvatar={updateUserAvatar} updateUserInfo={updateUserInfo} />
             </TabsContent>
 
             <TabsContent value="security" className="space-y-6">
@@ -269,7 +279,7 @@ const Account = () => {
   );
 };
 
-const ProfileSection = ({ user, updateUserAvatar }) => {
+const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
   const [avatar, setAvatar] = useState(user.avatar);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -410,22 +420,29 @@ const ProfileSection = ({ user, updateUserAvatar }) => {
         }
       );
 
+      console.log("Phản hồi API cập nhật thông tin:", response.data);
+
       // Cập nhật userData trong localStorage
-      if (response.data) {
-        const currentUserData = JSON.parse(localStorage.getItem("userData"));
-        if (currentUserData) {
-          currentUserData.name = userInfo.name;
-          currentUserData.phone = userInfo.phone;
-          localStorage.setItem("userData", JSON.stringify(currentUserData));
-        }
-        setSaveSuccess(true);
+      const currentUserData = JSON.parse(localStorage.getItem("userData"));
+      if (currentUserData) {
+        currentUserData.name = userInfo.name;
+        currentUserData.phone = userInfo.phone;
+        localStorage.setItem("userData", JSON.stringify(currentUserData));
       }
+
+      // Hiển thị thông báo thành công
+      toast.success("Cập nhật thông tin thành công!");
+      setSaveSuccess(true);
+
+      // Cập nhật thông tin người dùng trong component cha
+      updateUserInfo(userInfo);
     } catch (error) {
       console.error("Lỗi khi cập nhật thông tin:", error);
       setSaveError(
         error.response?.data?.message ||
         "Không thể cập nhật thông tin. Vui lòng thử lại sau."
       );
+      toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
     } finally {
       setIsSaving(false);
     }
@@ -518,32 +535,25 @@ const ProfileSection = ({ user, updateUserAvatar }) => {
                     <Input id="joined" defaultValue={user.joinDate} disabled />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Giới thiệu bản thân</Label>
-                  <textarea
-                    id="bio"
-                    value={userInfo.bio}
-                    onChange={handleInputChange}
-                    className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Viết giới thiệu ngắn về bản thân..."
-                  />
-                </div>
               </div>
             </div>
-            {saveError && (
-              <div className="text-red-500 text-sm flex items-center gap-1">
-                <AlertCircle size={14} />
-                <span>{saveError}</span>
-              </div>
-            )}
-            {saveSuccess && (
-              <div className="text-green-500 text-sm">
-                Thông tin đã được cập nhật thành công!
-              </div>
-            )}
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
-            <Button variant="outline">Hủy bỏ</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUserInfo({
+                  name: user.name || "",
+                  email: user.email || "",
+                  phone: user.phone || "",
+                  bio: "",
+                });
+                setSaveError(null);
+                setSaveSuccess(false);
+              }}
+            >
+              Hủy bỏ
+            </Button>
             <Button
               onClick={handleSaveChanges}
               disabled={isSaving}
@@ -602,6 +612,112 @@ const ProfileSection = ({ user, updateUserAvatar }) => {
 };
 
 const SecuritySection = () => {
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+    setPasswordData((prev) => ({
+      ...prev,
+      [id === "current-password" ? "currentPassword" :
+        id === "new-password" ? "newPassword" :
+          id === "confirm-password" ? "confirmPassword" : id]: value,
+    }));
+  };
+
+  const resetForm = () => {
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setError(null);
+    setSuccess(false);
+  };
+
+  const handleUpdatePassword = async () => {
+    // Xác thực dữ liệu
+    if (!passwordData.currentPassword) {
+      setError("Vui lòng nhập mật khẩu hiện tại");
+      return;
+    }
+
+    if (!passwordData.newPassword) {
+      setError("Vui lòng nhập mật khẩu mới");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 5) {
+      setError("Mật khẩu mới phải có ít nhất 5 ký tự");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setError("Mật khẩu mới và xác nhận mật khẩu không khớp");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("Bạn cần đăng nhập để thực hiện chức năng này");
+      }
+
+      const userData = JSON.parse(localStorage.getItem("userData"));
+      if (!userData || !userData.id) {
+        throw new Error("Không tìm thấy thông tin người dùng");
+      }
+
+      // Gọi API cập nhật mật khẩu
+      const response = await axios.put(
+        `http://localhost:8000/api/users/update/${userData.id}`,
+        {
+          current_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      console.log("Phản hồi API cập nhật mật khẩu:", response.data);
+
+      // Cập nhật trạng thái thành công và hiển thị thông báo
+      setSuccess(true);
+      toast.success("Cập nhật mật khẩu thành công!");
+      resetForm();
+    } catch (error) {
+      console.error("Lỗi khi cập nhật mật khẩu:", error);
+
+      if (error.response && error.response.status === 400) {
+        setError("Mật khẩu hiện tại không đúng");
+      } else {
+        setError(
+          error.response?.data?.message ||
+          "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
+        );
+      }
+
+      toast.error("Không thể cập nhật mật khẩu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <motion.div
@@ -619,20 +735,45 @@ const SecuritySection = () => {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="current-password">Mật khẩu hiện tại</Label>
-              <Input id="current-password" type="password" />
+              <Input
+                id="current-password"
+                type="password"
+                value={passwordData.currentPassword}
+                onChange={handleInputChange}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-password">Mật khẩu mới</Label>
-              <Input id="new-password" type="password" />
+              <Input
+                id="new-password"
+                type="password"
+                value={passwordData.newPassword}
+                onChange={handleInputChange}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Xác nhận mật khẩu mới</Label>
-              <Input id="confirm-password" type="password" />
+              <Input
+                id="confirm-password"
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={handleInputChange}
+              />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
-            <Button variant="outline">Hủy bỏ</Button>
-            <Button>Cập nhật mật khẩu</Button>
+            <Button variant="outline" onClick={resetForm}>Hủy bỏ</Button>
+            <Button
+              onClick={handleUpdatePassword}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
+                  Đang cập nhật...
+                </>
+              ) : "Cập nhật mật khẩu"}
+            </Button>
           </CardFooter>
         </Card>
       </motion.div>

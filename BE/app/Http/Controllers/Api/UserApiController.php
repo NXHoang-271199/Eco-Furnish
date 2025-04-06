@@ -277,6 +277,7 @@ class UserApiController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:255',
+            'phone' => 'nullable|string|max:15',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:15000',
             'current_password' => 'required_with:new_password|string',
             'new_password' => 'string|min:5'
@@ -313,6 +314,10 @@ class UserApiController extends Controller
             $user->name = $request->name;
         }
 
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+
         $user->save();
 
         return response()->json([
@@ -321,6 +326,7 @@ class UserApiController extends Controller
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'phone' => $user->phone,
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
             ]
         ]);
