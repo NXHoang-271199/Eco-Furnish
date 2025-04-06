@@ -11,6 +11,7 @@ import About from "./pages/(website)/About/About";
 import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
+import PaymentBuyNow from "./pages/(website)/Payment/PaymentBuyNow";
 
 // import CursorGlow from "./CursorGlow";
 // import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
@@ -47,6 +48,7 @@ function App() {
           <Route path="blog-detail/:slug" element={<BlogsDetail />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
+          <Route path="payment_buy_now" element={<PaymentBuyNow />} />
           <Route path="order-success" element={<OrderSuccess />} />
           <Route path="account" element={<LayoutAccount />}>
             <Route index element={<Account />} />

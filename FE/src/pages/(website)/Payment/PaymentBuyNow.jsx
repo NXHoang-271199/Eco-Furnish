@@ -5,7 +5,7 @@ import { clearSelectedItems } from "../../../store/cartSlice";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
 
-const Payment = () => {
+const PaymentBuyNow = () => {
   const navigate = useNavigate();
   const { state } = useLocation(); // Lấy dữ liệu từ state của navigate
   const selectedProducts =
@@ -55,7 +55,7 @@ const Payment = () => {
 
     // Kiểm tra nếu không có sản phẩm được chọn
     if (!selectedProducts || selectedProducts.length === 0) {
-      navigate("/cart");
+      navigate("/products");
     }
 
     getPaymentMethod();
@@ -211,7 +211,7 @@ const Payment = () => {
     }
   };
 
-  const handlePayment = async () => {
+  const handlePaymentBuyNow = async () => {
     if (!paymentMethod) {
       setError("Vui lòng chọn phương thức thanh toán");
       return;
@@ -239,12 +239,23 @@ const Payment = () => {
     try {
       const token = localStorage.getItem("authToken");
       const orderData = {
-        cart_items: selectedProducts.map((item) => item.id),
+        items: selectedProducts.map((item) => ({
+          product_id: item.product.id,
+          variant_id: item.product_variant ? item.product_variant.id : null,
+          quantity: item.quantity,
+          price:
+            item.product_variant &&
+            typeof item.product_variant === "object" &&
+            !Array.isArray(item.product_variant)
+              ? item.product_variant.discount_price ||
+                item.product_variant.price
+              : item.product.discount_price || item.product.price,
+        })),
         user_name: address.name,
         user_email: address.email,
         user_address: `${address.address}, ${address.ward}, ${address.district}, ${address.province}`,
         user_phone: address.phone,
-        payment_method_id: Number(paymentMethod), // Sử dụng ID 1 cho MoMo như trong ảnh
+        payment_method_id: Number(paymentMethod),
       };
 
       // Thêm voucher_id nếu đã áp dụng mã giảm giá
@@ -252,9 +263,9 @@ const Payment = () => {
         orderData.voucher_id = voucherId;
       }
 
-      // Gọi trực tiếp API orders - KHÔNG gọi payment/process
+      // Gọi API orders/buy-now
       const response = await axios.post(
-        "http://localhost:8000/api/orders",
+        "http://localhost:8000/api/orders/buy-now",
         orderData,
         {
           headers: {
@@ -267,18 +278,6 @@ const Payment = () => {
       // Kiểm tra response
       const newOrderCode = response.data.order_code;
       setOrderCode(newOrderCode);
-
-      // Lưu thông tin đơn hàng vào localStorage
-      localStorage.setItem(
-        "orderInfo",
-        JSON.stringify({
-          order_code: newOrderCode,
-          products: selectedProducts,
-          total: calculateTotal(),
-          payment_method: paymentMethod,
-          order_date: new Date().toISOString(),
-        })
-      );
 
       if (response.status === 200 || response.status === 201) {
         const selectedMethod = paymentMethods.find(
@@ -447,7 +446,7 @@ const Payment = () => {
               Giỏ hàng
             </Link>
             <button
-              onClick={handlePayment}
+              onClick={handlePaymentBuyNow}
               disabled={loading}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
@@ -509,7 +508,6 @@ const Payment = () => {
                   item.product_variant.price ||
                   0
                 : item.product.discount_price || item.product.price || 0;
-
               return (
                 <div
                   key={`${item.product.id}-${JSON.stringify(
@@ -568,4 +566,4 @@ const Payment = () => {
   );
 };
 
-export default Payment;
+export default PaymentBuyNow;
