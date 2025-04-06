@@ -18,12 +18,15 @@ const OrderSuccess = () => {
     const vnpayOrderId = queryParams.get("vnp_TxnRef");
     const extraOrderId = queryParams.get("extraData");
     const partnerRef = queryParams.get("partnerRef");
-    const orderCodeFromUrl = vnpayOrderId || momoOrderId || extraOrderId || partnerRef;
+    const orderCodeFromUrl =
+      vnpayOrderId || momoOrderId || extraOrderId || partnerRef;
 
     // 3. Nếu có mã từ URL, cập nhật orderData và localStorage *chỉ khi* nó khác mã đã lưu
     if (orderData && orderCodeFromUrl) {
       if (orderData.order_code !== orderCodeFromUrl) {
-        console.log(`Updating order_code from URL: ${orderCodeFromUrl} (was ${orderData.order_code})`);
+        console.log(
+          `Updating order_code from URL: ${orderCodeFromUrl} (was ${orderData.order_code})`
+        );
         orderData.order_code = orderCodeFromUrl;
         // Lưu lại vào localStorage nếu có sự thay đổi từ URL
         localStorage.setItem("orderInfo", JSON.stringify(orderData));
@@ -33,7 +36,6 @@ const OrderSuccess = () => {
     // 4. Set state với dữ liệu đơn hàng (đã được cập nhật nếu cần)
     setOrderInfo(orderData);
     console.log("Final orderInfo state set:", orderData);
-
   }, [location]);
 
   const formatPrice = (price) => {
@@ -121,8 +123,8 @@ const OrderSuccess = () => {
                     {orderInfo.payment_method === "MoMo"
                       ? "Ví MoMo"
                       : orderInfo.payment_method === "VNPAY"
-                        ? "VNPAY"
-                        : "Thanh toán khi nhận hàng"}
+                      ? "VNPAY"
+                      : "Thanh toán khi nhận hàng"}
                   </p>
                 </div>
               </div>

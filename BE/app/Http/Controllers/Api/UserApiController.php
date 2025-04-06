@@ -149,7 +149,7 @@ class UserApiController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
-            'remember_me' => 'nullable|in:true,false,0,1'
+            'remember_me' => 'nullable|boolean'
         ]);
 
         if ($validator->fails()) {
@@ -165,7 +165,7 @@ class UserApiController extends Controller
             ->first();
 
         // Kiểm tra email đã xác thực chưa
-        if (!$user->email_verified_at) {
+        if (!$user || !$user->email_verified_at) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Vui lòng xác thực email trước khi đăng nhập',
@@ -181,10 +181,8 @@ class UserApiController extends Controller
             ], 401);
         }
 
-        // Chuyển đổi giá trị remember_me thành boolean
-        $rememberMe = filter_var($request->remember_me, FILTER_VALIDATE_BOOLEAN);
-
         // Xử lý remember me
+        $rememberMe = $request->remember_me ?? false;
         if ($rememberMe) {
             $user->remember_me = true;
             $user->remember_me_expires_at = now()->addDays(30); // Lưu 30 ngày
@@ -253,8 +251,6 @@ class UserApiController extends Controller
             'data' => [
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
-                'access_token_expires_at' => $tokens['access_token_expires_at'],
-                'refresh_token_expires_at' => $tokens['refresh_token_expires_at'],
                 'remember_me' => $user->remember_me,
                 'remember_me_expires_at' => $user->remember_me ? $user->remember_me_expires_at : null
             ]

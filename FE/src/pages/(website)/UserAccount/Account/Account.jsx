@@ -42,13 +42,17 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../../components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "../../../../components/ui/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../../components/ui/avatar";
 import { Separator } from "../../../../components/ui/separator";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
 import { Switch } from "../../../../components/ui/switch";
 import OrderHistory from "../OrderHistory/OrderHistory";
-
+import axiosInstance from "../../../../utils/axiosConfig";
 const Account = () => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
@@ -57,9 +61,9 @@ const Account = () => {
 
   const updateUserAvatar = (newAvatarUrl) => {
     if (user && newAvatarUrl) {
-      setUser(prevUser => ({
+      setUser((prevUser) => ({
         ...prevUser,
-        avatar: newAvatarUrl
+        avatar: newAvatarUrl,
       }));
 
       // Cập nhật dữ liệu người dùng trong localStorage
@@ -68,7 +72,10 @@ const Account = () => {
         if (userData) {
           userData.avatar = newAvatarUrl;
           localStorage.setItem("userData", JSON.stringify(userData));
-          console.log("Đã cập nhật avatar trong localStorage từ component chính:", newAvatarUrl);
+          console.log(
+            "Đã cập nhật avatar trong localStorage từ component chính:",
+            newAvatarUrl
+          );
         }
       } catch (error) {
         console.error("Lỗi khi cập nhật avatar trong localStorage:", error);
@@ -78,9 +85,9 @@ const Account = () => {
 
   const updateUserInfo = (updatedInfo) => {
     if (user && updatedInfo) {
-      setUser(prevUser => ({
+      setUser((prevUser) => ({
         ...prevUser,
-        ...updatedInfo
+        ...updatedInfo,
       }));
     }
   };
@@ -122,16 +129,13 @@ const Account = () => {
         }
 
         // Gọi API để lấy thông tin chi tiết của người dùng
-        const response = await axios.get(
-          `http://localhost:8000/api/users/${userData.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-          }
-        );
+        const response = await axiosInstance.get(`/users/${userData.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
         console.log("Dữ liệu người dùng từ API:", response.data);
 
         // Lưu trữ dữ liệu người dùng từ API
@@ -147,7 +151,8 @@ const Account = () => {
           ...apiUserData,
           avatar: apiAvatar || "https://via.placeholder.com/100",
           role: "Khách hàng",
-          joinDate: apiUserData.joined_date || new Date().toLocaleDateString("vi-VN"),
+          joinDate:
+            apiUserData.joined_date || new Date().toLocaleDateString("vi-VN"),
         });
 
         // Cập nhật userData trong localStorage
@@ -177,7 +182,7 @@ const Account = () => {
 
           setError(
             error.response.data?.message ||
-            `Lỗi từ máy chủ: ${error.response.status}`
+              `Lỗi từ máy chủ: ${error.response.status}`
           );
         } else if (error.request) {
           console.error("Không nhận được phản hồi từ máy chủ");
@@ -262,7 +267,11 @@ const Account = () => {
             </TabsList>
 
             <TabsContent value="profile" className="space-y-6">
-              <ProfileSection user={user} updateUserAvatar={updateUserAvatar} updateUserInfo={updateUserInfo} />
+              <ProfileSection
+                user={user}
+                updateUserAvatar={updateUserAvatar}
+                updateUserInfo={updateUserInfo}
+              />
             </TabsContent>
 
             <TabsContent value="security" className="space-y-6">
@@ -317,8 +326,8 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
 
       console.log("Đang tải lên avatar cho người dùng ID:", userData.id);
 
-      const response = await axios.post(
-        `http://localhost:8000/api/users/upload-avatar/${userData.id}`,
+      const response = await axiosInstance.post(
+        `/users/upload-avatar/${userData.id}`,
         formData,
         {
           headers: {
@@ -334,7 +343,11 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       let avatarUrl = null;
       if (response.data && response.data.avatar_url) {
         avatarUrl = response.data.avatar_url;
-      } else if (response.data && response.data.data && response.data.data.avatar) {
+      } else if (
+        response.data &&
+        response.data.data &&
+        response.data.data.avatar
+      ) {
         avatarUrl = response.data.data.avatar;
       }
 
@@ -352,9 +365,11 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
         updateUserAvatar(avatarUrl);
 
         // Kích hoạt sự kiện để Header cập nhật avatar
-        window.dispatchEvent(new CustomEvent("avatar-updated", {
-          detail: { avatar: avatarUrl }
-        }));
+        window.dispatchEvent(
+          new CustomEvent("avatar-updated", {
+            detail: { avatar: avatarUrl },
+          })
+        );
 
         console.log("Đã cập nhật avatar trong localStorage:", avatarUrl);
       } else {
@@ -373,16 +388,19 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
     } catch (error) {
       console.error("Lỗi khi tải lên avatar:", error);
       setIsUploading(false);
-      setUploadError(error.response?.data?.message || "Không thể tải lên avatar. Vui lòng thử lại!");
+      setUploadError(
+        error.response?.data?.message ||
+          "Không thể tải lên avatar. Vui lòng thử lại!"
+      );
       toast.error("Không thể tải lên avatar. Vui lòng thử lại!");
     }
   };
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
-    setUserInfo(prev => ({
+    setUserInfo((prev) => ({
       ...prev,
-      [id]: value
+      [id]: value,
     }));
   };
 
@@ -438,7 +456,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       console.error("Lỗi khi cập nhật thông tin:", error);
       setSaveError(
         error.response?.data?.message ||
-        "Không thể cập nhật thông tin. Vui lòng thử lại sau."
+          "Không thể cập nhật thông tin. Vui lòng thử lại sau."
       );
       toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
     } finally {
@@ -482,7 +500,9 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
                   ) : (
                     <>
                       <AvatarImage src={avatar} alt={user.name} />
-                      <AvatarFallback className="text-2xl">{user.name ? user.name.charAt(0) : "U"}</AvatarFallback>
+                      <AvatarFallback className="text-2xl">
+                        {user.name ? user.name.charAt(0) : "U"}
+                      </AvatarFallback>
                     </>
                   )}
                 </Avatar>
@@ -490,7 +510,11 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
                   className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
                   onClick={handleAvatarClick}
                 >
-                  <Button size="sm" variant="ghost" className="text-white h-8 w-8 p-0">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-white h-8 w-8 p-0"
+                  >
                     <Upload size={16} />
                   </Button>
                 </div>
@@ -551,16 +575,15 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
             >
               Hủy bỏ
             </Button>
-            <Button
-              onClick={handleSaveChanges}
-              disabled={isSaving}
-            >
+            <Button onClick={handleSaveChanges} disabled={isSaving}>
               {isSaving ? (
                 <>
                   <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
                   Đang lưu...
                 </>
-              ) : "Lưu thay đổi"}
+              ) : (
+                "Lưu thay đổi"
+              )}
             </Button>
           </CardFooter>
         </Card>
@@ -622,9 +645,13 @@ const SecuritySection = () => {
     const { id, value } = e.target;
     setPasswordData((prev) => ({
       ...prev,
-      [id === "current-password" ? "currentPassword" :
-        id === "new-password" ? "newPassword" :
-          id === "confirm-password" ? "confirmPassword" : id]: value,
+      [id === "current-password"
+        ? "currentPassword"
+        : id === "new-password"
+        ? "newPassword"
+        : id === "confirm-password"
+        ? "confirmPassword"
+        : id]: value,
     }));
   };
 
@@ -705,7 +732,7 @@ const SecuritySection = () => {
       } else {
         setError(
           error.response?.data?.message ||
-          "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
+            "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
         );
       }
 
@@ -759,17 +786,18 @@ const SecuritySection = () => {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
-            <Button variant="outline" onClick={resetForm}>Hủy bỏ</Button>
-            <Button
-              onClick={handleUpdatePassword}
-              disabled={loading}
-            >
+            <Button variant="outline" onClick={resetForm}>
+              Hủy bỏ
+            </Button>
+            <Button onClick={handleUpdatePassword} disabled={loading}>
               {loading ? (
                 <>
                   <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
                   Đang cập nhật...
                 </>
-              ) : "Cập nhật mật khẩu"}
+              ) : (
+                "Cập nhật mật khẩu"
+              )}
             </Button>
           </CardFooter>
         </Card>
@@ -779,9 +807,7 @@ const SecuritySection = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-      >
-
-      </motion.div>
+      ></motion.div>
     </>
   );
 };

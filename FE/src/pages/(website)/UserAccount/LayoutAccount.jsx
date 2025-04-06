@@ -10,7 +10,6 @@ const LayoutAccount = () => {
       <div className="min-h-screen bg-gray-50 pb-12">
         <Outlet />
       </div>
-      <Footer />
     </>
   );
 };
