@@ -194,7 +194,7 @@ const ChatRealTime = () => {
                 
                 // Đảm bảo tất cả tin nhắn có trạng thái is_read và isCurrentUser
                 const messagesWithStatus = response.data.map(msg => ({
-                    ...msg,
+                            ...msg,
                     is_read: typeof msg.is_read === 'boolean' ? msg.is_read : false,
                     isCurrentUser: userData && msg.sender_id === userData.id,
                     isAdmin: !msg.sender_id || (userData && msg.sender_id !== userData.id) // Thêm logic xác định admin
@@ -545,11 +545,11 @@ const ChatRealTime = () => {
                     processAdminImageBuffer(); 
                     
                     // Thêm tin nhắn hiện tại vào messages
-                    setMessages((prev) => [...prev, data]);
-
+                setMessages((prev) => [...prev, data]);
+                
                     // Xử lý unread count và thông báo cho tin nhắn text từ admin
                     if (isAdminMessage && !isImageOnly && !isOpen) {
-                        setUnreadCount(prev => prev + 1);
+                    setUnreadCount(prev => prev + 1);
                         const audio = new Audio('/notification.mp3');
                         audio.play().catch(() => console.log("Không thể phát âm thanh"));
                     } else if (isOpen) {
@@ -585,11 +585,11 @@ const ChatRealTime = () => {
                     // Xử lý unread count và thông báo
                     if (!isOpen) {
                         setUnreadCount(prev => prev + 1);
-                        const audio = new Audio('/notification.mp3');
-                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
-                    } else {
-                        markMessagesAsRead();
-                    }
+                    const audio = new Audio('/notification.mp3');
+                    audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                } else {
+                    markMessagesAsRead();
+                }
                 }
             };
             
@@ -930,7 +930,7 @@ const ChatRealTime = () => {
     // Thêm useEffect để xử lý scroll khi có tin nhắn mới
     useEffect(() => {
         if (!isLoading && messages.length > 0) {
-            scrollToBottom();
+        scrollToBottom();
         }
     }, [messages, isLoading]);
 
