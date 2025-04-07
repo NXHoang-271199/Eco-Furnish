@@ -33,6 +33,7 @@ import OrderSuccess from "./pages/(website)/OrderSuccess/OrderSuccess";
 import OrderHistory from "./pages/(website)/UserAccount/OrderHistory/OrderHistory";
 import { useEffect } from "react";
 import OrderDetail from "./pages/(website)/UserAccount/OrderHistory/OrderDetail";
+import OAuthCallback from "./pages/OAuthCallback/OAuthCallback";
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/confirm-password" element={<ConfirmPassword />} />
         <Route path="/forgot-password" element={<ForgotPasswordModal />} />
+        <Route path="/oauth-callback" element={<OAuthCallback />} />
       </Routes>
       <ChatBot />
       <Chat />

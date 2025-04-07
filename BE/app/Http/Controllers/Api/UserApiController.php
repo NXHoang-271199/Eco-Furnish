@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Traits\TokenHandler;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Session;
 
 class UserApiController extends Controller
 {
@@ -625,6 +627,128 @@ class UserApiController extends Controller
             return response()->json([
                 'error' => 'Không thể tải lên avatar: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    // Thêm các phương thức OAuth
+
+    public function redirectToGoogle()
+    {
+        // Đảm bảo session được bắt đầu trước khi redirect
+        // Session::start(); // Không cần start thủ công khi đã có middleware 'web'
+        return Socialite::driver('google')->stateless()->redirect();
+    }
+
+    public function handleGoogleCallback()
+    {
+        try {
+            // Sử dụng stateless() để không dựa vào session sau khi callback
+            $socialUser = Socialite::driver('google')->stateless()->user();
+            
+            // Kiểm tra xem email này đã tồn tại trong DB chưa
+            $user = User::where('email', $socialUser->getEmail())->first();
+            
+            // Nếu chưa có, tạo user mới
+            if (!$user) {
+                $clientRole = Role::where('slug', 'client')->first();
+                
+                $user = User::create([
+                    'name' => $socialUser->getName(),
+                    'email' => $socialUser->getEmail(),
+                    'password' => Hash::make(Str::random(24)), // Tạo password ngẫu nhiên
+                    'role_id' => $clientRole->id,
+                    'avatar' => $socialUser->getAvatar(),
+                    'is_active' => 1, // Đã active sẵn
+                    'email_verified_at' => now() // Đã xác thực email
+                ]);
+            }
+            
+            // Tạo token
+            $token = $user->createToken('auth_token')->plainTextToken;
+            $refreshToken = Str::random(60);
+            
+            // Lưu refresh token
+            $user->update([
+                'refresh_token' => $refreshToken
+            ]);
+            
+            // Chuyển hướng về FE với token
+            $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
+                'token' => $token,
+                'refresh_token' => $refreshToken,
+                'user' => json_encode([
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar
+                ])
+            ]);
+            
+            return redirect($redirectUrl);
+        } catch (\Exception $e) {
+            Log::error('Google login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            // Redirect về trang sign-in với tham số lỗi cụ thể
+            return redirect('http://localhost:5173/sign-in?error=google_callback_failed');
+        }
+    }
+
+    public function redirectToFacebook()
+    {
+        // Đảm bảo session được bắt đầu trước khi redirect
+        // Session::start(); // Không cần start thủ công khi đã có middleware 'web'
+        return Socialite::driver('facebook')->stateless()->redirect();
+    }
+
+    public function handleFacebookCallback()
+    {
+        try {
+            // Sử dụng stateless() để không dựa vào session sau khi callback
+            $socialUser = Socialite::driver('facebook')->stateless()->user();
+            
+            // Kiểm tra xem email này đã tồn tại trong DB chưa
+            $user = User::where('email', $socialUser->getEmail())->first();
+            
+            // Nếu chưa có, tạo user mới
+            if (!$user) {
+                $clientRole = Role::where('slug', 'client')->first();
+                
+                $user = User::create([
+                    'name' => $socialUser->getName(),
+                    'email' => $socialUser->getEmail(),
+                    'password' => Hash::make(Str::random(24)), // Tạo password ngẫu nhiên
+                    'role_id' => $clientRole->id,
+                    'avatar' => $socialUser->getAvatar(),
+                    'is_active' => 1, // Đã active sẵn
+                    'email_verified_at' => now() // Đã xác thực email
+                ]);
+            }
+            
+            // Tạo token
+            $token = $user->createToken('auth_token')->plainTextToken;
+            $refreshToken = Str::random(60);
+            
+            // Lưu refresh token
+            $user->update([
+                'refresh_token' => $refreshToken
+            ]);
+            
+            // Chuyển hướng về FE với token
+            $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
+                'token' => $token,
+                'refresh_token' => $refreshToken,
+                'user' => json_encode([
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar
+                ])
+            ]);
+            
+            return redirect($redirectUrl);
+        } catch (\Exception $e) {
+            Log::error('Facebook login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+             // Redirect về trang sign-in với tham số lỗi cụ thể
+            return redirect('http://localhost:5173/sign-in?error=facebook_callback_failed');
         }
     }
 }

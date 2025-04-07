@@ -280,6 +280,10 @@ const SignUp = () => {
                   boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
                 }}
                 className="group flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 transition-all hover:border-green-500/50"
+                onClick={() =>
+                  (window.location.href =
+                    "http://localhost:8000/api/auth/google/redirect")
+                }
               >
                 <FaGoogle className="mr-2 h-4 w-4 text-red-500" />
                 <span className="text-sm">Google</span>
@@ -290,6 +294,10 @@ const SignUp = () => {
                   boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
                 }}
                 className="group flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 transition-all hover:border-green-500/50"
+                onClick={() =>
+                  (window.location.href =
+                    "http://localhost:8000/api/auth/facebook/redirect")
+                }
               >
                 <FaFacebook className="mr-2 h-4 w-4 text-blue-600" />
                 <span className="text-sm">Facebook</span>
