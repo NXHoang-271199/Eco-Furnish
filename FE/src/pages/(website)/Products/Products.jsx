@@ -22,6 +22,9 @@ const Products = () => {
   const [priceRange, setPriceRange] = useState([0, 10000000]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage] = useState(9);
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
@@ -99,13 +102,12 @@ const Products = () => {
     if (!isLoading) {
       filterProducts();
     }
-  }, [selectedCategories, selectedVariants, priceRange, searchTerm, products, isLoading]);
+  }, [selectedCategories, selectedVariants, priceRange, searchTerm, products, isLoading, currentPage]);
 
   const filterProducts = () => {
     setIsLoading(true);
     let filtered = [...products];
 
-    // Nếu không có filter nào được chọn và không có từ khóa tìm kiếm, hiển thị tất cả sản phẩm
     if (
       selectedCategories.length === 0 &&
       selectedVariants.length === 0 &&
@@ -118,14 +120,12 @@ const Products = () => {
       return;
     }
 
-    // Lọc theo danh mục
     if (selectedCategories.length > 0) {
       filtered = filtered.filter((product) =>
         selectedCategories.includes(product.category_id)
       );
     }
 
-    // Lọc theo biến thể
     if (selectedVariants.length > 0) {
       filtered = filtered.filter((product) => {
         if (!product.variants || product.variants.length === 0) return false;
@@ -137,7 +137,6 @@ const Products = () => {
           )
             return false;
 
-          // Kiểm tra xem có bất kỳ giá trị nào trong selectedVariants khớp với variant_details
           return selectedVariants.some((selectedValueId) => {
             return variant.variant_details.some((detail) => {
               const selectedVariantValue = variants
@@ -153,7 +152,6 @@ const Products = () => {
       });
     }
 
-    // Lọc theo khoảng giá
     if (priceRange[0] !== 0 || priceRange[1] !== 10000000) {
       filtered = filtered.filter((product) => {
         let price;
@@ -169,12 +167,17 @@ const Products = () => {
       });
     }
 
-    // Lọc theo từ khóa tìm kiếm
     if (searchTerm) {
       filtered = filtered.filter((product) =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+
+    setTotalPages(Math.ceil(filtered.length / itemsPerPage));
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    filtered = filtered.slice(startIndex, endIndex);
 
     setFilteredProducts(filtered);
     setIsLoading(false);
@@ -215,9 +218,46 @@ const Products = () => {
     setSearchTerm("");
   };
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        pageNumbers.push(currentPage - 1);
+        pageNumbers.push(currentPage);
+        pageNumbers.push(currentPage + 1);
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+    return pageNumbers;
+  };
+
   return (
     <>
-      {/* Banner có hiệu ứng */}
       <motion.section
         className="w-full mx-auto mt-4 mb-8"
         initial={{ opacity: 0, y: -20 }}
@@ -227,7 +267,6 @@ const Products = () => {
         <Banner />
       </motion.section>
 
-      {/* Header */}
       <motion.div
         className="max-w-6xl mx-auto mb-8 px-4"
         initial={{ opacity: 0 }}
@@ -243,7 +282,6 @@ const Products = () => {
         </p>
       </motion.div>
 
-      {/* Bộ lọc & tìm kiếm */}
       <section className="max-w-6xl mx-auto mb-8 px-4">
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <motion.button
@@ -290,7 +328,6 @@ const Products = () => {
         </div>
 
         <div className="flex gap-6 relative">
-          {/* Bộ lọc */}
           <motion.div
             className={`${filterOpen ? "flex" : "hidden"
               } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4 h-fit transition-all duration-300`}
@@ -354,7 +391,6 @@ const Products = () => {
               </div>
             ))}
 
-            {/* Lọc giá */}
             <div className="mb-8">
               <h4 className="text-base font-medium mb-4 flex items-center">
                 <span className="w-2 h-5 bg-amber-500 rounded-full mr-2 inline-block"></span>
@@ -397,7 +433,6 @@ const Products = () => {
             </div>
           </motion.div>
 
-          {/* Danh sách sản phẩm */}
           <motion.div
             className="w-full md:w-3/4"
             variants={staggerContainer}
@@ -411,7 +446,6 @@ const Products = () => {
               animate="visible"
             >
               {isLoading ? (
-                // Hiển thị skeleton loading khi đang tải
                 [1, 2, 3, 4, 5, 6].map((index) => (
                   <motion.div
                     key={index}
@@ -428,7 +462,6 @@ const Products = () => {
                   </motion.div>
                 ))
               ) : filteredProducts.length > 0 ? (
-                // Hiển thị sản phẩm nếu có
                 filteredProducts.map((product) => (
                   <motion.div
                     key={product.id}
@@ -465,12 +498,10 @@ const Products = () => {
                           />
                         </div>
 
-                        {/* Nhãn mới */}
                         <div className="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                           MỚI
                         </div>
 
-                        {/* Nút mua nhanh */}
                         <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <motion.button
                             className="bg-white text-amber-500 p-3 rounded-full shadow-md hover:bg-amber-500 hover:text-white transition-all duration-300"
@@ -483,7 +514,6 @@ const Products = () => {
                       </div>
 
                       <div className="p-5">
-                        {/* Sao đánh giá */}
                         <div className="flex items-center mb-2">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <IoStar
@@ -512,10 +542,8 @@ const Products = () => {
 
                         <div className="flex justify-between items-center">
                           {product.has_variants ? (
-                            // Sản phẩm có biến thể
                             <div className="flex-1">
                               {product.price_range?.min_discount ? (
-                                // Có giá khuyến mãi
                                 <div className="flex flex-col">
                                   <p className="text-amber-600 font-semibold text-lg">
                                     {new Intl.NumberFormat("vi-VN", {
@@ -540,7 +568,6 @@ const Products = () => {
                                   </p>
                                 </div>
                               ) : (
-                                // Không có khuyến mãi
                                 <p className="text-amber-600 font-semibold text-lg">
                                   {new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
@@ -557,10 +584,8 @@ const Products = () => {
                               )}
                             </div>
                           ) : (
-                            // Sản phẩm thường
                             <div className="flex-1">
                               {product.discount_price ? (
-                                // Có giá khuyến mãi
                                 <div className="flex flex-col">
                                   <p className="text-amber-600 font-semibold text-lg">
                                     {new Intl.NumberFormat("vi-VN", {
@@ -576,7 +601,6 @@ const Products = () => {
                                   </p>
                                 </div>
                               ) : (
-                                // Không có khuyến mãi
                                 <p className="text-amber-600 font-semibold text-lg">
                                   {new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
@@ -592,7 +616,6 @@ const Products = () => {
                   </motion.div>
                 ))
               ) : (
-                // Hiển thị thông báo nếu không có sản phẩm và không loading
                 <div className="col-span-full flex flex-col items-center justify-center py-12">
                   <div className="text-amber-500 mb-4">
                     <svg
@@ -629,25 +652,55 @@ const Products = () => {
         </div>
       </section>
 
-      {/* Phân trang */}
       <motion.div
         className="flex justify-center space-x-3 my-12"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.8 }}
       >
-        {[1, 2, 3, "...", 10].map((item, index) => (
+        <button
+          className={`bg-white text-gray-700 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-100'} border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 font-medium flex items-center`}
+          onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          <span>Trước</span>
+        </button>
+
+        {getPageNumbers().map((item, index) => (
           <button
             key={index}
-            className={`${item === 1
+            className={`${item === currentPage
               ? "bg-amber-500 text-white"
-              : "bg-white text-gray-700 hover:bg-amber-100"
+              : item === "..."
+                ? "bg-white text-gray-400 cursor-default"
+                : "bg-white text-gray-700 hover:bg-amber-100"
               } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
+            onClick={() => item !== "..." && handlePageChange(item)}
+            disabled={item === "..."}
           >
             {item}
           </button>
         ))}
-        <button className="bg-white text-gray-700 hover:bg-amber-100 border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 font-medium flex items-center">
+
+        <button
+          className={`bg-white text-gray-700 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-100'} border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 font-medium flex items-center`}
+          onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
           <span>Tiếp</span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -666,7 +719,6 @@ const Products = () => {
         </button>
       </motion.div>
 
-      {/* Footer benefits */}
       <section className="bg-amber-50 py-16">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4">
           {[
