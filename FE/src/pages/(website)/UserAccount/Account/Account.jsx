@@ -297,7 +297,6 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
     name: user.name || "",
     email: user.email || "",
     phone: user.phone || "",
-    bio: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -569,7 +568,6 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
                   name: user.name || "",
                   email: user.email || "",
                   phone: user.phone || "",
-                  bio: "",
                 });
                 setSaveError(null);
                 setSaveSuccess(false);
