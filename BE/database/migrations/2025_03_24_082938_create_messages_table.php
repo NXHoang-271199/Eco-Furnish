@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->text('text');
-            $table->string('image')->nullable();
-            $table->string('images')->nullable();
+            $table->text('text')->nullable();
+            $table->text('image')->nullable();
+            $table->text('images')->nullable();
             // Người gửi (bắt buộc phải có)
             $table->unsignedBigInteger('sender_id');
             $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
