@@ -11,6 +11,7 @@ import About from "./pages/(website)/About/About";
 import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
+import PaymentBuyNow from "./pages/(website)/Payment/PaymentBuyNow";
 
 // import CursorGlow from "./CursorGlow";
 // import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
@@ -26,7 +27,7 @@ import Account from "./pages/(website)/UserAccount/Account/Account";
 import Address from "./pages/(website)/UserAccount/Address/Address";
 import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
 import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
-import ChatBot from "./components/ChatBot";
+import ModernChatBot from "./components/ChatBot";
 import Chat from "./components/ChatRealTime";
 import OrderSuccess from "./pages/(website)/OrderSuccess/OrderSuccess";
 import OrderHistory from "./pages/(website)/UserAccount/OrderHistory/OrderHistory";
@@ -48,6 +49,7 @@ function App() {
           <Route path="blog-detail/:slug" element={<BlogsDetail />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
+          <Route path="payment_buy_now" element={<PaymentBuyNow />} />
           <Route path="order-success" element={<OrderSuccess />} />
           <Route path="account" element={<LayoutAccount />}>
             <Route index element={<Account />} />
@@ -64,7 +66,7 @@ function App() {
         <Route path="/confirm-password" element={<ConfirmPassword />} />
         <Route path="/forgot-password" element={<ForgotPasswordModal />} />
       </Routes>
-      <ChatBot />
+      <ModernChatBot />
       <Chat />
     </>
   );

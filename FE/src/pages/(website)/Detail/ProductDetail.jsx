@@ -14,7 +14,7 @@ import {
 } from "react-icons/io5";
 import { FaTruck, FaExchangeAlt, FaShieldAlt } from "react-icons/fa";
 import { toast, Toaster } from "react-hot-toast";
-
+import axiosInstance from "../../../utils/axiosConfig";
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -505,7 +505,10 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = async () => {
-    console.log("handleAddToCart: Checking token...", localStorage.getItem("authToken"));
+    console.log(
+      "handleAddToCart: Checking token...",
+      localStorage.getItem("authToken")
+    );
     const token = localStorage.getItem("authToken");
 
     if (!token) {
@@ -529,15 +532,11 @@ const ProductDetail = () => {
         quantity: quantity,
       };
 
-      const response = await axios.post(
-        "http://localhost:8000/api/cart/add",
-        cartData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.post("/cart/add", cartData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.status === 201) {
         // Lưu hoạt động của người dùng vào localStorage
@@ -654,92 +653,44 @@ const ProductDetail = () => {
       return;
     }
 
-    setAddingToBuy(true);
+    // Lấy thông tin biến thể nếu có
+    const selectedVariant = selectedVariantId
+      ? product.variants?.find((v) => v.id === selectedVariantId)
+      : null;
 
-    try {
-      // Thêm vào giỏ hàng trước
-      const cartData = {
-        product_id: product.id,
-        product_variant_id: selectedVariantId,
-        quantity: quantity,
-      };
-
-      const response = await axios.post(
-        "http://localhost:8000/api/cart/add",
-        cartData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status === 201) {
-        // Lưu hoạt động của người dùng vào localStorage
-        try {
-          const userActivities = JSON.parse(
-            localStorage.getItem("userActivities")
-          ) || {
-            viewedProducts: [],
-            searchedKeywords: [],
-            cartProducts: [],
-          };
-
-          // Thêm sản phẩm vào cartProducts
-          const cartProduct = {
-            id: product.id,
-            name: product.name,
-            category: product.category?.name || "",
-            timestamp: new Date().toISOString(),
-          };
-
-          // Kiểm tra xem sản phẩm đã có trong cart chưa
-          const existingIndex = userActivities.cartProducts.findIndex(
-            (item) => item.id === product.id
-          );
-          if (existingIndex !== -1) {
-            // Cập nhật timestamp nếu sản phẩm đã tồn tại
-            userActivities.cartProducts[existingIndex].timestamp =
-              cartProduct.timestamp;
-          } else {
-            // Thêm mới nếu chưa tồn tại
-            userActivities.cartProducts.push(cartProduct);
+    // Tạo dữ liệu sản phẩm để chuyển sang trang thanh toán
+    const productData = {
+      product: {
+        id: product.id,
+        name: product.name,
+        discount_price: product.discount_price ?? product.price,
+        price: product.price,
+        image_thumbnail: product.image_thumnail,
+      },
+      product_variant: selectedVariantId
+        ? {
+            id: selectedVariantId,
+            discount_price:
+              selectedVariant?.discount_price ?? selectedVariant?.price, // Lấy giá từ biến thể
+            price: selectedVariant?.price, // Lấy giá gốc từ biến thể
+            variant_details: selectedVariant?.variant_details || {},
           }
+        : null,
+      quantity: quantity,
+      total_price: selectedVariantId
+        ? (selectedVariant?.discount_price ?? selectedVariant?.price) * quantity // Tính tổng giá dựa trên giá của biến thể
+        : (product.discount_price ?? product.price) * quantity, // Tính tổng giá dựa trên giá của sản phẩm
+    };
 
-          localStorage.setItem(
-            "userActivities",
-            JSON.stringify(userActivities)
-          );
+    console.log("productData", productData);
 
-          // Gửi sự kiện để thông báo userActivities đã được cập nhật
-          window.dispatchEvent(new CustomEvent("userActivitiesUpdated"));
-        } catch (error) {
-          console.error("Lỗi khi lưu hoạt động người dùng:", error);
-        }
-
-        // Chuyển tới trang thanh toán với các thông tin sản phẩm vừa thêm
-        navigate("/payment", {
-          state: {
-            selectedProducts: [response.data.cartItem],
-            total: response.data.cartItem.total_price,
-            buyNow: true,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Lỗi khi mua ngay:", error);
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("Có lỗi xảy ra khi xử lý mua ngay");
-      }
-    } finally {
-      setAddingToBuy(false);
-    }
+    navigate("/payment_buy_now", {
+      state: {
+        selectedProducts: [productData],
+        total: productData.total_price,
+        buyNow: true,
+      },
+    });
   };
 
   // Hàm gửi đánh giá
@@ -778,16 +729,12 @@ const ProductDetail = () => {
         });
       }
 
-      const response = await axios.post(
-        "http://localhost:8000/api/reviews",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axiosInstance.post("/reviews", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.data && response.data.success) {
         // Reset input và hiển thị thông báo thành công

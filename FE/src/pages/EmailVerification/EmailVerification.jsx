@@ -16,7 +16,6 @@ const EmailVerification = () => {
         console.log("Email:", email);
 
         if (!token || !email) {
-
           navigate("/sign-in");
           return;
         }
