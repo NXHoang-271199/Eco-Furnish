@@ -21,6 +21,7 @@ const Products = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 10000000]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
@@ -45,6 +46,7 @@ const Products = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      setIsLoading(true);
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_API_URL}/api/products`
@@ -83,6 +85,8 @@ const Products = () => {
         }
       } catch (error) {
         console.error("Lỗi khi lấy biến thể:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -92,10 +96,13 @@ const Products = () => {
   }, []);
 
   useEffect(() => {
-    filterProducts();
-  }, [selectedCategories, selectedVariants, priceRange, searchTerm, products]);
+    if (!isLoading) {
+      filterProducts();
+    }
+  }, [selectedCategories, selectedVariants, priceRange, searchTerm, products, isLoading]);
 
   const filterProducts = () => {
+    setIsLoading(true);
     let filtered = [...products];
 
     // Nếu không có filter nào được chọn và không có từ khóa tìm kiếm, hiển thị tất cả sản phẩm
@@ -107,6 +114,7 @@ const Products = () => {
       !searchTerm
     ) {
       setFilteredProducts(products);
+      setIsLoading(false);
       return;
     }
 
@@ -169,6 +177,7 @@ const Products = () => {
     }
 
     setFilteredProducts(filtered);
+    setIsLoading(false);
   };
 
   const handleCategoryChange = (categoryId) => {
@@ -401,7 +410,25 @@ const Products = () => {
               initial="hidden"
               animate="visible"
             >
-              {filteredProducts.length > 0 ? (
+              {isLoading ? (
+                // Hiển thị skeleton loading khi đang tải
+                [1, 2, 3, 4, 5, 6].map((index) => (
+                  <motion.div
+                    key={index}
+                    className="bg-white rounded-xl shadow-sm overflow-hidden h-[400px] animate-pulse"
+                    variants={fadeIn}
+                  >
+                    <div className="aspect-square bg-gray-200"></div>
+                    <div className="p-5">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full mb-3"></div>
+                      <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                    </div>
+                  </motion.div>
+                ))
+              ) : filteredProducts.length > 0 ? (
+                // Hiển thị sản phẩm nếu có
                 filteredProducts.map((product) => (
                   <motion.div
                     key={product.id}
@@ -565,56 +592,39 @@ const Products = () => {
                   </motion.div>
                 ))
               ) : (
-                <>
-                  {[1, 2, 3, 4, 5, 6].map((index) => (
-                    <motion.div
-                      key={index}
-                      className="bg-white rounded-xl shadow-sm overflow-hidden h-[400px] animate-pulse"
-                      variants={fadeIn}
+                // Hiển thị thông báo nếu không có sản phẩm và không loading
+                <div className="col-span-full flex flex-col items-center justify-center py-12">
+                  <div className="text-amber-500 mb-4">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-16 w-16"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      <div className="aspect-square bg-gray-200"></div>
-                      <div className="p-5">
-                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-                        <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-                        <div className="h-3 bg-gray-200 rounded w-full mb-3"></div>
-                        <div className="h-5 bg-gray-200 rounded w-1/3"></div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Không tìm thấy sản phẩm
+                  </h3>
+                  <p className="text-gray-500 text-center mb-6">
+                    Không có sản phẩm nào phù hợp với tiêu chí lọc của bạn.
+                  </p>
+                  <button
+                    onClick={resetFilters}
+                    className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-full transition-colors"
+                  >
+                    Đặt lại bộ lọc
+                  </button>
+                </div>
               )}
             </motion.div>
-
-            {/* Hiển thị nếu không có sản phẩm */}
-            {filteredProducts.length === 0 && !products.loading && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="text-amber-500 mb-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-16 w-16"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Không tìm thấy sản phẩm
-                </h3>
-                <p className="text-gray-500 text-center mb-6">
-                  Không có sản phẩm nào phù hợp với tiêu chí tìm kiếm của bạn
-                </p>
-                <button className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-full transition-colors">
-                  Xem tất cả sản phẩm
-                </button>
-              </div>
-            )}
           </motion.div>
         </div>
       </section>

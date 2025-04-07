@@ -158,4 +158,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(RefundRequest::class);
     }
+
+    /**
+     * Get the addresses for the user.
+     */
+    public function addresses()
+    {
+        return $this->hasMany(UserAddress::class);
+    }
 }
