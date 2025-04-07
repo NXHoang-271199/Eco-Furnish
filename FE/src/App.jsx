@@ -27,7 +27,7 @@ import Account from "./pages/(website)/UserAccount/Account/Account";
 import Address from "./pages/(website)/UserAccount/Address/Address";
 import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
 import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
-import ChatBot from "./components/ChatBot";
+import ModernChatBot from "./components/ChatBot";
 import Chat from "./components/ChatRealTime";
 import OrderSuccess from "./pages/(website)/OrderSuccess/OrderSuccess";
 import OrderHistory from "./pages/(website)/UserAccount/OrderHistory/OrderHistory";
@@ -66,7 +66,7 @@ function App() {
         <Route path="/confirm-password" element={<ConfirmPassword />} />
         <Route path="/forgot-password" element={<ForgotPasswordModal />} />
       </Routes>
-      <ChatBot />
+      <ModernChatBot />
       <Chat />
     </>
   );
