@@ -90,6 +90,14 @@ Route::prefix('users')->group(function () {
     });
 });
 
+// Thêm Social OAuth routes
+Route::prefix('auth')->middleware('web')->group(function () {
+    Route::get('/google/redirect', [UserApiController::class, 'redirectToGoogle']);
+    Route::get('/google/callback', [UserApiController::class, 'handleGoogleCallback']);
+    Route::get('/facebook/redirect', [UserApiController::class, 'redirectToFacebook']);
+    Route::get('/facebook/callback', [UserApiController::class, 'handleFacebookCallback']);
+});
+
 // Post routes
 Route::prefix('posts')->group(function () {
     Route::get('/', [PostApiController::class, 'index']);
