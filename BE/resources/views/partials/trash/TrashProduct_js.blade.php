@@ -42,9 +42,15 @@
                         }
                     },
                     error: function(xhr) {
+                        // Lấy thông báo lỗi cụ thể từ phản hồi JSON của server
+                        let errorMessage = 'Có lỗi không xác định xảy ra.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
                         Swal.fire({
                             title: 'Lỗi!',
-                            text: 'Có lỗi xảy ra khi khôi phục sản phẩm',
+                            text: errorMessage, // Hiển thị thông báo lỗi từ server
                             icon: 'error',
                             confirmButtonText: 'OK'
                         });
@@ -92,9 +98,15 @@
                         }
                     },
                     error: function(xhr) {
+                        // Lấy thông báo lỗi cụ thể từ phản hồi JSON của server
+                        let errorMessage = 'Có lỗi không xác định xảy ra.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
                         Swal.fire({
                             title: 'Lỗi!',
-                            text: 'Có lỗi xảy ra khi xóa vĩnh viễn sản phẩm',
+                            text: errorMessage, // Hiển thị thông báo lỗi từ server
                             icon: 'error',
                             confirmButtonText: 'OK'
                         });

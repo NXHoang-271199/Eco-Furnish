@@ -420,12 +420,10 @@ class ChatController extends Controller
                 $priceInfo['has_price'] = true;
                 $priceInfo['price_type'] = 'min';
                 $priceInfo['min_price'] = $minPrice;
-
                 Log::info("Đã chuyển đổi giá tối thiểu: {$minPrice} VND");
                 return $priceInfo;
             }
         }
-
         // 4. Tìm giá chính xác (nếu không tìm thấy các loại giá khác)
         // Ví dụ: "giá 1 triệu", "giá khoảng 500k", "có giá 2tr"
         $exactPricePatterns = [
@@ -436,7 +434,6 @@ class ChatController extends Controller
             // "X đồng", "X VND" (số kèm đơn vị tiền tệ rõ ràng)
             '/(\d+[k\.]?\d*)\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)\b/iu'
         ];
-
         foreach ($exactPricePatterns as $pattern) {
             if (preg_match($pattern, $message, $matches)) {
                 $priceText = $matches[1];
@@ -449,13 +446,11 @@ class ChatController extends Controller
                 $priceInfo['has_price'] = true;
                 $priceInfo['price_type'] = 'exact';
                 $priceInfo['exact_price'] = $exactPrice;
-
                 // Nếu có từ "khoảng", xác định phạm vi giá
                 if (mb_strpos($message, 'khoảng') !== false) {
                     $priceInfo['price_type'] = 'range';
                     $priceInfo['min_price'] = $exactPrice * 0.8; // Giảm 20%
                     $priceInfo['max_price'] = $exactPrice * 1.2; // Tăng 20%
-
                     Log::info("Đã chuyển đổi giá khoảng: {$exactPrice} VND (phạm vi: {$priceInfo['min_price']} - {$priceInfo['max_price']} VND)");
                 } else {
                     Log::info("Đã chuyển đổi giá chính xác: {$exactPrice} VND");
@@ -481,12 +476,10 @@ class ChatController extends Controller
                 $priceInfo['has_price'] = true;
                 $priceInfo['price_type'] = 'exact';
                 $priceInfo['exact_price'] = $exactPrice;
-
                 Log::info("Đã chuyển đổi số tiền: {$exactPrice} VND");
                 return $priceInfo;
             }
         }
-
         // Không tìm thấy thông tin giá
         Log::info("Không tìm thấy thông tin giá trong tin nhắn");
         return $priceInfo;
@@ -789,7 +782,6 @@ class ChatController extends Controller
                                     });
                             });
                         });
-
                         // Kiểm tra giá sản phẩm (nếu không có biến thể)
                         $q->orWhere(function($subQ) use ($minPrice, $maxPrice) {
                             $subQ->whereBetween('price', [$minPrice, $maxPrice])
@@ -805,7 +797,6 @@ class ChatController extends Controller
                 if ($priceInfo['price_type'] === 'max' && $priceInfo['max_price'] !== null) {
                     $maxPrice = $priceInfo['max_price'];
                     Log::info("Tìm sản phẩm với giá tối đa: {$maxPrice} VND");
-
                     $query->where(function($q) use ($maxPrice) {
                         // Kiểm tra giá biến thể
                         $q->orWhereHas('variants', function($variantQuery) use ($maxPrice) {
@@ -835,7 +826,6 @@ class ChatController extends Controller
                 if ($priceInfo['price_type'] === 'min' && $priceInfo['min_price'] !== null) {
                     $minPrice = $priceInfo['min_price'];
                     Log::info("Tìm sản phẩm với giá tối thiểu: {$minPrice} VND");
-
                     $query->where(function($q) use ($minPrice) {
                         // Kiểm tra giá biến thể
                         $q->orWhereHas('variants', function($variantQuery) use ($minPrice) {
