@@ -6,20 +6,49 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
     /**
-     * Lấy danh sách sản phẩm
+     * Lấy danh sách sản phẩm, có thể lọc theo category hoặc space
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $products = Product::with(['category', 'gallery', 'variants' => function($query) {
+            $query = Product::query()->with(['category', 'gallery', 'variants' => function($query) {
                 $query->whereNull('deleted_at');
-            }])
-                ->orderBy('created_at', 'desc')
-                ->paginate(12);
+            }]);
+
+            // --- Lọc theo Category (giữ nguyên nếu cần) ---
+            if ($request->has('category')) { // Giả sử FE gửi slug
+                $categorySlug = $request->category;
+                $query->whereHas('category', function ($q) use ($categorySlug) {
+                    $q->where('slug', $categorySlug);
+                });
+            }
+
+            // --- Lọc theo Space (MỚI) ---
+            if ($request->has('space')) {
+                $spaceKey = $request->space; // Lấy space_key từ request
+                
+                // Lấy danh sách category_id thuộc space này từ bảng trung gian
+                $categoryIdsInSpace = DB::table('category_space')
+                                          ->where('space_key', $spaceKey)
+                                          ->pluck('category_id')
+                                          ->unique(); // Lấy các ID duy nhất
+                
+                if ($categoryIdsInSpace->isNotEmpty()) {
+                    // Lọc sản phẩm thuộc các category_id này
+                    $query->whereIn('category_id', $categoryIdsInSpace);
+                } else {
+                     // Nếu không có category nào thuộc space này, trả về rỗng
+                    $query->whereRaw('1 = 0'); // Điều kiện luôn sai
+                }
+            }
+
+            $products = $query->orderBy('created_at', 'desc')
+                              ->paginate(12);
 
             // Thêm thông tin giá và số lượng vào response
             $products->getCollection()->transform(function ($product) {
@@ -56,6 +85,7 @@ class ProductController extends Controller
                 'data' => $products
             ]);
         } catch (\Exception $e) {
+            Log::error('API Get Products Error: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Có lỗi xảy ra khi lấy danh sách sản phẩm',
@@ -148,8 +178,22 @@ class ProductController extends Controller
                 $query->where('name', 'like', '%' . $request->keyword . '%');
             }
 
-            if ($request->has('category_id')) {
-                $query->where('category_id', $request->category_id);
+            if ($request->has('category')) {
+                $categorySlug = $request->category;
+                $query->whereHas('category', function ($q) use ($categorySlug) {
+                    $q->where('slug', $categorySlug);
+                });
+            } elseif ($request->has('space')) {
+                $spaceKey = $request->space;
+                $categoryIdsInSpace = DB::table('category_space')
+                                          ->where('space_key', $spaceKey)
+                                          ->pluck('category_id')
+                                          ->unique();
+                if ($categoryIdsInSpace->isNotEmpty()) {
+                    $query->whereIn('category_id', $categoryIdsInSpace);
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
             }
 
             // Xử lý tìm kiếm theo giá
@@ -277,6 +321,7 @@ class ProductController extends Controller
                 'data' => $products
             ]);
         } catch (\Exception $e) {
+            Log::error('API Search Products Error: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Có lỗi xảy ra khi tìm kiếm sản phẩm',

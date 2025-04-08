@@ -54,6 +54,7 @@ Route::get('/best-sellers', [ProductController::class, 'getBestSellers']);
 
 // Category routes
 Route::get('/categories', [CategoryApiController::class, 'index']);
+Route::get('/categories/all', [CategoryApiController::class, 'all']);
 Route::get('/categories/{slug}', [CategoryApiController::class, 'show']);
 
 // Variant routes

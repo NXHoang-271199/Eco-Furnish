@@ -8,9 +8,48 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Product;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * ChatController - Xử lý các yêu cầu trò chuyện AI và tìm kiếm sản phẩm
+ * 
+ * Tính năng:
+ * - Xử lý yêu cầu chat từ người dùng
+ * - Phát hiện ý định tìm kiếm sản phẩm
+ * - Trích xuất từ khóa tìm kiếm và không gian (space)
+ * - Tìm kiếm sản phẩm theo từ khóa, giá, tên sản phẩm và không gian
+ * - Phân loại sản phẩm theo danh mục
+ * - Gọi API Gemini để tạo phản hồi thông minh
+ * 
+ * Cập nhật: Hỗ trợ tìm kiếm thông qua các không gian (spaces) như phòng khách,
+ * phòng ngủ, phòng ăn, v.v. và lọc sản phẩm dựa trên các danh mục phù hợp với không gian đó.
+ * Cập nhật 2: Thêm logic ưu tiên tìm kiếm theo tên sản phẩm.
+ */
 class ChatController extends Controller
 {
+    // Ánh xạ từ từ khóa tiếng Việt sang space_key trong cơ sở dữ liệu
+    private $spaceKeyMapping = [
+        'phòng khách' => 'living_room',
+        'phòng ngủ' => 'bedroom',
+        'phòng bếp' => 'kitchen',
+        'phòng ăn' => 'dining_room',
+        'văn phòng' => 'office',
+        'ngoài trời' => 'outdoor',
+        'phòng tắm' => 'bathroom',
+        'khác' => 'other'
+    ];
+    
+    // Từ vựng mở rộng liên quan đến không gian
+    private $extendedSpaceVocab = [
+        'living_room' => ['phòng khách', 'tiếp khách', 'phòng lớn', 'phòng chung', 'phòng tiếp khách'],
+        'bedroom' => ['phòng ngủ', 'chỗ ngủ', 'phòng đi ngủ', 'phòng nghỉ ngơi'],
+        'kitchen' => ['phòng bếp', 'bếp', 'nhà bếp', 'chỗ nấu ăn', 'khu vực nấu ăn'],
+        'dining_room' => ['phòng ăn', 'chỗ ăn', 'khu vực ăn uống'],
+        'office' => ['văn phòng', 'phòng làm việc', 'phòng học', 'phòng đọc sách', 'nơi làm việc'],
+        'outdoor' => ['ngoài trời', 'sân vườn', 'ban công', 'sân thượng', 'hiên nhà'],
+        'bathroom' => ['phòng tắm', 'nhà tắm', 'phòng vệ sinh', 'toilet', 'wc', 'nhà vệ sinh']
+    ];
+    
     /**
      * Xử lý yêu cầu chat và gửi đến API Gemini
      *
@@ -33,6 +72,12 @@ class ChatController extends Controller
                 $searchInfo = $this->extractSearchKeywords($userMessage);
                 $keywords = $searchInfo['keywords'];
                 $priceInfo = $searchInfo['price_info'];
+                $spaceKey = $searchInfo['space_key'] ?? null;
+                
+                // Thêm space_key vào thông tin giá để truyền đến phương thức searchProducts
+                if ($spaceKey) {
+                    $priceInfo['space_key'] = $spaceKey;
+                }
                 
                 // Tìm kiếm sản phẩm
                 $searchResults = $this->searchProducts($keywords, $priceInfo);
@@ -49,7 +94,8 @@ class ChatController extends Controller
                     'product_count' => count($products),
                     'categories_found' => $categories,
                     'price_info' => $priceInfo,
-                    'has_products_in_price_range' => $hasProductsInPriceRange
+                    'has_products_in_price_range' => $hasProductsInPriceRange,
+                    'space_key' => $spaceKey // Thêm space_key vào context
                 ]);
 
                 // Trả về cả phản hồi AI và sản phẩm
@@ -61,7 +107,8 @@ class ChatController extends Controller
                     'categories' => $categories,
                     'search_keywords' => $keywords,
                     'price_info' => $priceInfo,
-                    'has_products_in_price_range' => $hasProductsInPriceRange
+                    'has_products_in_price_range' => $hasProductsInPriceRange,
+                    'space_key' => $spaceKey // Thêm space_key vào response
                 ]);
             }
 
@@ -123,6 +170,21 @@ class ChatController extends Controller
             'giá', 'mẫu', 'loại', 'hiện có', 'phòng', 'thiết kế'
         ];
 
+        // Kiểm tra các không gian từ thuộc tính của lớp
+        foreach ($this->spaceKeyMapping as $spaceText => $spaceKey) {
+            if (mb_strpos($message, $spaceText) !== false) {
+                return true;
+            }
+        }
+        
+        // Kiểm tra trong từ vựng mở rộng về không gian
+        foreach ($this->extendedSpaceVocab as $spaceKey => $spaceTerms) {
+            foreach ($spaceTerms as $term) {
+                if (mb_strpos($message, $term) !== false) {
+                    return true;
+                }
+            }
+        }
         
         // Các cụm từ chỉ rõ ý định tìm kiếm sản phẩm
         $searchPhrases = [
@@ -202,9 +264,8 @@ class ChatController extends Controller
             'kệ' => 9
         ];
 
-        
         // Các từ mô tả không gian
-        $spaces = ['phòng khách', 'phòng ngủ', 'phòng ăn', 'phòng làm việc', 'văn phòng', 'nhà bếp', 'phòng tắm'];
+        $spaces = array_keys($this->spaceKeyMapping);
         
         // Các từ mô tả phong cách
         $styles = ['hiện đại', 'cổ điển', 'tối giản', 'scandinavian', 'vintage', 'industrial', 'bohemian', 'rustic'];
@@ -223,12 +284,30 @@ class ChatController extends Controller
             }
         }
 
-        // Tìm không gian trong tin nhắn
+        // Tìm không gian trong tin nhắn - phiên bản cải tiến
         $foundSpace = null;
-        foreach ($spaces as $space) {
-            if (mb_strpos($message, $space) !== false) {
-                $foundSpace = $space;
+        $foundSpaceKey = null;
+        
+        // Trước tiên tìm từ khớp chính xác với map gốc
+        foreach ($this->spaceKeyMapping as $spaceText => $spaceKey) {
+            if (mb_strpos($message, $spaceText) !== false) {
+                $foundSpace = $spaceText;
+                $foundSpaceKey = $spaceKey;
                 break;
+            }
+        }
+        
+        // Nếu không tìm thấy, thử tìm trong từ vựng mở rộng
+        if (!$foundSpace) {
+            foreach ($this->extendedSpaceVocab as $spaceKey => $spaceTerms) {
+                foreach ($spaceTerms as $term) {
+                    if (mb_strpos($message, $term) !== false) {
+                        // Lấy tên hiển thị từ ánh xạ gốc (đảo ngược)
+                        $foundSpaceKey = $spaceKey;
+                        $foundSpace = array_search($spaceKey, $this->spaceKeyMapping);
+                        break 2; // Thoát cả 2 vòng lặp
+                    }
+                }
             }
         }
 
@@ -250,7 +329,6 @@ class ChatController extends Controller
             }
         }
 
-        
         // Xây dựng từ khóa tìm kiếm dựa trên các thông tin tìm được
         $keywords = [];
         
@@ -269,7 +347,6 @@ class ChatController extends Controller
         if ($foundMaterial) {
             $keywords[] = $foundMaterial;
         }
-        
 
         // Nếu không tìm thấy thông tin cụ thể, sử dụng toàn bộ tin nhắn sau khi loại bỏ stopwords
         if (empty($keywords)) {
@@ -277,31 +354,30 @@ class ChatController extends Controller
             foreach ($stopWords as $word) {
                 $message = str_replace(' ' . $word . ' ', ' ', ' ' . $message . ' ');
             }
-
             
             $message = trim($message);
             
-
             // Nếu tin nhắn quá ngắn sau khi loại bỏ stopwords, sử dụng tin nhắn gốc
             if (mb_strlen($message) < 3) {
                 return [
                     'keywords' => $message,
-                    'price_info' => $priceInfo
+                    'price_info' => $priceInfo,
+                    'space_key' => $foundSpaceKey
                 ];
             }
-
             
             return [
                 'keywords' => $message,
-                'price_info' => $priceInfo
+                'price_info' => $priceInfo,
+                'space_key' => $foundSpaceKey
             ];
         }
         
-
         // Kết hợp các từ khóa tìm được
         return [
             'keywords' => implode(' ', $keywords),
-            'price_info' => $priceInfo
+            'price_info' => $priceInfo,
+            'space_key' => $foundSpaceKey
         ];
     }
 
@@ -529,25 +605,85 @@ class ChatController extends Controller
     }
 
     /**
-     * Tìm kiếm sản phẩm dựa trên từ khóa
+     * Tìm kiếm sản phẩm dựa trên từ khóa, tên sản phẩm, giá và không gian
      *
-     * @param  string  $keywords
-     * @param  array   $priceInfo
-     * @return array
+     * @param  string  $keywords Các từ khóa chung, có thể bao gồm tên sản phẩm, danh mục, không gian,...
+     * @param  array   $priceInfo Thông tin về giá (min, max, exact)
+     * @return array Kết quả tìm kiếm bao gồm sản phẩm và danh mục
      */
     private function searchProducts($keywords, $priceInfo = null)
     {
         try {
-            Log::info('Tìm kiếm sản phẩm với từ khóa: ' . $keywords);
+            Log::info('Tìm kiếm sản phẩm với từ khóa/tên: ' . $keywords);
             if ($priceInfo && $priceInfo['has_price']) {
                 Log::info('Thông tin giá: ', $priceInfo);
             }
             
             // Tách từ khóa thành các phần riêng biệt
-            $keywordParts = explode(' ', $keywords);
+            $keywordParts = explode(' ', trim($keywords));
+            
+            // Lấy space_key từ phương thức extractSearchKeywords 
+            $spaceKey = isset($priceInfo['space_key']) ? $priceInfo['space_key'] : null;
+            
+            // Ghi log space_key
+            if ($spaceKey) {
+                Log::info('Tìm kiếm sản phẩm theo không gian: ' . $spaceKey);
+            }
             
             // Bắt đầu truy vấn
             $query = Product::with(['category', 'gallery', 'variants']);
+
+            // Kiểm tra xem có phải tìm kiếm theo tên sản phẩm cụ thể không
+            // Điều kiện: keywords có nhiều hơn 2 từ và không chứa các từ khóa không gian/danh mục chung
+            $isProductNameSearch = false;
+            $potentialProductName = trim($keywords); // Giả sử ban đầu keywords là tên sản phẩm
+            $commonSearchTerms = ['phòng', 'không gian', 'khu vực', 'nơi', 'bàn', 'ghế', 'tủ', 'giường', 'kệ', 'đèn', 'thảm', 'gương', 'sofa', 'giá'];
+            
+            // Nếu keywords dài và không chứa các từ khóa chung, có thể là tên sản phẩm
+            if (count($keywordParts) > 1) {
+                $isProductNameSearch = true;
+                foreach ($commonSearchTerms as $term) {
+                    if (mb_strpos(mb_strtolower($potentialProductName, 'UTF-8'), $term) !== false) {
+                        $isProductNameSearch = false;
+                        break;
+                    }
+                }
+                // Kiểm tra xem có chứa từ khóa không gian không
+                foreach (array_keys($this->spaceKeyMapping) as $spaceText) {
+                    if (mb_strpos(mb_strtolower($potentialProductName, 'UTF-8'), $spaceText) !== false) {
+                        $isProductNameSearch = false;
+                        break;
+                    }
+                }
+            }
+
+
+            // Ưu tiên tìm kiếm theo tên sản phẩm nếu được xác định
+            if ($isProductNameSearch) {
+                Log::info('Ưu tiên tìm kiếm theo tên sản phẩm: ' . $potentialProductName);
+                $query->where(function($q) use ($potentialProductName) {
+                    // Tìm kiếm chính xác hoặc gần đúng trong tên sản phẩm
+                    $q->where('name', 'like', '%' . $potentialProductName . '%');
+                    // Có thể thêm tìm kiếm full-text hoặc dùng soundex/metaphone nếu cần độ chính xác cao hơn
+                });
+            } else {
+                Log::info('Thực hiện tìm kiếm theo từ khóa chung, không gian và danh mục.');
+                // Nếu không phải tìm kiếm theo tên, tiếp tục logic cũ
+            
+            // Nếu có space_key, lọc sản phẩm theo danh mục thuộc không gian đó
+            if ($spaceKey) {
+                // Lấy danh sách category_id thuộc space này
+                $categoryIdsInSpace = DB::table('category_space')
+                                        ->where('space_key', $spaceKey)
+                                        ->pluck('category_id')
+                                        ->unique()
+                                        ->toArray();
+                
+                if (!empty($categoryIdsInSpace)) {
+                    Log::info('Lọc theo các danh mục thuộc không gian: ' . $spaceKey . ', IDs: ' . implode(', ', $categoryIdsInSpace));
+                    $query->whereIn('category_id', $categoryIdsInSpace);
+                }
+            }
             
             // Ánh xạ giữa không gian và các loại sản phẩm phù hợp
             $spaceToProductMapping = [
@@ -577,6 +713,16 @@ class ChatController extends Controller
                 }
             }
             
+            // Nếu có space_key nhưng không có không gian được phát hiện trong từ khóa,
+            // thêm không gian tương ứng vào danh sách không gian đã phát hiện
+            if ($spaceKey && empty($detectedSpaces)) {
+                $spaceName = $this->getSpaceNameFromKey($spaceKey);
+                    if ($spaceName && $spaceName !== $spaceKey) { // Chỉ thêm nếu tên tiếng Việt tồn tại và khác key
+                    $detectedSpaces[] = $spaceName;
+                    Log::info('Thêm không gian từ space_key: ' . $spaceName);
+                }
+            }
+            
             // Các từ khóa thể hiện tìm kiếm theo không gian
             $spaceSearchTerms = ['phòng', 'không gian', 'khu vực', 'nơi'];
             $isSpaceSearch = false;
@@ -586,6 +732,12 @@ class ChatController extends Controller
                     $isSpaceSearch = true;
                     break;
                 }
+            }
+            
+            // Nếu có space_key, coi như đang tìm kiếm theo không gian
+            if ($spaceKey && !$isSpaceSearch) {
+                $isSpaceSearch = true;
+                Log::info('Đánh dấu là tìm kiếm theo không gian dựa trên space_key');
             }
             
             // Kiểm tra xem có từ khóa là danh mục sản phẩm cụ thể không
@@ -622,7 +774,7 @@ class ChatController extends Controller
                 
                 // Nếu không tìm thấy không gian cụ thể nhưng từ khóa chứa 'phòng',
                 // thử tìm kiếm thông qua các từ khóa đi kèm
-                if (empty($detectedSpaces) && $isSpaceSearch) {
+                if (empty($detectedSpaces) && $isSpaceSearch && !$spaceKey) {
                     // Thử tìm các từ gợi ý không gian khác
                     $possibleSpaceHints = [];
                     
@@ -633,7 +785,7 @@ class ChatController extends Controller
                         'ăn' => 'phòng ăn',
                         'làm việc' => 'phòng làm việc',
                         'tắm' => 'phòng tắm',
-                        'bếp' => 'phòng ăn',
+                            'bếp' => 'phòng ăn', // Bếp thường liên quan phòng ăn
                         'nấu ăn' => 'phòng ăn',
                         'tiếp khách' => 'phòng khách'
                     ];
@@ -645,7 +797,7 @@ class ChatController extends Controller
                     }
                     
                     // Thêm các sản phẩm liên quan nếu tìm thấy gợi ý không gian
-                    foreach ($possibleSpaceHints as $space) {
+                        foreach (array_unique($possibleSpaceHints) as $space) {
                         if (isset($spaceToProductMapping[$space])) {
                             $relatedProductTerms = array_merge($relatedProductTerms, $spaceToProductMapping[$space]);
                             
@@ -656,32 +808,38 @@ class ChatController extends Controller
                         }
                     }
                     
-                    // Nếu vẫn không tìm thấy, mặc định là phòng khách
+                        // Nếu vẫn không tìm thấy, mặc định là phòng khách nếu có từ 'phòng'
                     if (empty($possibleSpaceHints) && mb_strpos(mb_strtolower($keywords, 'UTF-8'), 'phòng') !== false) {
-                        Log::info('Không xác định được loại phòng, mặc định là phòng khách');
+                            Log::info('Không xác định được loại phòng cụ thể, mặc định là phòng khách');
+                            $detectedSpaces[] = 'phòng khách'; // Thêm vào detectedSpaces để xử lý ở dưới
                         $relatedProductTerms = array_merge($relatedProductTerms, $spaceToProductMapping['phòng khách']);
                         $keywordParts = array_merge($keywordParts, $spaceMapping['phòng khách']);
                     }
                 }
                 
-                Log::info('Mở rộng tìm kiếm sang các sản phẩm liên quan: ' . implode(', ', $relatedProductTerms));
+                    $relatedProductTerms = array_unique($relatedProductTerms); // Loại bỏ trùng lặp
+                    Log::info('Mở rộng tìm kiếm sang các sản phẩm liên quan đến không gian: ' . implode(', ', $relatedProductTerms));
                 
-                // Thêm các sản phẩm liên quan vào danh sách tìm kiếm
+                    // Thêm các sản phẩm liên quan vào danh sách tìm kiếm hoặc lọc theo danh mục
                 foreach ($relatedProductTerms as $term) {
+                        $isCategoryTerm = false;
                     foreach ($productCategories as $category => $terms) {
                         if (in_array($term, $terms) || mb_strpos($term, $category) !== false) {
                             if (!in_array($category, $specificCategories)) {
                                 $specificCategories[] = $category;
+                                    $isCategoryTerm = true;
                             }
                         }
                     }
-                    
-                    // Nếu không khớp với bất kỳ danh mục nào, thêm trực tiếp vào từ khóa tìm kiếm
+                        // Nếu không phải term của category, thêm vào keywordParts để tìm kiếm rộng hơn
+                        if (!$isCategoryTerm) {
                     $keywordParts[] = $term;
                 }
+                    }
+                    $keywordParts = array_unique($keywordParts); // Loại bỏ trùng lặp
             }
             
-            // Tìm tất cả danh mục sản phẩm trong từ khóa ban đầu
+                // Tìm tất cả danh mục sản phẩm trong từ khóa ban đầu (nếu chưa được thêm từ logic không gian)
             foreach ($productCategories as $category => $terms) {
                 foreach ($terms as $term) {
                     if (mb_strpos(mb_strtolower($keywords, 'UTF-8'), $term) !== false) {
@@ -692,26 +850,33 @@ class ChatController extends Controller
                 }
             }
             
-            // Nếu tìm thấy danh mục cụ thể, lọc sản phẩm theo các danh mục đó
+                $specificCategories = array_unique($specificCategories); // Loại bỏ trùng lặp
+
+                // Xây dựng điều kiện WHERE phức tạp
+                $query->where(function($mainQuery) use ($specificCategories, $productCategories, $keywordParts, $keywords) {
+                    // 1. Lọc theo danh mục cụ thể nếu có
             if (!empty($specificCategories)) {
-                $query->where(function($mainQuery) use ($specificCategories, $productCategories) {
+                        Log::info('Lọc theo danh mục cụ thể: ' . implode(', ', $specificCategories));
+                        $mainQuery->whereHas('category', function($q) use ($specificCategories, $productCategories) {
+                            $q->where(function($subQ) use ($specificCategories, $productCategories) {
                     foreach ($specificCategories as $category) {
-                        $mainQuery->orWhereHas('category', function($q) use ($category, $productCategories) {
-                            $categoryTerms = $productCategories[$category];
-                            $q->where(function($subQ) use ($categoryTerms) {
+                                    $categoryTerms = $productCategories[$category] ?? [$category]; // Lấy terms hoặc dùng chính category name
                                 foreach ($categoryTerms as $term) {
                                     $subQ->orWhere('name', 'like', '%' . $term . '%');
+                                    }
                                 }
                             });
                         });
                     }
-                });
-            } else {
-                // Nếu có nhiều từ khóa, sử dụng mỗi từ khóa để tìm kiếm
-                if (count($keywordParts) > 1) {
-                    $query->where(function($q) use ($keywordParts) {
+
+                    // 2. Tìm kiếm theo các từ khóa còn lại trong tên, mô tả, hoặc tên danh mục (nếu không có danh mục cụ thể)
+                     // Chỉ thực hiện tìm kiếm keyword chung nếu không có danh mục cụ thể HOẶC nếu có danh mục nhưng vẫn muốn tìm keyword khác
+                    if (empty($specificCategories) || count($keywordParts) > 1) {
+                         Log::info('Tìm kiếm theo các từ khóa: ' . implode(', ', $keywordParts));
+                         $mainQuery->orWhere(function ($q) use ($keywordParts) {
                         foreach ($keywordParts as $part) {
-                            if (mb_strlen($part) >= 2) { // Chỉ tìm kiếm với từ khóa có ít nhất 2 ký tự
+                                 $part = trim($part);
+                                 if (mb_strlen($part) >= 2) { // Chỉ tìm với từ có độ dài >= 2
                                 $q->orWhere('name', 'like', '%' . $part . '%')
                                   ->orWhere('description', 'like', '%' . $part . '%')
                                   ->orWhereHas('category', function($categoryQuery) use ($part) {
@@ -720,50 +885,44 @@ class ChatController extends Controller
                             }
                         }
                     });
-                } else {
-                    // Nếu chỉ có một từ khóa, tìm kiếm trực tiếp
-                    $query->where(function($q) use ($keywords) {
+                    } elseif (!empty($specificCategories) && count($keywordParts) <= 1 && mb_strlen(trim($keywords)) >= 2) {
+                         // Trường hợp chỉ có danh mục cụ thể và từ khóa gốc đủ dài -> tìm kiếm thêm từ khóa gốc trong tên/mô tả
+                         Log::info('Tìm kiếm thêm từ khóa gốc "' . $keywords . '" trong tên/mô tả cho danh mục đã lọc.');
+                         $mainQuery->orWhere(function ($q) use ($keywords) {
                         $q->where('name', 'like', '%' . $keywords . '%')
-                          ->orWhere('description', 'like', '%' . $keywords . '%')
-                          ->orWhereHas('category', function($categoryQuery) use ($keywords) {
-                              $categoryQuery->where('name', 'like', '%' . $keywords . '%');
-                          });
+                              ->orWhere('description', 'like', '%' . $keywords . '%');
                     });
                 }
-            }
+                });
+            } // Kết thúc else của isProductNameSearch
             
-            // Nếu có thông tin giá, áp dụng bộ lọc giá
+            // Áp dụng bộ lọc giá (giữ nguyên logic lọc giá)
             if ($priceInfo && $priceInfo['has_price']) {
                 Log::info('Đang áp dụng bộ lọc giá...');
                 
+                // Tạo một bản sao của query để kiểm tra sản phẩm có trong khoảng giá không
+                $queryWithPriceFilter = clone $query;
+                
                 // Xử lý giá chính xác
                 if ($priceInfo['price_type'] === 'exact' && $priceInfo['exact_price'] !== null) {
-                    // Tìm sản phẩm có giá xấp xỉ (sai số 15%)
                     $exactPrice = $priceInfo['exact_price'];
-                    $minPrice = $exactPrice * 0.85; // Giảm 15%
-                    $maxPrice = $exactPrice * 1.15; // Tăng 15%
-                    
-                    Log::info("Tìm sản phẩm với giá chính xác: {$exactPrice} VND, phạm vi [{$minPrice} - {$maxPrice}] VND");
-                    
-                    $query->where(function($q) use ($minPrice, $maxPrice) {
-                        // Kiểm tra giá biến thể
-                        $q->orWhereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
-                            $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
-                                // Giá gốc hoặc giá khuyến mãi nằm trong phạm vi
+                    $minPrice = $exactPrice * 0.85; 
+                    $maxPrice = $exactPrice * 1.15; 
+                    Log::info("Lọc sản phẩm với giá chính xác: {$exactPrice} VND, phạm vi [{$minPrice} - {$maxPrice}] VND");
+                    $queryWithPriceFilter->where(function($q) use ($minPrice, $maxPrice) {
+                         $q->where(function($subQ) use ($minPrice, $maxPrice) { // Check product price
                                 $subQ->whereBetween('price', [$minPrice, $maxPrice])
                                     ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
                                         $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
                                             ->whereNotNull('discount_price');
                                     });
-                            });
-                        });
-                        
-                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
-                        $q->orWhere(function($subQ) use ($minPrice, $maxPrice) {
+                         })->orWhereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) { // Check variant price
+                              $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
                             $subQ->whereBetween('price', [$minPrice, $maxPrice])
                                 ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
                                     $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
                                         ->whereNotNull('discount_price');
+                                      });
                                 });
                         });
                     });
@@ -773,29 +932,21 @@ class ChatController extends Controller
                 if ($priceInfo['price_type'] === 'range' && $priceInfo['min_price'] !== null && $priceInfo['max_price'] !== null) {
                     $minPrice = $priceInfo['min_price'];
                     $maxPrice = $priceInfo['max_price'];
-                    
-                    Log::info("Tìm sản phẩm với phạm vi giá: [{$minPrice} - {$maxPrice}] VND");
-                    
-                    $query->where(function($q) use ($minPrice, $maxPrice) {
-                        // Kiểm tra giá biến thể
-                        $q->orWhereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
-                            $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
-                                // Giá gốc nằm trong phạm vi
+                    Log::info("Lọc sản phẩm với phạm vi giá: [{$minPrice} - {$maxPrice}] VND");
+                     $queryWithPriceFilter->where(function($q) use ($minPrice, $maxPrice) {
+                         $q->where(function($subQ) use ($minPrice, $maxPrice) { // Check product price
                                 $subQ->whereBetween('price', [$minPrice, $maxPrice])
-                                    // Hoặc giá khuyến mãi nằm trong phạm vi
                                     ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
                                         $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
                                             ->whereNotNull('discount_price');
                                     });
-                            });
-                        });
-                        
-                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
-                        $q->orWhere(function($subQ) use ($minPrice, $maxPrice) {
+                         })->orWhereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) { // Check variant price
+                              $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
                             $subQ->whereBetween('price', [$minPrice, $maxPrice])
                                 ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
                                     $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
                                         ->whereNotNull('discount_price');
+                                      });
                                 });
                         });
                     });
@@ -804,28 +955,21 @@ class ChatController extends Controller
                 // Xử lý giá tối đa
                 if ($priceInfo['price_type'] === 'max' && $priceInfo['max_price'] !== null) {
                     $maxPrice = $priceInfo['max_price'];
-                    Log::info("Tìm sản phẩm với giá tối đa: {$maxPrice} VND");
-                    
-                    $query->where(function($q) use ($maxPrice) {
-                        // Kiểm tra giá biến thể
-                        $q->orWhereHas('variants', function($variantQuery) use ($maxPrice) {
-                            $variantQuery->where(function($subQ) use ($maxPrice) {
-                                // Giá gốc <= maxPrice
+                    Log::info("Lọc sản phẩm với giá tối đa: {$maxPrice} VND");
+                     $queryWithPriceFilter->where(function($q) use ($maxPrice) {
+                         $q->where(function($subQ) use ($maxPrice) { // Check product price
                                 $subQ->where('price', '<=', $maxPrice)
-                                    // Hoặc giá khuyến mãi <= maxPrice
                                     ->orWhere(function($priceQ) use ($maxPrice) {
                                         $priceQ->where('discount_price', '<=', $maxPrice)
                                             ->whereNotNull('discount_price');
                                     });
-                            });
-                        });
-                        
-                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
-                        $q->orWhere(function($subQ) use ($maxPrice) {
+                         })->orWhereHas('variants', function($variantQuery) use ($maxPrice) { // Check variant price
+                              $variantQuery->where(function($subQ) use ($maxPrice) {
                             $subQ->where('price', '<=', $maxPrice)
                                 ->orWhere(function($priceQ) use ($maxPrice) {
                                     $priceQ->where('discount_price', '<=', $maxPrice)
                                         ->whereNotNull('discount_price');
+                                      });
                                 });
                         });
                     });
@@ -834,50 +978,137 @@ class ChatController extends Controller
                 // Xử lý giá tối thiểu
                 if ($priceInfo['price_type'] === 'min' && $priceInfo['min_price'] !== null) {
                     $minPrice = $priceInfo['min_price'];
-                    Log::info("Tìm sản phẩm với giá tối thiểu: {$minPrice} VND");
-                    
-                    $query->where(function($q) use ($minPrice) {
-                        // Kiểm tra giá biến thể
-                        $q->orWhereHas('variants', function($variantQuery) use ($minPrice) {
-                            $variantQuery->where(function($subQ) use ($minPrice) {
-                                // Giá gốc >= minPrice
+                    Log::info("Lọc sản phẩm với giá tối thiểu: {$minPrice} VND");
+                    $queryWithPriceFilter->where(function($q) use ($minPrice) {
+                        $q->where(function($subQ) use ($minPrice) { // Check product price
                                 $subQ->where('price', '>=', $minPrice)
-                                    // Hoặc giá khuyến mãi >= minPrice
                                     ->orWhere(function($priceQ) use ($minPrice) {
                                         $priceQ->where('discount_price', '>=', $minPrice)
                                             ->whereNotNull('discount_price');
                                     });
-                            });
-                        });
-                        
-                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
-                        $q->orWhere(function($subQ) use ($minPrice) {
+                         })->orWhereHas('variants', function($variantQuery) use ($minPrice) { // Check variant price
+                              $variantQuery->where(function($subQ) use ($minPrice) {
                             $subQ->where('price', '>=', $minPrice)
                                 ->orWhere(function($priceQ) use ($minPrice) {
                                     $priceQ->where('discount_price', '>=', $minPrice)
                                         ->whereNotNull('discount_price');
+                                      });
                                 });
                         });
                     });
                 }
+                 // Gán lại query đã lọc giá
+                 $query = $queryWithPriceFilter;
             }
 
             // Lấy kết quả
             $products = $query->orderBy('created_at', 'desc')
-                ->limit(15)
+                ->limit(15) // Giới hạn số lượng kết quả
                 ->get();
 
-            
-            Log::info('Tìm thấy ' . $products->count() . ' sản phẩm');
-            
-            // Phân loại sản phẩm theo danh mục
+            Log::info('Tìm thấy ' . $products->count() . ' sản phẩm sau khi lọc.');
+
+            // Kiểm tra xem có sản phẩm nào phù hợp với khoảng giá yêu cầu không (dùng query gốc trước khi lọc giá)
+            $hasProductsInPriceRange = false;
+            if ($priceInfo && $priceInfo['has_price']) {
+                 // Tạo lại query gốc (không lọc giá) để kiểm tra
+                 $originalQuery = Product::query(); // Bắt đầu lại query gốc
+                  // Áp dụng lại các điều kiện lọc ban đầu (tên, keyword, space, category)
+                 if ($isProductNameSearch) {
+                     $originalQuery->where('name', 'like', '%' . $potentialProductName . '%');
+                 } else {
+                     // Áp dụng lại logic lọc không gian nếu có
+                     if ($spaceKey) {
+                         $categoryIdsInSpace = DB::table('category_space')
+                                                ->where('space_key', $spaceKey)
+                                                ->pluck('category_id')
+                                                ->unique()->toArray();
+                         if (!empty($categoryIdsInSpace)) {
+                             $originalQuery->whereIn('category_id', $categoryIdsInSpace);
+                         }
+                     }
+                     // Áp dụng lại logic lọc keyword/category phức tạp
+                      $originalQuery->where(function($mainQuery) use ($specificCategories, $productCategories, $keywordParts, $keywords) {
+                            if (!empty($specificCategories)) {
+                                $mainQuery->whereHas('category', function($q) use ($specificCategories, $productCategories) {
+                                    $q->where(function($subQ) use ($specificCategories, $productCategories) {
+                                        foreach ($specificCategories as $category) {
+                                            $categoryTerms = $productCategories[$category] ?? [$category];
+                                            foreach ($categoryTerms as $term) {
+                                                $subQ->orWhere('name', 'like', '%' . $term . '%');
+                                            }
+                                        }
+                                    });
+                                });
+                            }
+                            if (empty($specificCategories) || count($keywordParts) > 1) {
+                                $mainQuery->orWhere(function ($q) use ($keywordParts) {
+                                    foreach ($keywordParts as $part) {
+                                        $part = trim($part);
+                                        if (mb_strlen($part) >= 2) {
+                                            $q->orWhere('name', 'like', '%' . $part . '%')
+                                            ->orWhere('description', 'like', '%' . $part . '%')
+                                            ->orWhereHas('category', function($categoryQuery) use ($part) {
+                                                $categoryQuery->where('name', 'like', '%' . $part . '%');
+                                            });
+                                        }
+                                    }
+                                });
+                            } elseif (!empty($specificCategories) && count($keywordParts) <= 1 && mb_strlen(trim($keywords)) >= 2) {
+                                $mainQuery->orWhere(function ($q) use ($keywords) {
+                                    $q->where('name', 'like', '%' . $keywords . '%')
+                                    ->orWhere('description', 'like', '%' . $keywords . '%');
+                                });
+                            }
+                        });
+                 }
+
+                 // Bây giờ kiểm tra xem có sản phẩm nào trong query gốc này khớp với điều kiện giá không
+                  $priceCheckQuery = clone $originalQuery; // Clone query gốc đã lọc keyword/space/cat
+                  
+                   // Áp dụng điều kiện giá vào query clone này
+                   if ($priceInfo['price_type'] === 'exact') {
+                       $exactPrice = $priceInfo['exact_price']; $minPrice = $exactPrice * 0.85; $maxPrice = $exactPrice * 1.15;
+                       $priceCheckQuery->where(function($q) use ($minPrice, $maxPrice) { /* logic giá exact */
+                             $q->where(function($subQ) use ($minPrice, $maxPrice) { $subQ->whereBetween('price', [$minPrice, $maxPrice])->orWhere(function($priceQ) use ($minPrice, $maxPrice) { $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])->whereNotNull('discount_price'); }); })
+                               ->orWhereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) { $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) { $subQ->whereBetween('price', [$minPrice, $maxPrice])->orWhere(function($priceQ) use ($minPrice, $maxPrice) { $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])->whereNotNull('discount_price'); }); }); });
+                       });
+                   } elseif ($priceInfo['price_type'] === 'range') {
+                       $minPrice = $priceInfo['min_price']; $maxPrice = $priceInfo['max_price'];
+                       $priceCheckQuery->where(function($q) use ($minPrice, $maxPrice) { /* logic giá range */
+                            $q->where(function($subQ) use ($minPrice, $maxPrice) { $subQ->whereBetween('price', [$minPrice, $maxPrice])->orWhere(function($priceQ) use ($minPrice, $maxPrice) { $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])->whereNotNull('discount_price'); }); })
+                               ->orWhereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) { $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) { $subQ->whereBetween('price', [$minPrice, $maxPrice])->orWhere(function($priceQ) use ($minPrice, $maxPrice) { $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])->whereNotNull('discount_price'); }); }); });
+                       });
+                   } elseif ($priceInfo['price_type'] === 'min') {
+                       $minPrice = $priceInfo['min_price'];
+                       $priceCheckQuery->where(function($q) use ($minPrice) { /* logic giá min */
+                            $q->where(function($subQ) use ($minPrice) { $subQ->where('price', '>=', $minPrice)->orWhere(function($priceQ) use ($minPrice) { $priceQ->where('discount_price', '>=', $minPrice)->whereNotNull('discount_price'); }); })
+                               ->orWhereHas('variants', function($variantQuery) use ($minPrice) { $variantQuery->where(function($subQ) use ($minPrice) { $subQ->where('price', '>=', $minPrice)->orWhere(function($priceQ) use ($minPrice) { $priceQ->where('discount_price', '>=', $minPrice)->whereNotNull('discount_price'); }); }); });
+                       });
+                   } elseif ($priceInfo['price_type'] === 'max') {
+                       $maxPrice = $priceInfo['max_price'];
+                       $priceCheckQuery->where(function($q) use ($maxPrice) { /* logic giá max */
+                           $q->where(function($subQ) use ($maxPrice) { $subQ->where('price', '<=', $maxPrice)->orWhere(function($priceQ) use ($maxPrice) { $priceQ->where('discount_price', '<=', $maxPrice)->whereNotNull('discount_price'); }); })
+                               ->orWhereHas('variants', function($variantQuery) use ($maxPrice) { $variantQuery->where(function($subQ) use ($maxPrice) { $subQ->where('price', '<=', $maxPrice)->orWhere(function($priceQ) use ($maxPrice) { $priceQ->where('discount_price', '<=', $maxPrice)->whereNotNull('discount_price'); }); }); });
+                       });
+                   }
+                   
+                   $hasProductsInPriceRange = $priceCheckQuery->exists(); // Kiểm tra xem có bản ghi nào khớp không
+                   Log::info('Kiểm tra sản phẩm trong khoảng giá yêu cầu (trước khi trả về kết quả): ' . ($hasProductsInPriceRange ? 'Có' : 'Không'));
+
+            } else {
+                 // Nếu không có yêu cầu giá, mặc định là true nếu có sản phẩm tìm thấy
+                 $hasProductsInPriceRange = $products->isNotEmpty();
+            }
+
+
+            // Phân loại sản phẩm theo danh mục và định dạng lại
             $categorizedProducts = [];
             $foundCategories = [];
-            $inPriceRange = false; // Biến kiểm tra có sản phẩm nào trong khoảng giá không
-            $productsInPriceRange = []; // Mảng lưu các sản phẩm trong khoảng giá
+            $productsInPriceRange = []; // Mảng lưu các sản phẩm thực sự trả về (đã lọc giá)
             
-            // Định dạng lại dữ liệu sản phẩm để hiển thị trong chat
-            $formattedProducts = $products->map(function ($product) use (&$categorizedProducts, &$foundCategories, &$inPriceRange, &$productsInPriceRange, $priceInfo) {
+            $formattedProducts = $products->map(function ($product) use (&$categorizedProducts, &$foundCategories, &$productsInPriceRange, $priceInfo) {
+                // ... (Giữ nguyên logic định dạng sản phẩm từ dòng 968 đến 1072) ...
                 // Đảm bảo có đường dẫn hình ảnh đúng
                 $imagePath = null;
                 
@@ -916,62 +1147,8 @@ class ChatController extends Controller
                     $displayPrice = $productDiscountPrice ?? $productPrice;
                 }
                 
-                // Kiểm tra xem sản phẩm có trong khoảng giá không (nếu có yêu cầu giá)
-                $productInPriceRange = false;
-                
-                if ($priceInfo && $priceInfo['has_price']) {
-                    if ($priceInfo['price_type'] === 'exact') {
-                        $exactPrice = $priceInfo['exact_price'];
-                        $minPrice = $exactPrice * 0.85;
-                        $maxPrice = $exactPrice * 1.15;
-                        if ($hasVariants) {
-                            $productInPriceRange = $product->variants->some(function($variant) use ($minPrice, $maxPrice) {
-                                $variantPrice = $variant->discount_price ?? $variant->price;
-                                return $variantPrice >= $minPrice && $variantPrice <= $maxPrice;
-                            });
-                        } else {
-                            $productInPriceRange = $displayPrice >= $minPrice && $displayPrice <= $maxPrice;
-                        }
-                    } elseif ($priceInfo['price_type'] === 'range') {
-                        $minPrice = $priceInfo['min_price'];
-                        $maxPrice = $priceInfo['max_price'];
-                        if ($hasVariants) {
-                            $productInPriceRange = $product->variants->some(function($variant) use ($minPrice, $maxPrice) {
-                                $variantPrice = $variant->discount_price ?? $variant->price;
-                                return $variantPrice >= $minPrice && $variantPrice <= $maxPrice;
-                            });
-                        } else {
-                            $productInPriceRange = $displayPrice >= $minPrice && $displayPrice <= $maxPrice;
-                        }
-                    } elseif ($priceInfo['price_type'] === 'min') {
-                        $minPrice = $priceInfo['min_price'];
-                        if ($hasVariants) {
-                            $productInPriceRange = $product->variants->some(function($variant) use ($minPrice) {
-                                $variantPrice = $variant->discount_price ?? $variant->price;
-                                return $variantPrice >= $minPrice;
-                            });
-                        } else {
-                            $productInPriceRange = $displayPrice >= $minPrice;
-                        }
-                    } elseif ($priceInfo['price_type'] === 'max') {
-                        $maxPrice = $priceInfo['max_price'];
-                        if ($hasVariants) {
-                            $productInPriceRange = $product->variants->some(function($variant) use ($maxPrice) {
-                                $variantPrice = $variant->discount_price ?? $variant->price;
-                                return $variantPrice <= $maxPrice;
-                            });
-                        } else {
-                            $productInPriceRange = $displayPrice <= $maxPrice;
-                        }
-                    }
-                    
-                    if ($productInPriceRange) {
-                        $inPriceRange = true;
-                    }
-                } else {
-                    // Nếu không có yêu cầu giá, coi như sản phẩm phù hợp
-                    $productInPriceRange = true;
-                }
+                 // Biến này chỉ để kiểm tra logic nội bộ, không dùng để lọc nữa vì đã lọc bằng query
+                 $productInPriceRangeCheck = true; // Mặc định là true vì đã lọc bằng query
                 
                 // Đưa danh mục vào metadata sản phẩm
                 $formattedProduct = [
@@ -981,9 +1158,9 @@ class ChatController extends Controller
                     'discount_price' => $productDiscountPrice,
                     'image' => $imagePath,
                     'category' => $categoryName,
-                    'category_group' => $categoryName,
+                     'category_group' => $categoryName, // Giữ lại để tương thích nếu FE đang dùng
                     'description' => Str::limit($product->description, 100),
-                    'in_price_range' => $productInPriceRange,
+                     // 'in_price_range' => $productInPriceRangeCheck, // Không cần trường này nữa
                     'display_price' => $displayPrice,
                     'has_variants' => $hasVariants,
                     'variant_count' => $product->variants->count(),
@@ -992,60 +1169,42 @@ class ChatController extends Controller
                             'id' => $variant->id,
                             'price' => $variant->price,
                             'discount_price' => $variant->discount_price,
-                            'variant_details' => $variant->variant_details
+                             'variant_details' => $variant->variant_details // Giả sử có trường này
                         ];
-                    }) : []
+                     })->toArray() : []
                 ];
                 
-                // Chỉ lưu sản phẩm vào mảng kết quả nếu phù hợp với yêu cầu giá
-                // hoặc nếu không có yêu cầu về giá
-                if ($productInPriceRange) {
                     // Phân loại sản phẩm vào nhóm danh mục
                     if (!isset($categorizedProducts[$categoryName])) {
                         $categorizedProducts[$categoryName] = [];
                     }
-                    
                     $categorizedProducts[$categoryName][] = $formattedProduct;
                     
-                    // Thêm vào mảng sản phẩm phù hợp giá
+                // Thêm vào mảng sản phẩm cuối cùng
                     $productsInPriceRange[] = $formattedProduct;
                     
-                    return $formattedProduct;
-                }
-                
-                // Nếu không đáp ứng yêu cầu giá, trả về null
-                return null;
-            })
-            ->filter(function ($product) {
-                // Lọc bỏ các giá trị null (sản phẩm không đáp ứng yêu cầu giá)
-                return $product !== null;
-            })
-            ->values(); // Chuẩn hóa lại index của mảng
-            
-            // Sắp xếp sản phẩm dựa vào yêu cầu giá
-            $sortedProducts = $formattedProducts;
+                return $formattedProduct; // Trả về sản phẩm đã định dạng
+            })->values(); // Chuẩn hóa lại index của mảng
+
+            // Sắp xếp sản phẩm dựa vào yêu cầu giá (nếu có)
+            $sortedProducts = $productsInPriceRange; // Lấy từ mảng đã lọc giá bằng query
             
             if ($priceInfo && $priceInfo['has_price']) {
                 // Nếu tìm với giá tối thiểu (min), sắp xếp từ cao đến thấp
                 if ($priceInfo['price_type'] === 'min') {
-                    // Sắp xếp sản phẩm từ giá cao nhất đến thấp nhất
-                    usort($productsInPriceRange, function($a, $b) {
+                    usort($sortedProducts, function($a, $b) {
                         return $b['display_price'] - $a['display_price'];
                     });
                 } 
-                // Nếu tìm với giá tối đa (max), sắp xếp từ thấp đến cao
-                else if ($priceInfo['price_type'] === 'max') {
-                    // Sắp xếp sản phẩm từ giá thấp nhất đến cao nhất
-                    usort($productsInPriceRange, function($a, $b) {
+                // Nếu tìm với giá tối đa (max) hoặc phạm vi, hoặc giá chính xác, sắp xếp từ thấp đến cao
+                else if (in_array($priceInfo['price_type'], ['max', 'range', 'exact'])) {
+                    usort($sortedProducts, function($a, $b) {
                         return $a['display_price'] - $b['display_price'];
                     });
                 }
-                
-                $sortedProducts = $productsInPriceRange;
             }
             
-            // Ghi log số lượng sản phẩm sau khi lọc giá
-            Log::info('Số sản phẩm phù hợp với yêu cầu giá: ' . count($sortedProducts));
+            Log::info('Số sản phẩm cuối cùng trả về: ' . count($sortedProducts));
             
             // Nhóm lại sản phẩm theo danh mục sau khi đã sắp xếp
             $sortedCategorizedProducts = [];
@@ -1058,13 +1217,15 @@ class ChatController extends Controller
             }
             
             return [
-                'products' => $sortedProducts, // Trả về danh sách đã sắp xếp
-                'categories' => $foundCategories,
-                'categorized_products' => $sortedCategorizedProducts, // Trả về danh sách đã nhóm và sắp xếp
-                'has_products_in_price_range' => $inPriceRange
+                'products' => $sortedProducts, // Trả về danh sách đã lọc giá và sắp xếp
+                'categories' => array_values(array_unique($foundCategories)), // Lấy danh mục từ các sản phẩm tìm thấy
+                'categorized_products' => $sortedCategorizedProducts, 
+                'has_products_in_price_range' => $hasProductsInPriceRange // Trạng thái trước khi lọc giá cuối cùng
             ];
         } catch (\Exception $e) {
-            Log::error('Error searching products: ' . $e->getMessage());
+            Log::error('Error searching products: ' . $e->getMessage() . ' on line ' . $e->getLine());
+            // Log thêm stack trace để debug dễ hơn
+             Log::error($e->getTraceAsString());
             return [
                 'products' => [],
                 'categories' => [],
@@ -1126,8 +1287,15 @@ Khi trả lời:
                 $categoriesFound = $context['categories_found'] ?? [];
                 $priceInfo = $context['price_info'] ?? null;
                 $hasProductsInPriceRange = isset($context['has_products_in_price_range']) ? $context['has_products_in_price_range'] : false;
+                $spaceKey = $context['space_key'] ?? null;
                 
                 $expertPrompt .= "\n\nĐây là yêu cầu tìm kiếm sản phẩm với từ khóa: \"$searchKeywords\".";
+                
+                // Thêm thông tin về không gian nếu có
+                if ($spaceKey) {
+                    $spaceName = $this->getSpaceNameFromKey($spaceKey);
+                    $expertPrompt .= " Khách hàng đang tìm sản phẩm cho \"$spaceName\".";
+                }
                 
                 // Thêm thông tin về giá nếu có
                 if ($priceInfo && $priceInfo['has_price']) {
@@ -1162,6 +1330,9 @@ Sau đó, bạn có thể đề xuất một số sản phẩm tương tự ho�
                             $expertPrompt .= "\nKHÔNG có sản phẩm nào trong khoảng giá yêu cầu.";
                             $expertPrompt .= "\nHãy trả lời: \"Tôi đã tìm thấy một số sản phẩm " . $searchKeywords . " nhưng không có sản phẩm nào đúng với mức giá bạn yêu cầu. Bạn có thể xem các sản phẩm dưới đây và cân nhắc mức giá khác.\"";
                         }
+                    } else if ($spaceKey) {
+                        $spaceName = $this->getSpaceNameFromKey($spaceKey);
+                        $expertPrompt .= "\nHãy trả lời: \"Tôi đã tìm thấy một số sản phẩm phù hợp cho $spaceName của bạn. Bạn có thể xem các sản phẩm bên dưới.\"";
                     } else {
                         $expertPrompt .= "\nHãy trả lời: \"Tôi đã tìm thấy một số sản phẩm phù hợp với yêu cầu của bạn. Bạn có thể xem các sản phẩm bên dưới.\"";
                     }
@@ -1229,6 +1400,28 @@ Câu trả lời của bạn KHÔNG nên dài quá 1-2 câu.";
             Log::error('Exception when calling Gemini API: ' . $e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Chuyển đổi space_key sang tên hiển thị tiếng Việt
+     * 
+     * @param string $spaceKey
+     * @return string|null Tên không gian tiếng Việt hoặc null nếu không tìm thấy
+     */
+    private function getSpaceNameFromKey($spaceKey)
+    {
+        // Đảo ngược mapping gốc để lấy tên tiếng Việt từ key
+        $vnToSpaceKey = array_flip($this->spaceKeyMapping);
+        
+        // Thêm các key chưa có trong mapping gốc (ví dụ: kitchen)
+        $keyToVnMap = $vnToSpaceKey + [
+             'kitchen' => 'phòng bếp', // Bổ sung kitchen
+             'office' => 'văn phòng', // Đảm bảo office có map
+             'outdoor' => 'ngoài trời', // Đảm bảo outdoor có map
+             'bathroom' => 'phòng tắm' // Đảm bảo bathroom có map
+        ];
+        
+        return $keyToVnMap[$spaceKey] ?? $spaceKey; // Trả về tên TV hoặc chính key nếu không tìm thấy
     }
 
 }

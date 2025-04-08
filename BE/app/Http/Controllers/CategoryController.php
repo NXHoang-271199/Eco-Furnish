@@ -13,27 +13,49 @@ use Illuminate\Support\Facades\Log;
 
 class CategoryController extends Controller
 {
+    // Định nghĩa các không gian và tên hiển thị dùng chung
+    protected $spaceTypes = [
+        'living_room' => 'Phòng Khách',
+        'bedroom' => 'Phòng Ngủ',
+        'kitchen' => 'Phòng Bếp',
+        'dining_room' => 'Phòng Ăn',
+        'office' => 'Văn Phòng',
+        'outdoor' => 'Ngoài Trời',
+        'bathroom' => 'Phòng Tắm',
+        'other' => 'Khác',
+    ];
+
+    // Thêm phương thức public để request có thể lấy $spaceTypes
+    public function getSpaceTypes()
+    {
+        return $this->spaceTypes;
+    }
+
     /**
      * Constructor để kiểm tra quyền
      */
     public function __construct()
     {
         $this->middleware('permission:view-categories');
-        $this->middleware('permission:create-categories', ['only' => ['create', 'store']]);
-        $this->middleware('permission:update-categories', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:create-categories', ['only' => ['store']]);
+        $this->middleware('permission:update-categories', ['only' => ['getCategoryData', 'update']]);
         $this->middleware('permission:delete-categories', ['only' => ['destroy']]);
         $this->middleware('permission:restore-categories', ['only' => ['restore']]);
     }
 
     public function index()
     {
+        // Eager load space keys để tối ưu
         $categories = Category::latest()->paginate(10);
-        return view('admins.categories.index', compact('categories'));
-    }
+        // Lấy space keys cho từng category thủ công nếu cần
+        // $categories->each(function ($category) {
+        //     $category->space_keys_list = $category->spaceKeys;
+        // });
 
-    public function create()
-    {
-        return view('admins.categories.create');
+        return view('admins.categories.index', [
+            'categories' => $categories,
+            'spaceTypes' => $this->spaceTypes
+        ]);
     }
 
     public function store(StoreCategoryRequest $request)
@@ -41,51 +63,54 @@ class CategoryController extends Controller
         try {
             DB::beginTransaction();
 
-            // Kiểm tra danh mục đã tồn tại trong thùng rác
-            $existingCategory = Category::withTrashed()
-                ->where('name', $request->name)
-                ->first();
-
-            if ($existingCategory && $existingCategory->trashed()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Danh mục này đã tồn tại và hiện đang ở trong thùng rác, xin vui lòng khôi phục lại',
-                    'category_in_trash' => true,
-                    'category_id' => $existingCategory->id
-                ], 422);
+            // Kiểm tra trùng tên trước khi tạo mới
+            $existingCategoryCheck = Category::where('name', $request->name)->whereNull('deleted_at')->first();
+            if ($existingCategoryCheck) {
+                 return back()->withErrors(['name' => 'Tên danh mục đã tồn tại.'], 'store') // Sử dụng error bag 'store'
+                             ->withInput();
             }
 
-            $data = $request->validated();
-            // Tự động tạo slug từ tên
+            $data = $request->safe()->only('name'); // Chỉ lấy name từ validated data
             $data['slug'] = Str::slug($data['name']);
 
             $category = Category::create($data);
 
+            // Lấy mảng các space keys từ request
+            $spaceKeys = $request->input('spaces', []); // Mặc định là mảng rỗng
+
+            // Đồng bộ hóa các không gian trong bảng trung gian
+            $category->syncSpaces($spaceKeys);
+
             DB::commit();
 
-            session()->flash('success', 'Thêm danh mục thành công');
+            return redirect()->route('categories.index')
+                         ->with('success', 'Thêm danh mục thành công'); // Redirect về index với thông báo
 
-            return response()->json([
-                'success' => true,
-                'category' => [
-                    'id' => $category->id,
-                    'name' => $category->name
-                ],
-                'redirect' => route('categories.index')
-            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            // \Log::error('Error creating category: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra khi thêm danh mục: ' . $e->getMessage()
-            ], 500);
+            Log::error('Error creating category: ' . $e->getMessage());
+            // Redirect về index với thông báo lỗi và error bag
+            return back()->with('error', 'Có lỗi xảy ra khi thêm danh mục: ' . $e->getMessage())
+                         ->withErrors(['general' => 'Có lỗi xảy ra, vui lòng thử lại.'], 'store') // Thêm lỗi vào error bag 'store'
+                         ->withInput();
         }
     }
 
-    public function edit(Category $category)
+    /**
+     * Lấy dữ liệu chi tiết của category dưới dạng JSON cho JS
+     */
+    public function getCategoryData(Category $category)
     {
-        return view('admins.categories.edit', compact('category'));
+        if (!$category) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy danh mục'], 404);
+        }
+        // Trả về category và mảng các space keys của nó
+        return response()->json(['success' => true, 'data' => [
+            'id' => $category->id,
+            'name' => $category->name,
+            'slug' => $category->slug,
+            'spaces' => $category->spaceKeys // Sử dụng accessor đã tạo
+        ]]);
     }
 
     public function update(UpdateCategoryRequest $request, Category $category)
@@ -93,25 +118,43 @@ class CategoryController extends Controller
         try {
             DB::beginTransaction();
 
-            $data = $request->validated();
-            // Tự động cập nhật slug từ tên
+            // Kiểm tra trùng tên (trừ chính nó)
+             $existingCategoryCheck = Category::where('name', $request->name)
+                                           ->where('id', '!=', $category->id)
+                                           ->whereNull('deleted_at')->first();
+             if ($existingCategoryCheck) {
+                 // Redirect về index với lỗi và input cũ, sử dụng error bag 'update'
+                 return redirect()->route('categories.index')
+                              ->withErrors(['name' => 'Tên danh mục đã tồn tại.'], 'update')
+                              ->withInput($request->except(['_token', '_method'])) // Giữ lại input trừ token và method
+                              ->with('edit_id', $category->id); // Thêm id để JS biết cần mở lại form sửa nào
+             }
+
+            $data = $request->safe()->only('name'); // Chỉ lấy name
             $data['slug'] = Str::slug($data['name']);
 
             $category->update($data);
 
+            // Lấy mảng các space keys từ request
+            $spaceKeys = $request->input('spaces', []);
+
+            // Đồng bộ hóa các không gian trong bảng trung gian
+            $category->syncSpaces($spaceKeys);
+
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Cập nhật danh mục thành công'
-            ]);
+            return redirect()->route('categories.index')
+                         ->with('success', 'Cập nhật danh mục thành công'); // Redirect về index với thông báo
+
         } catch (\Exception $e) {
             DB::rollBack();
-            // \Log::error('Error updating category: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra khi cập nhật danh mục: ' . $e->getMessage()
-            ], 500);
+            Log::error('Error updating category: ' . $e->getMessage());
+             // Redirect về index với thông báo lỗi, error bag và input cũ
+             return redirect()->route('categories.index')
+                          ->with('error', 'Có lỗi xảy ra khi cập nhật danh mục: ' . $e->getMessage())
+                          ->withErrors(['general' => 'Có lỗi xảy ra, vui lòng thử lại.'], 'update')
+                          ->withInput($request->except(['_token', '_method']))
+                          ->with('edit_id', $category->id); // Thêm id để JS biết cần mở lại form sửa nào
         }
     }
 

@@ -1,18 +1,16 @@
-import React from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FaUserAstronaut, FaShippingFast, FaFilter } from "react-icons/fa";
 import { AiOutlineSearch } from "react-icons/ai";
 import { LiaTrophySolid } from "react-icons/lia";
 import { IoCartOutline, IoStar } from "react-icons/io5";
 import { MdOutlineSettingsInputComponent } from "react-icons/md";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Banner from "../../../components/Banner";
 import { motion } from "framer-motion";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [variants, setVariants] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -25,6 +23,9 @@ const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage] = useState(9);
+
+  const [searchParams] = useSearchParams();
+  const spaceFilter = searchParams.get('space');
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
@@ -47,78 +48,84 @@ const Products = () => {
     },
   };
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/products`
-        );
-        console.log("API Response:", response.data);
-
-        if (response.data.status === "success") {
-          setProducts(response.data.data.data);
-        }
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu:", error);
-      }
-    };
-
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/categories`
-        );
-        console.log("Categories Response:", response.data);
-        if (response.data.success) {
-          setCategories(response.data.data);
-        }
-      } catch (error) {
-        console.error("Lỗi khi lấy danh mục:", error);
-      }
-    };
-
-    const fetchVariants = async () => {
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/variants`
-        );
-        if (response.data.status === "success") {
-          setVariants(response.data.data);
-        }
-      } catch (error) {
-        console.error("Lỗi khi lấy biến thể:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProducts();
-    fetchCategories();
-    fetchVariants();
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading) {
-      filterProducts();
-    }
-  }, [selectedCategories, selectedVariants, priceRange, searchTerm, products, isLoading, currentPage]);
-
-  const filterProducts = () => {
+  const fetchProducts = async (page, currentSpaceFilter, currentSearchTerm) => {
     setIsLoading(true);
-    let filtered = [...products];
+    try {
+      const params = {
+        page: page,
+        limit: itemsPerPage,
+        ...(currentSpaceFilter && { space: currentSpaceFilter }),
+        ...(currentSearchTerm && { keyword: currentSearchTerm }),
+      };
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/products`,
+        { params }
+      );
+      console.log("API Product Response:", response.data);
 
-    if (
-      selectedCategories.length === 0 &&
-      selectedVariants.length === 0 &&
-      priceRange[0] === 0 &&
-      priceRange[1] === 10000000 &&
-      !searchTerm
-    ) {
-      setFilteredProducts(products);
+      if (response.data.status === "success" && response.data.data) {
+        setProducts(response.data.data.data || []);
+        setTotalPages(response.data.data.last_page || 1);
+        setCurrentPage(response.data.data.current_page || 1);
+      } else {
+        setProducts([]);
+        setTotalPages(1);
+        setCurrentPage(1);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
+      setProducts([]);
+      setTotalPages(1);
+      setCurrentPage(1);
+    } finally {
       setIsLoading(false);
-      return;
     }
+  };
+
+  const fetchFilterCategories = async (currentSpaceFilter) => {
+    try {
+      const params = {
+        ...(currentSpaceFilter && { space: currentSpaceFilter })
+      };
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/categories/all`,
+        { params }
+      );
+      console.log("Filter Categories Response:", response.data);
+      if (response.data.success) {
+        setCategories(response.data.data || []);
+      } else {
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy danh mục cho bộ lọc:", error);
+      setCategories([]);
+    }
+  };
+
+  const fetchVariants = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/variants`
+      );
+      if (response.data.status === "success") {
+        setVariants(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy biến thể:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts(currentPage, spaceFilter, searchTerm);
+    fetchFilterCategories(spaceFilter);
+    fetchVariants();
+  }, [currentPage, spaceFilter, searchTerm]);
+
+  const filteredProducts = useMemo(() => {
+    if (isLoading) return [];
+
+    let filtered = [...products];
 
     if (selectedCategories.length > 0) {
       filtered = filtered.filter((product) =>
@@ -129,25 +136,17 @@ const Products = () => {
     if (selectedVariants.length > 0) {
       filtered = filtered.filter((product) => {
         if (!product.variants || product.variants.length === 0) return false;
-
         return product.variants.some((variant) => {
-          if (
-            !variant.variant_details ||
-            !Array.isArray(variant.variant_details)
-          )
+          if (!variant.variant_details || !Array.isArray(variant.variant_details))
             return false;
-
-          return selectedVariants.some((selectedValueId) => {
-            return variant.variant_details.some((detail) => {
+          return selectedVariants.some((selectedValueId) =>
+            variant.variant_details.some((detail) => {
               const selectedVariantValue = variants
                 .flatMap((v) => v.values)
                 .find((val) => val.id === selectedValueId);
-
-              if (!selectedVariantValue) return false;
-
-              return detail.value === selectedVariantValue.value;
-            });
-          });
+              return selectedVariantValue && detail.value === selectedVariantValue.value;
+            })
+          );
         });
       });
     }
@@ -157,69 +156,81 @@ const Products = () => {
         let price;
         if (product.has_variants) {
           const variantPrices = product.variants.map(
-            (v) => v.discount_price || v.price
+            (v) => v.discount_price ?? v.price
           );
-          price = Math.min(...variantPrices);
+          if (variantPrices.length === 0 || variantPrices.every(p => p === null || p === undefined)) return false;
+          price = Math.min(...variantPrices.filter(p => p !== null && p !== undefined));
         } else {
-          price = product.discount_price || product.price;
+          price = product.discount_price ?? product.price;
         }
+        if (price === null || price === undefined) return false;
         return price >= priceRange[0] && price <= priceRange[1];
       });
     }
 
-    if (searchTerm) {
-      filtered = filtered.filter((product) =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setTotalPages(Math.ceil(filtered.length / itemsPerPage));
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    filtered = filtered.slice(startIndex, endIndex);
-
-    setFilteredProducts(filtered);
-    setIsLoading(false);
-  };
+    return filtered;
+  }, [products, selectedCategories, selectedVariants, priceRange, variants, isLoading]);
 
   const handleCategoryChange = (categoryId) => {
-    setSelectedCategories((prev) => {
-      const newCategories = prev.includes(categoryId)
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId)
         ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId];
-      return newCategories;
-    });
+        : [...prev, categoryId]
+    );
   };
 
   const handleVariantValueChange = (valueId) => {
-    setSelectedVariants((prev) => {
-      const newVariants = prev.includes(valueId)
+    setSelectedVariants((prev) =>
+      prev.includes(valueId)
         ? prev.filter((id) => id !== valueId)
-        : [...prev, valueId];
-      return newVariants;
-    });
-  };
-
-  const toggleFilter = () => {
-    setFilterOpen(!filterOpen);
+        : [...prev, valueId]
+    );
   };
 
   const handlePriceChange = (e, index) => {
     const newPriceRange = [...priceRange];
-    newPriceRange[index] = parseInt(e.target.value);
+    const value = parseInt(e.target.value);
+    if (index === 0 && value > newPriceRange[1]) {
+      newPriceRange[0] = newPriceRange[1];
+    } else if (index === 1 && value < newPriceRange[0]) {
+      newPriceRange[1] = newPriceRange[0];
+    } else {
+      newPriceRange[index] = value;
+    }
     setPriceRange(newPriceRange);
   };
 
-  const resetFilters = () => {
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchProducts(1, spaceFilter, searchTerm);
+  };
+
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const resetClientFilters = () => {
     setSelectedCategories([]);
     setSelectedVariants([]);
     setPriceRange([0, 10000000]);
-    setSearchTerm("");
   };
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
+  const resetAllFilters = () => {
+    resetClientFilters();
+    setSearchTerm("");
+    fetchProducts(1, spaceFilter, "");
+  };
+
+  const toggleFilter = () => {
+    setFilterOpen(!filterOpen);
   };
 
   const getPageNumbers = () => {
@@ -306,8 +317,12 @@ const Products = () => {
               className="px-5 py-3 border-2 border-gray-200 rounded-full w-full focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleSearchKeyPress}
             />
-            <button className="absolute right-4 top-1/2 transform -translate-y-1/2 text-amber-500 hover:text-amber-600 transition-colors">
+            <button
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-amber-500 hover:text-amber-600 transition-colors"
+              onClick={handleSearch}
+            >
               <AiOutlineSearch className="h-6 w-6" />
             </button>
           </motion.div>
@@ -330,7 +345,7 @@ const Products = () => {
         <div className="flex gap-6 relative">
           <motion.div
             className={`${filterOpen ? "flex" : "hidden"
-              } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-4 h-fit transition-all duration-300`}
+              } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24 h-fit transition-all duration-300`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
@@ -344,23 +359,29 @@ const Products = () => {
                 <span className="w-2 h-5 bg-amber-500 rounded-full mr-2 inline-block"></span>
                 Danh mục
               </h4>
-              <div className="space-y-3 text-gray-600">
-                {categories.map((category) => (
-                  <label
-                    key={category.id}
-                    className="flex items-center space-x-3 cursor-pointer group"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(category.id)}
-                      onChange={() => handleCategoryChange(category.id)}
-                      className="form-checkbox h-5 w-5 rounded text-amber-500 border-gray-300 focus:ring-amber-500 transition-all"
-                    />
-                    <span className="group-hover:text-amber-500 transition-colors">
-                      {category.name}
-                    </span>
-                  </label>
-                ))}
+              <div className="space-y-3 text-gray-600 max-h-60 overflow-y-auto pr-2">
+                {Array.isArray(categories) && categories.length > 0 ? (
+                  categories.map((category) => (
+                    <label
+                      key={category.id}
+                      className="flex items-center space-x-3 cursor-pointer group"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category.id)}
+                        onChange={() => handleCategoryChange(category.id)}
+                        className="form-checkbox h-5 w-5 rounded text-amber-500 border-gray-300 focus:ring-amber-500 transition-all"
+                      />
+                      <span className="group-hover:text-amber-500 transition-colors">
+                        {category.name}
+                      </span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 italic">
+                    {spaceFilter ? `Không có danh mục con.` : `Đang tải danh mục...`}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -370,7 +391,7 @@ const Products = () => {
                   <span className="w-2 h-5 bg-amber-500 rounded-full mr-2 inline-block"></span>
                   {variant.name}
                 </h4>
-                <div className="space-y-3 text-gray-600">
+                <div className="space-y-3 text-gray-600 max-h-60 overflow-y-auto pr-2">
                   {variant.values.map((value) => (
                     <label
                       key={value.id}
@@ -431,6 +452,10 @@ const Products = () => {
                 />
               </div>
             </div>
+            <button
+              onClick={resetClientFilters}
+              className="mt-4 text-sm text-amber-600 hover:text-amber-700 font-medium"
+            >Đặt lại bộ lọc</button>
           </motion.div>
 
           <motion.div
@@ -446,7 +471,7 @@ const Products = () => {
               animate="visible"
             >
               {isLoading ? (
-                [1, 2, 3, 4, 5, 6].map((index) => (
+                [...Array(itemsPerPage)].map((_, index) => (
                   <motion.div
                     key={index}
                     className="bg-white rounded-xl shadow-sm overflow-hidden h-[400px] animate-pulse"
@@ -640,7 +665,7 @@ const Products = () => {
                     Không có sản phẩm nào phù hợp với tiêu chí lọc của bạn.
                   </p>
                   <button
-                    onClick={resetFilters}
+                    onClick={resetAllFilters}
                     className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-full transition-colors"
                   >
                     Đặt lại bộ lọc
@@ -652,72 +677,74 @@ const Products = () => {
         </div>
       </section>
 
-      <motion.div
-        className="flex justify-center space-x-3 my-12"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.8 }}
-      >
-        <button
-          className={`bg-white text-gray-700 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-100'} border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 font-medium flex items-center`}
-          onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+      {!isLoading && totalPages > 1 && (
+        <motion.div
+          className="flex justify-center space-x-3 my-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          <span>Trước</span>
-        </button>
-
-        {getPageNumbers().map((item, index) => (
           <button
-            key={index}
-            className={`${item === currentPage
-              ? "bg-amber-500 text-white"
-              : item === "..."
-                ? "bg-white text-gray-400 cursor-default"
-                : "bg-white text-gray-700 hover:bg-amber-100"
-              } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
-            onClick={() => item !== "..." && handlePageChange(item)}
-            disabled={item === "..."}
+            className={`bg-white text-gray-700 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-100'} border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 font-medium flex items-center`}
+            onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
           >
-            {item}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            <span>Trước</span>
           </button>
-        ))}
 
-        <button
-          className={`bg-white text-gray-700 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-100'} border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 font-medium flex items-center`}
-          onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          <span>Tiếp</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 ml-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+          {getPageNumbers().map((item, index) => (
+            <button
+              key={index}
+              className={`${item === currentPage
+                ? "bg-amber-500 text-white"
+                : item === "..."
+                  ? "bg-white text-gray-400 cursor-default"
+                  : "bg-white text-gray-700 hover:bg-amber-100"
+                } border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 min-w-[40px] font-medium`}
+              onClick={() => item !== "..." && handlePageChange(item)}
+              disabled={item === "..."}
+            >
+              {item}
+            </button>
+          ))}
+
+          <button
+            className={`bg-white text-gray-700 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-100'} border border-gray-200 px-4 py-2 rounded-full transition-all duration-300 font-medium flex items-center`}
+            onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      </motion.div>
+            <span>Tiếp</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 ml-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        </motion.div>
+      )}
 
       <section className="bg-amber-50 py-16">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4">
