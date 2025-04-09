@@ -34,22 +34,27 @@ class OrderController extends Controller
         $search = $request->input('search');
         $perPage = 10;
 
-        $orders = Order::with(['user', 'paymentMethod', 'voucher', 'refundRequest']) // Thêm 'refundRequest' vào eager load
+        $ordersQuery = Order::with(['user', 'paymentMethod', 'voucher', 'refundRequest', 'orderItems.product']) // Thêm 'orderItems.product'
             ->where(function ($query) use ($search) {
                 if ($search) {
                     $query->where('order_code', 'like', "%$search%")
                         ->orWhereHas('user', function ($userQuery) use ($search) {
                             $userQuery->where('name', 'like', "%$search%");
+                        })
+                        // Thêm tìm kiếm theo tên sản phẩm trong orderItems
+                        ->orWhereHas('orderItems', function ($itemQuery) use ($search) {
+                            $itemQuery->where('product_name', 'like', "%$search%");
                         });
                 }
             })
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage)
-            ->appends($request->query());
+            ->orderBy('created_at', 'desc');
+
+        // Áp dụng paginate cho query chính
+        $orders = $ordersQuery->paginate($perPage)->appends($request->query());
 
         // Gom nhóm đơn hàng theo trạng thái
         $statuses = [
-            'Tất cả' => Order::query(),
+            'Tất cả' => Order::query(), // Bắt đầu với query cơ bản
             'Chưa Xác Nhận' => Order::where('order_status', 'Chưa Xác Nhận'),
             'Đã Xác Nhận' => Order::where('order_status', 'Đã Xác Nhận'),
             'Đang Chuẩn Bị Hàng' => Order::where('order_status', 'Đang Chuẩn Bị Hàng'),
@@ -63,24 +68,32 @@ class OrderController extends Controller
         $groupedOrders = [];
 
         foreach ($statuses as $status => $query) {
-            $groupedOrders[$status] = $query->with(['user', 'paymentMethod', 'voucher', 'refundRequest']) // Thêm 'refundRequest' vào đây
+            // Sao chép query gốc để không ảnh hưởng lẫn nhau
+            $statusQuery = $query->with(['user', 'paymentMethod', 'voucher', 'refundRequest', 'orderItems.product']) // Thêm 'orderItems.product'
                 ->where(function ($query) use ($search) {
                     if ($search) {
                         $query->where('order_code', 'like', "%$search%")
                             ->orWhereHas('user', function ($userQuery) use ($search) {
                                 $userQuery->where('name', 'like', "%$search%");
+                            })
+                            // Thêm tìm kiếm theo tên sản phẩm trong orderItems
+                            ->orWhereHas('orderItems', function ($itemQuery) use ($search) {
+                                $itemQuery->where('product_name', 'like', "%$search%");
                             });
                     }
                 })
-                ->orderBy('created_at', 'desc')
-                ->paginate($perPage);
+                ->orderBy('created_at', 'desc');
+
+            // Áp dụng điều kiện trạng thái nếu không phải là "Tất cả"
+            if ($status !== 'Tất cả') {
+                $statusQuery->where('order_status', $status);
+            }
+
+            $groupedOrders[$status] = $statusQuery->paginate($perPage);
         }
 
         return view('admins.orders.index', compact('orders', 'search', 'groupedOrders'));
     }
-
-
-
 
     /**
      * Show the form for creating a new resource.

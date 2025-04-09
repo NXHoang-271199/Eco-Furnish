@@ -190,7 +190,7 @@
                             <i class="fas fa-search text-muted"></i>
                         </span>
                         <input type="text" name="search" class="form-control border-start-0 ps-0"
-                            placeholder="Tìm kiếm theo mã đơn hàng hoặc tên người nhận"
+                            placeholder="Tìm kiếm theo mã đơn, tên người nhận hoặc tên sản phẩm"
                             value="{{ request()->input('search') }}">
                         <button type="submit" class="btn btn-primary px-4">
                             <span class="d-none d-md-inline-block">Tìm kiếm</span>
@@ -327,7 +327,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+                </div>
         </div>
 
         <!-- Modern Status Tabs -->
