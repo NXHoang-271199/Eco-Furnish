@@ -44,6 +44,120 @@
         background-color: #0d6efd !important;
         border-color: #0d6efd !important;
     }
+    
+    /* Style cho popup kết quả */
+    #resultModal .modal-dialog {
+        max-width: 650px; /* Tăng chiều rộng modal */
+    }
+    
+    #resultModal .list-group-item {
+        border: none;
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #f1f1f1;
+    }
+    
+    #resultModal .list-group-item:last-child {
+        border-bottom: none;
+    }
+    
+    #resultModal .list-group-item span:first-child {
+        font-weight: 500;
+        margin-right: 10px;
+        white-space: nowrap;
+    }
+    
+    #resultModal .list-group-item span.badge {
+        font-size: 0.8em;
+        padding: 0.3em 0.6em;
+    }
+    
+    #resultModal .list-group-item .message {
+        font-size: 0.85rem;
+        color: #6c757d;
+        text-align: right;
+        flex-grow: 1;
+        margin-left: 10px;
+        white-space: normal;
+    }
+    
+    #resultModal .list-group-item .message.text-danger {
+        color: #dc3545;
+    }
+    
+    #resultModal .nav-tabs .nav-link {
+        border-radius: 0;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: #495057;
+    }
+    
+    #resultModal .nav-tabs .nav-link.active {
+        font-weight: 600;
+        background-color: transparent;
+        border-bottom: 2px solid #0d6efd;
+        color: #0d6efd;
+    }
+    
+    #resultModal .card {
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    
+    #resultModal .card-header-tabs {
+        margin: 0;
+    }
+    
+    #resultModal .modal-footer {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    /* Animation cho icon thành công */
+    @keyframes success-icon-animation {
+        0% {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+        40% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+        60% {
+            transform: scale(0.9);
+            opacity: 1;
+        }
+        80% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .success-icon-animated .avatar-title {
+        animation: success-icon-animation 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    
+    .success-icon-animated .avatar-title i {
+        color: #0ab39c;
+        font-size: 2.5rem;
+        text-shadow: 0 0 10px rgba(10, 179, 156, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .success-icon-animated .avatar-title {
+        background: rgba(10, 179, 156, 0.1) !important;
+        border: 2px solid rgba(10, 179, 156, 0.2);
+        box-shadow: 0 0 15px rgba(10, 179, 156, 0.2);
+    }
 </style>
 @endsection
 
@@ -70,20 +184,20 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-8">
-                        <form action="{{ route('orders.index') }}" method="GET">
-                            <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0">
-                                    <i class="fas fa-search text-muted"></i>
-                                </span>
-                                <input type="text" name="search" class="form-control border-start-0 ps-0"
-                                    placeholder="Tìm kiếm theo mã đơn hàng hoặc tên người nhận"
-                                    value="{{ request()->input('search') }}">
-                                <button type="submit" class="btn btn-primary px-4">
-                                    <span class="d-none d-md-inline-block">Tìm kiếm</span>
-                                    <i class="fas fa-search d-inline-block d-md-none"></i>
-                                </button>
-                            </div>
-                        </form>
+                <form action="{{ route('orders.index') }}" method="GET">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" name="search" class="form-control border-start-0 ps-0"
+                            placeholder="Tìm kiếm theo mã đơn hàng hoặc tên người nhận"
+                            value="{{ request()->input('search') }}">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <span class="d-none d-md-inline-block">Tìm kiếm</span>
+                            <i class="fas fa-search d-inline-block d-md-none"></i>
+                        </button>
+                    </div>
+                </form>
                     </div>
                     <div class="col-md-4 text-end">
                         <button id="btnBulkUpdateStatus" class="btn btn-success fw-medium" data-bs-toggle="modal" data-bs-target="#bulkUpdateModal" data-action="update-bulk-status" disabled>
@@ -137,141 +251,80 @@
         
         <!-- Modal hiển thị kết quả cập nhật trạng thái hàng loạt -->
         <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="resultModalLabel">Cập nhật thành công!</h5>
+                    <div class="modal-header border-bottom-0 pb-0">
+                        <h5 class="modal-title" id="resultModalLabel">Cập nhật nhanh</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <!-- Thống kê kết quả -->
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-body text-center">
-                                        <div class="avatar-sm mx-auto mb-3 rounded-circle bg-soft-success">
-                                            <i class="fas fa-check-circle fa-2x text-success mt-2"></i>
-                                        </div>
-                                        <h5 class="fw-bold text-success mb-1" id="successCount">0</h5>
-                                        <p class="text-muted mb-0">Thành công</p>
-                                    </div>
+                        <!-- Icon lớn -->
+                        <div class="text-center mb-4" id="resultIconContainer">
+                            <div class="avatar-lg mx-auto">
+                                <div class="avatar-title bg-light text-success display-5 rounded-circle">
+                                    <i class="ri-check-double-line"></i>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-body text-center">
-                                        <div class="avatar-sm mx-auto mb-3 rounded-circle bg-soft-danger">
-                                            <i class="fas fa-times-circle fa-2x text-danger mt-2"></i>
-                                        </div>
-                                        <h5 class="fw-bold text-danger mb-1" id="errorCount">0</h5>
-                                        <p class="text-muted mb-0">Lỗi</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-body text-center">
-                                        <div class="avatar-sm mx-auto mb-3 rounded-circle bg-soft-primary">
-                                            <i class="fas fa-tasks fa-2x text-primary mt-2"></i>
-                                        </div>
-                                        <h5 class="fw-bold text-primary mb-1" id="totalCount">0</h5>
-                                        <p class="text-muted mb-0">Tổng đơn hàng</p>
-                                    </div>
-                                </div>
-                            </div>
+                            <p class="text-muted mt-2" id="resultIconText">Cập nhật thành công!</p>
                         </div>
 
                         <!-- Danh sách kết quả -->
                         <div class="card shadow-sm border-0">
-                            <div class="card-header bg-white">
-                                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                            <div class="card-header bg-white p-0">
+                                <ul class="nav nav-tabs nav-justified card-header-tabs" role="tablist">
                                     <li class="nav-item" role="presentation">
-                                        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-content" type="button" role="tab" aria-controls="all-content" aria-selected="true">
-                                            <i class="fas fa-list me-1"></i> Tất cả <span class="badge bg-primary rounded-pill ms-1" id="all-count">0</span>
+                                        <button class="nav-link active" id="all-tab-result" data-bs-toggle="tab" data-bs-target="#all-content-result" type="button" role="tab" aria-controls="all-content-result" aria-selected="true">
+                                            Tất cả <span class="badge bg-primary rounded-pill ms-1" id="all-count">0</span>
                                         </button>
                                     </li>
                                     <li class="nav-item" role="presentation">
-                                        <button class="nav-link" id="success-tab" data-bs-toggle="tab" data-bs-target="#success-content" type="button" role="tab" aria-controls="success-content" aria-selected="false">
-                                            <i class="fas fa-check-circle me-1"></i> Thành công <span class="badge bg-success rounded-pill ms-1" id="success-count">0</span>
+                                        <button class="nav-link" id="success-tab-result" data-bs-toggle="tab" data-bs-target="#success-content-result" type="button" role="tab" aria-controls="success-content-result" aria-selected="false">
+                                            Thành công <span class="badge bg-success rounded-pill ms-1" id="success-count">0</span>
                                         </button>
                                     </li>
                                     <li class="nav-item" role="presentation">
-                                        <button class="nav-link" id="error-tab" data-bs-toggle="tab" data-bs-target="#error-content" type="button" role="tab" aria-controls="error-content" aria-selected="false">
-                                            <i class="fas fa-times-circle me-1"></i> Lỗi <span class="badge bg-danger rounded-pill ms-1" id="error-count">0</span>
+                                        <button class="nav-link" id="error-tab-result" data-bs-toggle="tab" data-bs-target="#error-content-result" type="button" role="tab" aria-controls="error-content-result" aria-selected="false">
+                                            Lỗi <span class="badge bg-danger rounded-pill ms-1" id="error-count">0</span>
                                         </button>
                                     </li>
                                 </ul>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-2">
                                 <div class="tab-content">
                                     <!-- Tab Tất cả -->
-                                    <div class="tab-pane fade show active" id="all-content" role="tabpanel" aria-labelledby="all-tab">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th scope="col">#</th>
-                                                        <th scope="col">Mã đơn hàng</th>
-                                                        <th scope="col">Người nhận</th>
-                                                        <th scope="col">Trạng thái trước</th>
-                                                        <th scope="col">Trạng thái mới</th>
-                                                        <th scope="col">Kết quả</th>
-                                                        <th scope="col">Ghi chú</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="all-results">
-                                                    <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                    <div class="tab-pane fade show active" id="all-content-result" role="tabpanel" aria-labelledby="all-tab-result">
+                                        <ul class="list-group list-group-flush overflow-auto" style="max-height: 300px;" id="all-results">
+                                            <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                                        </ul>
                                     </div>
                                     
                                     <!-- Tab Thành công -->
-                                    <div class="tab-pane fade" id="success-content" role="tabpanel" aria-labelledby="success-tab">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th scope="col">#</th>
-                                                        <th scope="col">Mã đơn hàng</th>
-                                                        <th scope="col">Người nhận</th>
-                                                        <th scope="col">Trạng thái trước</th>
-                                                        <th scope="col">Trạng thái mới</th>
-                                                        <th scope="col">Ghi chú</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="success-results">
-                                                    <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                    <div class="tab-pane fade" id="success-content-result" role="tabpanel" aria-labelledby="success-tab-result">
+                                        <ul class="list-group list-group-flush overflow-auto" style="max-height: 300px;" id="success-results">
+                                            <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                                        </ul>
                                     </div>
                                     
                                     <!-- Tab Lỗi -->
-                                    <div class="tab-pane fade" id="error-content" role="tabpanel" aria-labelledby="error-tab">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th scope="col">#</th>
-                                                        <th scope="col">Mã đơn hàng</th>
-                                                        <th scope="col">Người nhận</th>
-                                                        <th scope="col">Trạng thái</th>
-                                                        <th scope="col">Lỗi</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="error-results">
-                                                    <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                    <div class="tab-pane fade" id="error-content-result" role="tabpanel" aria-labelledby="error-tab-result">
+                                        <ul class="list-group list-group-flush overflow-auto" style="max-height: 300px;" id="error-results">
+                                            <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Đóng</button>
+                    <div class="modal-footer d-flex justify-content-between align-items-center">
+                        <div class="hstack gap-2">
+                            <button type="button" id="copySuccessButton" class="btn btn-soft-success btn-sm" disabled>
+                                <i class="far fa-copy me-1"></i> Copy mã đơn thành công
+                            </button>
+                        </div>
+                        <div class="hstack gap-2">
+                            <button type="button" id="viewErrorButton" class="btn btn-danger btn-sm" disabled>Đơn lỗi</button>
+                            <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Quay lại</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -346,7 +399,7 @@
                                                                 {{ $order->order_status === 'Đã Nhận' || $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' ? 'disabled' : '' }}>
                                                         </label>
                                                     </div>
-                                                    @if ($order->orderItems->isNotEmpty())
+                                                @if ($order->orderItems->isNotEmpty())
                                                         <div class="position-relative">
                                                         <img src="{{ Storage::url($order->orderItems->first()->image_url) }}"
                                                                 class="img-fluid rounded" style="max-height: 120px; object-fit: contain;" alt="Product">
@@ -862,6 +915,17 @@
                 
                 // Cập nhật lại trạng thái đơn hàng trên UI
                 updateOrderStatusUI(data.results);
+                
+                // Lắng nghe sự kiện khi modal kết quả đóng
+                const resultModalElement = document.getElementById('resultModal');
+                if (resultModalElement) {
+                    resultModalElement.addEventListener('hidden.bs.modal', function handler() {
+                        console.log('Modal kết quả đã đóng, tải lại trang.');
+                        window.location.reload();
+                        // Gỡ bỏ listener sau khi chạy để tránh reload nhiều lần
+                        resultModalElement.removeEventListener('hidden.bs.modal', handler);
+                    }, { once: true }); // { once: true } đảm bảo listener chỉ chạy một lần
+                }
             })
             .catch(error => {
                 console.error('Lỗi:', error);
@@ -893,15 +957,37 @@
             const baseUrl = BASE_URL || window.location.origin;
             console.log('Base URL đang sử dụng:', baseUrl);
             
-            // Cập nhật thống kê
-            document.getElementById('successCount').textContent = data.successCount;
-            document.getElementById('errorCount').textContent = data.errorCount;
-            document.getElementById('totalCount').textContent = data.totalCount;
-            
             // Cập nhật số lượng trên các tab
             document.getElementById('all-count').textContent = data.totalCount;
             document.getElementById('success-count').textContent = data.successCount;
             document.getElementById('error-count').textContent = data.errorCount;
+            
+            // Cập nhật icon và text chính
+            const resultIconContainer = document.getElementById('resultIconContainer');
+            const resultIconText = document.getElementById('resultIconText');
+            const iconDiv = resultIconContainer.querySelector('.avatar-title');
+            
+            // Xóa class animation cũ
+            resultIconContainer.classList.remove('success-icon-animated');
+            
+            if (data.errorCount > 0 && data.successCount === 0) {
+                // Chỉ lỗi
+                iconDiv.className = 'avatar-title bg-light text-danger display-5 rounded-circle';
+                iconDiv.innerHTML = '<i class="ri-close-line"></i>';
+                resultIconText.textContent = 'Cập nhật thất bại!';
+            } else if (data.errorCount > 0 && data.successCount > 0) {
+                // Có cả thành công và lỗi
+                iconDiv.className = 'avatar-title bg-light text-warning display-5 rounded-circle';
+                iconDiv.innerHTML = '<i class="ri-error-warning-line"></i>';
+                resultIconText.textContent = 'Cập nhật có lỗi!';
+            } else {
+                // Chỉ thành công
+                iconDiv.className = 'avatar-title bg-light text-success display-5 rounded-circle';
+                iconDiv.innerHTML = '<i class="ri-check-line"></i>';
+                resultIconText.textContent = 'Cập nhật thành công!';
+                // Thêm class để kích hoạt animation
+                resultIconContainer.classList.add('success-icon-animated');
+            }
             
             // Hiển thị dữ liệu kết quả
             const allResults = document.getElementById('all-results');
@@ -913,86 +999,75 @@
             successResults.innerHTML = '';
             errorResults.innerHTML = '';
             
-            // Thêm dữ liệu mới
-            let index = 1;
-            let successIndex = 1;
-            let errorIndex = 1;
+            // Mảng lưu mã đơn thành công
+            const successOrderCodes = [];
             
+            // Thêm dữ liệu mới
             for (const [orderId, result] of Object.entries(data.results)) {
-                // Tab Tất cả
-                const allRow = document.createElement('tr');
                 const order = result.order || {};
+                const orderCode = order.order_code || 'N/A';
+                const message = result.message;
                 
+                // Tạo HTML cho item
+                let listItemHTML = '';
                 if (result.success) {
-                    // Đã chuyển từ 'Đã Xác Nhận' sang 'Đang Chuẩn Bị Hàng'
-                    const statusParts = result.message.match(/Đã chuyển từ '(.*)' sang '(.*)'/);
-                    const oldStatus = statusParts ? statusParts[1] : (order.order_status || 'Không xác định');
-                    const newStatus = statusParts ? statusParts[2] : 'Không xác định';
-                    
-                    // Tạo URL an toàn
-                    let orderUrl = '#';
-                    if (order && order.id) {
-                        orderUrl = `${baseUrl}/admin/orders/${order.id}`;
-                    }
-                    
-                    allRow.innerHTML = `
-                        <td>${index}</td>
-                        <td><a href="${orderUrl}" class="fw-medium">${order.order_code || 'N/A'}</a></td>
-                        <td>${order.user_name || 'N/A'}</td>
-                        <td>${getStatusBadgeHTML(oldStatus)}</td>
-                        <td>${getStatusBadgeHTML(newStatus)}</td>
-                        <td><span class="badge bg-success rounded-pill">Thành công</span></td>
-                        <td><span class="text-success">${result.message}</span></td>
+                    listItemHTML = `
+                        <li class="list-group-item list-group-item-success">
+                            <span class="fw-bold">#${orderCode}</span>
+                            <span class="message">${message}</span>
+                        </li>
                     `;
-                    
-                    // Tab Thành công
-                    const successRow = document.createElement('tr');
-                    successRow.innerHTML = `
-                        <td>${successIndex}</td>
-                        <td><a href="${orderUrl}" class="fw-medium">${order.order_code || 'N/A'}</a></td>
-                        <td>${order.user_name || 'N/A'}</td>
-                        <td>${getStatusBadgeHTML(oldStatus)}</td>
-                        <td>${getStatusBadgeHTML(newStatus)}</td>
-                        <td><span class="text-success">${result.message}</span></td>
-                    `;
-                    
-                    successResults.appendChild(successRow);
-                    successIndex++;
+                    successResults.insertAdjacentHTML('beforeend', listItemHTML);
+                    successOrderCodes.push(orderCode);
                 } else {
-                    // Lỗi
-                    // Tạo URL an toàn
-                    let orderUrl = '#';
-                    if (order && order.id) {
-                        orderUrl = `${baseUrl}/admin/orders/${order.id}`;
-                    }
-                    
-                    allRow.innerHTML = `
-                        <td>${index}</td>
-                        <td>${order && order.order_code ? `<a href="${orderUrl}" class="fw-medium">${order.order_code}</a>` : 'N/A'}</td>
-                        <td>${order && order.user_name ? order.user_name : 'N/A'}</td>
-                        <td>${order && order.order_status ? getStatusBadgeHTML(order.order_status) : '<span class="badge bg-secondary">N/A</span>'}</td>
-                        <td><span class="badge bg-secondary">Không đổi</span></td>
-                        <td><span class="badge bg-danger rounded-pill">Lỗi</span></td>
-                        <td><span class="text-danger">${result.message}</span></td>
+                    listItemHTML = `
+                        <li class="list-group-item list-group-item-danger">
+                            <span class="fw-bold">#${orderCode}</span>
+                            <span class="message text-danger">${message}</span>
+                        </li>
                     `;
-                    
-                    // Tab Lỗi
-                    const errorRow = document.createElement('tr');
-                    errorRow.innerHTML = `
-                        <td>${errorIndex}</td>
-                        <td>${order && order.order_code ? `<a href="${orderUrl}" class="fw-medium">${order.order_code}</a>` : 'N/A'}</td>
-                        <td>${order && order.user_name ? order.user_name : 'N/A'}</td>
-                        <td>${order && order.order_status ? getStatusBadgeHTML(order.order_status) : '<span class="badge bg-secondary">N/A</span>'}</td>
-                        <td><span class="text-danger">${result.message}</span></td>
-                    `;
-                    
-                    errorResults.appendChild(errorRow);
-                    errorIndex++;
+                    errorResults.insertAdjacentHTML('beforeend', listItemHTML);
                 }
                 
-                allResults.appendChild(allRow);
-                index++;
+                // Thêm vào tab "Tất cả"
+                allResults.insertAdjacentHTML('beforeend', listItemHTML);
             }
+            
+            // Kích hoạt/vô hiệu hóa nút footer
+            const copySuccessButton = document.getElementById('copySuccessButton');
+            const viewErrorButton = document.getElementById('viewErrorButton');
+            
+            copySuccessButton.disabled = data.successCount === 0;
+            viewErrorButton.disabled = data.errorCount === 0;
+            
+            // Gắn sự kiện copy
+            copySuccessButton.onclick = () => {
+                navigator.clipboard.writeText(successOrderCodes.join('\n'))
+                    .then(() => {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Đã sao chép mã đơn hàng thành công',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Lỗi khi sao chép:', err);
+                        Swal.fire('Lỗi', 'Không thể sao chép mã đơn hàng', 'error');
+                    });
+            };
+            
+            // Gắn sự kiện xem đơn lỗi (hiển thị tab lỗi)
+            viewErrorButton.onclick = () => {
+                const errorTabButton = document.getElementById('error-tab-result');
+                if (errorTabButton) {
+                    const tab = new bootstrap.Tab(errorTabButton);
+                    tab.show();
+                }
+            };
+            
         } catch (e) {
             console.error('Lỗi khi hiển thị kết quả:', e);
             Swal.fire({
@@ -1107,6 +1182,69 @@
         }
         
         return `<span class="badge ${badgeClass} py-2 px-3" role="status">${icon} ${status}</span>`;
+    }
+
+    // Thêm hàm tạo các particle hiệu ứng
+    function createSuccessParticles(parentElement) {
+        const colors = ['#0ab39c', '#25c9af', '#7ddece'];
+        const particleCount = 8;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            const size = Math.random() * 8 + 4;
+            
+            particle.style.position = 'absolute';
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.borderRadius = '50%';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '100';
+            
+            // Vị trí ban đầu ở trung tâm
+            particle.style.left = '50%';
+            particle.style.top = '50%';
+            
+            // Thêm particle vào phần tử cha
+            parentElement.appendChild(particle);
+            
+            // Tạo hiệu ứng animation
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 30 + Math.random() * 20;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            
+            // Áp dụng animation với GSAP nếu có sẵn, nếu không thì dùng CSS
+            if (typeof gsap !== 'undefined') {
+                gsap.to(particle, {
+                    duration: 0.6 + Math.random() * 0.4,
+                    x: x,
+                    y: y,
+                    opacity: 0,
+                    scale: 0,
+                    ease: 'power2.out',
+                    onComplete: () => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }
+                });
+            } else {
+                // Fallback to CSS animation
+                particle.style.transition = 'all ' + (0.6 + Math.random() * 0.4) + 's ease-out';
+                setTimeout(() => {
+                    particle.style.transform = `translate(${x}px, ${y}px) scale(0)`;
+                    particle.style.opacity = '0';
+                    
+                    // Xóa particle sau khi animation kết thúc
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 1000);
+                }, 10);
+            }
+        }
     }
 </script>
 @endsection
