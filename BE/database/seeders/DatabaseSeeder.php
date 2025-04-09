@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             CartSeeder::class,
             CartItemSeeder::class,
             ReviewSeeder::class,
+            WalletSeeder::class,
         ]);
 
         // Tạo tài khoản admin

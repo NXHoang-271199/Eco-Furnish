@@ -75,3 +75,58 @@ if (!function_exists('getOrderStatusColor')) {
         }
     }
 }
+if (!function_exists('getTransactionStatusLabel')) {
+    function getTransactionStatusLabel($status)
+    {
+        return [
+            'cho_thanh_toan' => 'Chờ thanh toán',
+            'thanh_cong'     => 'Thành công',
+            'that_bai'       => 'Thất bại',
+            'da_huy'         => 'Đã hủy',
+        ][$status] ?? 'Không xác định';
+    }
+}
+
+if (!function_exists('getTransactionStatusColor')) {
+    function getTransactionStatusColor($status)
+    {
+        switch ($status) {
+            case 'cho_thanh_toan':
+                return 'warning';
+            case 'thanh_cong':
+                return 'success';
+            case 'that_bai':
+                return 'danger';
+            case 'da_huy':
+                return 'secondary';
+            default:
+                return 'dark';
+        }
+    }
+}
+if (!function_exists('getTransactionTypeLabel')) {
+    function getTransactionTypeLabel($type)
+    {
+        return [
+            'nap_tien'     => 'Nạp Tiền',
+            'hoan_tien'    => 'Hoàn Tiền',
+            'thanh_toan_don_hang' => 'Thanh Toán Đơn Hàng',
+        ][$type] ?? 'Không xác định';
+    }
+}
+
+if (!function_exists('getTransactionTypeColor')) {
+    function getTransactionTypeColor($type)
+    {
+        switch ($type) {
+            case 'nap_tien':
+                return 'primary';
+            case 'hoan_tien':
+                return 'danger';
+            case 'thanh_toan_don_hang':
+                return 'info';
+            default:
+                return 'secondary';
+        }
+    }
+}
