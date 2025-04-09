@@ -39,7 +39,8 @@
                                 </td>
                                 <td>
                                     @if (Auth::user()->hasPermission('delete-payment-methods'))
-                                        <form action="{{ route('payment-methods.destroy', $method->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
+                                        <form action="{{ route('payment-methods.destroy', $method->id) }}" method="POST"
+                                            class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-danger btn-sm">
@@ -59,7 +60,8 @@
 
                                         <div class="btn-group">
                                             <!-- Nút bánh răng -->
-                                            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <button class="btn btn-primary btn-sm dropdown-toggle" type="button"
+                                                id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                                 <i class="fas fa-cogs"></i> Cấu hình
                                             </button>
                                             <ul class="dropdown-menu" aria-labelledby="settingsDropdown">
@@ -72,7 +74,9 @@
                                                     </li>
                                                     <li>
                                                         <!-- Form Hủy kết nối -->
-                                                        <form action="{{ route('payment-methods.disconnect', $method->id) }}" method="POST" class="d-inline"
+                                                        <form
+                                                            action="{{ route('payment-methods.disconnect', $method->id) }}"
+                                                            method="POST" class="d-inline"
                                                             onsubmit="return confirm('Bạn có chắc chắn muốn hủy kết nối?');">
                                                             @csrf
                                                             @method('POST')
@@ -84,7 +88,8 @@
                                                 @endif
                                                 @if (Auth::user()->hasPermission('update-payment-methods'))
                                                     <li>
-                                                        <a class="dropdown-item" href="{{ route('payment-methods.edit', $method->id) }}">
+                                                        <a class="dropdown-item"
+                                                            href="{{ route('payment-methods.edit', $method->id) }}">
                                                             <i class="fas fa-edit"></i> Sửa
                                                         </a>
                                                     </li>

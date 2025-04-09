@@ -179,7 +179,7 @@ class PaymentMethodController extends Controller
     public function updateConnection(Request $request, string $id)
     {
         $method = PaymentMethod::findOrFail($id);
-        
+
 
         // Xác thực thông tin kết nối theo từng phương thức
         if ($method->name === 'MoMo') {
