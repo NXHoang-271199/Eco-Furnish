@@ -102,9 +102,15 @@ class ProductController extends Controller
         try {
             \Log::info("Đang lấy thông tin sản phẩm ID: " . $id);
             
-            $product = Product::with(['category', 'gallery', 'variants' => function($query) {
-                $query->whereNull('deleted_at');
-            }])
+            $product = Product::with([
+                'category',
+                'gallery' => function($query) {
+                    $query->whereNull('deleted_at');
+                },
+                'variants' => function($query) {
+                    $query->whereNull('deleted_at');
+                }
+            ])
                 ->findOrFail($id);
 
             \Log::info("Đã tìm thấy sản phẩm:", ['product_id' => $product->id, 'has_variants' => $product->has_variants]);
