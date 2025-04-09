@@ -81,7 +81,13 @@ Route::prefix('admin')->group(function () {
 
         // Categories Management
         Route::middleware(['permission:view-categories'])->group(function () {
-            Route::resource('categories', CategoryController::class);
+            Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
+            Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
+            Route::get('categories/{category}/data', [CategoryController::class, 'getCategoryData'])
+                 ->name('categories.data')
+                 ->middleware('permission:update-categories');
+            Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+            Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
         });
 
         // Products routes
@@ -149,6 +155,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['permission:view-orders'])->group(function () {
             Route::resource('orders', OrderController::class);
             Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
+            Route::post('orders/bulk-update-status', [OrderController::class, 'bulkUpdateStatus'])->name('orders.bulkUpdateStatus');
             Route::get('orders/{order}/detail', [OrderController::class, 'show'])->name('orders.detail');
             Route::post('/orders/{orderId}/refund/approve/{refundRequestId}', [OrderController::class, 'approveRefundRequest'])->name('order.refund.approve');
             Route::post('/orders/{orderId}/refund/reject/{refundRequestId}', [OrderController::class, 'rejectRefundRequest'])->name('order.refund.reject');
@@ -179,7 +186,7 @@ Route::prefix('admin')->group(function () {
             Route::resource('trash-variant-values', TrashController::class)->only(['index', 'update', 'destroy']);
             Route::get('restore-variant/{id}', [VariantController::class, 'restore']);
             Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
-            Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
+            Route::get('restore-category/{id}', [CategoryController::class, 'restore'])->name('category.restore');
         });
     });
 

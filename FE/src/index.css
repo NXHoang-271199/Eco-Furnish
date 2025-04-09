@@ -75,3 +75,26 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* Thêm các quy tắc sau vào cuối file */
+
+/* Ẩn nút xem mật khẩu mặc định của trình duyệt (Edge, Chrome, Opera) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
+
+input[type="password"]::-webkit-reveal,
+input[type="password"]::-webkit-caps-lock-indicator,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    appearance: none;
+}
+
+/* Đảm bảo input không bị thêm padding bởi trình duyệt */
+input[type="password"] {
+    padding-right: 2.5rem;
+    /* Giữ nguyên padding cho icon tùy chỉnh của chúng ta */
+}

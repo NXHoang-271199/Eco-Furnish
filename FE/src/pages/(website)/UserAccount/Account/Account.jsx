@@ -15,6 +15,8 @@ import {
   CircleUserRound,
   Upload,
   AlertCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 
@@ -182,7 +184,7 @@ const Account = () => {
 
           setError(
             error.response.data?.message ||
-              `Lỗi từ máy chủ: ${error.response.status}`
+            `Lỗi từ máy chủ: ${error.response.status}`
           );
         } else if (error.request) {
           console.error("Không nhận được phản hồi từ máy chủ");
@@ -390,7 +392,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       setIsUploading(false);
       setUploadError(
         error.response?.data?.message ||
-          "Không thể tải lên avatar. Vui lòng thử lại!"
+        "Không thể tải lên avatar. Vui lòng thử lại!"
       );
       toast.error("Không thể tải lên avatar. Vui lòng thử lại!");
     }
@@ -456,7 +458,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       console.error("Lỗi khi cập nhật thông tin:", error);
       setSaveError(
         error.response?.data?.message ||
-          "Không thể cập nhật thông tin. Vui lòng thử lại sau."
+        "Không thể cập nhật thông tin. Vui lòng thử lại sau."
       );
       toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
     } finally {
@@ -499,7 +501,14 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
                     </div>
                   ) : (
                     <>
-                      <AvatarImage src={avatar} alt={user.name} />
+                      <AvatarImage
+                        src={
+                          avatar && !avatar.includes('placeholder.com')
+                            ? avatar
+                            : "/images/avatarEmpty/avatarUser.png"
+                        }
+                        alt={user.name}
+                      />
                       <AvatarFallback className="text-2xl">
                         {user.name ? user.name.charAt(0) : "U"}
                       </AvatarFallback>
@@ -640,6 +649,12 @@ const SecuritySection = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isCurrentPasswordFocused, setIsCurrentPasswordFocused] = useState(false);
+  const [isNewPasswordFocused, setIsNewPasswordFocused] = useState(false);
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -648,10 +663,10 @@ const SecuritySection = () => {
       [id === "current-password"
         ? "currentPassword"
         : id === "new-password"
-        ? "newPassword"
-        : id === "confirm-password"
-        ? "confirmPassword"
-        : id]: value,
+          ? "newPassword"
+          : id === "confirm-password"
+            ? "confirmPassword"
+            : id]: value,
     }));
   };
 
@@ -732,7 +747,7 @@ const SecuritySection = () => {
       } else {
         setError(
           error.response?.data?.message ||
-            "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
+          "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
         );
       }
 
@@ -757,32 +772,95 @@ const SecuritySection = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            {error && (
+              <div className="text-red-500 text-sm flex items-center gap-1 mb-4">
+                <AlertCircle size={14} />
+                <span>{error}</span>
+              </div>
+            )}
+            <div className="space-y-2 relative">
               <Label htmlFor="current-password">Mật khẩu hiện tại</Label>
               <Input
                 id="current-password"
-                type="password"
+                type={showCurrentPassword ? "text" : "password"}
                 value={passwordData.currentPassword}
                 onChange={handleInputChange}
+                className="pr-10"
+                onFocus={() => setIsCurrentPasswordFocused(true)}
+                onBlur={() => setIsCurrentPasswordFocused(false)}
               />
+              {passwordData.currentPassword && isCurrentPasswordFocused && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setShowCurrentPassword((prev) => !prev)}
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
+                </Button>
+              )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label htmlFor="new-password">Mật khẩu mới</Label>
               <Input
                 id="new-password"
-                type="password"
+                type={showNewPassword ? "text" : "password"}
                 value={passwordData.newPassword}
                 onChange={handleInputChange}
+                className="pr-10"
+                onFocus={() => setIsNewPasswordFocused(true)}
+                onBlur={() => setIsNewPasswordFocused(false)}
               />
+              {passwordData.newPassword && isNewPasswordFocused && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                >
+                  {showNewPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
+                </Button>
+              )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label htmlFor="confirm-password">Xác nhận mật khẩu mới</Label>
               <Input
                 id="confirm-password"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 value={passwordData.confirmPassword}
                 onChange={handleInputChange}
+                className="pr-10"
+                onFocus={() => setIsConfirmPasswordFocused(true)}
+                onBlur={() => setIsConfirmPasswordFocused(false)}
               />
+              {passwordData.confirmPassword && isConfirmPasswordFocused && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
+                </Button>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaRegEyeSlash, FaEye } from "react-icons/fa";
 import { FiMail, FiLock, FiFacebook, FiGithub } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
@@ -12,6 +12,7 @@ import { resetSocket } from "../../../utils/socketConfig";
 const SignIn = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [authError, setAuthError] = useState(null);
   const {
     register,
     handleSubmit,
@@ -20,6 +21,21 @@ const SignIn = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const errorParam = params.get("error");
+    if (errorParam) {
+      let errorMessage = "Đã có lỗi xảy ra trong quá trình đăng nhập.";
+      if (errorParam === "google_callback_failed") {
+        errorMessage = "Đăng nhập bằng Google thất bại. Vui lòng thử lại.";
+      } else if (errorParam === "facebook_callback_failed") {
+        errorMessage = "Đăng nhập bằng Facebook thất bại. Vui lòng thử lại.";
+      }
+      setAuthError(errorMessage);
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
 
   const onSubmit = async (data) => {
     try {
@@ -168,6 +184,15 @@ const SignIn = () => {
             </p>
           </motion.div>
 
+          {authError && (
+            <motion.div
+              variants={itemVariants}
+              className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded"
+            >
+              {authError}
+            </motion.div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)}>
             <motion.div variants={itemVariants} className="mb-5">
               <div className="relative">
@@ -281,6 +306,10 @@ const SignIn = () => {
                 className="flex items-center justify-center w-full py-3 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() =>
+                  (window.location.href =
+                    "http://localhost:8000/api/auth/google/redirect")
+                }
               >
                 <FcGoogle className="mr-3" size={20} />
                 <span className="text-gray-700">Đăng nhập với Google</span>
@@ -291,6 +320,10 @@ const SignIn = () => {
                 className="flex items-center justify-center w-full py-3 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() =>
+                  (window.location.href =
+                    "http://localhost:8000/api/auth/facebook/redirect")
+                }
               >
                 <FiFacebook className="mr-3 text-blue-600" size={20} />
                 <span className="text-gray-700">Đăng nhập với Facebook</span>

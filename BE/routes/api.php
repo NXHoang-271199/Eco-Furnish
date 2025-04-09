@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
+use App\Http\Controllers\Api\UserAddressController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +54,7 @@ Route::get('/best-sellers', [ProductController::class, 'getBestSellers']);
 
 // Category routes
 Route::get('/categories', [CategoryApiController::class, 'index']);
+Route::get('/categories/all', [CategoryApiController::class, 'all']);
 Route::get('/categories/{slug}', [CategoryApiController::class, 'show']);
 
 // Variant routes
@@ -75,11 +77,26 @@ Route::prefix('users')->group(function () {
     Route::post('/verify-email', [UserApiController::class, 'verifyEmail']);
     Route::post('/resend-verification', [UserApiController::class, 'resendVerification']);
     Route::put('/update/{id}', [UserApiController::class, 'updateProfile']);
+    
     Route::middleware('auth:sanctum')->group(function () {
+        // Thêm routes cho quản lý địa chỉ
+        Route::get('/{userId}/addresses', [UserAddressController::class, 'getUserAddresses']);
+        Route::post('/{userId}/addresses', [UserAddressController::class, 'storeUserAddress']);
+        Route::put('/{userId}/addresses/{addressId}', [UserAddressController::class, 'updateUserAddress']);
+        Route::delete('/{userId}/addresses/{addressId}', [UserAddressController::class, 'deleteUserAddress']);
+        
         Route::post('/upload-avatar/{id}', [UserApiController::class, 'uploadAvatar']);
         Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
         Route::post('/logout', [UserApiController::class, 'apiLogout']);
     });
+});
+
+// Thêm Social OAuth routes
+Route::prefix('auth')->middleware('web')->group(function () {
+    Route::get('/google/redirect', [UserApiController::class, 'redirectToGoogle']);
+    Route::get('/google/callback', [UserApiController::class, 'handleGoogleCallback']);
+    Route::get('/facebook/redirect', [UserApiController::class, 'redirectToFacebook']);
+    Route::get('/facebook/callback', [UserApiController::class, 'handleFacebookCallback']);
 });
 
 // Post routes

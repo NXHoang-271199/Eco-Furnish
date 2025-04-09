@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import axiosInstance from "../../../../utils/axiosConfig";
@@ -27,6 +27,8 @@ const OrderDetail = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [autoConfirmTimerSet, setAutoConfirmTimerSet] = useState(false);
+  const autoConfirmTimerIdRef = useRef(null); // Ref để lưu ID của timer
 
   // --- Logic Polling ---
   const fetchOrderDetailCallback = useCallback(
@@ -112,7 +114,138 @@ const OrderDetail = () => {
     // Chạy lại effect này nếu order thay đổi (để kiểm tra lại điều kiện dừng)
   }, [order, fetchOrderDetailCallback]);
 
-  // --- Kết thúc Logic Polling ---
+  // --- Tự động xác nhận sau 30 phút --- START ---
+  // Hàm thực hiện gọi API xác nhận
+  const performOrderConfirmation = useCallback(
+    async (isAutoConfirm = false) => {
+      // setLoading(true); // Cân nhắc hiển thị loading
+
+      try {
+        const token = localStorage.getItem("authToken");
+        // Lấy trạng thái mới nhất trước khi xác nhận (đề phòng race condition)
+        const latestOrderResponse = await axiosInstance.get(`/orders/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (
+          latestOrderResponse.data.status !== "success" ||
+          latestOrderResponse.data.data.order_status !== "Đã Giao"
+        ) {
+          console.log(
+            "Auto-confirmation skipped, status is no longer 'Đã Giao' or failed to fetch latest status."
+          );
+          // setLoading(false);
+          return; // Không xác nhận nếu trạng thái không còn là Đã Giao
+        }
+
+        // Chỉ hỏi nếu là xác nhận thủ công
+        if (
+          !isAutoConfirm &&
+          !window.confirm("Bạn đã nhận được hàng và muốn xác nhận?")
+        ) {
+          // setLoading(false);
+          return;
+        }
+
+        const response = await axiosInstance.post(
+          `/orders/${id}/confirm`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.status === "success") {
+          if (!isAutoConfirm) {
+            alert("Đã xác nhận nhận hàng thành công!");
+          } else {
+            console.log("Đơn hàng tự động xác nhận sau 30 phút.");
+            // Có thể thêm thông báo nhẹ nhàng hơn alert
+          }
+          // Cập nhật lại thông tin đơn hàng cục bộ
+          setOrder(response.data.data); // Sử dụng data trả về từ API confirm
+        } else {
+          // Xử lý lỗi từ API confirm
+          if (!isAutoConfirm) {
+            alert(response.data.message || "Không thể xác nhận đơn hàng.");
+          } else {
+            console.error("Lỗi tự động xác nhận:", response.data.message);
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Lỗi khi xác nhận đơn hàng:",
+          error.response?.data || error.message
+        );
+        if (!isAutoConfirm) {
+          alert("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.");
+        } // Lỗi tự động thì log
+      } finally {
+        // setLoading(false);
+      }
+    },
+    [id]
+  ); // Thêm id vào dependencies
+
+  // --- Tự động xác nhận sau 24 giờ --- START ---
+  // useEffect để thiết lập timer tự động xác nhận
+  useEffect(() => {
+    // Hàm cleanup để xóa timer cũ
+    const clearExistingTimer = () => {
+      if (autoConfirmTimerIdRef.current) {
+        clearTimeout(autoConfirmTimerIdRef.current);
+        autoConfirmTimerIdRef.current = null;
+        console.log("Cleared previous auto-confirm timer.");
+      }
+    };
+
+    if (order && order.order_status === "Đã Giao" && !autoConfirmTimerSet) {
+      // console.log("Order is 'Đã Giao'. Checking for auto-confirmation.");
+      // Giả định updated_at là thời điểm chuyển sang "Đã Giao"
+      const deliveredTime = new Date(order.updated_at).getTime();
+      const currentTime = new Date().getTime();
+      const timeSinceDelivered = currentTime - deliveredTime;
+      const autoConfirmDelayMs = 24 * 60 * 60 * 1000; // 24 giờ
+
+      if (timeSinceDelivered >= autoConfirmDelayMs) {
+        console.log(
+          "Order delivered more than 30 mins ago. Triggering auto-confirm."
+        );
+        // Dùng setTimeout 0 để đẩy ra khỏi luồng render hiện tại
+        clearExistingTimer(); // Xóa timer cũ nếu có
+        // Không cần set timer, gọi trực tiếp (hoặc qua setTimeout 0)
+        performOrderConfirmation(true); // Gọi xác nhận tự động
+        setAutoConfirmTimerSet(true); // Đánh dấu đã xử lý
+      } else {
+        const remainingDelay = autoConfirmDelayMs - timeSinceDelivered;
+        console.log(
+          `Setting auto-confirm timer for ${Math.round(
+            remainingDelay / 1000
+          )} seconds.`
+        );
+        clearExistingTimer(); // Xóa timer cũ trước khi set timer mới
+        autoConfirmTimerIdRef.current = setTimeout(() => {
+          performOrderConfirmation(true); // Gọi xác nhận tự động
+        }, remainingDelay);
+        setAutoConfirmTimerSet(true); // Đánh dấu đã set timer
+      }
+    } else if (order && order.order_status !== "Đã Giao") {
+      // Nếu trạng thái không còn là Đã Giao, xóa timer và reset cờ
+      clearExistingTimer();
+      if (autoConfirmTimerSet) {
+        setAutoConfirmTimerSet(false);
+      }
+    }
+
+    // Hàm cleanup chính của useEffect
+    return () => {
+      clearExistingTimer();
+    };
+    // Thêm performOrderConfirmation vào dependencies
+  }, [order, autoConfirmTimerSet, performOrderConfirmation]);
+  // --- Tự động xác nhận sau 30 phút --- END ---
 
   // Chuyển đổi mã trạng thái thanh toán thành text và màu sắc
   const getPaymentStatusInfo = (statusCode) => {
@@ -267,34 +400,9 @@ const OrderDetail = () => {
     }
   };
 
-  // Xử lý xác nhận đã nhận hàng
+  // Xử lý xác nhận đã nhận hàng (thủ công)
   const handleConfirmOrder = async () => {
-    if (!window.confirm("Bạn đã nhận được hàng và muốn xác nhận?")) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await axiosInstance.post(
-        `/orders/${id}/confirm`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.status === "success") {
-        alert("Đã xác nhận nhận hàng thành công!");
-        // Cập nhật lại thông tin đơn hàng
-        const updatedOrder = { ...order, order_status: "Đã Nhận" };
-        setOrder(updatedOrder);
-      }
-    } catch (error) {
-      console.error("Lỗi khi xác nhận đơn hàng:", error);
-      alert("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.");
-    }
+    await performOrderConfirmation(false); // false = xác nhận thủ công
   };
 
   // Xử lý yêu cầu hoàn hàng
@@ -335,6 +443,52 @@ const OrderDetail = () => {
         error.response?.data?.message ||
           "Không thể gửi yêu cầu hoàn hàng. Vui lòng thử lại sau."
       );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xử lý thanh toán lại
+  const handleRetryPayment = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("authToken");
+      const response = await axiosInstance.post(
+        `/payment-method/retry/${id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("Response từ API thanh toán lại:", response);
+
+      // Kiểm tra phản hồi và chuyển hướng
+      if (response.data.status === "success" && response.data.payUrl) {
+        // Nếu backend trả về payUrl
+        window.location.href = response.data.payUrl;
+      } else if (response.data.message === "success" && response.data.data) {
+        // Nếu backend trả về data (trường hợp VNPAY)
+        window.location.href = response.data.data;
+      } else if (response.data.payUrl) {
+        // Nếu backend chỉ trả về payUrl (trường hợp MoMo có thể)
+        window.location.href = response.data.payUrl;
+      } else {
+        // Hiển thị thông báo lỗi cụ thể hơn nếu có
+        alert(
+          response.data.message ||
+            "Không thể lấy link thanh toán lại. Vui lòng kiểm tra console."
+        );
+        console.error(
+          "API response không chứa URL thanh toán hợp lệ:",
+          response.data
+        );
+      }
+    } catch (error) {
+      console.error("Lỗi khi thanh toán lại:", error);
+      alert("Không thể thanh toán lại. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -892,9 +1046,13 @@ const OrderDetail = () => {
               </div>
 
               {order.payment_status !== 1 &&
-                order.payment_method.payment_type === "online" && (
+                (order.payment_method.name === "MoMo" ||
+                  order.payment_method.name === "VNPAY") && (
                   <div className="mt-6">
-                    <button className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors flex items-center justify-center">
+                    <button
+                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors flex items-center justify-center"
+                      onClick={handleRetryPayment}
+                    >
                       <FiRefreshCw className="mr-2" />
                       Thanh toán lại
                     </button>
