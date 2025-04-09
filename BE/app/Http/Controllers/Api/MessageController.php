@@ -104,11 +104,11 @@ class MessageController extends Controller
 
             // Đánh dấu tất cả tin nhắn đến người dùng này là đã đọc
             // nếu người đọc là người nhận
-            if ($user->id == $userId) {
-                Message::where('receiver_id', $userId)
-                    ->where('is_read', false)
-                    ->update(['is_read' => true]);
-            }
+            // if ($user->id == $userId) {
+            //     Message::where('receiver_id', $userId)
+            //         ->where('is_read', false)
+            //         ->update(['is_read' => true]);
+            // }
 
             Log::info('Tin nhắn đã tải', ['count' => $messages->count()]);
             return response()->json($messages);
@@ -224,4 +224,62 @@ class MessageController extends Controller
             ], 500);
         }
     }
+
+    // *** Thêm Phương thức: Admin đánh dấu tin nhắn của client là đã đọc ***
+    public function markClientMessagesAsReadByAdmin(Request $request, $clientId)
+    {
+        $admin = Auth::user();
+
+        // Kiểm tra quyền admin (Giả sử role_id 1 là admin)
+        if (!$admin || $admin->role_id !== 1) {
+            Log::warning('Unauthorized attempt to mark client messages as read', ['admin_id' => $admin->id, 'role_id' => $admin->role_id]);
+            return response()->json(['error' => 'Unauthorized', 'message' => 'Chỉ admin mới có quyền thực hiện hành động này.'], 403);
+        }
+
+        // Tìm client user
+        $client = User::find($clientId);
+        if (!$client) {
+            Log::error('Client user not found', ['client_id' => $clientId]);
+            return response()->json(['error' => 'Not Found', 'message' => 'Không tìm thấy người dùng client.'], 404);
+        }
+
+        try {
+            // Đánh dấu tất cả tin nhắn gửi từ client đến admin (hoặc không có receiver_id cụ thể)
+            // và chưa được đọc là đã đọc
+            $updatedCount = Message::where('sender_id', $clientId)
+                ->where(function ($query) use ($admin) {
+                    $query->where('receiver_id', $admin->id)
+                          ->orWhereNull('receiver_id'); // Tin nhắn client gửi chung cho admin
+                })
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+
+            Log::info('Admin marked client messages as read', [
+                'admin_id' => $admin->id,
+                'client_id' => $clientId,
+                'updated_count' => $updatedCount
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Đã đánh dấu {$updatedCount} tin nhắn từ client {$clientId} là đã đọc.",
+                'updated_count' => $updatedCount
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error marking client messages as read by admin', [
+                'admin_id' => $admin->id,
+                'client_id' => $clientId,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Server Error',
+                'message' => 'Lỗi máy chủ khi đánh dấu tin nhắn: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    // *** Kết thúc thêm ***
 }

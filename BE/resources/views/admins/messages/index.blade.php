@@ -388,6 +388,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Tải tin nhắn cũ
             loadMessages(userId);
+
+            // *** Thêm: Gửi sự kiện báo admin đã xem chat của user này ***
+            if (socket && socket.connected) {
+                console.log(`📣 Admin đang xem chat của user: ${userId}`);
+                socket.emit('adminViewedClientChat', { clientId: userId });
+            }
+            // *** Kết thúc thêm ***
         });
 
         userList.appendChild(li);
