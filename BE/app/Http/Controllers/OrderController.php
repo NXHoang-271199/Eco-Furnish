@@ -269,7 +269,10 @@ class OrderController extends Controller
         $currentStatuses = $request->input('current_statuses', []);
         
         if (empty($orderIds)) {
-            return redirect()->route('orders.index')->with('error', 'Không có đơn hàng nào được chọn.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Không có đơn hàng nào được chọn.'
+            ]);
         }
 
         $successCount = 0;
@@ -286,7 +289,12 @@ class OrderController extends Controller
                 if ($currentStatus !== $order->order_status) {
                     $results[$orderId] = [
                         'success' => false,
-                        'order' => $order,
+                        'order' => [
+                            'id' => $order->id,
+                            'order_code' => $order->order_code,
+                            'user_name' => $order->user_name,
+                            'order_status' => $order->order_status,
+                        ],
                         'message' => 'Trạng thái đơn hàng đã bị thay đổi bởi người khác.'
                     ];
                     $errorCount++;
@@ -306,7 +314,12 @@ class OrderController extends Controller
                 if (!in_array($newStatus, $validTransitions[$currentStatus] ?? [])) {
                     $results[$orderId] = [
                         'success' => false,
-                        'order' => $order,
+                        'order' => [
+                            'id' => $order->id,
+                            'order_code' => $order->order_code,
+                            'user_name' => $order->user_name,
+                            'order_status' => $order->order_status,
+                        ],
                         'message' => "Không thể chuyển từ '$currentStatus' sang '$newStatus'."
                     ];
                     $errorCount++;
@@ -333,7 +346,14 @@ class OrderController extends Controller
                 
                 $results[$orderId] = [
                     'success' => true,
-                    'order' => $order,
+                    'order' => [
+                        'id' => $order->id,
+                        'order_code' => $order->order_code,
+                        'user_name' => $order->user_name,
+                        'current_status' => $currentStatus,
+                        'new_status' => $newStatus,
+                        'order_status' => $newStatus,
+                    ],
                     'message' => "Đã chuyển từ '$currentStatus' sang '$newStatus'."
                 ];
                 $successCount++;
@@ -341,15 +361,21 @@ class OrderController extends Controller
                 DB::rollBack();
                 $results[$orderId] = [
                     'success' => false,
-                    'order' => $order ?? null,
+                    'order' => isset($order) ? [
+                        'id' => $order->id,
+                        'order_code' => $order->order_code,
+                        'user_name' => $order->user_name,
+                        'order_status' => $order->order_status,
+                    ] : null,
                     'message' => 'Lỗi: ' . $e->getMessage()
                 ];
                 $errorCount++;
             }
         }
 
-        // Hiển thị kết quả
-        return view('admins.orders.bulk-update-result', [
+        // Trả về kết quả dưới dạng JSON để xử lý bằng JS
+        return response()->json([
+            'success' => true,
             'results' => $results,
             'successCount' => $successCount,
             'errorCount' => $errorCount,

@@ -129,7 +129,149 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" form="bulkUpdateForm" class="btn btn-primary">Cập nhật</button>
+                        <button type="button" id="submitBulkUpdate" class="btn btn-primary">Cập nhật</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal hiển thị kết quả cập nhật trạng thái hàng loạt -->
+        <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="resultModalLabel">Cập nhật thành công!</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Thống kê kết quả -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <div class="avatar-sm mx-auto mb-3 rounded-circle bg-soft-success">
+                                            <i class="fas fa-check-circle fa-2x text-success mt-2"></i>
+                                        </div>
+                                        <h5 class="fw-bold text-success mb-1" id="successCount">0</h5>
+                                        <p class="text-muted mb-0">Thành công</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <div class="avatar-sm mx-auto mb-3 rounded-circle bg-soft-danger">
+                                            <i class="fas fa-times-circle fa-2x text-danger mt-2"></i>
+                                        </div>
+                                        <h5 class="fw-bold text-danger mb-1" id="errorCount">0</h5>
+                                        <p class="text-muted mb-0">Lỗi</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <div class="avatar-sm mx-auto mb-3 rounded-circle bg-soft-primary">
+                                            <i class="fas fa-tasks fa-2x text-primary mt-2"></i>
+                                        </div>
+                                        <h5 class="fw-bold text-primary mb-1" id="totalCount">0</h5>
+                                        <p class="text-muted mb-0">Tổng đơn hàng</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Danh sách kết quả -->
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-white">
+                                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-content" type="button" role="tab" aria-controls="all-content" aria-selected="true">
+                                            <i class="fas fa-list me-1"></i> Tất cả <span class="badge bg-primary rounded-pill ms-1" id="all-count">0</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="success-tab" data-bs-toggle="tab" data-bs-target="#success-content" type="button" role="tab" aria-controls="success-content" aria-selected="false">
+                                            <i class="fas fa-check-circle me-1"></i> Thành công <span class="badge bg-success rounded-pill ms-1" id="success-count">0</span>
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="error-tab" data-bs-toggle="tab" data-bs-target="#error-content" type="button" role="tab" aria-controls="error-content" aria-selected="false">
+                                            <i class="fas fa-times-circle me-1"></i> Lỗi <span class="badge bg-danger rounded-pill ms-1" id="error-count">0</span>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-body">
+                                <div class="tab-content">
+                                    <!-- Tab Tất cả -->
+                                    <div class="tab-pane fade show active" id="all-content" role="tabpanel" aria-labelledby="all-tab">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th scope="col">#</th>
+                                                        <th scope="col">Mã đơn hàng</th>
+                                                        <th scope="col">Người nhận</th>
+                                                        <th scope="col">Trạng thái trước</th>
+                                                        <th scope="col">Trạng thái mới</th>
+                                                        <th scope="col">Kết quả</th>
+                                                        <th scope="col">Ghi chú</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="all-results">
+                                                    <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Tab Thành công -->
+                                    <div class="tab-pane fade" id="success-content" role="tabpanel" aria-labelledby="success-tab">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th scope="col">#</th>
+                                                        <th scope="col">Mã đơn hàng</th>
+                                                        <th scope="col">Người nhận</th>
+                                                        <th scope="col">Trạng thái trước</th>
+                                                        <th scope="col">Trạng thái mới</th>
+                                                        <th scope="col">Ghi chú</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="success-results">
+                                                    <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Tab Lỗi -->
+                                    <div class="tab-pane fade" id="error-content" role="tabpanel" aria-labelledby="error-tab">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th scope="col">#</th>
+                                                        <th scope="col">Mã đơn hàng</th>
+                                                        <th scope="col">Người nhận</th>
+                                                        <th scope="col">Trạng thái</th>
+                                                        <th scope="col">Lỗi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="error-results">
+                                                    <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Đóng</button>
                     </div>
                 </div>
             </div>
@@ -241,7 +383,7 @@
                                                             </p>
                                                         </div>
                                                         <div>
-                                                            {!! getOrderStatusBadge($order->order_status) !!}
+                                                            <span role="status">{!! getOrderStatusBadge($order->order_status) !!}</span>
                                                         </div>
                                                     </div>
                                                     
@@ -382,9 +524,20 @@
 
 @section('JS')
 <script>
+    // Định nghĩa biến toàn cục ở đầu file
+    const BASE_URL = window.location.origin;
+    let CSRF_TOKEN;
+    
     // Đảm bảo DOM đã sẵn sàng
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM đã sẵn sàng, bắt đầu khởi tạo JavaScript');
+        
+        // Lấy CSRF token từ meta tag
+        CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
+        // Ghi log để debug
+        console.log('BASE_URL:', BASE_URL);
+        
         initOrderBulkActions();
     });
     
@@ -573,6 +726,387 @@
             selectedOrdersContainer.appendChild(input);
             selectedOrdersContainer.appendChild(statusInput);
         });
+    }
+    
+    // Xử lý submit form cập nhật trạng thái hàng loạt bằng AJAX
+    document.getElementById('submitBulkUpdate')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        try {
+            const form = document.getElementById('bulkUpdateForm');
+            if (!form) {
+                throw new Error('Không tìm thấy form cập nhật trạng thái');
+            }
+            
+            const selectedStatus = document.getElementById('bulkOrderStatus')?.value;
+            
+            if (!selectedStatus) {
+                Swal.fire({
+                    title: 'Lỗi!',
+                    text: 'Vui lòng chọn trạng thái mới.',
+                    icon: 'error',
+                    confirmButtonText: 'Đóng'
+                });
+                return;
+            }
+            
+            // Lấy dữ liệu từ form
+            const formData = new FormData(form);
+            
+            // Hiển thị loading
+            Swal.fire({
+                title: 'Đang xử lý...',
+                html: 'Vui lòng đợi trong giây lát...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            console.log('Gửi request đến:', form.action);
+            
+            // Gửi AJAX request
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': CSRF_TOKEN || ''
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Đóng Swal
+                Swal.close();
+                
+                if (!data || !data.success) {
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: data?.message || 'Đã xảy ra lỗi khi cập nhật trạng thái.',
+                        icon: 'error',
+                        confirmButtonText: 'Đóng'
+                    });
+                    return;
+                }
+                
+                // Cập nhật UI với kết quả
+                displayResults(data);
+                
+                // Ẩn modal cập nhật trạng thái
+                try {
+                    const bulkUpdateModalEl = document.getElementById('bulkUpdateModal');
+                    if (bulkUpdateModalEl) {
+                        const bulkUpdateModal = bootstrap.Modal.getInstance(bulkUpdateModalEl);
+                        if (bulkUpdateModal) {
+                            bulkUpdateModal.hide();
+                        } else {
+                            // Nếu không lấy được instance, thử tạo mới
+                            new bootstrap.Modal(bulkUpdateModalEl).hide();
+                        }
+                    }
+                } catch (modalError) {
+                    console.error('Lỗi khi đóng modal:', modalError);
+                    // Thử dùng jQuery nếu có
+                    if (typeof $ !== 'undefined') {
+                        $('#bulkUpdateModal').modal('hide');
+                    }
+                }
+                
+                // Hiển thị modal kết quả
+                try {
+                    const resultModalElement = document.getElementById('resultModal');
+                    if (resultModalElement) {
+                        let resultModal;
+                        try {
+                            // Thử lấy instance
+                            resultModal = bootstrap.Modal.getInstance(resultModalElement);
+                            if (!resultModal) {
+                                // Nếu không có, tạo mới
+                                resultModal = new bootstrap.Modal(resultModalElement);
+                            }
+                            resultModal.show();
+                        } catch (bootstrapError) {
+                            console.error('Lỗi bootstrap khi hiển thị modal:', bootstrapError);
+                            // Thử tạo modal theo cách khác
+                            if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !== 'undefined') {
+                                new bootstrap.Modal(resultModalElement).show();
+                            } else if (typeof $ !== 'undefined') {
+                                $('#resultModal').modal('show');
+                            }
+                        }
+                    } else {
+                        console.error('Không tìm thấy modal kết quả');
+                        // Hiển thị kết quả bằng Swal
+                        Swal.fire({
+                            title: 'Thành công!',
+                            text: `Đã cập nhật ${data.successCount} đơn hàng thành công, ${data.errorCount} đơn hàng lỗi.`,
+                            icon: 'success',
+                            confirmButtonText: 'Đóng'
+                        });
+                    }
+                } catch (modalError) {
+                    console.error('Lỗi khi hiển thị modal kết quả:', modalError);
+                    // Thông báo thành công dù không hiển thị được modal
+                    Swal.fire({
+                        title: 'Thành công!',
+                        text: `Đã cập nhật ${data.successCount} đơn hàng thành công, ${data.errorCount} đơn hàng lỗi.`,
+                        icon: 'success',
+                        confirmButtonText: 'Đóng'
+                    });
+                }
+                
+                // Cập nhật lại trạng thái đơn hàng trên UI
+                updateOrderStatusUI(data.results);
+            })
+            .catch(error => {
+                console.error('Lỗi:', error);
+                Swal.fire({
+                    title: 'Lỗi!',
+                    text: 'Đã xảy ra lỗi khi cập nhật trạng thái: ' + error.message,
+                    icon: 'error',
+                    confirmButtonText: 'Đóng'
+                });
+            });
+        } catch (error) {
+            console.error('Lỗi khi xử lý form:', error);
+            Swal.fire({
+                title: 'Lỗi!',
+                text: 'Đã xảy ra lỗi: ' + error.message,
+                icon: 'error',
+                confirmButtonText: 'Đóng'
+            });
+        }
+    });
+    
+    // Hàm hiển thị kết quả cập nhật trong modal
+    function displayResults(data) {
+        try {
+            // Ghi log dữ liệu để debug
+            console.log('Kết quả nhận được:', data);
+            
+            // Đảm bảo biến BASE_URL đã được định nghĩa
+            const baseUrl = BASE_URL || window.location.origin;
+            console.log('Base URL đang sử dụng:', baseUrl);
+            
+            // Cập nhật thống kê
+            document.getElementById('successCount').textContent = data.successCount;
+            document.getElementById('errorCount').textContent = data.errorCount;
+            document.getElementById('totalCount').textContent = data.totalCount;
+            
+            // Cập nhật số lượng trên các tab
+            document.getElementById('all-count').textContent = data.totalCount;
+            document.getElementById('success-count').textContent = data.successCount;
+            document.getElementById('error-count').textContent = data.errorCount;
+            
+            // Hiển thị dữ liệu kết quả
+            const allResults = document.getElementById('all-results');
+            const successResults = document.getElementById('success-results');
+            const errorResults = document.getElementById('error-results');
+            
+            // Xóa dữ liệu cũ
+            allResults.innerHTML = '';
+            successResults.innerHTML = '';
+            errorResults.innerHTML = '';
+            
+            // Thêm dữ liệu mới
+            let index = 1;
+            let successIndex = 1;
+            let errorIndex = 1;
+            
+            for (const [orderId, result] of Object.entries(data.results)) {
+                // Tab Tất cả
+                const allRow = document.createElement('tr');
+                const order = result.order || {};
+                
+                if (result.success) {
+                    // Đã chuyển từ 'Đã Xác Nhận' sang 'Đang Chuẩn Bị Hàng'
+                    const statusParts = result.message.match(/Đã chuyển từ '(.*)' sang '(.*)'/);
+                    const oldStatus = statusParts ? statusParts[1] : (order.order_status || 'Không xác định');
+                    const newStatus = statusParts ? statusParts[2] : 'Không xác định';
+                    
+                    // Tạo URL an toàn
+                    let orderUrl = '#';
+                    if (order && order.id) {
+                        orderUrl = `${baseUrl}/admin/orders/${order.id}`;
+                    }
+                    
+                    allRow.innerHTML = `
+                        <td>${index}</td>
+                        <td><a href="${orderUrl}" class="fw-medium">${order.order_code || 'N/A'}</a></td>
+                        <td>${order.user_name || 'N/A'}</td>
+                        <td>${getStatusBadgeHTML(oldStatus)}</td>
+                        <td>${getStatusBadgeHTML(newStatus)}</td>
+                        <td><span class="badge bg-success rounded-pill">Thành công</span></td>
+                        <td><span class="text-success">${result.message}</span></td>
+                    `;
+                    
+                    // Tab Thành công
+                    const successRow = document.createElement('tr');
+                    successRow.innerHTML = `
+                        <td>${successIndex}</td>
+                        <td><a href="${orderUrl}" class="fw-medium">${order.order_code || 'N/A'}</a></td>
+                        <td>${order.user_name || 'N/A'}</td>
+                        <td>${getStatusBadgeHTML(oldStatus)}</td>
+                        <td>${getStatusBadgeHTML(newStatus)}</td>
+                        <td><span class="text-success">${result.message}</span></td>
+                    `;
+                    
+                    successResults.appendChild(successRow);
+                    successIndex++;
+                } else {
+                    // Lỗi
+                    // Tạo URL an toàn
+                    let orderUrl = '#';
+                    if (order && order.id) {
+                        orderUrl = `${baseUrl}/admin/orders/${order.id}`;
+                    }
+                    
+                    allRow.innerHTML = `
+                        <td>${index}</td>
+                        <td>${order && order.order_code ? `<a href="${orderUrl}" class="fw-medium">${order.order_code}</a>` : 'N/A'}</td>
+                        <td>${order && order.user_name ? order.user_name : 'N/A'}</td>
+                        <td>${order && order.order_status ? getStatusBadgeHTML(order.order_status) : '<span class="badge bg-secondary">N/A</span>'}</td>
+                        <td><span class="badge bg-secondary">Không đổi</span></td>
+                        <td><span class="badge bg-danger rounded-pill">Lỗi</span></td>
+                        <td><span class="text-danger">${result.message}</span></td>
+                    `;
+                    
+                    // Tab Lỗi
+                    const errorRow = document.createElement('tr');
+                    errorRow.innerHTML = `
+                        <td>${errorIndex}</td>
+                        <td>${order && order.order_code ? `<a href="${orderUrl}" class="fw-medium">${order.order_code}</a>` : 'N/A'}</td>
+                        <td>${order && order.user_name ? order.user_name : 'N/A'}</td>
+                        <td>${order && order.order_status ? getStatusBadgeHTML(order.order_status) : '<span class="badge bg-secondary">N/A</span>'}</td>
+                        <td><span class="text-danger">${result.message}</span></td>
+                    `;
+                    
+                    errorResults.appendChild(errorRow);
+                    errorIndex++;
+                }
+                
+                allResults.appendChild(allRow);
+                index++;
+            }
+        } catch (e) {
+            console.error('Lỗi khi hiển thị kết quả:', e);
+            Swal.fire({
+                title: 'Lỗi!',
+                text: 'Đã xảy ra lỗi khi hiển thị kết quả: ' + e.message,
+                icon: 'error',
+                confirmButtonText: 'Đóng'
+            });
+        }
+    }
+    
+    // Hàm cập nhật trạng thái đơn hàng trên UI
+    function updateOrderStatusUI(results) {
+        try {
+            if (!results) {
+                console.error('Không có kết quả để cập nhật UI');
+                return;
+            }
+            
+            for (const [orderId, result] of Object.entries(results)) {
+                if (!result.success) continue;
+                
+                // Tìm các card đơn hàng có ID tương ứng và cập nhật trạng thái
+                const orderCheckbox = document.querySelector(`.order-checkbox[value="${orderId}"]`);
+                if (orderCheckbox) {
+                    const orderCard = orderCheckbox.closest('.order-card');
+                    if (orderCard) {
+                        // Cập nhật badge trạng thái
+                        const statusBadge = orderCard.querySelector('.badge[role="status"]');
+                        if (statusBadge) {
+                            statusBadge.outerHTML = getStatusBadgeHTML(result.order.new_status);
+                        } else {
+                            // Nếu không tìm thấy badge bằng role, thử tìm bằng cách khác
+                            const allDivs = orderCard.querySelectorAll('div');
+                            for (const div of allDivs) {
+                                const badges = div.querySelectorAll('.badge');
+                                if (badges.length > 0) {
+                                    // Tìm được div chứa badge
+                                    badges[0].outerHTML = getStatusBadgeHTML(result.order.new_status);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Cập nhật data-current-status cho checkbox
+                        orderCheckbox.dataset.currentStatus = result.order.new_status;
+                        
+                        // Nếu đơn hàng đã chuyển sang Đã Nhận, Hủy Đơn hoặc Hoàn Hàng, vô hiệu hóa checkbox
+                        if (['Đã Nhận', 'Hủy Đơn', 'Hoàn Hàng'].includes(result.order.new_status)) {
+                            orderCheckbox.checked = false;
+                            orderCheckbox.disabled = true;
+                        }
+                    }
+                }
+            }
+            
+            // Cập nhật lại trạng thái nút sau khi thay đổi checkbox
+            setTimeout(() => {
+                try {
+                    updateSelectedOrders();
+                } catch (e) {
+                    console.error('Lỗi khi gọi updateSelectedOrders:', e);
+                }
+            }, 500);
+            
+        } catch (error) {
+            console.error('Lỗi khi cập nhật UI:', error);
+        }
+    }
+    
+    // Hàm tạo HTML cho badge trạng thái
+    function getStatusBadgeHTML(status) {
+        let badgeClass = '';
+        let icon = '';
+        
+        switch (status) {
+            case 'Chưa Xác Nhận':
+                badgeClass = 'bg-warning';
+                icon = '<i class="far fa-clock"></i>';
+                break;
+            case 'Đã Xác Nhận':
+                badgeClass = 'bg-info';
+                icon = '<i class="fas fa-check-circle"></i>';
+                break;
+            case 'Đang Chuẩn Bị Hàng':
+                badgeClass = 'bg-primary';
+                icon = '<i class="fas fa-box"></i>';
+                break;
+            case 'Đang Giao':
+                badgeClass = 'bg-indigo';
+                icon = '<i class="fas fa-truck"></i>';
+                break;
+            case 'Đã Giao':
+                badgeClass = 'bg-success';
+                icon = '<i class="fas fa-check-double"></i>';
+                break;
+            case 'Đã Nhận':
+                badgeClass = 'bg-success';
+                icon = '<i class="fas fa-handshake"></i>';
+                break;
+            case 'Hoàn Hàng':
+                badgeClass = 'bg-danger';
+                icon = '<i class="fas fa-undo"></i>';
+                break;
+            case 'Hủy Đơn':
+                badgeClass = 'bg-danger';
+                icon = '<i class="fas fa-ban"></i>';
+                break;
+            default:
+                badgeClass = 'bg-secondary';
+                icon = '<i class="fas fa-question-circle"></i>';
+        }
+        
+        return `<span class="badge ${badgeClass} py-2 px-3" role="status">${icon} ${status}</span>`;
     }
 </script>
 @endsection
