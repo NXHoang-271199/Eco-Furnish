@@ -303,7 +303,14 @@ const Header = () => {
                     className="flex items-center gap-2 p-2 rounded-full transition-all hover:bg-gray-100 h-auto"
                   >
                     <Avatar className="h-8 w-8 border-2 border-primary/10 group-hover:border-primary/30 transition-all">
-                      <AvatarImage src={userData.avatar} alt={userData.name} />
+                      <AvatarImage
+                        src={
+                          userData.avatar && !userData.avatar.includes('placeholder.com')
+                            ? userData.avatar
+                            : "/images/avatarEmpty/avatarUser.png"
+                        }
+                        alt={userData.name}
+                      />
                       <AvatarFallback>
                         {userData.name ? userData.name.charAt(0) : "U"}
                       </AvatarFallback>
@@ -322,7 +329,11 @@ const Header = () => {
                 <DropdownMenuContent className="w-56 mt-1" align="end">
                   <DropdownMenuLabel className="flex items-start gap-3">
                     <img
-                      src={userData.avatar}
+                      src={
+                        userData.avatar && !userData.avatar.includes('placeholder.com')
+                          ? userData.avatar
+                          : "/images/avatarEmpty/avatarUser.png"
+                      }
                       alt="Avatar"
                       width={32}
                       height={32}

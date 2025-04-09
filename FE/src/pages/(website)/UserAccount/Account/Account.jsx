@@ -501,7 +501,14 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
                     </div>
                   ) : (
                     <>
-                      <AvatarImage src={avatar} alt={user.name} />
+                      <AvatarImage
+                        src={
+                          avatar && !avatar.includes('placeholder.com')
+                            ? avatar
+                            : "/images/avatarEmpty/avatarUser.png"
+                        }
+                        alt={user.name}
+                      />
                       <AvatarFallback className="text-2xl">
                         {user.name ? user.name.charAt(0) : "U"}
                       </AvatarFallback>
