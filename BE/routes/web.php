@@ -155,6 +155,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['permission:view-orders'])->group(function () {
             Route::resource('orders', OrderController::class);
             Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
+            Route::post('orders/bulk-update-status', [OrderController::class, 'bulkUpdateStatus'])->name('orders.bulkUpdateStatus');
             Route::get('orders/{order}/detail', [OrderController::class, 'show'])->name('orders.detail');
             Route::post('/orders/{orderId}/refund/approve/{refundRequestId}', [OrderController::class, 'approveRefundRequest'])->name('order.refund.approve');
             Route::post('/orders/{orderId}/refund/reject/{refundRequestId}', [OrderController::class, 'rejectRefundRequest'])->name('order.refund.reject');

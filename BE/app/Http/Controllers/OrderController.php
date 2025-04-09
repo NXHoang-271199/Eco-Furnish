@@ -258,4 +258,102 @@ class OrderController extends Controller
 
         return redirect()->route('orders.index')->with('success', 'Yêu cầu hoàn hàng đã bị từ chối.');
     }
+
+    /**
+     * Cập nhật trạng thái cho nhiều đơn hàng cùng lúc
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $orderIds = $request->input('order_ids', []);
+        $newStatus = $request->input('order_status');
+        $currentStatuses = $request->input('current_statuses', []);
+        
+        if (empty($orderIds)) {
+            return redirect()->route('orders.index')->with('error', 'Không có đơn hàng nào được chọn.');
+        }
+
+        $successCount = 0;
+        $errorCount = 0;
+        $results = [];
+
+        // Xử lý từng đơn hàng
+        foreach ($orderIds as $orderId) {
+            try {
+                $order = Order::with('orderItems')->findOrFail($orderId);
+                $currentStatus = $currentStatuses[$orderId] ?? null;
+
+                // Kiểm tra nếu trạng thái hiện tại khác với trạng thái đã lưu (có thể đã bị thay đổi)
+                if ($currentStatus !== $order->order_status) {
+                    $results[$orderId] = [
+                        'success' => false,
+                        'order' => $order,
+                        'message' => 'Trạng thái đơn hàng đã bị thay đổi bởi người khác.'
+                    ];
+                    $errorCount++;
+                    continue;
+                }
+
+                // Kiểm tra các chuyển đổi trạng thái hợp lệ
+                $validTransitions = [
+                    'Chưa Xác Nhận' => ['Đã Xác Nhận', 'Hủy Đơn'],
+                    'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng', 'Hủy Đơn'],
+                    'Đang Chuẩn Bị Hàng' => ['Đang Giao'],
+                    'Đang Giao' => ['Đã Giao'],
+                    'Đã Giao' => ['Đã Nhận', 'Hoàn Hàng'],
+                    'Đã Nhận' => ['Hoàn Hàng']
+                ];
+
+                if (!in_array($newStatus, $validTransitions[$currentStatus] ?? [])) {
+                    $results[$orderId] = [
+                        'success' => false,
+                        'order' => $order,
+                        'message' => "Không thể chuyển từ '$currentStatus' sang '$newStatus'."
+                    ];
+                    $errorCount++;
+                    continue;
+                }
+
+                DB::beginTransaction();
+                
+                // Nếu trạng thái chuyển sang "Hủy Đơn" hoặc "Hoàn Hàng", hoàn lại số lượng sản phẩm
+                if (in_array($newStatus, ['Hủy Đơn', 'Hoàn Hàng'])) {
+                    foreach ($order->orderItems as $item) {
+                        if ($item->product_variant_id) {
+                            ProductVariant::where('id', $item->product_variant_id)->increment('quantity', $item->quantity);
+                        } else {
+                            Product::where('id', $item->product_id)->increment('quantity', $item->quantity);
+                        }
+                    }
+                }
+
+                // Cập nhật trạng thái đơn hàng
+                $order->update(['order_status' => $newStatus]);
+                
+                DB::commit();
+                
+                $results[$orderId] = [
+                    'success' => true,
+                    'order' => $order,
+                    'message' => "Đã chuyển từ '$currentStatus' sang '$newStatus'."
+                ];
+                $successCount++;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $results[$orderId] = [
+                    'success' => false,
+                    'order' => $order ?? null,
+                    'message' => 'Lỗi: ' . $e->getMessage()
+                ];
+                $errorCount++;
+            }
+        }
+
+        // Hiển thị kết quả
+        return view('admins.orders.bulk-update-result', [
+            'results' => $results,
+            'successCount' => $successCount,
+            'errorCount' => $errorCount,
+            'totalCount' => count($orderIds)
+        ]);
+    }
 }

@@ -4,6 +4,49 @@
     Quản lý đơn hàng
 @endsection
 
+@section('CSS')
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    
+    .form-check-input:not(:disabled) {
+        cursor: pointer;
+    }
+    
+    /* Đảm bảo nút cập nhật trạng thái không bị mờ khi đã chọn checkbox */
+    #btnBulkUpdateStatus:not(:disabled) {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+    
+    /* Làm rõ trạng thái checkbox đã chọn */
+    .form-check-input:checked {
+        background-color: #0d6efd !important;
+        border-color: #0d6efd !important;
+    }
+    
+    /* Tăng vùng click cho checkbox */
+    .form-check-label {
+        padding: 8px;
+        margin-left: -8px;
+        display: inline-block;
+    }
+    
+    /* Hiệu ứng hover cho checkbox */
+    .form-check:hover .form-check-input:not(:checked):not(:disabled) {
+        border-color: #0d6efd;
+    }
+    
+    /* Style cho "Chọn tất cả" */
+    .select-all-checkbox:checked {
+        background-color: #0d6efd !important;
+        border-color: #0d6efd !important;
+    }
+</style>
+@endsection
+
 @section('content')
     <div class="container-fluid">
         <!-- Page Header -->
@@ -25,21 +68,71 @@
         <!-- Search Form with Modern Design -->
         <div class="card shadow-sm mb-4 border-0 rounded-lg overflow-hidden">
             <div class="card-body">
-                <form action="{{ route('orders.index') }}" method="GET">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0">
-                            <i class="fas fa-search text-muted"></i>
-                        </span>
-                        <input type="text" name="search" class="form-control border-start-0 ps-0"
-                            placeholder="Tìm kiếm theo mã đơn hàng hoặc tên người nhận"
-                            value="{{ request()->input('search') }}">
-                        <button type="submit" class="btn btn-primary px-4">
-                            <span class="d-none d-md-inline-block">Tìm kiếm</span>
-                            <i class="fas fa-search d-inline-block d-md-none"></i>
+                <div class="row">
+                    <div class="col-md-8">
+                        <form action="{{ route('orders.index') }}" method="GET">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" name="search" class="form-control border-start-0 ps-0"
+                                    placeholder="Tìm kiếm theo mã đơn hàng hoặc tên người nhận"
+                                    value="{{ request()->input('search') }}">
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <span class="d-none d-md-inline-block">Tìm kiếm</span>
+                                    <i class="fas fa-search d-inline-block d-md-none"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button id="btnBulkUpdateStatus" class="btn btn-success fw-medium" data-bs-toggle="modal" data-bs-target="#bulkUpdateModal" data-action="update-bulk-status" disabled>
+                            <i class="fas fa-tasks me-1"></i> Cập nhật trạng thái hàng loạt <span id="selected-count-badge" class="badge bg-light text-dark ms-1 d-none">0</span>
                         </button>
                     </div>
-                </form>
                 </div>
+            </div>
+        </div>
+
+        <!-- Modal cập nhật trạng thái hàng loạt -->
+        <div class="modal fade" id="bulkUpdateModal" tabindex="-1" aria-labelledby="bulkUpdateModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="bulkUpdateModalLabel">Cập nhật trạng thái hàng loạt</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="bulkUpdateForm" action="{{ route('orders.bulkUpdateStatus') }}" method="POST">
+                            @csrf
+                            <div class="form-group mb-3">
+                                <label for="bulkOrderStatus" class="form-label">Chọn trạng thái mới</label>
+                                <select id="bulkOrderStatus" name="order_status" class="form-select" required>
+                                    <option value="">-- Chọn trạng thái --</option>
+                                    <option value="Chưa Xác Nhận">Chưa Xác Nhận</option>
+                                    <option value="Đã Xác Nhận">Đã Xác Nhận</option>
+                                    <option value="Đang Chuẩn Bị Hàng">Đang Chuẩn Bị Hàng</option>
+                                    <option value="Đang Giao">Đang Giao</option>
+                                    <option value="Đã Giao">Đã Giao</option>
+                                    <option value="Đã Nhận">Đã Nhận</option>
+                                    <option value="Hoàn Hàng">Hoàn Hàng</option>
+                                    <option value="Hủy Đơn">Hủy Đơn</option>
+                                </select>
+                            </div>
+                            <div id="selectedOrdersContainer" class="d-none">
+                                <!-- Đây là nơi chứa các input ẩn cho order IDs -->
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> Đã chọn <span id="selectedOrderCount">0</span> đơn hàng
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" form="bulkUpdateForm" class="btn btn-primary">Cập nhật</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Modern Status Tabs -->
@@ -77,6 +170,23 @@
                 <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="pills-{{ Str::slug($status) }}"
                     role="tabpanel" aria-labelledby="pills-{{ Str::slug($status) }}-tab">
                     @if ($orders->count() > 0)
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="card shadow-sm border-0 mb-2">
+                                    <div class="card-body py-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input select-all-checkbox cursor-pointer" type="checkbox" 
+                                                id="selectAll-{{ Str::slug($status) }}" 
+                                                data-tab="{{ Str::slug($status) }}">
+                                            <label class="form-check-label cursor-pointer" for="selectAll-{{ Str::slug($status) }}">
+                                                <span class="fw-medium">Chọn tất cả đơn hàng</span>
+                                                <small class="text-muted">(trừ đơn đã hoàn tất/hủy/hoàn hàng)</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-12">
                                 @forelse ($orders as $order)
@@ -85,7 +195,16 @@
                                             <div class="row g-0">
                                                 <!-- Order Image Column -->
                                                 <div class="col-md-2 d-flex align-items-center justify-content-center bg-light p-3">
-                                                @if ($order->orderItems->isNotEmpty())
+                                                    <div class="form-check me-2 cursor-pointer">
+                                                        <label class="form-check-label cursor-pointer w-100">
+                                                            <input class="form-check-input order-checkbox cursor-pointer" type="checkbox" 
+                                                                value="{{ $order->id }}" 
+                                                                data-order-code="{{ $order->order_code }}"
+                                                                data-current-status="{{ $order->order_status }}"
+                                                                {{ $order->order_status === 'Đã Nhận' || $order->order_status === 'Hủy Đơn' || $order->order_status === 'Hoàn Hàng' ? 'disabled' : '' }}>
+                                                        </label>
+                                                    </div>
+                                                    @if ($order->orderItems->isNotEmpty())
                                                         <div class="position-relative">
                                                         <img src="{{ Storage::url($order->orderItems->first()->image_url) }}"
                                                                 class="img-fluid rounded" style="max-height: 120px; object-fit: contain;" alt="Product">
@@ -261,10 +380,31 @@
     </div>
 @endsection
 
-@push('scripts')
+@section('JS')
 <script>
-    // Thêm hiệu ứng khi chuyển tab
+    // Đảm bảo DOM đã sẵn sàng
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM đã sẵn sàng, bắt đầu khởi tạo JavaScript');
+        initOrderBulkActions();
+    });
+    
+    // Đảm bảo cả trang đã tải hoàn toàn (bao gồm cả hình ảnh)
+    window.addEventListener('load', function() {
+        console.log('Trang đã tải hoàn toàn');
+        checkAllCheckboxes();
+    });
+    
+    function checkAllCheckboxes() {
+        // Kiểm tra lại trạng thái checkbox sau khi trang đã tải hoàn toàn
+        const anyChecked = document.querySelector('.order-checkbox:checked');
+        if (anyChecked) {
+            console.log('Có checkbox đã được chọn sau khi trang tải hoàn toàn:', anyChecked);
+            updateSelectedOrders();
+        }
+    }
+    
+    function initOrderBulkActions() {
+        // Thêm hiệu ứng khi chuyển tab
         const tabButtons = document.querySelectorAll('[data-bs-toggle="pill"]');
         
         tabButtons.forEach(button => {
@@ -307,6 +447,132 @@
                 }, 1000);
             });
         });
-    });
+
+        // Xử lý chọn nhiều checkbox và cập nhật trạng thái hàng loạt
+        const bulkUpdateBtn = document.getElementById('btnBulkUpdateStatus');
+        const selectedOrderCount = document.getElementById('selectedOrderCount');
+        const selectedCountBadge = document.getElementById('selected-count-badge');
+        const selectedOrdersContainer = document.getElementById('selectedOrdersContainer');
+        const bulkUpdateForm = document.getElementById('bulkUpdateForm');
+        
+        // Đảm bảo rằng nút bắt đầu với trạng thái vô hiệu hóa
+        if (bulkUpdateBtn) {
+            bulkUpdateBtn.disabled = true;
+            bulkUpdateBtn.classList.add('disabled');
+        }
+        
+        // Sử dụng event delegation thay vì gắn sự kiện trực tiếp vào từng checkbox
+        document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList.contains('order-checkbox')) {
+                // Nếu người dùng click vào checkbox, cập nhật trạng thái
+                setTimeout(updateSelectedOrders, 50);
+            }
+        });
+        
+        // Cũng xử lý sự kiện change cho những checkbox có thể được chọn bằng cách khác
+        document.addEventListener('change', function(event) {
+            if (event.target && event.target.classList.contains('order-checkbox')) {
+                setTimeout(updateSelectedOrders, 50);
+            }
+        });
+        
+        // Xử lý nút "Chọn tất cả"
+        document.querySelectorAll('.select-all-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const tabId = this.dataset.tab;
+                const isChecked = this.checked;
+                
+                // Tìm tab hiện tại
+                const tabPane = document.getElementById('pills-' + tabId);
+                if (!tabPane) return;
+                
+                // Chọn/bỏ chọn tất cả checkbox trong tab, trừ những đơn đã hoàn tất/hủy/hoàn hàng
+                tabPane.querySelectorAll('.order-checkbox:not(:disabled)').forEach(orderCheckbox => {
+                    orderCheckbox.checked = isChecked;
+                });
+                
+                // Cập nhật trạng thái
+                setTimeout(updateSelectedOrders, 50);
+            });
+        });
+        
+        // Thêm sự kiện cho các tab để đảm bảo cập nhật trạng thái nút khi chuyển tab
+        document.querySelectorAll('[data-bs-toggle="pill"]').forEach(tabButton => {
+            tabButton.addEventListener('shown.bs.tab', function () {
+                // Đợi một chút để DOM cập nhật sau khi chuyển tab
+                setTimeout(updateSelectedOrders, 300);
+            });
+        });
+        
+        // Kiểm tra trạng thái checkbox ngay khi trang đã khởi tạo
+        setTimeout(updateSelectedOrders, 500);
+    }
+    
+    // Cập nhật số lượng đơn hàng đã chọn và kích hoạt/vô hiệu hóa nút cập nhật hàng loạt
+    function updateSelectedOrders() {
+        const bulkUpdateBtn = document.getElementById('btnBulkUpdateStatus');
+        const selectedOrderCount = document.getElementById('selectedOrderCount');
+        const selectedCountBadge = document.getElementById('selected-count-badge');
+        const selectedOrdersContainer = document.getElementById('selectedOrdersContainer');
+        
+        if (!bulkUpdateBtn || !selectedOrdersContainer) {
+            console.error('Không tìm thấy các phần tử cần thiết');
+            return;
+        }
+        
+        const selectedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+        const count = selectedCheckboxes.length;
+        
+        console.log('Số lượng đơn hàng đã chọn:', count); // Debug log
+        
+        // Cập nhật số lượng đã chọn trong modal
+        if (selectedOrderCount) {
+            selectedOrderCount.textContent = count;
+        }
+        
+        // Cập nhật badge trên nút
+        if (selectedCountBadge) {
+            selectedCountBadge.textContent = count;
+            if (count > 0) {
+                selectedCountBadge.classList.remove('d-none');
+            } else {
+                selectedCountBadge.classList.add('d-none');
+            }
+        }
+        
+        // Kích hoạt/vô hiệu hóa nút cập nhật hàng loạt
+        if (count > 0) {
+            bulkUpdateBtn.disabled = false;
+            bulkUpdateBtn.classList.remove('disabled');
+            bulkUpdateBtn.classList.add('btn-success');
+            bulkUpdateBtn.classList.remove('btn-secondary');
+            console.log('Nút đã được kích hoạt');
+        } else {
+            bulkUpdateBtn.disabled = true;
+            bulkUpdateBtn.classList.add('disabled');
+            bulkUpdateBtn.classList.remove('btn-success');
+            bulkUpdateBtn.classList.add('btn-secondary');
+            console.log('Nút đã bị vô hiệu hóa');
+        }
+        
+        // Xóa tất cả input ẩn cũ
+        selectedOrdersContainer.innerHTML = '';
+        
+        // Thêm input ẩn cho mỗi đơn hàng đã chọn
+        selectedCheckboxes.forEach(checkbox => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'order_ids[]';
+            input.value = checkbox.value;
+            
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'current_statuses[' + checkbox.value + ']';
+            statusInput.value = checkbox.dataset.currentStatus;
+            
+            selectedOrdersContainer.appendChild(input);
+            selectedOrdersContainer.appendChild(statusInput);
+        });
+    }
 </script>
-@endpush
+@endsection
