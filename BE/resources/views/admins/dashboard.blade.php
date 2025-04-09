@@ -21,6 +21,9 @@
         }
     }
 </style>
+<!-- Import ApexCharts -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.35.3/dist/apexcharts.min.css">
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.3/dist/apexcharts.min.js"></script>
 @endsection
 
 {{-- @section: dùng để chị định phần nội dụng được hiển thị --}}
@@ -75,15 +78,14 @@
                                         <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Tổng doanh thu</p>
                                     </div>
                                     <div class="flex-shrink-0">
-                                        <h5 class="text-success fs-14 mb-0">
-                                            <i class="ri-arrow-right-up-line fs-13 align-middle"></i> +16.24 %
+                                        <h5 class="{{ $earningsPercentage >= 0 ? 'text-success' : 'text-danger' }} fs-14 mb-0">
+                                            <i class="ri-arrow-{{ $earningsPercentage >= 0 ? 'right-up' : 'right-down' }}-line fs-13 align-middle"></i> {{ $earningsPercentage >= 0 ? '+' : '' }}{{ number_format($earningsPercentage, 2) }} %
                                         </h5>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-end justify-content-between mt-4">
                                     <div>
-                                        <h4 class="fs-22 fw-semibold ff-secondary mb-4">$<span class="counter-value" data-target="{{ $totalEarnings ?? 0 }}">0</span></h4>
-                                        <a href="#" class="text-decoration-underline">Xem doanh thu ròng</a>
+                                        <h4 class="fs-22 fw-semibold ff-secondary mb-4"><span class="counter-value" data-target="{{ $totalEarnings ?? 0 }}">0</span> ₫</h4>
                                     </div>
                                     <div class="avatar-sm flex-shrink-0">
                                         <span class="avatar-title bg-success-subtle rounded fs-3">
@@ -104,15 +106,14 @@
                                      <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Đơn hàng</p>
                                     </div>
                                     <div class="flex-shrink-0">
-                                        <h5 class="text-danger fs-14 mb-0">
-                                            <i class="ri-arrow-right-down-line fs-13 align-middle"></i> -3.57 %
+                                        <h5 class="{{ $ordersPercentage >= 0 ? 'text-success' : 'text-danger' }} fs-14 mb-0">
+                                            <i class="ri-arrow-{{ $ordersPercentage >= 0 ? 'right-up' : 'right-down' }}-line fs-13 align-middle"></i> {{ $ordersPercentage >= 0 ? '+' : '' }}{{ number_format($ordersPercentage, 2) }} %
                                         </h5>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-end justify-content-between mt-4">
                                     <div>
                                         <h4 class="fs-22 fw-semibold ff-secondary mb-4"><span class="counter-value" data-target="{{ $totalOrders ?? 0 }}">0</span></h4>
-                                        <a href="#" class="text-decoration-underline">Xem tất cả đơn hàng</a>
                                     </div>
                                     <div class="avatar-sm flex-shrink-0">
                                         <span class="avatar-title bg-info-subtle rounded fs-3">
@@ -133,15 +134,14 @@
                                         <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Khách hàng</p>
                                     </div>
                                     <div class="flex-shrink-0">
-                                        <h5 class="text-success fs-14 mb-0">
-                                            <i class="ri-arrow-right-up-line fs-13 align-middle"></i> +29.08 %
+                                        <h5 class="{{ $customersPercentage >= 0 ? 'text-success' : 'text-danger' }} fs-14 mb-0">
+                                            <i class="ri-arrow-{{ $customersPercentage >= 0 ? 'right-up' : 'right-down' }}-line fs-13 align-middle"></i> {{ $customersPercentage >= 0 ? '+' : '' }}{{ number_format($customersPercentage, 2) }} %
                                         </h5>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-end justify-content-between mt-4">
                                     <div>
                                         <h4 class="fs-22 fw-semibold ff-secondary mb-4"><span class="counter-value" data-target="{{ $totalCustomers ?? 0 }}">0</span></h4>
-                                        <a href="#" class="text-decoration-underline">Xem chi tiết</a>
                                     </div>
                                     <div class="avatar-sm flex-shrink-0">
                                         <span class="avatar-title bg-warning-subtle rounded fs-3">
@@ -213,28 +213,28 @@
                                 <div class="row g-0 text-center">
                                     <div class="col-6 col-sm-3">
                                         <div class="p-3 border border-dashed border-start-0">
-                                            <h5 class="mb-1"><span class="counter-value" data-target="7585">0</span></h5>
+                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'orders')) : 0 }}">0</span></h5>
                                             <p class="text-muted mb-0">Đơn hàng</p>
                                         </div>
                                     </div>
                                     <!--end col-->
                                     <div class="col-6 col-sm-3">
                                         <div class="p-3 border border-dashed border-start-0">
-                                            <h5 class="mb-1">$<span class="counter-value" data-target="22.89">0</span>k</h5>
+                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'revenue')) : 0 }}">0</span> ₫</h5>
                                             <p class="text-muted mb-0">Doanh thu</p>
                                         </div>
                                     </div>
                                     <!--end col-->
                                     <div class="col-6 col-sm-3">
                                         <div class="p-3 border border-dashed border-start-0">
-                                            <h5 class="mb-1"><span class="counter-value" data-target="367">0</span></h5>
+                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'refunds')) : 0 }}">0</span></h5>
                                             <p class="text-muted mb-0">Hoàn tiền</p>
                                         </div>
                                     </div>
                                     <!--end col-->
                                     <div class="col-6 col-sm-3">
                                         <div class="p-3 border border-dashed border-start-0 border-end-0">
-                                            <h5 class="mb-1 text-success"><span class="counter-value" data-target="18.92">0</span>%</h5>
+                                            <h5 class="mb-1 text-success"><span class="counter-value" data-target="18">0</span>%</h5>
                                             <p class="text-muted mb-0">Tỷ lệ chuyển đổi</p>
                                         </div>
                                     </div>
@@ -244,7 +244,7 @@
 
                             <div class="card-body p-0 pb-2">
                                 <div class="w-100">
-                                    <div id="customer_impression_charts" data-colors='["--vz-primary", "--vz-success", "--vz-danger"]' data-colors-minimal='["--vz-light", "--vz-primary", "--vz-info"]' data-colors-saas='["--vz-success", "--vz-info", "--vz-danger"]' data-colors-modern='["--vz-warning", "--vz-primary", "--vz-success"]' data-colors-interactive='["--vz-info", "--vz-primary", "--vz-danger"]' data-colors-creative='["--vz-warning", "--vz-primary", "--vz-danger"]' data-colors-corporate='["--vz-light", "--vz-primary", "--vz-secondary"]' data-colors-galaxy='["--vz-secondary", "--vz-primary", "--vz-primary-rgb, 0.50"]' data-colors-classic='["--vz-light", "--vz-primary", "--vz-secondary"]' data-colors-vintage='["--vz-success", "--vz-primary", "--vz-secondary"]' class="apex-charts" dir="ltr"></div>
+                                    <div id="customer_impression_charts" class="apex-charts" dir="ltr"></div>
                                 </div>
                             </div><!-- end card body -->
                         </div><!-- end card -->
@@ -294,19 +294,59 @@
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <h5 class="fs-14 my-1 fw-normal">${{ $product->price }}</h5>
+                                                    @php
+                                                        // Lưu giá trị từ dữ liệu gốc
+                                                        $originalTotalSold = $product->total_sold ?? 0;
+                                                        $originalTotalAmount = $product->total_amount ?? 0;
+                                                        
+                                                        // Kiểm tra xem sản phẩm có biến thể không
+                                                        $hasVariants = false;
+                                                        $priceRange = '';
+                                                        $productStock = 0;
+                                                        
+                                                        try {
+                                                            // Lưu ý rằng dòng này sẽ ghi đè biến $product gốc
+                                                            $productDetails = App\Models\Product::with('variants')->find($product->id);
+                                                            if ($productDetails) {
+                                                                $variants = $productDetails->variants;
+                                                                $hasVariants = $variants->count() > 0;
+                                                                
+                                                                if ($hasVariants) {
+                                                                    $minPrice = $variants->min('price');
+                                                                    $maxPrice = $variants->max('price');
+                                                                    $productStock = $variants->sum('quantity');
+                                                                    
+                                                                    if ($minPrice != $maxPrice) {
+                                                                        $priceRange = number_format($minPrice, 0, ',', '.') . ' - ' . number_format($maxPrice, 0, ',', '.');
+                                                                    } else {
+                                                                        $priceRange = number_format($minPrice, 0, ',', '.');
+                                                                    }
+                                                                } else {
+                                                                    $priceRange = number_format($productDetails->price, 0, ',', '.');
+                                                                    $productStock = $productDetails->quantity;
+                                                                }
+                                                            } else {
+                                                                $priceRange = number_format($product->price, 0, ',', '.');
+                                                                $productStock = $product->stock ?? 0;
+                                                            }
+                                                        } catch (\Exception $e) {
+                                                            $priceRange = number_format($product->price, 0, ',', '.');
+                                                            $productStock = $product->stock ?? 0;
+                                                        }
+                                                    @endphp
+                                                    <h5 class="fs-14 my-1 fw-normal">{{ $priceRange }} ₫</h5>
                                                     <span class="text-muted">Giá</span>
                                                 </td>
                                                 <td>
-                                                    <h5 class="fs-14 my-1 fw-normal">{{ $product->total_sold }}</h5>
+                                                    <h5 class="fs-14 my-1 fw-normal">{{ $originalTotalSold }}</h5>
                                                     <span class="text-muted">Đơn hàng</span>
                                                 </td>
                                                 <td>
-                                                    <h5 class="fs-14 my-1 fw-normal">{{ $product->stock ?? 'N/A' }}</h5>
+                                                    <h5 class="fs-14 my-1 fw-normal">{{ $productStock }}</h5>
                                                     <span class="text-muted">Tồn kho</span>
                                                 </td>
                                                 <td>
-                                                    <h5 class="fs-14 my-1 fw-normal">${{ $product->total_amount }}</h5>
+                                                    <h5 class="fs-14 my-1 fw-normal">{{ number_format($originalTotalAmount, 0, ',', '.') }} ₫</h5>
                                                     <span class="text-muted">Tổng tiền</span>
                                                 </td>
                                             </tr>
@@ -322,26 +362,45 @@
                                 <div class="align-items-center mt-4 pt-2 justify-content-between row text-center text-sm-start">
                                     <div class="col-sm">
                                         <div class="text-muted">
-                                            Hiển thị <span class="fw-semibold">5</span> trong số <span class="fw-semibold">25</span> kết quả
+                                            Hiển thị <span class="fw-semibold">{{ $bestSellingProducts->count() }}</span> trong số <span class="fw-semibold">{{ $bestSellingProducts->total() }}</span> kết quả
                                         </div>
                                     </div>
-                                    <div class="col-sm-auto  mt-3 mt-sm-0">
+                                    <div class="col-sm-auto mt-3 mt-sm-0">
                                         <ul class="pagination pagination-separated pagination-sm mb-0 justify-content-center">
-                                            <li class="page-item disabled">
-                                                <a href="#" class="page-link">←</a>
-                                            </li>
-                                            <li class="page-item">
-                                                <a href="#" class="page-link">1</a>
-                                            </li>
-                                            <li class="page-item active">
-                                                <a href="#" class="page-link">2</a>
-                                            </li>
-                                            <li class="page-item">
-                                                <a href="#" class="page-link">3</a>
-                                            </li>
-                                            <li class="page-item">
-                                                <a href="#" class="page-link">→</a>
-                                            </li>
+                                            {{-- Previous Page Link --}}
+                                            @if ($bestSellingProducts->onFirstPage())
+                                                <li class="page-item disabled">
+                                                    <span class="page-link">←</span>
+                                                </li>
+                                            @else
+                                                <li class="page-item">
+                                                    <a class="page-link" href="{{ $bestSellingProducts->previousPageUrl() }}" rel="prev">←</a>
+                                                </li>
+                                            @endif
+
+                                            {{-- Pagination Elements --}}
+                                            @foreach ($bestSellingProducts->getUrlRange(1, $bestSellingProducts->lastPage()) as $page => $url)
+                                                @if ($page == $bestSellingProducts->currentPage())
+                                                    <li class="page-item active">
+                                                        <span class="page-link">{{ $page }}</span>
+                                                    </li>
+                                                @else
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                                                    </li>
+                                                @endif
+                                            @endforeach
+
+                                            {{-- Next Page Link --}}
+                                            @if ($bestSellingProducts->hasMorePages())
+                                                <li class="page-item">
+                                                    <a class="page-link" href="{{ $bestSellingProducts->nextPageUrl() }}" rel="next">→</a>
+                                                </li>
+                                            @else
+                                                <li class="page-item disabled">
+                                                    <span class="page-link">→</span>
+                                                </li>
+                                            @endif
                                         </ul>
                                     </div>
                                 </div>
@@ -376,8 +435,8 @@
                                             <tr>
                                                 <td>
                                                     <div class="d-flex align-items-center">
-                                                        <div class="avatar-sm bg-light rounded p-1 me-2">
-                                                            <img src="{{ asset('assets/admins/images/users/avatar-' . ($loop->iteration <= 5 ? $loop->iteration : rand(1, 5)) . '.jpg') }}" alt="" class="img-fluid d-block">
+                                                        <div class="flex-shrink-0 me-2">
+                                                            <img src="{{ $buyer->avatar ? asset('storage/' . $buyer->avatar) : asset('assets/admins/images/users/avatar-' . ($loop->iteration <= 5 ? $loop->iteration : rand(1, 5)) . '.jpg') }}" alt="" class="avatar-xs rounded-circle material-shadow" />
                                                         </div>
                                                         <div>
                                                             <h5 class="fs-14 my-1 fw-medium"><a href="#" class="text-reset">{{ $buyer->name }}</a></h5>
@@ -392,7 +451,7 @@
                                                     <p class="mb-0">{{ $buyer->orders_count }} đơn hàng</p>
                                                 </td>
                                                 <td>
-                                                    <h5 class="fs-14 mb-0">${{ number_format($buyer->total_spent, 2) }}</h5>
+                                                    <h5 class="fs-14 mb-0">{{ number_format($buyer->total_spent, 0, ',', '.') }} ₫</h5>
                                                 </td>
                                                 <td>
                                                     <div class="d-flex align-items-center gap-2">
@@ -428,8 +487,41 @@
                                 <div class="align-items-center mt-4 pt-2 justify-content-between row text-center text-sm-start">
                                     <div class="col-sm">
                                         <div class="text-muted">
-                                            Hiển thị <span class="fw-semibold">{{ count($topBuyers) }}</span> trong số <span class="fw-semibold">{{ $topBuyerStats->total ?? count($topBuyers) }}</span> kết quả
+                                            Hiển thị <span class="fw-semibold">{{ $topBuyers->count() }}</span> trong số <span class="fw-semibold">{{ $topBuyerStats->total }}</span> kết quả
                                         </div>
+                                    </div>
+                                    <div class="col-sm-auto">
+                                        <ul class="pagination pagination-separated pagination-sm justify-content-center justify-content-sm-end mb-0">
+                                            @if($topBuyers->onFirstPage())
+                                                <li class="page-item disabled">
+                                                    <span class="page-link">←</span>
+                                                </li>
+                                            @else
+                                                <li class="page-item">
+                                                    <a class="page-link" href="{{ $topBuyers->previousPageUrl() }}" aria-label="Previous">
+                                                        ←
+                                                    </a>
+                                                </li>
+                                            @endif
+                                            
+                                            @for($i = 1; $i <= $topBuyers->lastPage(); $i++)
+                                                <li class="page-item {{ $i == $topBuyers->currentPage() ? 'active' : '' }}">
+                                                    <a class="page-link" href="{{ $topBuyers->url($i) }}">{{ $i }}</a>
+                                                </li>
+                                            @endfor
+                                            
+                                            @if($topBuyers->hasMorePages())
+                                                <li class="page-item">
+                                                    <a class="page-link" href="{{ $topBuyers->nextPageUrl() }}" aria-label="Next">
+                                                        →
+                                                    </a>
+                                                </li>
+                                            @else
+                                                <li class="page-item disabled">
+                                                    <span class="page-link">→</span>
+                                                </li>
+                                            @endif
+                                        </ul>
                                     </div>
                                 </div>
                                 @endif
@@ -473,14 +565,14 @@
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="flex-shrink-0 me-2">
-                                                            <img src="{{ asset('assets/admins/images/users/avatar-3.jpg') }}" alt="" class="avatar-xs rounded-circle material-shadow" />
+                                                            <img src="{{ $order->user && $order->user->avatar ? asset('storage/' . $order->user->avatar) : asset('assets/admins/images/users/avatar-' . (($loop->iteration % 5) + 1) . '.jpg') }}" alt="" class="avatar-xs rounded-circle material-shadow" />
                                                         </div>
                                                         <div class="flex-grow-1">{{ $order->user_name ?? ($order->user->name ?? 'N/A') }}</div>
                                                     </div>
                                                 </td>
                                                 <td>{{ $order->orderItems->first()->product->name ?? 'Multiple Products' }}</td>
                                                 <td>
-                                                    <span class="text-success">${{ $order->orderItems->sum(function($item) { return $item->price * $item->quantity; }) }}</span>
+                                                    <span class="text-success">{{ number_format($order->orderItems->sum(function($item) { return $item->price * $item->quantity; }), 0, ',', '.') }} ₫</span>
                                                 </td>
                                                 <td>{{ $order->paymentMethod->name ?? 'N/A' }}</td>
                                                 <td>
@@ -499,7 +591,30 @@
                                                     <span class="badge {{ $orderStatusClass }}">{{ ucfirst($order->order_status) }}</span>
                                                 </td>
                                                 <td>
-                                                    <h5 class="fs-14 fw-medium mb-0">4.5<span class="text-muted fs-11 ms-1">({{ rand(10, 100) }} votes)</span></h5>
+                                                    @php
+                                                        $rating = $order->avg_rating ?? 0;
+                                                        $starCount = (int)$rating;
+                                                        $hasHalfStar = $rating - $starCount >= 0.5;
+                                                        $emptyStarCount = 5 - $starCount - ($hasHalfStar ? 1 : 0);
+                                                    @endphp
+                                                    
+                                                    <div>
+                                                        <span class="fs-14 fw-medium">{{ $rating }}</span>
+                                                        <span class="text-warning align-middle fs-11 ms-1">
+                                                            @for($i = 0; $i < $starCount; $i++)
+                                                                <i class="ri-star-fill"></i>
+                                                            @endfor
+                                                            
+                                                            @if($hasHalfStar)
+                                                                <i class="ri-star-half-fill"></i>
+                                                            @endif
+                                                            
+                                                            @for($i = 0; $i < $emptyStarCount; $i++)
+                                                                <i class="ri-star-line"></i>
+                                                            @endfor
+                                                        </span>
+                                                        <span class="text-muted fs-11 ms-1">({{ $order->ratings_count ?? 0 }})</span>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             @empty
@@ -726,6 +841,12 @@
 <script src="https://unpkg.com/file-saver/dist/FileSaver.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Khởi tạo biểu đồ doanh thu
+        initRevenueChart();
+        
+        // Khởi tạo counter cho các số liệu thống kê
+        initCounters();
+        
         // Xử lý nút tạo báo cáo đơn hàng
         document.getElementById('createOrderReport').addEventListener('click', function () {
             const reportType = this.getAttribute('data-report-type');
@@ -771,6 +892,238 @@
 
             input.click();
         });
+        
+        // Hàm khởi tạo counter
+        function initCounters() {
+            const counterElements = document.querySelectorAll('.counter-value');
+            
+            counterElements.forEach(function(element) {
+                const target = parseInt(element.getAttribute('data-target')) || 0;
+                const duration = 2000; // Thời gian hiệu ứng (ms)
+                const frameRate = 30; // Số lần cập nhật mỗi giây
+                const increment = target / (duration / 1000 * frameRate);
+                
+                let current = 0;
+                const timer = setInterval(function() {
+                    current += increment;
+                    
+                    // Cập nhật giá trị hiển thị
+                    if (current >= target) {
+                        // Định dạng số với dấu phân cách hàng nghìn khi đạt giá trị mục tiêu
+                        const formattedValue = formatNumberWithCommas(target);
+                        element.textContent = formattedValue;
+                        clearInterval(timer);
+                    } else {
+                        // Hiển thị số nguyên trong quá trình đếm
+                        element.textContent = Math.floor(current);
+                    }
+                }, 1000 / frameRate);
+            });
+        }
+        
+        // Hàm định dạng số với dấu phân cách hàng nghìn theo chuẩn Việt Nam
+        function formatNumberWithCommas(number) {
+            return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+        
+        // Hàm khởi tạo biểu đồ doanh thu
+        function initRevenueChart() {
+            try {
+                // Lấy dữ liệu cho biểu đồ từ backend
+                const chartData = @json($chartData ?? null);
+                
+                if (!chartData || !chartData.months || !chartData.series) {
+                    console.error('Không có dữ liệu biểu đồ');
+                    return;
+                }
+
+                console.log('Dữ liệu biểu đồ:', chartData);
+                
+                // Cấu hình cho biểu đồ
+                const options = {
+                    series: chartData.series,
+                    chart: {
+                        height: 370,
+                        type: 'line',
+                        stacked: false,
+                        toolbar: {
+                            show: false
+                        }
+                    },
+                    dataLabels: {
+                        enabled: false
+                    },
+                    stroke: {
+                        width: [2, 0, 2],
+                        curve: 'smooth',
+                        dashArray: [0, 0, 4]
+                    },
+                    plotOptions: {
+                        bar: {
+                            columnWidth: '30%',
+                            borderRadius: 4
+                        }
+                    },
+                    colors: ["#3b76e1", "#63ad6f", "#f34e4e"],
+                    fill: {
+                        opacity: [0.2, 1, 0.2],
+                        gradient: {
+                            inverseColors: false,
+                            shade: 'light',
+                            type: "vertical",
+                            opacityFrom: 0.85,
+                            opacityTo: 0.55
+                        }
+                    },
+                    labels: chartData.months,
+                    markers: {
+                        size: 4,
+                        hover: {
+                            sizeOffset: 3
+                        }
+                    },
+                    legend: {
+                        show: true,
+                        position: 'bottom',
+                        horizontalAlign: 'center',
+                        offsetY: 5
+                    },
+                    xaxis: {
+                        type: 'category',
+                        categories: chartData.months,
+                        labels: {
+                            style: {
+                                colors: '#adb5bd',
+                                fontFamily: 'Roboto, sans-serif'
+                            }
+                        },
+                        axisBorder: {
+                            show: false
+                        },
+                        axisTicks: {
+                            show: false
+                        }
+                    },
+                    yaxis: [
+                        {
+                            // Đơn hàng
+                            seriesName: 'Đơn hàng',
+                            opposite: false,
+                            axisTicks: {
+                                show: true
+                            },
+                            axisBorder: {
+                                show: true,
+                                color: '#3b76e1'
+                            },
+                            labels: {
+                                style: {
+                                    colors: '#3b76e1'
+                                },
+                                formatter: function (value) {
+                                    return Math.round(value);
+                                }
+                            },
+                            title: {
+                                text: "Đơn hàng",
+                                style: {
+                                    color: '#3b76e1',
+                                    fontSize: '12px'
+                                }
+                            }
+                        },
+                        {
+                            // Doanh thu
+                            seriesName: 'Doanh thu',
+                            axisTicks: {
+                                show: true
+                            },
+                            axisBorder: {
+                                show: true,
+                                color: '#63ad6f'
+                            },
+                            labels: {
+                                style: {
+                                    colors: '#63ad6f'
+                                },
+                                formatter: function (value) {
+                                    return formatCurrency(value);
+                                }
+                            },
+                            title: {
+                                text: "Doanh thu",
+                                style: {
+                                    color: '#63ad6f',
+                                    fontSize: '12px'
+                                }
+                            }
+                        },
+                        {
+                            // Hoàn tiền
+                            seriesName: 'Hoàn tiền',
+                            opposite: true,
+                            axisTicks: {
+                                show: true
+                            },
+                            axisBorder: {
+                                show: true,
+                                color: '#f34e4e'
+                            },
+                            labels: {
+                                style: {
+                                    colors: '#f34e4e'
+                                }
+                            },
+                            title: {
+                                text: "Hoàn tiền",
+                                style: {
+                                    color: '#f34e4e',
+                                    fontSize: '12px'
+                                }
+                            }
+                        }
+                    ],
+                    grid: {
+                        borderColor: '#f1f1f1',
+                        padding: {
+                            bottom: 15
+                        }
+                    },
+                    tooltip: {
+                        shared: true,
+                        intersect: false,
+                        y: {
+                            formatter: function (value, { seriesIndex, dataPointIndex, w }) {
+                                const seriesName = w.config.series[seriesIndex].name;
+                                
+                                if (seriesName === 'Doanh thu') {
+                                    return formatCurrency(value);
+                                } else if (seriesName === 'Đơn hàng') {
+                                    return value + " đơn";
+                                } else if (seriesName === 'Hoàn tiền') {
+                                    return value + " đơn";
+                                }
+                                return value;
+                            }
+                        }
+                    }
+                };
+                
+                // Khởi tạo biểu đồ
+                const chart = new ApexCharts(document.querySelector("#customer_impression_charts"), options);
+                chart.render();
+                
+                console.log('Biểu đồ đã được khởi tạo');
+            } catch (error) {
+                console.error('Lỗi khởi tạo biểu đồ:', error);
+            }
+        }
+
+        // Hàm định dạng tiền tệ theo chuẩn Việt Nam
+        function formatCurrency(amount) {
+            // Định dạng số tiền với dấu phân cách hàng nghìn theo chuẩn VN
+            return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + ' ₫';
+        }
 
         // Hàm xuất dữ liệu sang Excel với định dạng đẹp sử dụng ExcelJS
         async function exportToExcel(reportType, reportTitle) {

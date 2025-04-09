@@ -895,7 +895,7 @@ const PaymentBuyNow = () => {
                   </div>
                 </div>
               )}
-            </div> // Đóng thẻ div Body Modal
+            </div>
 
             {/* Footer Modal (Chỉ hiển thị khi thêm/sửa) */}
             {(modalMode === 'add' || modalMode === 'edit') && (
