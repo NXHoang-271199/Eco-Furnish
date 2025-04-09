@@ -58,6 +58,11 @@ const SignIn = () => {
         localStorage.setItem("authToken", response.data.data.access_token);
         localStorage.setItem("refreshToken", response.data.data.refresh_token);
         localStorage.setItem("userData", JSON.stringify(response.data.data));
+        
+        // Khởi tạo kết nối socket mới và phát sự kiện auth-change
+        resetSocket();
+        window.dispatchEvent(new Event("auth-change"));
+        
         navigate("/");
       }
     } catch (error) {

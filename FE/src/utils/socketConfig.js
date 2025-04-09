@@ -40,7 +40,7 @@ export const getSocket = () => {
     const sessionId = generateSessionId();
     
     // Khởi tạo socket mới với token
-    socketInstance = io("http://localhost:3002", {
+    socketInstance = io("http://localhost:3001", {
       transports: ["websocket", "polling"],
       auth: { 
         token: token,
@@ -51,9 +51,13 @@ export const getSocket = () => {
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      timeout: 1000, // Tăng timeout lên 10 giây
       // Tắt kết nối tự động để kiểm soát tốt hơn việc kết nối
       autoConnect: false,
-      withCredentials: true // Thêm credentails để hỗ trợ CORS
+      withCredentials: true, // Thêm credentails để hỗ trợ CORS
+      forceNew: true, // Buộc tạo kết nối mới, tránh xung đột với kết nối có sẵn
+      // Ấn định namespace và path để tránh xung đột với Vite HMR
+      path: "/socket.io/"
     });
     
     // Thêm sự kiện trước khi kết nối
@@ -136,8 +140,57 @@ export const closeSocket = () => {
 
 // Khởi tạo socket mới
 export const resetSocket = () => {
-  closeSocket();
-  return getSocket();
+  try {
+    // Đóng kết nối cũ một cách đúng đắn
+    closeSocket();
+    
+    // Chờ 300ms để đảm bảo kết nối cũ được đóng hoàn toàn
+    console.log("🔄 Reset Socket: Khởi tạo lại socket...");
+    
+    // Tạo socket mới
+    const newSocket = getSocket();
+    
+    // Đảm bảo socket kết nối ngay lập tức
+    if (newSocket) {
+      console.log("🔄 Reset Socket: Đảm bảo kết nối được thiết lập ngay lập tức");
+      
+      // Nếu socket chưa kết nối, gọi connect một cách tường minh
+      if (!newSocket.connected) {
+        console.log("🔄 Reset Socket: Gọi connect() vì socket chưa kết nối");
+        newSocket.connect();
+        
+        // Log trạng thái kết nối sau một khoảng thời gian
+        setTimeout(() => {
+          if (newSocket.connected) {
+            console.log("✅ Trạng thái kết nối sau 1s: Đã kết nối thành công");
+          } else {
+            console.log("⚠️ Trạng thái kết nối sau 1s: Vẫn đang kết nối...");
+            
+            // Kiểm tra lại sau 3 giây
+            setTimeout(() => {
+              console.log("🔍 Kiểm tra lại trạng thái kết nối sau 3s:", 
+                newSocket.connected ? "đã kết nối" : "vẫn chưa kết nối");
+              
+              // Thử kết nối lại nếu vẫn chưa thành công
+              if (!newSocket.connected) {
+                console.log("🔄 Thử kết nối lại sau 3s không thành công");
+                newSocket.connect();
+              }
+            }, 3000);
+          }
+        }, 1000);
+      } else {
+        console.log("✅ Socket đã kết nối sẵn, không cần gọi connect()");
+      }
+    } else {
+      console.error("❌ Không thể khởi tạo socket mới trong resetSocket()");
+    }
+    
+    return newSocket;
+  } catch (error) {
+    console.error("❌ Lỗi trong resetSocket():", error);
+    return null;
+  }
 };
 
 // Kiểm tra xem có đang kết nối không

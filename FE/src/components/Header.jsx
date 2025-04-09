@@ -32,6 +32,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import axios from "axios";
+import { closeSocket } from "../utils/socketConfig";
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -151,6 +152,7 @@ const Header = () => {
     } catch (error) {
       console.error("Lỗi khi gọi API logout:", error.response?.data);
     } finally {
+      closeSocket();
       localStorage.clear();
       window.dispatchEvent(new Event("user-logout"));
       navigate("/sign-in");
