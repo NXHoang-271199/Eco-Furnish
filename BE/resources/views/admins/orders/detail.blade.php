@@ -245,10 +245,12 @@
                         <div class="col-md-8 info-value">{{ $order->user?->name ?? 'Khách vãng lai' }}</div>
                     </div>
                     
+                    @if(!empty($order->user?->phone))
                     <div class="row info-row p-2">
                         <div class="col-md-4 info-label">Số điện thoại người đặt</div>
-                        <div class="col-md-8 info-value">{{ $order->user?->phone ?? 'Không có' }}</div>
+                        <div class="col-md-8 info-value">{{ $order->user->phone }}</div>
                     </div>
+                    @endif
                     
                     <div class="row info-row p-2">
                         <div class="col-md-4 info-label">Tài khoản đặt hàng (Email)</div>

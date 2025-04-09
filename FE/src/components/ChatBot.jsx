@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+// import axios from 'axios'; // Xóa import axios mặc định
+import axiosInstance from '../utils/axiosConfig'; // Import axiosInstance đã cấu hình
 import { cn } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -68,7 +69,35 @@ const ChatBubbleMessage = ({
   };
 
   // Hàm theo dõi khi người dùng thêm sản phẩm vào giỏ hàng
-  const handleAddToCart = (product) => {
+  const handleAddToCart = async (event, product) => {
+    event.preventDefault();
+    console.log('Đang thêm vào giỏ:', product);
+
+    try {
+      // Gọi API để thêm vào giỏ hàng sử dụng axiosInstance
+      const response = await axiosInstance.post('/cart/add', { // Sử dụng axiosInstance
+        product_id: product.id,
+        quantity: 1, // Mặc định số lượng là 1
+        // product_variant_id: null // Tạm thời không gửi biến thể
+      }, {
+        headers: {
+          // Giả sử axios đã được cấu hình để gửi token nếu cần
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      console.log('API add to cart response:', response.data);
+      // TODO: Hiển thị thông báo thành công cho người dùng (ví dụ: toast)
+      alert('Đã thêm sản phẩm vào giỏ hàng!'); // Thông báo tạm thời
+
+    } catch (error) {
+      console.error('Lỗi khi thêm vào giỏ hàng:', error.response ? error.response.data : error.message);
+      // TODO: Hiển thị thông báo lỗi cho người dùng
+      alert(`Lỗi: ${error.response?.data?.message || error.message}`); // Thông báo lỗi tạm thời
+    }
+
+    // Vẫn theo dõi hành động
     window.trackAddToCart(product.id, product.name, product.category);
   };
 
@@ -127,7 +156,7 @@ const ChatBubbleMessage = ({
           <a
             href={`/cart/add/${product.id}`}
             className="text-xs text-green-600 hover:text-green-800 flex items-center"
-            onClick={() => handleAddToCart(product)}
+            onClick={(e) => handleAddToCart(e, product)}
           >
             <FaShoppingCart className="mr-1" size={10} />
             Thêm vào giỏ
@@ -388,7 +417,7 @@ const ChatBot = () => {
       const activities = JSON.parse(userActivities);
 
       // Sử dụng đường dẫn tương đối để tận dụng proxy trong Vite
-      const response = await axios.post('/api/chat', {
+      const response = await axiosInstance.post('/chat', {
         message: messageToSend,
         userActivities: activities // Gửi toàn bộ đối tượng activities
       }, {
