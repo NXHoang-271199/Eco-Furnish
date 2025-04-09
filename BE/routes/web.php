@@ -149,7 +149,10 @@ Route::prefix('admin')->group(function () {
                 Route::get('{id}/connect', [PaymentMethodController::class, 'getConnectForm'])->name('connect.form');
                 Route::post('{id}/connect', [PaymentMethodController::class, 'connect'])->name('connect');
                 Route::post('{id}/disconnect', [PaymentMethodController::class, 'disconnect'])->name('disconnect');
+                Route::get('{id}/edit-connection', [PaymentMethodController::class, 'editConnection'])->name('edit_connection.form');
+                Route::post('{id}/update-connection', [PaymentMethodController::class, 'updateConnection'])->name('update_connection');
             });
+
         });
 
         // Orders Management
