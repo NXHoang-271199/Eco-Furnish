@@ -113,12 +113,23 @@ const OrderHistory = () => {
         });
         // console.log("Dữ liệu đơn hàng:", response.data);
 
-        if (response.data.status === "success") {
-          setOrders(response.data.data.data || []);
+        // Kiểm tra phản hồi thành công và có dữ liệu hợp lệ
+        if (response.data?.status === "success" && response.data?.data?.data) {
+          setOrders(response.data.data.data); // Dữ liệu đơn hàng tồn tại
+          setError(null); // Xóa lỗi nếu tải thành công
+        } else if (response.data?.status === "success") {
+          // Phản hồi thành công nhưng không có đơn hàng
+          setOrders([]); // Đặt danh sách rỗng
+          setError(null); // Không có lỗi
+        } else {
+          // Các trường hợp lỗi khác từ API (status không phải success hoặc cấu trúc không đúng)
+          console.error("API trả về lỗi hoặc định dạng không mong đợi:", response.data);
+          setError("Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau."); // Thông báo lỗi chung
         }
       } catch (error) {
         console.error("Lỗi khi lấy đơn hàng:", error);
 
+        // Xử lý lỗi cụ thể (ví dụ: hết hạn token)
         if (
           error.message === "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại"
         ) {
@@ -128,8 +139,18 @@ const OrderHistory = () => {
           setTimeout(() => {
             // navigate("/sign-in");
           }, 2000);
+        } else if (error.response) {
+          // Xử lý lỗi từ phản hồi của server (ví dụ: 4xx, 5xx)
+          console.error("Lỗi phản hồi từ server:", error.response.data);
+          setError(`Lỗi ${error.response.status}: Không thể tải dữ liệu.`);
+        } else if (error.request) {
+          // Lỗi không nhận được phản hồi
+          console.error("Không nhận được phản hồi:", error.request);
+          setError("Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.");
         } else {
-          setError("Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau.");
+          // Lỗi khác khi thiết lập request
+          console.error("Lỗi thiết lập request:", error.message);
+          setError("Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.");
         }
       } finally {
         setLoading(false);
@@ -224,6 +245,8 @@ const OrderHistory = () => {
           <p className="p-4 text-center">Đang tải...</p>
         ) : error ? (
           <p className="p-4 text-center text-red-500">{error}</p>
+        ) : orders.length === 0 ? (
+          <p className="p-4 text-center">Bạn chưa có đơn hàng nào</p>
         ) : filteredOrders.length === 0 ? (
           <p className="p-4 text-center">Không có đơn hàng nào phù hợp.</p>
         ) : (

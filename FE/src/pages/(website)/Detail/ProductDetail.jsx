@@ -669,12 +669,12 @@ const ProductDetail = () => {
       },
       product_variant: selectedVariantId
         ? {
-            id: selectedVariantId,
-            discount_price:
-              selectedVariant?.discount_price ?? selectedVariant?.price, // Lấy giá từ biến thể
-            price: selectedVariant?.price, // Lấy giá gốc từ biến thể
-            variant_details: selectedVariant?.variant_details || {},
-          }
+          id: selectedVariantId,
+          discount_price:
+            selectedVariant?.discount_price ?? selectedVariant?.price, // Lấy giá từ biến thể
+          price: selectedVariant?.price, // Lấy giá gốc từ biến thể
+          variant_details: selectedVariant?.variant_details || {},
+        }
         : null,
       quantity: quantity,
       total_price: selectedVariantId
@@ -1434,10 +1434,17 @@ const ProductDetail = () => {
                         </form>
                       </div>
                     ) : !currentUser ? (
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
-                        <p className="font-medium text-center text-amber-700">
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8 flex flex-col items-center justify-center text-center">
+                        <p className="font-medium text-amber-700 mb-4">
                           Vui lòng đăng nhập để đánh giá sản phẩm
                         </p>
+                        <button
+                          onClick={() => navigate("/sign-in")}
+                          className="px-6 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center"
+                        >
+                          <IoArrowForward className="mr-2" />
+                          Đăng nhập ngay
+                        </button>
                       </div>
                     ) : (
                       <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">

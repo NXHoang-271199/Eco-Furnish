@@ -30,8 +30,8 @@ class UpdateProductRequest extends FormRequest
             'discount_price' => 'nullable|numeric|min:0|max:999999999',
             'quantity' => $hasVariants ? 'nullable|numeric|min:0|max:999999999' : 'required|numeric|min:0|max:999999999',
             'description' => 'nullable|string',
-            'image_thumnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:30720', // 30MB
-            'gallery.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:30720', // 30MB
+            'image_thumnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:30720', // 30MB
+            'gallery.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:30720', // 30MB
             'variants' => 'array|nullable',
             'variants.*.sku' => 'required_with:variants|string|max:50|distinct',
             'variants.*.price' => 'required_with:variants|numeric|min:0|max:999999999',
@@ -63,10 +63,10 @@ class UpdateProductRequest extends FormRequest
             'quantity.min' => 'Số lượng phải lớn hơn hoặc bằng 0',
             'quantity.max' => 'Số lượng không được vượt quá 999,999,999',
             'image_thumnail.image' => 'File phải là ảnh',
-            'image_thumnail.mimes' => 'Ảnh phải có định dạng: jpeg, png, jpg, gif',
+            'image_thumnail.mimes' => 'Ảnh phải có định dạng: jpeg, png, jpg, gif, webp',
             'image_thumnail.max' => 'Kích thước ảnh tối đa là 30MB',
             'gallery.*.image' => 'File phải là ảnh',
-            'gallery.*.mimes' => 'Ảnh phải có định dạng: jpeg, png, jpg, gif',
+            'gallery.*.mimes' => 'Ảnh phải có định dạng: jpeg, png, jpg, gif, webp',
             'gallery.*.max' => 'Kích thước ảnh tối đa là 30MB',
             'variants.*.sku.required_with' => 'Mã SKU là bắt buộc cho mỗi biến thể',
             'variants.*.sku.distinct' => 'Mã SKU không được trùng lặp',

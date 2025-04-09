@@ -172,7 +172,9 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load([
-            'gallery',
+            'gallery' => function($query) {
+                $query->whereNull('deleted_at');
+            },
             'category',
             'variants' => function($query) {
                 $query->whereNull('deleted_at');
@@ -741,10 +743,14 @@ class ProductController extends Controller
                 $sourceImage = imagecreatefromjpeg($image->getPathname());
                 break;
             case 'png':
-                $sourceImage = imagecreatefrompng($image->getPathname());
+                // Thêm @ để ẩn cảnh báo libpng
+                $sourceImage = @imagecreatefrompng($image->getPathname());
                 break;
             case 'gif':
                 $sourceImage = imagecreatefromgif($image->getPathname());
+                break;
+            case 'webp':
+                $sourceImage = imagecreatefromwebp($image->getPathname());
                 break;
             default:
                 // Nếu không phải định dạng hỗ trợ, lưu trực tiếp
