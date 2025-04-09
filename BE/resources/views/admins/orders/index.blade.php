@@ -184,18 +184,19 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-8">
-                <form action="{{ route('orders.index') }}" method="GET">
+                <form action="{{ route('orders.index') }}" method="GET" id="searchForm">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0">
                             <i class="fas fa-search text-muted"></i>
                         </span>
-                        <input type="text" name="search" class="form-control border-start-0 ps-0"
+                        <input type="text" name="search" id="searchInput" class="form-control border-start-0 ps-0"
                             placeholder="Tìm kiếm theo mã đơn, tên người nhận hoặc tên sản phẩm"
-                            value="{{ request()->input('search') }}">
-                        <button type="submit" class="btn btn-primary px-4">
-                            <span class="d-none d-md-inline-block">Tìm kiếm</span>
-                            <i class="fas fa-search d-inline-block d-md-none"></i>
-                        </button>
+                            value="{{ request()->input('search') }}" autocomplete="off">
+                        <span class="input-group-text bg-white border-start-0 d-none" id="searchSpinner">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Đang tìm kiếm...</span>
+                            </div>
+                        </span>
                     </div>
                 </form>
                     </div>
@@ -1246,5 +1247,44 @@
             }
         }
     }
+
+    // Hàm debounce để giới hạn số request tìm kiếm
+    function debounce(func, timeout = 500) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        };
+    }
+
+    // Hàm xử lý tìm kiếm realtime
+    function processSearch() {
+        const searchForm = document.getElementById('searchForm');
+        const searchSpinner = document.getElementById('searchSpinner');
+        
+        if (searchSpinner) {
+            searchSpinner.classList.remove('d-none');
+        }
+        
+        searchForm.submit();
+    }
+
+    // Khởi tạo tìm kiếm realtime
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        
+        if (searchInput) {
+            // Tạo hàm tìm kiếm với debounce
+            const debouncedSearch = debounce(processSearch);
+            
+            // Thêm event listener cho input tìm kiếm
+            searchInput.addEventListener('input', debouncedSearch);
+            
+            // Focus vào ô tìm kiếm nếu có giá trị
+            if (searchInput.value.trim()) {
+                searchInput.focus();
+            }
+        }
+    });
 </script>
 @endsection
