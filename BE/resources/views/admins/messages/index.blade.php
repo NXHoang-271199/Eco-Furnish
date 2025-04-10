@@ -169,12 +169,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 connectionAttempts = 0;
 
                 // Đăng ký là admin
-                socket.emit("adminConnect", { token: adminToken }, (response) => {
-                    if (response && response.success) {
-                    } else {
-                        reconnectWithDelay();
-                    }
-                });
+                // socket.emit("adminConnect", { token: adminToken }, (response) => {
+                //     if (response && response.success) {
+                //     } else {
+                //         reconnectWithDelay();
+                //     }
+                // });
             });
 
             // Thêm hàm retry kết nối

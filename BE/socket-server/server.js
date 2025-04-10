@@ -134,6 +134,28 @@ app.get("/", (req, res) => {
     res.send("🚀 Socket.IO Server is running!");
 });
 
+// Thêm endpoint mới để nhận thông báo từ Laravel và phát tới admin
+app.post("/broadcast-admin", (req, res) => {
+    try {
+        // Kiểm tra dữ liệu gửi đến
+        const { event, data } = req.body;
+        if (!event || !data) {
+            return res.status(400).json({ success: false, message: 'Thiếu thông tin sự kiện hoặc dữ liệu' });
+        }
+
+        console.log(`📣 Nhận yêu cầu phát thông báo '${event}' đến admin:`, data);
+
+        // Phát thông báo tới tất cả admin trong admin_room
+        io.to("admin_room").emit(event, data);
+        console.log(`✅ Đã phát thông báo '${event}' đến tất cả admin online (${onlineAdmins.size})`);
+
+        return res.json({ success: true, message: 'Đã phát thông báo thành công', adminCount: onlineAdmins.size });
+    } catch (error) {
+        console.error("❌ Lỗi khi xử lý broadcast-admin:", error);
+        return res.status(500).json({ success: false, message: 'Lỗi server khi xử lý yêu cầu', error: error.message });
+    }
+});
+
 const server = http.createServer(app);
 
 // Thêm xử lý lỗi cho server
@@ -411,6 +433,40 @@ io.on("connection", (socket) => {
         console.log(`👨‍💼 Admin ${socket.id} (${socket.user.name}) đã kết nối và tham gia phòng admin_room`);
 
         if (callback) callback({ success: true });
+    });
+
+    /**
+     * 📌 Xử lý ping để giữ kết nối
+     */
+    socket.on("ping", (data, callback) => {
+        // Ghi log debug mức thấp
+        if (process.env.DEBUG) {
+            console.log(`🔄 Ping từ ${socket.id} (${socket.user.name || 'Unknown'})`);
+        }
+
+        // Kiểm tra xem socket có trong danh sách admin không
+        if (socket.user && socket.user.role === 'admin') {
+            // Nếu là admin và chưa vào admin_room, thêm vào
+            if (!socket.rooms.has('admin_room')) {
+                socket.join("admin_room");
+                console.log(`⚠️ Phát hiện admin ${socket.id} chưa vào admin_room, đã thêm vào`);
+            }
+
+            // Kiểm tra nếu chưa có trong danh sách onlineAdmins
+            if (!onlineAdmins.has(socket.id)) {
+                const adminData = {
+                    socketId: socket.id,
+                    userId: socket.user.id,
+                    name: socket.user.name
+                };
+                onlineAdmins.set(socket.id, adminData);
+                console.log(`⚠️ Phát hiện admin ${socket.id} không có trong danh sách, đã thêm vào`);
+                console.log(`📊 Tổng số admin online hiện tại: ${onlineAdmins.size}`);
+            }
+        }
+
+        // Phản hồi ping
+        if (callback) callback({ success: true, timestamp: Date.now() });
     });
 
     /**
