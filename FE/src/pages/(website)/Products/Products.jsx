@@ -233,6 +233,19 @@ const Products = () => {
     setFilterOpen(!filterOpen);
   };
 
+  // Hàm kiểm tra sản phẩm còn hàng hay không
+  const checkProductInStock = (product) => {
+    if (!product) return false;
+
+    if (product.has_variants) {
+      // Kiểm tra tổng số lượng các biến thể
+      return product.variants && product.variants.some(variant => variant.quantity > 0);
+    } else {
+      // Kiểm tra số lượng sản phẩm thường
+      return product.quantity > 0;
+    }
+  };
+
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -509,7 +522,7 @@ const Products = () => {
                                 : "https://via.placeholder.com/300x300?text=No+Image"
                             }
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                            className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-700 ${!checkProductInStock(product) ? 'opacity-50' : ''}`}
                             onError={(e) => {
                               const productId = product.id;
                               if (!imageLoadError[productId]) {
@@ -527,11 +540,18 @@ const Products = () => {
                           MỚI
                         </div>
 
+                        {!checkProductInStock(product) && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="bg-red-500 text-white font-bold px-4 py-2 rounded-md text-lg">Hết hàng</span>
+                          </div>
+                        )}
+
                         <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <motion.button
-                            className="bg-white text-amber-500 p-3 rounded-full shadow-md hover:bg-amber-500 hover:text-white transition-all duration-300"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
+                            className={`bg-white text-amber-500 p-3 rounded-full shadow-md hover:bg-amber-500 hover:text-white transition-all duration-300 ${!checkProductInStock(product) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            whileHover={{ scale: checkProductInStock(product) ? 1.1 : 1 }}
+                            whileTap={{ scale: checkProductInStock(product) ? 0.9 : 1 }}
+                            disabled={!checkProductInStock(product)}
                           >
                             <IoCartOutline className="text-xl" />
                           </motion.button>
