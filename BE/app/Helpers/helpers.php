@@ -13,7 +13,7 @@ if (!function_exists('getStatusBadgeColor')) {
             case 'Đang Chuẩn Bị Hàng':
                 return 'primary';
             case 'Đang Giao':
-                return 'indigo'; // Assuming you have an 'indigo' color defined in your CSS/framework
+                return 'warning'; // Assuming you have an 'indigo' color defined in your CSS/framework
             case 'Đã Giao':
             case 'Đã Nhận':
                 return 'success';
@@ -57,19 +57,19 @@ if (!function_exists('getOrderStatusColor')) {
     function getOrderStatusColor($status)
     {
         switch ($status) {
-            case 'Đã giao hàng':
-            case 'Đã nhận hàng':
-            case 'Hoàn thành':
+            case 'Đã Giao':
+            case 'Đã Nhận':
                 return 'success';
-            case 'Đang xử lý':
-            case 'Đang giao hàng':
-            case 'Chờ xác nhận':
+            case 'Đang Chuẩn Bị Hàng':
+            case 'Đang Giao':
+            case 'Đã Xác Nhận':
                 return 'info';
-            case 'Đã hủy':
+            case 'Hủy Đơn':
                 return 'danger';
-            case 'Chờ thanh toán':
-            case 'Đang xác nhận':
+            case 'Chưa Xác Nhận':
                 return 'warning';
+            case 'Hoàn Hàng':
+                return 'secondary';
             default:
                 return 'secondary';
         }

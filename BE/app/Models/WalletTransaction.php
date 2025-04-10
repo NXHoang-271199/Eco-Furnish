@@ -31,4 +31,8 @@ class WalletTransaction extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 }

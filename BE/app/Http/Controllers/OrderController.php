@@ -34,7 +34,7 @@ class OrderController extends Controller
         $search = $request->input('search');
         $perPage = 10;
 
-        $ordersQuery = Order::with(['user', 'paymentMethod', 'voucher', 'refundRequest', 'orderItems.product']) // Thêm 'orderItems.product'
+        $ordersQuery = Order::with(['user', 'paymentMethod', 'voucher', 'refundRequest', 'orderItems.product', 'updatedBy']) // Thêm 'orderItems.product'
             ->where(function ($query) use ($search) {
                 if ($search) {
                     $query->where('order_code', 'like', "%$search%")
@@ -216,7 +216,7 @@ class OrderController extends Controller
                 }
             }
 
-            $order->update(['order_status' => $request->order_status]);
+            $order->update(['order_status' => $request->order_status, 'updated_by' => auth()->id()]);
 
             DB::commit();
             return back()->with('success', 'Cập nhật trạng thái thành công.');
