@@ -4,19 +4,29 @@
         <!-- Dark Logo-->
         <a href="index.html" class="logo logo-dark">
             <span class="logo-sm">
-                <img src="{{ asset('assets/admins/images/logo-sm.png') }}" alt="" height="22">
+                <h4 class="m-0 text-dark d-flex align-items-center justify-content-center mt-3" style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
+                    <span style="color: #4B56D2; font-weight: 700;">Eco</span>
+                </h4>
             </span>
             <span class="logo-lg">
-                <img src="{{ asset('assets/admins/images/logo-dark.png') }}" alt="" height="17">
+                <h3 class="m-0 text-dark d-flex align-items-center justify-content-center py-2 mt-2" style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
+                    <span style="color: #4B56D2; font-weight: 700;">Eco </span>
+                    <span style="font-weight: 500;">Furnish</span>
+                </h3>
             </span>
         </a>
         <!-- Light Logo-->
         <a href="index.html" class="logo logo-light">
             <span class="logo-sm">
-                <img src="{{ asset('assets/admins/images/logo-sm.png') }}" alt="" height="22">
+                <h4 class="m-0 text-white d-flex align-items-center justify-content-center mt-3" style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
+                    <span style="color: #82C3EC; font-weight: 700;">Eco</span>
+                </h4>
             </span>
             <span class="logo-lg">
-                <img src="{{ asset('assets/admins/images/logo-light.png') }}" alt="" height="17">
+                <h3 class="m-0 text-white d-flex align-items-center justify-content-center py-2 mt-2" style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
+                    <span style="color: #82C3EC; font-weight: 700;">Eco</span>
+                    <span style="font-weight: 500;">Furnish</span>
+                </h3>
             </span>
         </a>
     </div>
@@ -241,8 +251,15 @@
                         <i class="ri-image-line"></i> <span data-key="t-advance-ui">Quản lý banner</span>
                     </a>
                 </li>
+                {{-- @if (Auth::user()->hasPermission('view-messages')) --}}
+                    <li class="nav-item">
+                        <a class="nav-link menu-link" href="{{ route('messages.index') }}">
+                            <i class="ri-customer-service-2-line"></i> <span data-key="t-advance-ui">Chat trực tuyến</span>
+                        </a>
+                    </li>
+                {{-- @endif --}}
 
-                <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li>
+                {{-- <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li> --}}
                 @endif
             </ul>
         </div>

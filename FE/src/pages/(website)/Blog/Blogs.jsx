@@ -83,109 +83,26 @@ const Blogs = () => {
           return;
         }
 
-        console.log(
-          "Thực hiện lọc danh mục ID:",
-          categoryInfo.id,
-          "Tên:",
-          categoryInfo.title
-        );
+        const response = await axios.get(`${API_URL}/posts/category/${categoryInfo.slug}`);
+        console.log("Dữ liệu bài viết theo danh mục:", response.data);
 
-        try {
-          // Lấy tất cả bài viết
-          const response = await axios.get(`${API_URL}/posts`);
-          console.log("Đã lấy tất cả bài viết:", response.data);
-
-          if (response.data && response.data.status === "success") {
-            const allPosts = response.data.data || [];
-
-            // Lưu lại danh sách tất cả bài viết để debug
-            console.log("Tổng số bài viết:", allPosts.length);
-
-            // Đặt flag đang xử lý
-            setPosts([]);
-            setError(null);
-
-            // Mảng lưu bài viết đã lọc
-            let filteredPosts = [];
-
-            // Lọc bài viết theo danh mục
-            for (let i = 0; i < allPosts.length; i++) {
-              const post = allPosts[i];
-              try {
-                console.log(
-                  `Kiểm tra bài viết ${i + 1}/${allPosts.length}: ${post.title}`
-                );
-
-                // Lấy chi tiết bài viết để kiểm tra danh mục
-                const detailResponse = await axios.get(
-                  `${API_URL}/posts/${post.slug}`
-                );
-
-                if (
-                  detailResponse.data &&
-                  detailResponse.data.status === "success"
-                ) {
-                  const postDetail = detailResponse.data.data;
-
-                  // Kiểm tra trường category trong chi tiết bài viết
-                  if (postDetail.category && postDetail.category.id) {
-                    console.log(
-                      `Bài viết '${post.title}' thuộc danh mục: ${postDetail.category.title} (ID: ${postDetail.category.id})`
-                    );
-
-                    // So sánh với ID danh mục hiện tại
-                    if (
-                      parseInt(postDetail.category.id) ===
-                      parseInt(categoryInfo.id)
-                    ) {
-                      console.log(
-                        `Thêm bài viết '${post.title}' vào danh sách hiển thị`
-                      );
-                      filteredPosts.push(post);
-                    }
-                  } else {
-                    console.log(
-                      `Bài viết '${post.title}' không có thông tin danh mục`
-                    );
-                  }
-                }
-              } catch (error) {
-                console.error(
-                  `Lỗi khi lấy chi tiết bài viết ${post.slug}:`,
-                  error
-                );
-              }
-            }
-
-            console.log(
-              `Đã tìm thấy ${filteredPosts.length} bài viết thuộc danh mục ${categoryInfo.title}`
-            );
-
-            if (filteredPosts.length === 0) {
-              setError(
-                `Không có bài viết nào trong danh mục "${categoryInfo.title}"`
-              );
-            }
-
-            setPosts(filteredPosts);
-          } else {
-            console.error("API trả về cấu trúc dữ liệu không đúng");
-            setPosts([]);
-            setError("Không thể tải bài viết. Vui lòng thử lại sau.");
+        if (response.data && response.data.status === "success") {
+          const postsData = response.data.data || [];
+          if (postsData.length === 0) {
+            setError(`Không có bài viết nào trong danh mục "${categoryInfo.title}"`);
           }
-        } catch (err) {
-          console.error("Lỗi khi lọc bài viết theo danh mục:", err);
+          setPosts(postsData);
+        } else {
+          console.error("API trả về cấu trúc dữ liệu không đúng:", response.data);
           setPosts([]);
-          setError("Lỗi kết nối API. Vui lòng thử lại sau.");
+          setError("Không thể tải bài viết. Vui lòng thử lại sau.");
         }
-
-        setLoading(false);
       } catch (err) {
-        console.error("Lỗi tổng quát khi xử lý danh mục:", err);
-        setError("Không thể tải bài viết. Vui lòng thử lại sau.");
+        console.error("Lỗi khi lọc bài viết theo danh mục:", err);
         setPosts([]);
-        setLoading(false);
+        setError("Không thể tải bài viết. Vui lòng thử lại sau.");
       }
+      setLoading(false);
     },
     [fetchAllPosts, categories]
   );
@@ -227,11 +144,10 @@ const Blogs = () => {
             </h2>
             <div className="flex flex-wrap justify-center gap-4">
               <button
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
-                  activeCategory === "all"
-                    ? "bg-amber-300 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-amber-100"
-                }`}
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${activeCategory === "all"
+                  ? "bg-amber-300 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-amber-100"
+                  }`}
                 onClick={() => handleCategoryClick("all")}
               >
                 Tất cả bài viết
@@ -240,11 +156,10 @@ const Blogs = () => {
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
-                    activeCategory === category.slug
-                      ? "bg-amber-300 text-white shadow-md"
-                      : "bg-white text-gray-600 hover:bg-amber-100"
-                  }`}
+                  className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${activeCategory === category.slug
+                    ? "bg-amber-300 text-white shadow-md"
+                    : "bg-white text-gray-600 hover:bg-amber-100"
+                    }`}
                   onClick={() => handleCategoryClick(category.slug)}
                 >
                   {category.title}
@@ -264,9 +179,8 @@ const Blogs = () => {
               <div className="text-center py-10">
                 <h3 className="text-xl font-semibold mb-2">
                   {activeCategory !== "all" &&
-                    `Danh mục: ${
-                      categories.find((c) => c.slug === activeCategory)
-                        ?.title || activeCategory
+                    `Danh mục: ${categories.find((c) => c.slug === activeCategory)
+                      ?.title || activeCategory
                     }`}
                 </h3>
                 <p className="text-red-500">{error}</p>
@@ -302,8 +216,8 @@ const Blogs = () => {
                                     ? post.thumbnail.startsWith("http")
                                       ? post.thumbnail
                                       : post.thumbnail.startsWith("/")
-                                      ? `http://localhost:8000${post.thumbnail}`
-                                      : `http://localhost:8000/${post.thumbnail}`
+                                        ? `http://localhost:8000${post.thumbnail}`
+                                        : `http://localhost:8000/${post.thumbnail}`
                                     : "http://localhost:5173/src/assets/img/banners/homepage01-slide2.jpg"
                                 }
                                 alt={post.title}
@@ -361,11 +275,10 @@ const Blogs = () => {
                         <p className="text-gray-500">
                           {activeCategory === "all"
                             ? "Hiện tại chưa có bài viết nào được đăng tải. Vui lòng quay lại sau."
-                            : `Chưa có bài viết nào thuộc danh mục "${
-                                categories.find(
-                                  (c) => c.slug === activeCategory
-                                )?.title || activeCategory
-                              }". Vui lòng chọn danh mục khác.`}
+                            : `Chưa có bài viết nào thuộc danh mục "${categories.find(
+                              (c) => c.slug === activeCategory
+                            )?.title || activeCategory
+                            }". Vui lòng chọn danh mục khác.`}
                         </p>
                       </div>
                     </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Comment;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -19,9 +20,10 @@ class CommentController extends Controller
             'content' => 'required|string|max:500',
         ]);
 
+        $userId = Auth::id();
         $comment = Comment::create([
             'product_id' => $request->product_id,
-            'user_id' => Auth::id(),
+            'user_id' => $userId,
             'content' => $request->content,
             'status' => 'Hiển thị', // Mặc định hiển thị, admin có thể ẩn sau
         ]);

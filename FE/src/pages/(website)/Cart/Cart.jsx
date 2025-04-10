@@ -10,6 +10,8 @@ import {
   setSelectedItems,
   setSelectedProducts,
 } from "../../../store/cartSlice";
+import axiosConfig from "../../../utils/axiosConfig";
+import axiosInstance from "../../../utils/axiosConfig";
 
 const Cart = () => {
   const navigate = useNavigate(); // Hook để điều hướng giữa các trang trong React Router
@@ -39,7 +41,7 @@ const Cart = () => {
     }
 
     try {
-      const response = await axios.get("http://localhost:8000/api/cart", {
+      const response = await axiosInstance.get("/cart", {
         headers: {
           Authorization: `Bearer ${token}`, // Gửi token trong header
         },
@@ -76,8 +78,8 @@ const Cart = () => {
       const cartData = {
         quantity: newQuantity,
       };
-      const response = await axios.put(
-        `http://localhost:8000/api/cart/update/${item.id}`,
+      const response = await axiosInstance.put(
+        `/cart/update/${item.id}`,
         cartData,
         {
           headers: {
@@ -111,15 +113,14 @@ const Cart = () => {
   // Hàm xóa một sản phẩm khỏi giỏ hàng
   const handleRemoveItem = async (cartId) => {
     const token = localStorage.getItem("authToken");
+    console.log(cartId);
+
     try {
-      const response = await axios.delete(
-        `http://localhost:8000/api/cart/remove/${cartId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.delete(`/cart/remove/${cartId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (response.status === 200) {
         toast.success("Đã xóa sản phẩm khỏi giỏ hàng");
         await fetchCart();
@@ -135,14 +136,11 @@ const Cart = () => {
     e.preventDefault();
     const token = localStorage.getItem("authToken");
     try {
-      const response = await axios.delete(
-        "http://localhost:8000/api/cart/clear",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.delete("/cart/clear", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (response.status === 200) {
         toast.success("Đã xóa toàn bộ giỏ hàng");
         await fetchCart();
@@ -229,8 +227,8 @@ const Cart = () => {
     const total = calculateSelectedTotal();
 
     // Lưu thông tin sản phẩm đã chọn vào Redux store để sử dụng ở trang thanh toán
-    dispatch(setSelectedItems(localSelectedItems));
-    dispatch(setSelectedProducts(selectedProducts));
+    // dispatch(setSelectedItems(localSelectedItems));
+    // dispatch(setSelectedProducts(selectedProducts));
 
     navigate("/payment", {
       state: {

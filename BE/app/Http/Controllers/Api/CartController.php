@@ -170,8 +170,6 @@ class CartController extends Controller
         ], 200);
     }
 
-
-
     /**
      * Xóa sản phẩm khỏi giỏ hàng
      */
@@ -224,12 +222,12 @@ class CartController extends Controller
     //     // Tìm kiếm item trong giỏ hàng
     //     $query = CartItem::where('cart_id', $cart->id)
     //                      ->where('product_id', $productId);
-                    
+
     //     // Nếu có product_variant_id, thêm điều kiện tìm kiếm
     //     if ($productVariantId) {
     //         $query->where('product_variant_id', $productVariantId);
     //     }
-        
+
     //     $cartItem = $query->first();
 
     //     // Nếu không tìm thấy item theo variant_id, thử tìm kiếm bằng cách so sánh variant_details
@@ -238,7 +236,7 @@ class CartController extends Controller
     //         $cartItems = CartItem::where('cart_id', $cart->id)
     //                             ->where('product_id', $productId)
     //                             ->get();
-            
+
     //         // Duyệt qua từng cart item để so sánh variant_details
     //         foreach ($cartItems as $item) {
     //             // Nếu item có thông tin variant_details khớp với request
@@ -251,7 +249,7 @@ class CartController extends Controller
 
     //     if (!$cartItem) {
     //         return response()->json([
-    //             'success' => false, 
+    //             'success' => false,
     //             'message' => 'Không tìm thấy sản phẩm trong giỏ hàng'
     //         ], 404);
     //     }
@@ -299,19 +297,19 @@ class CartController extends Controller
 
         try {
             // Chuyển đổi variant_details của cart item sang array nếu là chuỗi JSON
-            $itemVariantDetails = is_string($cartItem->variant_details) 
-                ? json_decode($cartItem->variant_details, true) 
+            $itemVariantDetails = is_string($cartItem->variant_details)
+                ? json_decode($cartItem->variant_details, true)
                 : $cartItem->variant_details;
 
             // Chuyển đổi variant_details từ request sang array nếu là chuỗi JSON
-            $requestVariantArray = is_string($requestVariantDetails) 
-                ? json_decode($requestVariantDetails, true) 
+            $requestVariantArray = is_string($requestVariantDetails)
+                ? json_decode($requestVariantDetails, true)
                 : $requestVariantDetails;
 
             // So sánh các phần tử chính
             if (is_array($itemVariantDetails) && is_array($requestVariantArray)) {
                 // So sánh đơn giản theo cấu trúc
-                return json_encode(array_map('ksort', $itemVariantDetails)) === 
+                return json_encode(array_map('ksort', $itemVariantDetails)) ===
                        json_encode(array_map('ksort', $requestVariantArray));
             }
         } catch (\Exception $e) {

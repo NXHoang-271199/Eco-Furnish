@@ -6,18 +6,36 @@ const OrderSuccess = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Lấy thông tin đơn hàng từ localStorage
-    const savedOrderInfo = JSON.parse(localStorage.getItem("orderInfo"));
-    if (savedOrderInfo) {
-      setOrderInfo(savedOrderInfo);
+    const queryParams = new URLSearchParams(location.search);
+    console.log("URL Params:", Object.fromEntries(queryParams.entries()));
+
+    // 1. Luôn lấy thông tin đơn hàng từ localStorage trước
+    let orderData = JSON.parse(localStorage.getItem("orderInfo"));
+    console.log("Initial orderData from localStorage:", orderData);
+
+    // 2. Kiểm tra mã đơn hàng trong URL params (từ MoMo/VNPAY)
+    const momoOrderId = queryParams.get("orderId");
+    const vnpayOrderId = queryParams.get("vnp_TxnRef");
+    const extraOrderId = queryParams.get("extraData");
+    const partnerRef = queryParams.get("partnerRef");
+    const orderCodeFromUrl =
+      vnpayOrderId || momoOrderId || extraOrderId || partnerRef;
+
+    // 3. Nếu có mã từ URL, cập nhật orderData và localStorage *chỉ khi* nó khác mã đã lưu
+    if (orderData && orderCodeFromUrl) {
+      if (orderData.order_code !== orderCodeFromUrl) {
+        console.log(
+          `Updating order_code from URL: ${orderCodeFromUrl} (was ${orderData.order_code})`
+        );
+        orderData.order_code = orderCodeFromUrl;
+        // Lưu lại vào localStorage nếu có sự thay đổi từ URL
+        localStorage.setItem("orderInfo", JSON.stringify(orderData));
+      }
     }
 
-    // Lấy thông tin đơn hàng từ URL query params (nếu có)
-    const queryParams = new URLSearchParams(location.search);
-    if (queryParams.get("orderId")) {
-      // Có thể thực hiện một API call để lấy thông tin đơn hàng từ server
-      // dựa vào orderId nếu cần thiết
-    }
+    // 4. Set state với dữ liệu đơn hàng (đã được cập nhật nếu cần)
+    setOrderInfo(orderData);
+    console.log("Final orderInfo state set:", orderData);
   }, [location]);
 
   const formatPrice = (price) => {
@@ -86,8 +104,7 @@ const OrderSuccess = () => {
                 <div className="text-left space-y-2">
                   <p>
                     <span className="font-semibold">Mã đơn hàng:</span>{" "}
-                    {orderInfo.order_code ||
-                      "ORD-" + new Date().getTime().toString(36).toUpperCase()}
+                    {orderInfo.order_code || "Đang cập nhật..."}
                   </p>
                   <p>
                     <span className="font-semibold">Ngày:</span>{" "}
@@ -122,7 +139,7 @@ const OrderSuccess = () => {
               Trang chủ
             </Link>
             <Link
-              to="/list-order"
+              to="/account/list_order"
               className="mt-6 inline-block bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
             >
               Lịch sử mua hàng

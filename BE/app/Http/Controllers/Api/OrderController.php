@@ -33,7 +33,14 @@ class OrderController extends Controller
     {
         try {
             $userId = Auth::id();
-            $orders = Order::with(['orderItems.product', 'orderItems.productVariant'])
+            $orders = Order::with([
+                'orderItems.product' => function ($query) {
+                    $query->withTrashed(); // Load product even if soft-deleted
+                },
+                'orderItems.productVariant' => function ($query) {
+                    $query->withTrashed(); // Load product variant even if soft-deleted
+                }
+            ])
                 ->where('user_id', $userId)
                 ->latest()
                 ->paginate(10);
@@ -65,7 +72,16 @@ class OrderController extends Controller
     public function show($id)
     {
         try {
-            $order = Order::with(['orderItems.product', 'orderItems.productVariant'])
+            $order = Order::with([
+                'orderItems.product' => function ($query) {
+                    $query->withTrashed(); // Load product even if soft-deleted
+                },
+                'orderItems.productVariant' => function ($query) {
+                    $query->withTrashed(); // Load product variant even if soft-deleted
+                },
+                'paymentMethod',
+                'refundRequest'
+            ])
                 ->where('user_id', Auth::id())
                 ->findOrFail($id);
 
@@ -158,7 +174,7 @@ class OrderController extends Controller
                 'user_phone' => $request->user_phone,
                 'user_address' => $request->user_address,
                 'payment_method_id' => $request->payment_method_id,
-                'payment_status' => $paymentMethod === 'Tiền mặt' ? 0 : 2, // 2 = Đang chờ thanh toán,
+                'payment_status' => $paymentMethod->name === 'Tiền mặt' ? 0 : 2, // 2 = Đang chờ thanh toán,
                 'order_status' => 'Chưa Xác Nhận',
                 'total_price' => $totalPrice,
                 'voucher_id' => $request->voucher_id ?? null,

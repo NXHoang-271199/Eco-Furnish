@@ -10,8 +10,11 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TrashController;
+use App\Http\Controllers\BannerController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\VariantController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\CategoryController;
@@ -22,12 +25,10 @@ use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\OrderNotificationController;
-use App\Http\Controllers\BannerController;
 use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\SettingController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -80,7 +81,13 @@ Route::prefix('admin')->group(function () {
 
         // Categories Management
         Route::middleware(['permission:view-categories'])->group(function () {
-            Route::resource('categories', CategoryController::class);
+            Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
+            Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
+            Route::get('categories/{category}/data', [CategoryController::class, 'getCategoryData'])
+                 ->name('categories.data')
+                 ->middleware('permission:update-categories');
+            Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+            Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
         });
 
         // Products routes
@@ -148,6 +155,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['permission:view-orders'])->group(function () {
             Route::resource('orders', OrderController::class);
             Route::post('orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.updateStatus');
+            Route::post('orders/bulk-update-status', [OrderController::class, 'bulkUpdateStatus'])->name('orders.bulkUpdateStatus');
             Route::get('orders/{order}/detail', [OrderController::class, 'show'])->name('orders.detail');
             Route::post('/orders/{orderId}/refund/approve/{refundRequestId}', [OrderController::class, 'approveRefundRequest'])->name('order.refund.approve');
             Route::post('/orders/{orderId}/refund/reject/{refundRequestId}', [OrderController::class, 'rejectRefundRequest'])->name('order.refund.reject');
@@ -178,7 +186,7 @@ Route::prefix('admin')->group(function () {
             Route::resource('trash-variant-values', TrashController::class)->only(['index', 'update', 'destroy']);
             Route::get('restore-variant/{id}', [VariantController::class, 'restore']);
             Route::get('restore-variant-value/{id}', [VariantValueController::class, 'restore']);
-            Route::get('restore-category/{id}', [CategoryController::class, 'restore']);
+            Route::get('restore-category/{id}', [CategoryController::class, 'restore'])->name('category.restore');
         });
     });
 
@@ -207,4 +215,9 @@ Route::prefix('admin')->group(function () {
     // Banners Management
     Route::resource('banners', BannerController::class);
     Route::post('banners/positions', [BannerController::class, 'updatePosition'])->name('banners.positions');
+
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/send', [MessageController::class, 'send'])->name('messages.send');
+    Route::post('/admin/messages/send', [MessageController::class, 'sendByAdmin'])->name('messages.send');
+
 });

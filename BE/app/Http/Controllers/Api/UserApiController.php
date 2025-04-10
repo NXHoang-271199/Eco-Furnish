@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\TokenHandler;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Session;
 
 class UserApiController extends Controller
 {
@@ -40,38 +43,34 @@ class UserApiController extends Controller
         ]);
     }
 
-    // 2. Xem chi tiết user theo email
+    // 2. Lấy thông tin chi tiết một user (client)
     public function show($id)
     {
-        $user = User::whereHas('role', function ($query) {
-            $query->where('slug', 'client');
-        })
-            ->where('id', $id)
-            ->where('is_active', 1)
-            ->first();
-
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Không tìm thấy người dùng'
-            ], 404);
-        }
-        $tokens = $this->generateTokens($user);
-        return response()->json([
-            'status' => 'success',
-            'data' => [
+        try {
+            $user = User::findOrFail($id);
+            Log::info('User avatar from DB: ' . $user->avatar);
+            
+            $userData = [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'slug' => Str::slug($user->name),
-                'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'phone' => $user->phone,
+                'address' => $user->address,
+                'bio' => $user->bio,
                 'joined_date' => $user->created_at->format('d/m/Y'),
-                'access_token' => $tokens['access_token'],
-                'refresh_token' => $tokens['refresh_token'],
-                'access_token_expires_at' => $tokens['access_token_expires_at'],
-                'refresh_token_expires_at' => $tokens['refresh_token_expires_at']
-            ]
-        ]);
+                'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+            ];
+
+            return response()->json([
+                'data' => $userData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi lấy thông tin người dùng: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Không tìm thấy người dùng',
+                'error' => $e->getMessage()
+            ], 404);
+        }
     }
 
     // 3. Đăng ký tài khoản mới
@@ -152,7 +151,7 @@ class UserApiController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
-            'remember_me' => 'nullable|in:true,false,0,1'
+            'remember_me' => 'nullable|boolean'
         ]);
 
         if ($validator->fails()) {
@@ -168,7 +167,7 @@ class UserApiController extends Controller
             ->first();
 
         // Kiểm tra email đã xác thực chưa
-        if (!$user->email_verified_at) {
+        if (!$user || !$user->email_verified_at) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Vui lòng xác thực email trước khi đăng nhập',
@@ -184,10 +183,8 @@ class UserApiController extends Controller
             ], 401);
         }
 
-        // Chuyển đổi giá trị remember_me thành boolean
-        $rememberMe = filter_var($request->remember_me, FILTER_VALIDATE_BOOLEAN);
-
         // Xử lý remember me
+        $rememberMe = $request->remember_me ?? false;
         if ($rememberMe) {
             $user->remember_me = true;
             $user->remember_me_expires_at = now()->addDays(30); // Lưu 30 ngày
@@ -256,7 +253,6 @@ class UserApiController extends Controller
             'data' => [
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
-                'expires_at' => $tokens['expires_at']
             ]
         ]);
     }
@@ -277,6 +273,7 @@ class UserApiController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'string|max:255',
+            'phone' => 'nullable|string|max:15',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:15000',
             'current_password' => 'required_with:new_password|string',
             'new_password' => 'string|min:5'
@@ -313,6 +310,10 @@ class UserApiController extends Controller
             $user->name = $request->name;
         }
 
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+
         $user->save();
 
         return response()->json([
@@ -321,6 +322,7 @@ class UserApiController extends Controller
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'phone' => $user->phone,
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
             ]
         ]);
@@ -335,20 +337,18 @@ class UserApiController extends Controller
     public function apiLogout(Request $request)
     {
         $user = $request->user();
-        
+
         if (!$user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Người dùng chưa đăng nhập'
             ], 401);
         }
-        
-        // Xóa token và remember_me
-        $request->user()->currentAccessToken()->delete();
-        $user->remember_me = false;
-        $user->remember_me_expires_at = null;
+
+        $user->tokens()->delete();
+        // $user->refresh_token = null;
         $user->save();
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Đăng xuất thành công'
@@ -575,6 +575,178 @@ class UserApiController extends Controller
                 'status' => 'error',
                 'message' => 'Không thể gửi email: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Upload avatar cho người dùng
+     *
+     * @param Request $request
+     * @param int $id - ID của người dùng
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadAvatar(Request $request, $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            
+            // Xác thực yêu cầu
+            $request->validate([
+                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+            
+            // Xóa avatar cũ nếu có
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Log::info('Xóa avatar cũ: ' . $user->avatar);
+                Storage::disk('public')->delete($user->avatar);
+            }
+            
+            // Lưu avatar mới
+            $path = $request->file('avatar')->store('avatars', 'public');
+            Log::info('Đường dẫn avatar mới: ' . $path);
+            
+            // Cập nhật trường avatar của user
+            $user->avatar = $path;
+            $user->save();
+            
+            Log::info('Dữ liệu user sau khi lưu: ', $user->toArray());
+            
+            // Trả về thông tin avatar
+            return response()->json([
+                'message' => 'Avatar đã được cập nhật thành công',
+                'avatar_url' => asset('storage/' . $path),
+                'avatar_path' => $path,
+                'data' => [
+                    'avatar' => asset('storage/' . $path)
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi upload avatar: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Không thể tải lên avatar: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Thêm các phương thức OAuth
+
+    public function redirectToGoogle()
+    {
+        // Đảm bảo session được bắt đầu trước khi redirect
+        // Session::start(); // Không cần start thủ công khi đã có middleware 'web'
+        return Socialite::driver('google')->stateless()->redirect();
+    }
+
+    public function handleGoogleCallback()
+    {
+        try {
+            // Sử dụng stateless() để không dựa vào session sau khi callback
+            $socialUser = Socialite::driver('google')->stateless()->user();
+            
+            // Kiểm tra xem email này đã tồn tại trong DB chưa
+            $user = User::where('email', $socialUser->getEmail())->first();
+            
+            // Nếu chưa có, tạo user mới
+            if (!$user) {
+                $clientRole = Role::where('slug', 'client')->first();
+                
+                $user = User::create([
+                    'name' => $socialUser->getName(),
+                    'email' => $socialUser->getEmail(),
+                    'password' => Hash::make(Str::random(24)), // Tạo password ngẫu nhiên
+                    'role_id' => $clientRole->id,
+                    'avatar' => $socialUser->getAvatar(),
+                    'is_active' => 1, // Đã active sẵn
+                    'email_verified_at' => now() // Đã xác thực email
+                ]);
+            }
+            
+            // Tạo token
+            $token = $user->createToken('auth_token')->plainTextToken;
+            $refreshToken = Str::random(60);
+            
+            // Lưu refresh token
+            $user->update([
+                'refresh_token' => $refreshToken
+            ]);
+            
+            // Chuyển hướng về FE với token
+            $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
+                'token' => $token,
+                'refresh_token' => $refreshToken,
+                'user' => json_encode([
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar
+                ])
+            ]);
+            
+            return redirect($redirectUrl);
+        } catch (\Exception $e) {
+            Log::error('Google login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            // Redirect về trang sign-in với tham số lỗi cụ thể
+            return redirect('http://localhost:5173/sign-in?error=google_callback_failed');
+        }
+    }
+
+    public function redirectToFacebook()
+    {
+        // Đảm bảo session được bắt đầu trước khi redirect
+        // Session::start(); // Không cần start thủ công khi đã có middleware 'web'
+        return Socialite::driver('facebook')->stateless()->redirect();
+    }
+
+    public function handleFacebookCallback()
+    {
+        try {
+            // Sử dụng stateless() để không dựa vào session sau khi callback
+            $socialUser = Socialite::driver('facebook')->stateless()->user();
+            
+            // Kiểm tra xem email này đã tồn tại trong DB chưa
+            $user = User::where('email', $socialUser->getEmail())->first();
+            
+            // Nếu chưa có, tạo user mới
+            if (!$user) {
+                $clientRole = Role::where('slug', 'client')->first();
+                
+                $user = User::create([
+                    'name' => $socialUser->getName(),
+                    'email' => $socialUser->getEmail(),
+                    'password' => Hash::make(Str::random(24)), // Tạo password ngẫu nhiên
+                    'role_id' => $clientRole->id,
+                    'avatar' => $socialUser->getAvatar(),
+                    'is_active' => 1, // Đã active sẵn
+                    'email_verified_at' => now() // Đã xác thực email
+                ]);
+            }
+            
+            // Tạo token
+            $token = $user->createToken('auth_token')->plainTextToken;
+            $refreshToken = Str::random(60);
+            
+            // Lưu refresh token
+            $user->update([
+                'refresh_token' => $refreshToken
+            ]);
+            
+            // Chuyển hướng về FE với token
+            $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
+                'token' => $token,
+                'refresh_token' => $refreshToken,
+                'user' => json_encode([
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar
+                ])
+            ]);
+            
+            return redirect($redirectUrl);
+        } catch (\Exception $e) {
+            Log::error('Facebook login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+             // Redirect về trang sign-in với tham số lỗi cụ thể
+            return redirect('http://localhost:5173/sign-in?error=facebook_callback_failed');
         }
     }
 }
