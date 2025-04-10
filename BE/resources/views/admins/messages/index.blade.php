@@ -75,9 +75,51 @@
     </div>
 </div>
 
+<!-- Thêm thư viện Toastify cho các thông báo toast -->
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/js/lightbox.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css" rel="stylesheet" />
+
+<!-- Script kích hoạt tương tác người dùng cho âm thanh -->
+<script>
+// Kích hoạt audio elements từ order-notifications.js 
+document.addEventListener('DOMContentLoaded', function() {
+    // Tạo tương tác người dùng giả khi trang chat được tải
+    const triggerAudioActivation = () => {
+        // Kích hoạt tất cả các audio element
+        const audioElements = document.querySelectorAll('audio');
+        audioElements.forEach(audio => {
+            try {
+                // Kích hoạt với âm lượng nhỏ
+                audio.volume = 0.01;
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = 0.8;
+                    console.log('✅ Audio đã được kích hoạt trong trang chat');
+                }).catch(e => console.log('⚠️ Không thể kích hoạt audio:', e));
+            } catch (e) {
+                console.warn('⚠️ Lỗi khi khởi tạo audio trong trang chat:', e);
+            }
+        });
+        
+        // Kích hoạt audio events từ order-notifications.js
+        const event = new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true
+        });
+        document.dispatchEvent(event);
+    };
+
+    // Kích hoạt sau khi trang tải xong và sau tương tác người dùng đầu tiên
+    setTimeout(triggerAudioActivation, 1000);
+    document.addEventListener('click', triggerAudioActivation, { once: true });
+});
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -282,6 +324,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("📩 Nhận tin nhắn mới từ client:", message);
                 // addDebugInfo(`Nhận tin nhắn mới: sender=${message.sender_id}, text=${message.text ? 'có' : 'không'}, image=${message.image ? 'có' : 'không'}`);
 
+                // Không cần phát âm thanh thông báo và hiển thị toast ở đây nữa
+                // vì đã được xử lý bởi order-notifications.js khi ở bất kỳ trang nào
+
                 const isImageOnly = !!(message.image && !message.text); // Đảm bảo boolean
 
                 if (isImageOnly) {
@@ -311,6 +356,9 @@ document.addEventListener('DOMContentLoaded', function() {
             socket.on("clientMultipleImagesUpload", (data) => {
                 console.log("🖼️ Nhận nhiều ảnh từ client (sự kiện clientMultipleImagesUpload):", data);
                 // addDebugInfo(`Nhận ${data.images?.length || 0} ảnh từ client ${data.sender_id} qua sự kiện nhóm.`);
+
+                // Không cần phát âm thanh thông báo và hiển thị toast ở đây nữa
+                // vì đã được xử lý bởi order-notifications.js khi ở bất kỳ trang nào
 
                 // Xử lý buffer cũ trước khi hiển thị nhóm mới (tránh trùng lặp)
                 console.log("🖼️ [Admin Buffer] Xử lý buffer trước khi hiển thị nhóm ảnh mới.");

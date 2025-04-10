@@ -7,6 +7,85 @@ import axios from "axios";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 
+// Tạo audio elements toàn cục để khởi tạo sớm
+const messageAudio = new Audio('/sounds/message.mp3');
+messageAudio.preload = 'auto';
+messageAudio.volume = 0.8;
+
+// Biến để theo dõi tương tác người dùng
+let userHasInteracted = false;
+
+// Đăng ký sự kiện tương tác người dùng
+document.addEventListener('click', handleUserInteraction, { once: false });
+document.addEventListener('keydown', handleUserInteraction, { once: false });
+document.addEventListener('touchstart', handleUserInteraction, { once: false });
+
+// Hàm xử lý tương tác người dùng
+function handleUserInteraction() {
+    if (!userHasInteracted) {
+        userHasInteracted = true;
+        console.log("✅ Người dùng đã tương tác với trang, có thể phát âm thanh");
+
+        // Kích hoạt audio trước
+        messageAudio.play()
+            .then(() => {
+                messageAudio.pause();
+                messageAudio.currentTime = 0;
+                console.log("✓ Đã kích hoạt audio");
+            })
+            .catch(err => console.log("⚠️ Không thể kích hoạt audio:", err));
+    }
+}
+
+// Helper function để xử lý việc phát âm thanh thông báo
+const playNotificationSound = (soundPath) => {
+    try {
+        // Sử dụng audio element toàn cục để tránh tạo nhiều instances
+        messageAudio.currentTime = 0;
+
+        // Thử phát âm thanh
+        if (userHasInteracted) {
+            messageAudio.play()
+                .then(() => console.log("✓ Âm thanh thông báo được phát thành công"))
+                .catch(err => {
+                    console.log("⚠️ Không thể phát âm thanh, lỗi:", err);
+
+                    // Thử lại với tương tác người dùng nếu lỗi
+                    const unblockAudio = () => {
+                        messageAudio.play()
+                            .then(() => {
+                                console.log("✓ Đã phát âm thanh sau tương tác");
+                                document.removeEventListener('click', unblockAudio);
+                            })
+                            .catch(e => console.log("⚠️ Vẫn không thể phát âm thanh:", e));
+                    };
+
+                    document.addEventListener('click', unblockAudio, { once: true });
+                });
+        } else {
+            console.log("⚠️ Người dùng chưa tương tác, đang chờ tương tác để phát âm thanh");
+
+            // Đăng ký phát âm thanh sau tương tác đầu tiên
+            const playAfterInteraction = () => {
+                userHasInteracted = true;
+                messageAudio.play()
+                    .then(() => console.log("✓ Đã phát âm thanh sau tương tác đầu tiên"))
+                    .catch(e => console.log("⚠️ Không thể phát âm thanh sau tương tác:", e));
+
+                document.removeEventListener('click', playAfterInteraction);
+                document.removeEventListener('keydown', playAfterInteraction);
+                document.removeEventListener('touchstart', playAfterInteraction);
+            };
+
+            document.addEventListener('click', playAfterInteraction, { once: true });
+            document.addEventListener('keydown', playAfterInteraction, { once: true });
+            document.addEventListener('touchstart', playAfterInteraction, { once: true });
+        }
+    } catch (error) {
+        console.error("❌ Lỗi khi phát âm thanh:", error);
+    }
+};
+
 const ChatRealTime = () => {
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
@@ -333,7 +412,16 @@ const ChatRealTime = () => {
                     // Thêm sự kiện lắng nghe tin nhắn mới
                     socketConnection.on("newClientMessage", (data) => {
                         console.log("📩 Nhận tin nhắn mới từ client:", data);
+
+                        // Xử lý tin nhắn mới
                         setMessages(prev => processMessagesWithImageGroups([...prev, data]));
+
+                        // Cập nhật unreadCount nếu chat đang đóng
+                        if (!isOpen) {
+                            setUnreadCount(prev => prev + 1);
+                            // Phát âm thanh thông báo
+                            playNotificationSound('/sounds/message.mp3');
+                        }
                     });
                 }
             } catch (error) {
@@ -364,7 +452,22 @@ const ChatRealTime = () => {
                 socketConnection.disconnect();
             }
         };
-    }, []);
+    }, [isOpen]); // Thêm isOpen vào dependencies để useEffect được gọi lại khi isOpen thay đổi
+
+    // Thêm effect mới để theo dõi trạng thái chat box và cập nhật trạng thái đã đọc tin nhắn
+    useEffect(() => {
+        // Chỉ thực hiện khi chat box mở và có socket kết nối
+        if (isOpen && socket && userData?.id) {
+            // Đánh dấu tin nhắn đã đọc
+            markMessagesAsRead();
+
+            // Xử lý tin nhắn trong chat hiện tại
+            setMessages(prev => prev.map(msg => ({
+                ...msg,
+                is_read: true
+            })));
+        }
+    }, [isOpen, socket, userData]);
 
     // Theo dõi sự thay đổi đăng nhập
     useEffect(() => {
@@ -471,44 +574,14 @@ const ChatRealTime = () => {
         };
     }, [socket, userData]);
 
-    // Hàm đánh dấu tin nhắn đã đọc
-    const markMessagesAsRead = async () => {
-        if (!isAuthenticated || !userData?.id) return;
-
-        try {
-            const token = localStorage.getItem("authToken");
-
-            // Gọi API đánh dấu tất cả tin nhắn là đã đọc
-            await axios.patch(
-                `http://localhost:8000/api/messages/read-all/${userData.id}`,
-                {},
-                {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    }
-                }
-            );
-
-            // Cập nhật UI
-            setUnreadCount(0);
-            setMessages(prev => prev.map(msg => ({
-                ...msg,
-                is_read: true
-            })));
-
-            console.log("✅ Đã đánh dấu tất cả tin nhắn là đã đọc");
-        } catch (error) {
-            console.error("❌ Lỗi khi đánh dấu tin nhắn đã đọc:", error.message);
-        }
-    };
-
     // Thêm sự kiện khi mở chat box
     useEffect(() => {
         if (isOpen && isAuthenticated && userData?.id) {
             // Đánh dấu tin nhắn đã đọc khi mở chatbox
             markMessagesAsRead();
+            // Reset số lượng tin nhắn chưa đọc ngay khi mở chat
+            setUnreadCount(0);
+            console.log("✅ Đã reset số tin nhắn chưa đọc khi mở chat");
         }
     }, [isOpen]);
 
@@ -550,10 +623,13 @@ const ChatRealTime = () => {
                     // Xử lý unread count và thông báo khi buffer được xử lý
                     if (!isOpen) {
                         setUnreadCount(prev => prev + 1);
-                        const audio = new Audio('/notification.mp3');
-                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                        // Phát âm thanh thông báo
+                        playNotificationSound('/sounds/message.mp3');
                     } else {
-                        markMessagesAsRead(); // Đánh dấu đã đọc nếu chat mở
+                        // Nếu chat đang mở, đánh dấu đã đọc
+                        markMessagesAsRead();
+                        // Reset unreadCount
+                        setUnreadCount(0);
                     }
                 }
                 // Xóa timeout ref sau khi xử lý
@@ -591,13 +667,15 @@ const ChatRealTime = () => {
                     setMessages((prev) => [...prev, data]);
 
                     // Xử lý unread count và thông báo cho tin nhắn text từ admin
-                    if (isAdminMessage && !isImageOnly && !isOpen) {
+                    if (isAdminMessage && !isOpen) {
                         setUnreadCount(prev => prev + 1);
-                        const audio = new Audio('/notification.mp3');
-                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                        // Phát âm thanh thông báo
+                        playNotificationSound('/sounds/message.mp3');
                     } else if (isOpen) {
                         // Nếu chat đang mở, đánh dấu đã đọc
                         markMessagesAsRead();
+                        // Reset unreadCount
+                        setUnreadCount(0);
                     }
                 }
             };
@@ -628,10 +706,12 @@ const ChatRealTime = () => {
                     // Xử lý unread count và thông báo
                     if (!isOpen) {
                         setUnreadCount(prev => prev + 1);
-                        const audio = new Audio('/notification.mp3');
-                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                        // Phát âm thanh thông báo
+                        playNotificationSound('/sounds/message.mp3');
                     } else {
                         markMessagesAsRead();
+                        // Reset unreadCount
+                        setUnreadCount(0);
                     }
                 }
             };
@@ -1036,6 +1116,60 @@ const ChatRealTime = () => {
         }
     };
 
+    // Cập nhật hàm đánh dấu tin nhắn đã đọc
+    const markMessagesAsRead = async () => {
+        if (!isAuthenticated || !userData?.id) return;
+
+        try {
+            const token = localStorage.getItem("authToken");
+
+            // Gọi API đánh dấu tất cả tin nhắn là đã đọc
+            await axios.patch(
+                `http://localhost:8000/api/messages/read-all/${userData.id}`,
+                {},
+                {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+
+            // Cập nhật UI
+            setUnreadCount(0); // Đặt rõ số tin nhắn chưa đọc là 0
+            setMessages(prev => prev.map(msg => ({
+                ...msg,
+                is_read: true
+            })));
+
+            console.log("✅ Đã đánh dấu tất cả tin nhắn là đã đọc và reset unreadCount");
+        } catch (error) {
+            console.error("❌ Lỗi khi đánh dấu tin nhắn đã đọc:", error.message);
+        }
+    };
+
+    // Thêm effect để đánh dấu tin nhắn đã đọc khi tải lần đầu
+    useEffect(() => {
+        if (messages.length > 0 && isAuthenticated && userData?.id) {
+            // Đếm số tin nhắn chưa đọc để hiển thị badge
+            const unreadMessages = messages.filter(msg =>
+                !msg.is_read && (!msg.isCurrentUser && msg.sender_id !== userData.id)
+            );
+
+            // Cập nhật số tin nhắn chưa đọc
+            setUnreadCount(unreadMessages.length);
+
+            // Tự động đánh dấu tin nhắn đã đọc nếu chat box đang mở
+            if (isOpen) {
+                markMessagesAsRead();
+                setUnreadCount(0);
+            }
+
+            console.log(`✅ Đã cập nhật số tin nhắn chưa đọc: ${unreadMessages.length}`);
+        }
+    }, [messages, isAuthenticated, userData, isOpen]);
+
     // Nếu không đăng nhập, không hiển thị box chat
     if (!isAuthenticated) {
         return null;
@@ -1045,7 +1179,14 @@ const ChatRealTime = () => {
         <div className="fixed bottom-5 left-5 z-50">
             {/* Chat Bubble Button */}
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                    setIsOpen(!isOpen);
+                    // Nếu đang mở chat box, gọi markMessagesAsRead và reset số tin nhắn chưa đọc
+                    if (!isOpen && isAuthenticated) {
+                        setUnreadCount(0); // Reset số tin nhắn chưa đọc ngay lập tức
+                        markMessagesAsRead(); // Gọi API đánh dấu đã đọc và update UI
+                    }
+                }}
                 className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
                     }`}
             >

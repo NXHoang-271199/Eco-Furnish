@@ -1,6 +1,6 @@
 /**
  * 📌 Order Notifications JS
- * Xử lý thông báo realtime cho đơn hàng mới
+ * Xử lý thông báo realtime cho đơn hàng mới và tin nhắn
  */
 document.addEventListener('DOMContentLoaded', function () {
     // Lấy token từ các nguồn khác nhau để đảm bảo luôn có token
@@ -25,58 +25,99 @@ document.addEventListener('DOMContentLoaded', function () {
         // Tiếp tục kết nối mà không có token
     }
 
-    // Tạo thẻ audio ẩn trong DOM thay vì chỉ tạo đối tượng Audio
-    let notificationAudioElement = document.getElementById('notification-sound');
+    // Tạo thẻ audio ẩn cho thông báo đơn hàng trong DOM
+    let orderAudioElement = document.getElementById('order-notification-sound');
 
     // Nếu chưa có thẻ audio, tạo mới và thêm vào body
-    if (!notificationAudioElement) {
-        notificationAudioElement = document.createElement('audio');
-        notificationAudioElement.id = 'notification-sound';
-        notificationAudioElement.src = '/assets/admins/sounds/notify.mp3';
-        notificationAudioElement.preload = 'auto';
-        notificationAudioElement.style.display = 'none';
-        document.body.appendChild(notificationAudioElement);
-        console.log('✅ Đã tạo thẻ audio và thêm vào DOM');
+    if (!orderAudioElement) {
+        orderAudioElement = document.createElement('audio');
+        orderAudioElement.id = 'order-notification-sound';
+        orderAudioElement.src = '/assets/admins/sounds/notify.mp3';
+        orderAudioElement.preload = 'auto';
+        orderAudioElement.style.display = 'none';
+        document.body.appendChild(orderAudioElement);
+        console.log('✅ Đã tạo thẻ audio thông báo đơn hàng và thêm vào DOM');
+    }
+
+    // Tạo thẻ audio ẩn cho thông báo tin nhắn trong DOM
+    let messageAudioElement = document.getElementById('message-notification-sound');
+
+    // Nếu chưa có thẻ audio cho tin nhắn, tạo mới và thêm vào body
+    if (!messageAudioElement) {
+        messageAudioElement = document.createElement('audio');
+        messageAudioElement.id = 'message-notification-sound';
+        messageAudioElement.src = '/assets/admins/sounds/message.mp3';
+        messageAudioElement.preload = 'auto';
+        messageAudioElement.volume = 0.8; // Tăng âm lượng lên 80%
+        messageAudioElement.style.display = 'none';
+        document.body.appendChild(messageAudioElement);
+        console.log('✅ Đã tạo thẻ audio thông báo tin nhắn và thêm vào DOM');
     }
 
     // Biến để kiểm tra xem người dùng đã tương tác với trang chưa
     let userInteracted = false;
 
+    // Biến để theo dõi số lần thử phát âm thanh
+    let audioPlayAttempts = 0;
+    const maxAudioPlayAttempts = 3;
+
     // Xử lý tương tác người dùng để cho phép phát âm thanh
-    function handleUserInteraction() {
+    function handleUserInteraction(event) {
         if (!userInteracted) {
             userInteracted = true;
-            // Khởi tạo audio context sau khi có tương tác
+            console.log('✅ Người dùng đã tương tác với trang, đang kích hoạt audio...');
+
+            // Kích hoạt cả 2 audio để đảm bảo có thể phát sau này
             try {
                 // Tải âm thanh để chuẩn bị phát
-                notificationAudioElement.load();
-                console.log('✅ Đã khởi tạo audio sau tương tác người dùng');
+                orderAudioElement.load();
+                messageAudioElement.load();
 
-                // Phát một âm thanh không nghe thấy để giải quyết vấn đề tương tác
-                notificationAudioElement.volume = 0.01;
-                notificationAudioElement.play().then(() => {
-                    notificationAudioElement.pause();
-                    notificationAudioElement.currentTime = 0;
-                    notificationAudioElement.volume = 0.5;
-                    console.log('✅ Đã kích hoạt audio với tương tác người dùng');
-                }).catch(e => {
-                    console.warn('⚠️ Không thể kích hoạt audio:', e);
-                });
+                // Phát thử âm thanh không nghe thấy để giải quyết vấn đề tương tác
+                const testAudio = function (audioElement, name) {
+                    audioElement.volume = 0.01;
+                    audioElement.play().then(() => {
+                        audioElement.pause();
+                        audioElement.currentTime = 0;
+                        audioElement.volume = 0.8;
+                        console.log(`✅ Đã kích hoạt audio ${name} thành công`);
+                    }).catch(e => {
+                        console.warn(`⚠️ Không thể kích hoạt audio ${name}:`, e);
+
+                        // Thử lại khi người dùng click
+                        const retryActivation = function () {
+                            audioElement.play().then(() => {
+                                audioElement.pause();
+                                audioElement.currentTime = 0;
+                                audioElement.volume = 0.8;
+                                console.log(`✅ Đã kích hoạt audio ${name} sau khi thử lại`);
+                                document.removeEventListener('click', retryActivation);
+                            }).catch(err => {
+                                console.warn(`⚠️ Vẫn không thể kích hoạt audio ${name} sau khi thử lại:`, err);
+                            });
+                        };
+
+                        document.addEventListener('click', retryActivation, { once: true });
+                    });
+                };
+
+                // Kích hoạt cả hai audio
+                testAudio(orderAudioElement, 'đơn hàng');
+                testAudio(messageAudioElement, 'tin nhắn');
+
             } catch (e) {
                 console.warn('⚠️ Lỗi khi khởi tạo audio:', e);
             }
 
-            // Gỡ bỏ các event listener vì không cần nữa
-            document.removeEventListener('click', handleUserInteraction);
-            document.removeEventListener('keydown', handleUserInteraction);
-            document.removeEventListener('touchstart', handleUserInteraction);
+            // Gỡ bỏ các event listener với once: true để chỉ kích hoạt một lần
+            // Các event listeners được thay thế bởi phiên bản khác sau khi đã kích hoạt
         }
     }
 
     // Đăng ký sự kiện tương tác người dùng
-    document.addEventListener('click', handleUserInteraction);
-    document.addEventListener('keydown', handleUserInteraction);
-    document.addEventListener('touchstart', handleUserInteraction);
+    document.addEventListener('click', handleUserInteraction, { once: true });
+    document.addEventListener('keydown', handleUserInteraction, { once: true });
+    document.addEventListener('touchstart', handleUserInteraction, { once: true });
 
     // Kết nối đến Socket Server
     const socketUrl = window.socketServerUrl || 'http://localhost:3002';
@@ -149,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('📣 Nhận thông báo đơn hàng mới:', data);
 
         // Phát âm thanh thông báo TRƯỚC khi hiển thị toast
-        playNotificationSound();
+        playOrderNotificationSound();
 
         // Hiển thị toast thông báo
         showOrderNotification(data);
@@ -158,8 +199,40 @@ document.addEventListener('DOMContentLoaded', function () {
         updateNotificationCounter();
     });
 
+    // Lắng nghe sự kiện tin nhắn mới từ client
+    socket.on('newClientMessage', function (data) {
+        console.log('📣 Nhận tin nhắn mới từ client:', data);
+
+        // Phát âm thanh thông báo tin nhắn
+        playMessageNotificationSound();
+
+        // Kiểm tra nếu không ở trang chat (URL không chứa '/admin/messages')
+        if (!window.location.pathname.includes('/admin/messages')) {
+            // Hiển thị toast thông báo tin nhắn mới
+            showMessageNotification(data);
+        }
+    });
+
+    // Lắng nghe sự kiện nhận nhiều ảnh từ client
+    socket.on('clientMultipleImagesUpload', function (data) {
+        console.log('📣 Nhận thông báo upload ảnh từ client:', data);
+
+        // Phát âm thanh thông báo tin nhắn
+        playMessageNotificationSound();
+
+        // Kiểm tra nếu không ở trang chat (URL không chứa '/admin/messages')
+        if (!window.location.pathname.includes('/admin/messages')) {
+            // Hiển thị toast thông báo tin nhắn mới với ảnh
+            showMessageNotification({
+                sender: data.sender,
+                sender_id: data.sender_id,
+                content: 'Đã gửi các ảnh mới'
+            });
+        }
+    });
+
     /**
-     * Hàm hiển thị toast thông báo
+     * Hàm hiển thị toast thông báo đơn hàng
      */
     function showOrderNotification(data) {
         if (!data || !data.data) return;
@@ -212,6 +285,57 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
+     * Hàm hiển thị toast thông báo tin nhắn mới
+     */
+    function showMessageNotification(data) {
+        if (!data) return;
+
+        const senderName = data.sender?.name || 'Khách hàng';
+        const senderId = data.sender_id;
+        const messageContent = data.text || data.content || 'Đã gửi một tin nhắn mới';
+
+        // Tạo thông báo sử dụng Toastify
+        Toastify({
+            text: `💬 ${senderName}: ${messageContent}`,
+            duration: 5000, // Hiển thị 5 giây
+            close: true,
+            gravity: "top",
+            position: "right",
+            stopOnFocus: true,
+            onClick: function () {
+                // Chuyển đến trang chat khi click
+                window.location.href = `/admin/messages`;
+            },
+            style: {
+                background: "linear-gradient(to right, #4CAF50, #2196F3)",
+                fontWeight: "bold",
+                padding: "12px",
+                fontSize: "14px",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                zIndex: 9999
+            }
+        }).showToast();
+
+        // Nếu người dùng cho phép thông báo trên desktop
+        if (Notification && Notification.permission === "granted") {
+            const notification = new Notification("Tin nhắn mới!", {
+                body: `${senderName}: ${messageContent}`,
+                icon: "/assets/admins/images/favicon.ico"
+            });
+
+            notification.onclick = function () {
+                window.location.href = `/admin/messages`;
+                notification.close();
+            };
+        }
+        // Yêu cầu quyền thông báo nếu chưa được cấp
+        else if (Notification && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+    }
+
+    /**
      * Hàm cập nhật số lượng thông báo hiển thị trên UI
      */
     function updateNotificationCounter() {
@@ -243,37 +367,108 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
-     * Hàm phát âm thanh thông báo - sử dụng file âm thanh từ thư mục sounds
+     * Hàm phát âm thanh thông báo đơn hàng
      */
-    function playNotificationSound() {
+    function playOrderNotificationSound() {
         try {
-            // Kiểm tra xem người dùng đã tương tác với trang chưa
+            // Kích hoạt tương tác người dùng ngay lập tức nếu chưa có
             if (!userInteracted) {
-                console.warn('⚠️ Không thể phát âm thanh vì chưa có tương tác người dùng');
-                return; // Không cố gắng phát âm thanh nếu chưa có tương tác
+                handleUserInteraction();
             }
 
-            // Sử dụng thẻ audio đã được thêm vào DOM
-            notificationAudioElement.currentTime = 0; // Reset thời gian để phát lại từ đầu
+            // Reset âm thanh về đầu
+            orderAudioElement.currentTime = 0;
+            orderAudioElement.volume = 0.8; // Đảm bảo âm lượng đủ lớn
 
-            // Đảm bảo âm lượng phù hợp
-            notificationAudioElement.volume = 0.5;
+            // Đảm bảo âm thanh được tải
+            orderAudioElement.load();
 
-            // Phát âm thanh 
-            const playPromise = notificationAudioElement.play();
+            // Phát âm thanh với nhiều lớp bảo vệ
+            const playPromise = orderAudioElement.play();
 
             if (playPromise !== undefined) {
                 playPromise
                     .then(() => {
-                        console.log('✅ Đang phát âm thanh thông báo từ file MP3');
+                        console.log('✅ Đang phát âm thanh thông báo đơn hàng thành công');
+                        audioPlayAttempts = 0; // Reset số lần thử
                     })
                     .catch(error => {
-                        console.warn('⚠️ Không thể phát âm thanh từ file MP3:', error);
-                        // Không sử dụng Web Audio API nữa
+                        console.warn('⚠️ Không thể phát âm thanh đơn hàng:', error);
+                        audioPlayAttempts++;
+
+                        // Thử lại với tương tác người dùng nếu lỗi
+                        if (audioPlayAttempts < maxAudioPlayAttempts) {
+                            console.log(`⏱️ Đang thử lại lần ${audioPlayAttempts}...`);
+
+                            // Đăng ký phát âm thanh khi người dùng tương tác tiếp theo
+                            const retryAudioPlay = function () {
+                                orderAudioElement.play()
+                                    .then(() => console.log('✅ Phát âm thanh thông báo đơn hàng thành công sau khi thử lại'))
+                                    .catch(e => console.warn('⚠️ Vẫn không thể phát âm thanh:', e));
+                                document.removeEventListener('click', retryAudioPlay);
+                            };
+
+                            document.addEventListener('click', retryAudioPlay, { once: true });
+                        }
                     });
+            } else {
+                console.warn('⚠️ Không thể phát âm thanh vì trình duyệt không hỗ trợ Promise cho audio.play()');
             }
         } catch (e) {
-            console.warn('⚠️ Lỗi khi phát âm thanh thông báo:', e);
+            console.warn('⚠️ Lỗi khi phát âm thanh thông báo đơn hàng:', e);
+        }
+    }
+
+    /**
+     * Hàm phát âm thanh thông báo tin nhắn
+     */
+    function playMessageNotificationSound() {
+        try {
+            // Kích hoạt tương tác người dùng ngay lập tức nếu chưa có
+            if (!userInteracted) {
+                handleUserInteraction();
+            }
+
+            // Reset âm thanh về đầu
+            messageAudioElement.currentTime = 0;
+            messageAudioElement.volume = 0.8; // Đảm bảo âm lượng đủ lớn
+
+            // Đảm bảo âm thanh được tải
+            messageAudioElement.load();
+
+            // Phát âm thanh với nhiều lớp bảo vệ
+            const playPromise = messageAudioElement.play();
+
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => {
+                        console.log('✅ Đang phát âm thanh thông báo tin nhắn thành công');
+                        audioPlayAttempts = 0; // Reset số lần thử
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ Không thể phát âm thanh tin nhắn:', error);
+                        audioPlayAttempts++;
+
+                        // Thử lại với tương tác người dùng nếu lỗi
+                        if (audioPlayAttempts < maxAudioPlayAttempts) {
+                            console.log(`⏱️ Đang thử lại lần ${audioPlayAttempts}...`);
+
+                            // Đăng ký phát âm thanh khi người dùng tương tác tiếp theo
+                            const retryAudioPlay = function () {
+                                messageAudioElement.play()
+                                    .then(() => console.log('✅ Phát âm thanh thông báo tin nhắn thành công sau khi thử lại'))
+                                    .catch(e => console.warn('⚠️ Vẫn không thể phát âm thanh:', e));
+                                document.removeEventListener('click', retryAudioPlay);
+                            };
+
+                            document.addEventListener('click', retryAudioPlay, { once: true });
+                        }
+                    });
+            } else {
+                console.warn('⚠️ Không thể phát âm thanh vì trình duyệt không hỗ trợ Promise cho audio.play()');
+            }
+        } catch (e) {
+            console.warn('⚠️ Lỗi khi phát âm thanh thông báo tin nhắn:', e);
         }
     }
 
