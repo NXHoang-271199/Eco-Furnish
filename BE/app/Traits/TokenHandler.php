@@ -17,26 +17,24 @@ trait TokenHandler
             $refreshTokenExpiry = now()->addDays(30);  // 30 ngày
         } else {
             // Thời gian token mặc định
-            $accessTokenExpiry = now()->addMinutes(30); // 30 phút
+            $accessTokenExpiry = now()->addHours(2); // 2 giờ
             $refreshTokenExpiry = now()->addDays(7);    // 7 ngày
         }
         
-        // Tạo access token
+        // Tạo access token và refresh token
         $accessToken = $user->createToken('access_token', ['*'], $accessTokenExpiry)->plainTextToken;
-        
-        // Tạo refresh token
         $refreshToken = $user->createToken('refresh_token', ['*'], $refreshTokenExpiry)->plainTextToken;
         
-        // Lưu tokens
+        // Chỉ lưu token hiện tại và thời gian hết hạn
         $user->access_token = $accessToken;
         $user->refresh_token = $refreshToken;
+        $user->token_expires_at = $accessTokenExpiry;
         $user->save();
 
         return [
             'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
-            'access_token_expires_at' => $accessTokenExpiry,
-            'refresh_token_expires_at' => $refreshTokenExpiry
+            'expires_at' => $accessTokenExpiry
         ];
     }
 
