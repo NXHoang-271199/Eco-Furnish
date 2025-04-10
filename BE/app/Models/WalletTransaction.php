@@ -13,10 +13,10 @@ class WalletTransaction extends Model
         'amount',
         'type',
         'payment_method_id',
-        'transaction_ref',
         'description',
         'status',
         'created_by',
+        'order_id',
     ];
 
     public function wallet()
@@ -34,5 +34,9 @@ class WalletTransaction extends Model
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 }

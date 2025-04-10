@@ -30,7 +30,7 @@ class WalletSeeder extends Seeder
                     'amount' => rand(50000, 200000), // random từ 50k đến 200k
                     'type' => ['nap_tien', 'hoan_tien'][rand(0, 1)],
                     'payment_method_id' => rand(1, 3), // giả sử có sẵn 3 phương thức
-                    'transaction_ref' => Str::uuid(),
+                    'order_id' => rand(1, 5),
                     'description' => 'Giao dịch mẫu ' . ($j + 1),
                     'status' => ['cho_thanh_toan', 'thanh_cong', 'that_bai', 'da_huy'][rand(0, 3)],
                     'created_at' => now(),

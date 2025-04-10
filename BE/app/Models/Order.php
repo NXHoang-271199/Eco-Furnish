@@ -53,4 +53,8 @@ class Order extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
 }

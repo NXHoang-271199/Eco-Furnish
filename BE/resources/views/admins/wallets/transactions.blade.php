@@ -71,6 +71,7 @@
                                 <th>Khách hàng</th>
                                 <th>Loại GD</th>
                                 <th>Trạng thái</th>
+                                <th>Mã đơn hàng</th>
                                 <th>Số tiền</th>
                                 <th>Kênh nạp</th>
                                 <th>Người cộng tiền</th>
@@ -97,6 +98,7 @@
                                             {{ getTransactionStatusLabel($transaction->status) }}
                                         </span>
                                     </td>
+                                    <td>{{ $transaction->order->oder_code ?? 'N/A' }}</td>
                                     <td class="text-end">{{ number_format($transaction->amount, 0, ',', '.') }} đ</td>
                                     <td>{{ $transaction->paymentMethod->name ?? 'N/A' }}</td>
                                     <td>{{ $transaction->createdBy->name ?? 'N/A' }}</td>

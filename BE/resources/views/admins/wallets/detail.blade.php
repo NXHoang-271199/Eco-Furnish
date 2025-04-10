@@ -32,6 +32,7 @@
                             <th>Số tiền</th>
                             <th>Loại giao dịch</th>
                             <th>Trạng thái</th>
+                            <th>Mã đơn hàng</th>
                             <th>Kênh nạp</th>
                             <th>Người cộng tiền</th>
                             <th>Mô tả</th>
@@ -53,6 +54,7 @@
                                         {{ getTransactionStatusLabel($tran->status) }}
                                     </span>
                                 </td>
+                                <td>{{ $tran->order->order_code ?? 'N/A' }}</td>
                                 <td>{{ $tran->paymentMethod->name ?? 'N/A' }}</td>
                                 <td>
                                     @if($tran->createdBy)
