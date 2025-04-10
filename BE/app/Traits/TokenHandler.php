@@ -34,7 +34,6 @@ trait TokenHandler
         return [
             'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
-            'expires_at' => $accessTokenExpiry
         ];
     }
 
