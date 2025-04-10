@@ -193,16 +193,16 @@
                                         <i class="ri-file-excel-2-line align-middle"></i> Xuất báo cáo
                                     </button>
                                     <div>
-                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm">
+                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm filter-revenue" data-period="all">
                                             TẤT CẢ
                                         </button>
-                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm">
+                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm filter-revenue" data-period="1month">
                                             1 THÁNG
                                         </button>
-                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm">
+                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm filter-revenue" data-period="6month">
                                             6 THÁNG
                                         </button>
-                                        <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm">
+                                        <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm filter-revenue" data-period="1year">
                                             1 NĂM
                                         </button>
                                     </div>
@@ -211,31 +211,24 @@
 
                             <div class="card-header p-0 border-0 bg-light-subtle">
                                 <div class="row g-0 text-center">
-                                    <div class="col-6 col-sm-3">
+                                    <div class="col-6 col-sm-4">
                                         <div class="p-3 border border-dashed border-start-0">
                                             <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'orders')) : 0 }}">0</span></h5>
                                             <p class="text-muted mb-0">Đơn hàng</p>
                                         </div>
                                     </div>
                                     <!--end col-->
-                                    <div class="col-6 col-sm-3">
+                                    <div class="col-6 col-sm-4">
                                         <div class="p-3 border border-dashed border-start-0">
                                             <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'revenue')) : 0 }}">0</span> ₫</h5>
                                             <p class="text-muted mb-0">Doanh thu</p>
                                         </div>
                                     </div>
                                     <!--end col-->
-                                    <div class="col-6 col-sm-3">
-                                        <div class="p-3 border border-dashed border-start-0">
+                                    <div class="col-12 col-sm-4">
+                                        <div class="p-3 border border-dashed border-start-0 border-end-0">
                                             <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'refunds')) : 0 }}">0</span></h5>
                                             <p class="text-muted mb-0">Hoàn tiền</p>
-                                        </div>
-                                    </div>
-                                    <!--end col-->
-                                    <div class="col-6 col-sm-3">
-                                        <div class="p-3 border border-dashed border-start-0 border-end-0">
-                                            <h5 class="mb-1 text-success"><span class="counter-value" data-target="18">0</span>%</h5>
-                                            <p class="text-muted mb-0">Tỷ lệ chuyển đổi</p>
                                         </div>
                                     </div>
                                     <!--end col-->
@@ -259,18 +252,34 @@
                             <div class="card-header align-items-center d-flex">
                                 <h4 class="card-title mb-0 flex-grow-1">Sản phẩm bán chạy nhất</h4>
                                 <div class="flex-shrink-0">
-                                    <div class="dropdown card-header-dropdown">
+                                    <button type="button" class="btn btn-soft-info btn-sm material-shadow-none me-2" id="exportProductsReport" data-report-type="products" data-report-title="Sản phẩm bán chạy">
+                                        <i class="ri-file-excel-2-line align-middle"></i> Tạo báo cáo
+                                    </button>
+                                    <div class="dropdown card-header-dropdown d-inline-block">
                                         <a class="text-reset dropdown-btn" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                             <span class="fw-semibold text-uppercase fs-12">Sắp xếp theo:
-                                            </span><span class="text-muted">Hôm nay<i class="mdi mdi-chevron-down ms-1"></i></span>
+                                            </span><span class="text-muted">
+                                            @php
+                                                $sortLabels = [
+                                                    'today' => 'Hôm nay',
+                                                    'yesterday' => 'Hôm qua',
+                                                    'week' => '7 ngày qua',
+                                                    'month' => '30 ngày qua',
+                                                    'current_month' => 'Tháng này',
+                                                    'last_month' => 'Tháng trước'
+                                                ];
+                                                $currentSort = $currentSort ?? 'today';
+                                                echo $sortLabels[$currentSort];
+                                            @endphp
+                                            <i class="mdi mdi-chevron-down ms-1"></i></span>
                                         </a>
                                         <div class="dropdown-menu dropdown-menu-end">
-                                            <a class="dropdown-item" href="#">Hôm nay</a>
-                                            <a class="dropdown-item" href="#">Hôm qua</a>
-                                            <a class="dropdown-item" href="#">7 ngày qua</a>
-                                            <a class="dropdown-item" href="#">30 ngày qua</a>
-                                            <a class="dropdown-item" href="#">Tháng này</a>
-                                            <a class="dropdown-item" href="#">Tháng trước</a>
+                                            <a class="dropdown-item {{ ($currentSort ?? '') == 'today' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=today">Hôm nay</a>
+                                            <a class="dropdown-item {{ ($currentSort ?? '') == 'yesterday' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=yesterday">Hôm qua</a>
+                                            <a class="dropdown-item {{ ($currentSort ?? '') == 'week' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=week">7 ngày qua</a>
+                                            <a class="dropdown-item {{ ($currentSort ?? '') == 'month' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=month">30 ngày qua</a>
+                                            <a class="dropdown-item {{ ($currentSort ?? '') == 'current_month' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=current_month">Tháng này</a>
+                                            <a class="dropdown-item {{ ($currentSort ?? '') == 'last_month' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=last_month">Tháng trước</a>
                                         </div>
                                     </div>
                                 </div>
@@ -367,7 +376,7 @@
                                     </div>
                                     <div class="col-sm-auto mt-3 mt-sm-0">
                                         <ul class="pagination pagination-separated pagination-sm mb-0 justify-content-center">
-                                            {{-- Previous Page Link --}}
+                                            {{-- Nút trang trước --}}
                                             @if ($bestSellingProducts->onFirstPage())
                                                 <li class="page-item disabled">
                                                     <span class="page-link">←</span>
@@ -378,20 +387,14 @@
                                                 </li>
                                             @endif
 
-                                            {{-- Pagination Elements --}}
+                                            {{-- Các nút số trang --}}
                                             @foreach ($bestSellingProducts->getUrlRange(1, $bestSellingProducts->lastPage()) as $page => $url)
-                                                @if ($page == $bestSellingProducts->currentPage())
-                                                    <li class="page-item active">
-                                                        <span class="page-link">{{ $page }}</span>
-                                                    </li>
-                                                @else
-                                                    <li class="page-item">
-                                                        <a class="page-link" href="{{ $url }}">{{ $page }}</a>
-                                                    </li>
-                                                @endif
+                                                <li class="page-item {{ $page == $bestSellingProducts->currentPage() ? 'active' : '' }}">
+                                                    <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                                                </li>
                                             @endforeach
 
-                                            {{-- Next Page Link --}}
+                                            {{-- Nút trang sau --}}
                                             @if ($bestSellingProducts->hasMorePages())
                                                 <li class="page-item">
                                                     <a class="page-link" href="{{ $bestSellingProducts->nextPageUrl() }}" rel="next">→</a>
@@ -414,16 +417,9 @@
                             <div class="card-header align-items-center d-flex">
                                 <h4 class="card-title mb-0 flex-grow-1">Xếp hạng người mua hàng nhiều nhất</h4>
                                 <div class="flex-shrink-0">
-                                    <div class="dropdown card-header-dropdown">
-                                        <a class="text-reset dropdown-btn" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                            <span class="text-muted">Báo cáo<i class="mdi mdi-chevron-down ms-1"></i></span>
-                                        </a>
-                                        <div class="dropdown-menu dropdown-menu-end">
-                                            <a class="dropdown-item" href="#" id="downloadReport" data-report-type="topbuyers" data-report-title="Người mua hàng nhiều nhất">Tải xuống báo cáo</a>
-                                            <a class="dropdown-item" href="#" id="exportReport" data-report-type="topbuyers" data-report-title="Người mua hàng nhiều nhất">Xuất báo cáo</a>
-                                            <a class="dropdown-item" href="#" id="importReport">Nhập báo cáo</a>
-                                        </div>
-                                    </div>
+                                    <button type="button" class="btn btn-soft-info btn-sm material-shadow-none" id="createTopBuyersReport" data-report-type="topbuyers" data-report-title="Người mua hàng nhiều nhất">
+                                        <i class="ri-file-excel-2-line align-middle"></i> Tạo báo cáo
+                                    </button>
                                 </div>
                             </div><!-- end card header -->
 
@@ -492,6 +488,7 @@
                                     </div>
                                     <div class="col-sm-auto">
                                         <ul class="pagination pagination-separated pagination-sm justify-content-center justify-content-sm-end mb-0">
+                                            {{-- Nút trang trước --}}
                                             @if($topBuyers->onFirstPage())
                                                 <li class="page-item disabled">
                                                     <span class="page-link">←</span>
@@ -504,12 +501,14 @@
                                                 </li>
                                             @endif
                                             
+                                            {{-- Các nút số trang --}}
                                             @for($i = 1; $i <= $topBuyers->lastPage(); $i++)
                                                 <li class="page-item {{ $i == $topBuyers->currentPage() ? 'active' : '' }}">
                                                     <a class="page-link" href="{{ $topBuyers->url($i) }}">{{ $i }}</a>
                                                 </li>
                                             @endfor
                                             
+                                            {{-- Nút trang sau --}}
                                             @if($topBuyers->hasMorePages())
                                                 <li class="page-item">
                                                     <a class="page-link" href="{{ $topBuyers->nextPageUrl() }}" aria-label="Next">
@@ -861,36 +860,18 @@
             exportToExcel(reportType, reportTitle);
         });
 
-        // Xử lý các nút báo cáo người bán
-        document.getElementById('downloadReport').addEventListener('click', function (e) {
-            e.preventDefault();
+        // Xử lý nút xuất báo cáo sản phẩm bán chạy
+        document.getElementById('exportProductsReport').addEventListener('click', function () {
             const reportType = this.getAttribute('data-report-type');
             const reportTitle = this.getAttribute('data-report-title');
             exportToExcel(reportType, reportTitle);
         });
 
-        document.getElementById('exportReport').addEventListener('click', function (e) {
-            e.preventDefault();
+        // Xử lý các nút báo cáo người mua hàng nhiều nhất
+        document.getElementById('createTopBuyersReport').addEventListener('click', function () {
             const reportType = this.getAttribute('data-report-type');
             const reportTitle = this.getAttribute('data-report-title');
             exportToExcel(reportType, reportTitle);
-        });
-
-        document.getElementById('importReport').addEventListener('click', function (e) {
-            e.preventDefault();
-            // Tạo một input file ẩn để chọn file
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.xlsx, .xls, .csv';
-
-            input.onchange = function(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    importFromExcel(file);
-                }
-            };
-
-            input.click();
         });
         
         // Hàm khởi tạo counter
@@ -939,6 +920,74 @@
 
                 console.log('Dữ liệu biểu đồ:', chartData);
                 
+                // Tạo một biến để lưu trữ các dữ liệu đã lọc
+                let filteredData = {
+                    months: [...chartData.months],
+                    series: JSON.parse(JSON.stringify(chartData.series)),
+                    rawData: {...chartData.rawData}
+                };
+                
+                // Hàm lọc dữ liệu theo thời gian
+                function filterChartData(period) {
+                    // Reset về dữ liệu gốc trước khi lọc
+                    filteredData.months = [...chartData.months];
+                    filteredData.series = JSON.parse(JSON.stringify(chartData.series));
+                    
+                    // Tùy thuộc vào period, lọc dữ liệu phù hợp
+                    let startIndex = 0;
+                    const currentDate = new Date();
+                    const currentMonth = currentDate.getMonth(); // 0-11 (tháng hiện tại - 1)
+                    
+                    // Kiểm tra xem dữ liệu các tháng có đúng thứ tự từ tháng 1 đến tháng 12 không
+                    // Nếu là mảng từ Th1 đến Th12 theo thứ tự thì chúng ta cần điều chỉnh chỉ số
+                    
+                    switch(period) {
+                        case 'all':
+                            // Không cần lọc, sử dụng tất cả dữ liệu
+                            return filteredData;
+                        case '1month':
+                            // Lấy dữ liệu của tháng hiện tại
+                            if (chartData.months[currentMonth] === 'Th' + (currentMonth + 1)) {
+                                // Nếu tên tháng trong mảng khớp với tháng hiện tại (ví dụ: tháng 4 = Th4)
+                                // Trường hợp đặc biệt cho 1 tháng: chỉ lấy tháng hiện tại
+                                filteredData.months = [chartData.months[currentMonth]];
+                                
+                                // Lọc dữ liệu series
+                                filteredData.series.forEach((serie, index) => {
+                                    serie.data = [chartData.series[index].data[currentMonth]];
+                                });
+                                return filteredData;
+                            } else {
+                                // Nếu không khớp, tìm tháng hiện tại trong mảng
+                                const currentMonthName = 'Th' + (currentMonth + 1);
+                                const monthIndex = chartData.months.findIndex(month => month === currentMonthName);
+                                
+                                if (monthIndex !== -1) {
+                                    filteredData.months = [chartData.months[monthIndex]];
+                                    
+                                    // Lọc dữ liệu series
+                                    filteredData.series.forEach((serie, index) => {
+                                        serie.data = [chartData.series[index].data[monthIndex]];
+                                    });
+                                }
+                                return filteredData;
+                            }
+                        case '6month':
+                            // Lấy 6 tháng đầu tiên của năm
+                            filteredData.months = chartData.months.slice(0, 6);
+                            filteredData.series.forEach((serie) => {
+                                serie.data = serie.data.slice(0, 6);
+                            });
+                            return filteredData;
+                        case '1year':
+                            // Mặc định đã là 12 tháng (1 năm)
+                            return filteredData;
+                        default:
+                            return filteredData;
+                    }
+                }
+                
+                // Tạo biểu đồ với dữ liệu ban đầu
                 // Cấu hình cho biểu đồ
                 const options = {
                     series: chartData.series,
@@ -1113,6 +1162,106 @@
                 const chart = new ApexCharts(document.querySelector("#customer_impression_charts"), options);
                 chart.render();
                 
+                // Bắt sự kiện khi người dùng click vào nút lọc
+                document.querySelectorAll('.filter-revenue').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const period = this.getAttribute('data-period');
+                        
+                        // Cập nhật trạng thái active cho nút
+                        document.querySelectorAll('.filter-revenue').forEach(btn => {
+                            btn.classList.remove('btn-soft-primary');
+                            btn.classList.add('btn-soft-secondary');
+                        });
+                        this.classList.remove('btn-soft-secondary');
+                        this.classList.add('btn-soft-primary');
+                        
+                        // Lọc dữ liệu theo thời gian
+                        const newData = filterChartData(period);
+                        
+                        // Cập nhật biểu đồ với dữ liệu mới
+                        chart.updateOptions({
+                            labels: newData.months,
+                            xaxis: {
+                                categories: newData.months
+                            }
+                        });
+                        
+                        // Cập nhật series
+                        chart.updateSeries(newData.series);
+                        
+                        // Cập nhật tổng thống kê
+                        updateStatistics(period);
+                    });
+                });
+                
+                // Khởi tạo với mặc định là 1 năm (gọi click event cho nút "1 NĂM")
+                const defaultFilterButton = document.querySelector('.filter-revenue[data-period="1year"]');
+                if (defaultFilterButton) {
+                    // Gọi sự kiện click trên nút mặc định
+                    defaultFilterButton.click();
+                }
+                
+                // Hàm cập nhật thống kê tổng hợp khi lọc
+                function updateStatistics(period) {
+                    // Lấy tháng hiện tại
+                    const currentDate = new Date();
+                    const currentMonth = currentDate.getMonth(); // 0-11 (tháng hiện tại - 1)
+                    
+                    let filteredOrders = [];
+                    let filteredRevenue = [];
+                    let filteredRefunds = [];
+                    
+                    // Tính toán dựa trên giai đoạn đã chọn
+                    if (period === 'all' || period === '1year') {
+                        // Sử dụng tất cả dữ liệu
+                        filteredOrders = chartData.rawData.orders;
+                        filteredRevenue = chartData.rawData.revenue;
+                        filteredRefunds = chartData.rawData.refunds;
+                    } else if (period === '1month') {
+                        // Chỉ lấy dữ liệu của tháng hiện tại
+                        filteredOrders = [chartData.rawData.orders[currentMonth]];
+                        filteredRevenue = [chartData.rawData.revenue[currentMonth]];
+                        filteredRefunds = [chartData.rawData.refunds[currentMonth]];
+                    } else if (period === '6month') {
+                        // Lấy dữ liệu của 6 tháng gần nhất
+                        const startIndex = Math.max(0, currentMonth - 5);
+                        const endIndex = Math.min(startIndex + 6, chartData.months.length);
+                        
+                        filteredOrders = chartData.rawData.orders.slice(startIndex, endIndex);
+                        filteredRevenue = chartData.rawData.revenue.slice(startIndex, endIndex);
+                        filteredRefunds = chartData.rawData.refunds.slice(startIndex, endIndex);
+                    }
+                    
+                    // Tính tổng
+                    const totalOrders = filteredOrders.reduce((sum, val) => sum + val, 0);
+                    const totalRevenue = filteredRevenue.reduce((sum, val) => sum + val, 0);
+                    const totalRefunds = filteredRefunds.reduce((sum, val) => sum + val, 0);
+                    
+                    // Cập nhật giá trị hiển thị trên giao diện
+                    const orderCounter = document.querySelector('.card-header.bg-light-subtle .counter-value[data-target]');
+                    if (orderCounter) {
+                        orderCounter.setAttribute('data-target', totalOrders);
+                        orderCounter.textContent = '0';
+                    }
+                    
+                    // Cập nhật doanh thu
+                    const revenueCounter = document.querySelectorAll('.card-header.bg-light-subtle .counter-value[data-target]')[1];
+                    if (revenueCounter) {
+                        revenueCounter.setAttribute('data-target', totalRevenue);
+                        revenueCounter.textContent = '0';
+                    }
+                    
+                    // Cập nhật hoàn tiền
+                    const refundCounter = document.querySelectorAll('.card-header.bg-light-subtle .counter-value[data-target]')[2];
+                    if (refundCounter) {
+                        refundCounter.setAttribute('data-target', totalRefunds);
+                        refundCounter.textContent = '0';
+                    }
+                    
+                    // Khởi động lại counter animation
+                    initCounters();
+                }
+                
                 console.log('Biểu đồ đã được khởi tạo');
             } catch (error) {
                 console.error('Lỗi khởi tạo biểu đồ:', error);
@@ -1129,8 +1278,6 @@
         async function exportToExcel(reportType, reportTitle) {
             let data = [];
             let headers = [];
-            let monthlyData = [];
-            let needTotalRow = false;
 
             console.log('Đang xuất báo cáo:', reportType);
 
@@ -1149,10 +1296,6 @@
                         });
                         data.push(rowData);
                     });
-
-                    // Không cần thêm dòng tổng cho đơn hàng
-                    needTotalRow = false;
-                    console.log('Dữ liệu đơn hàng:', data.length, 'dòng');
                 }
             } else if (reportType === 'topbuyers') {
                 // Thu thập dữ liệu từ bảng khách hàng mua nhiều nhất
@@ -1206,85 +1349,91 @@
 
                         data.push([buyerName, email, type, orders, spent, rate]);
                     });
-
-                    // Không cần thêm dòng tổng cho người mua
-                    needTotalRow = false;
-                    console.log('Dữ liệu người mua:', data.length, 'dòng');
-                } else {
-                    console.log('Không tìm thấy bảng người mua hàng nhiều nhất');
+                }
+            } else if (reportType === 'products') {
+                // Thu thập dữ liệu từ bảng sản phẩm bán chạy
+                headers = ['Sản phẩm', 'Giá', 'Đơn hàng', 'Tồn kho', 'Tổng tiền', 'Ngày tạo'];
+                
+                // Tìm bảng sản phẩm bán chạy
+                const titles = document.querySelectorAll('.card-title');
+                let productTable = null;
+                
+                for (let i = 0; i < titles.length; i++) {
+                    if (titles[i].textContent.includes('Sản phẩm bán chạy')) {
+                        const productCard = titles[i].closest('.card');
+                        if (productCard) {
+                            productTable = productCard.querySelector('table');
+                            break;
+                        }
+                    }
+                }
+                
+                if (productTable) {
+                    const rows = productTable.querySelectorAll('tbody tr');
+                    
+                    rows.forEach(row => {
+                        const nameElement = row.querySelector('.fs-14.my-1 a');
+                        const dateElement = row.querySelector('.text-muted');
+                        
+                        // Lấy dữ liệu từ các ô
+                        const cells = row.querySelectorAll('td');
+                        const productName = nameElement ? nameElement.textContent.trim() : '';
+                        const createdDate = dateElement ? dateElement.textContent.trim() : '';
+                        
+                        let price = '', orders = '', stock = '', totalAmount = '';
+                        
+                        if (cells.length >= 2) {
+                            const priceElement = cells[1].querySelector('.fs-14.my-1.fw-normal');
+                            price = priceElement ? priceElement.textContent.trim() : '';
+                        }
+                        
+                        if (cells.length >= 3) {
+                            const ordersElement = cells[2].querySelector('.fs-14.my-1.fw-normal');
+                            orders = ordersElement ? ordersElement.textContent.trim() : '';
+                        }
+                        
+                        if (cells.length >= 4) {
+                            const stockElement = cells[3].querySelector('.fs-14.my-1.fw-normal');
+                            stock = stockElement ? stockElement.textContent.trim() : '';
+                        }
+                        
+                        if (cells.length >= 5) {
+                            const amountElement = cells[4].querySelector('.fs-14.my-1.fw-normal');
+                            totalAmount = amountElement ? amountElement.textContent.trim() : '';
+                        }
+                        
+                        data.push([productName, price, orders, stock, totalAmount, createdDate]);
+                    });
                 }
             } else if (reportType === 'revenue') {
                 // Thu thập dữ liệu cho báo cáo doanh thu
                 headers = ['Tháng', 'Đơn hàng', 'Doanh thu', 'Hoàn tiền', 'Tỷ lệ chuyển đổi'];
 
-                // Tìm card doanh thu
-                const revenueTitles = document.querySelectorAll('.card-title');
-                let revenueCard = null;
-
-                for (let i = 0; i < revenueTitles.length; i++) {
-                    if (revenueTitles[i].textContent.includes('Doanh thu')) {
-                        revenueCard = revenueTitles[i].closest('.card');
-                        break;
-                    }
-                }
-
-                if (revenueCard) {
-                    // Lấy thông tin từ card
-                    const statsEls = revenueCard.querySelectorAll('.border-dashed');
-
-                    let ordersTotal = '';
-                    let revenueTotal = '';
-                    let refundsTotal = '';
-                    let conversionRate = '';
-
-                    if (statsEls.length >= 1) {
-                        const orderEl = statsEls[0].querySelector('h5');
-                        if (orderEl) ordersTotal = orderEl.textContent.trim();
-                    }
-
-                    if (statsEls.length >= 2) {
-                        const revenueEl = statsEls[1].querySelector('h5');
-                        if (revenueEl) revenueTotal = revenueEl.textContent.trim();
-                    }
-
-                    if (statsEls.length >= 3) {
-                        const refundEl = statsEls[2].querySelector('h5');
-                        if (refundEl) refundsTotal = refundEl.textContent.trim();
-                    }
-
-                    if (statsEls.length >= 4) {
-                        const conversionEl = statsEls[3].querySelector('h5');
-                        if (conversionEl) conversionRate = conversionEl.textContent.trim();
-                    }
-
-                    // Dữ liệu từ biểu đồ doanh thu (sử dụng dữ liệu từ backend nếu có hoặc dữ liệu mẫu)
-                    monthlyData = [
-                        { month: 'Tháng 1', orders: 450, revenue: '$9,250', refunds: 21, conversion: '15.3%' },
-                        { month: 'Tháng 2', orders: 520, revenue: '$12,100', refunds: 28, conversion: '16.8%' },
-                        { month: 'Tháng 3', orders: 410, revenue: '$8,200', refunds: 19, conversion: '14.5%' },
-                        { month: 'Tháng 4', orders: 610, revenue: '$14,500', refunds: 32, conversion: '18.2%' },
-                        { month: 'Tháng 5', orders: 480, revenue: '$9,800', refunds: 25, conversion: '15.9%' },
-                        { month: 'Tháng 6', orders: 510, revenue: '$10,900', refunds: 23, conversion: '16.5%' },
-                        { month: 'Tháng 7', orders: 380, revenue: '$7,800', refunds: 18, conversion: '14.1%' },
-                        { month: 'Tháng 8', orders: 320, revenue: '$6,500', refunds: 14, conversion: '13.2%' },
-                        { month: 'Tháng 9', orders: 580, revenue: '$13,200', refunds: 29, conversion: '17.6%' },
-                        { month: 'Tháng 10', orders: 410, revenue: '$9,100', refunds: 20, conversion: '15.0%' },
-                        { month: 'Tháng 11', orders: 530, revenue: '$11,800', refunds: 26, conversion: '16.7%' },
-                        { month: 'Tháng 12', orders: 390, revenue: '$8,400', refunds: 19, conversion: '14.8%' }
-                    ];
-
-                    // Thêm dữ liệu hàng tháng
+                // Lấy dữ liệu từ biểu đồ (dùng dữ liệu mẫu nếu không có dữ liệu thực)
+                const monthlyData = @json($monthlyData ?? []);
+                
+                if (monthlyData && monthlyData.length > 0) {
+                    // Dữ liệu thực từ backend
                     monthlyData.forEach(item => {
-                        data.push([item.month, item.orders, item.revenue, item.refunds, item.conversion]);
+                        data.push([
+                            item.month, 
+                            item.orders.toString(), 
+                            item.revenue.toLocaleString('vi-VN') + ' ₫', 
+                            item.refunds.toString(),
+                            '15%' // Giá trị mẫu cho tỷ lệ chuyển đổi
+                        ]);
                     });
-
-                    // Dòng tổng cộng cho doanh thu
-                    const totalOrders = monthlyData.reduce((sum, item) => sum + parseInt(item.orders), 0);
-                    const totalRefunds = monthlyData.reduce((sum, item) => sum + parseInt(item.refunds), 0);
-
-                    data.push(['Tổng cộng', totalOrders, revenueTotal, totalRefunds, conversionRate]);
-                    needTotalRow = true;
-                    console.log('Dữ liệu doanh thu:', data.length, 'dòng');
+                } else {
+                    // Dữ liệu mẫu nếu không có dữ liệu thực
+                    for (let i = 1; i <= 12; i++) {
+                        data.push([
+                            'Tháng ' + i,
+                            Math.floor(Math.random() * 500 + 300).toString(),
+                            (Math.random() * 10000000 + 5000000).toLocaleString('vi-VN') + ' ₫',
+                            Math.floor(Math.random() * 30).toString(),
+                            Math.floor(Math.random() * 10 + 10) + '%'
+                        ]);
+                    }
                 }
             }
 
@@ -1367,26 +1516,6 @@
                         };
                     });
 
-                    // Tạo style cho dòng tổng
-                    const totalRowStyle = {
-                        fill: {
-                            type: 'pattern',
-                            pattern: 'solid',
-                            fgColor: { argb: '2E75B6' }
-                        },
-                        font: {
-                            bold: true,
-                            color: { argb: 'FFFFFF' },
-                            size: 11
-                        },
-                        border: {
-                            top: { style: 'medium', color: { argb: 'FFFFFF' } },
-                            left: { style: 'medium', color: { argb: 'FFFFFF' } },
-                            bottom: { style: 'medium', color: { argb: 'FFFFFF' } },
-                            right: { style: 'medium', color: { argb: 'FFFFFF' } }
-                        }
-                    };
-
                     // Thêm dữ liệu
                     data.forEach((rowData, index) => {
                         const row = dataSheet.addRow(rowData);
@@ -1395,43 +1524,18 @@
                         const isAlternateRow = index % 2 === 1;
                         const rowColor = isAlternateRow ? 'F2F9FF' : 'FFFFFF';
 
-                        // Kiểm tra nếu là hàng cuối VÀ cần tổng
-                        const isTotalRow = needTotalRow && index === data.length - 1;
-
-                        row.eachCell((cell, colNumber) => {
-                            if (isTotalRow) {
-                                // Định dạng hàng tổng cộng giống header
-                                cell.fill = totalRowStyle.fill;
-                                cell.font = totalRowStyle.font;
-                                cell.border = totalRowStyle.border;
-                            } else {
-                                // Định dạng các hàng thường
-                                cell.fill = {
-                                    type: 'pattern',
-                                    pattern: 'solid',
-                                    fgColor: { argb: rowColor }
-                                };
-                                cell.border = {
-                                    top: { style: 'thin', color: { argb: 'D0D7E5' } },
-                                    left: { style: 'thin', color: { argb: 'D0D7E5' } },
-                                    bottom: { style: 'thin', color: { argb: 'D0D7E5' } },
-                                    right: { style: 'thin', color: { argb: 'D0D7E5' } }
-                                };
-                            }
-
-                            // Định dạng đặc biệt cho các cột
-                            if ((reportType === 'topbuyers' && colNumber === 5) ||
-                                (reportType === 'revenue' && colNumber === 3) ||
-                                (reportType === 'orders' && colNumber === 4)) {
-                                // Cột tiền tệ
-                                cell.numFmt = '"$"#,##0.00';
-                                cell.alignment = { horizontal: 'right' };
-                            } else if ((reportType === 'topbuyers' && colNumber === 6) ||
-                                      (reportType === 'revenue' && colNumber === 5)) {
-                                // Cột phần trăm
-                                cell.numFmt = '0.0%';
-                                cell.alignment = { horizontal: 'center' };
-                            }
+                        row.eachCell((cell) => {
+                            cell.fill = {
+                                type: 'pattern',
+                                pattern: 'solid',
+                                fgColor: { argb: rowColor }
+                            };
+                            cell.border = {
+                                top: { style: 'thin', color: { argb: 'D0D7E5' } },
+                                left: { style: 'thin', color: { argb: 'D0D7E5' } },
+                                bottom: { style: 'thin', color: { argb: 'D0D7E5' } },
+                                right: { style: 'thin', color: { argb: 'D0D7E5' } }
+                            };
                         });
                     });
 
@@ -1480,16 +1584,6 @@
                 }).showToast();
             }
         }
-
-        // Thêm jQuery-like selector utility
-        document.querySelectorAll = document.querySelectorAll || function(selector) {
-            return document.querySelectorAll(selector);
-        };
-
-        // Thêm hàm tìm kiếm text trong các phần tử
-        Element.prototype.contains = Element.prototype.contains || function(text) {
-            return this.textContent.includes(text);
-        };
 
         // Hàm nhập dữ liệu từ Excel
         async function importFromExcel(file) {

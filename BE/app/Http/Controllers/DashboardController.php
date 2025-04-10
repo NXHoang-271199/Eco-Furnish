@@ -64,15 +64,11 @@ class DashboardController extends Controller
             ? round((($totalCustomers - $lastMonthCustomers) / $lastMonthCustomers) * 100, 2) 
             : 100; // Nếu tháng trước không có khách hàng mới, coi như tăng 100%
         
+        // Xử lý lọc theo ngày cho sản phẩm bán chạy
+        $sortType = request()->get('sort', 'today'); // Mặc định là hôm nay
+        $dateRange = $this->getDateRangeBySort($sortType);
+        
         // Sản phẩm bán chạy nhất - Tổng số sản phẩm bán chạy
-        $totalBestSellingProducts = DB::table('order_items')
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->where('orders.payment_status', 'paid')
-            ->groupBy('products.id')
-            ->count();
-            
-        // Sản phẩm bán chạy nhất với phân trang
         $bestSellingProductsQuery = DB::table('order_items')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
@@ -86,9 +82,26 @@ class DashboardController extends Controller
                 DB::raw('SUM(order_items.quantity) as total_sold'),
                 DB::raw('SUM(order_items.price * order_items.quantity) as total_amount')
             )
-            ->where('orders.payment_status', 'paid')
-            ->groupBy('products.id', 'products.name', 'products.price', 'products.image_thumnail', 'products.quantity', 'products.created_at')
+            ->where('orders.payment_status', 'paid');
+            
+        // Thêm điều kiện ngày nếu có
+        if ($dateRange) {
+            $bestSellingProductsQuery->whereBetween('orders.created_at', [$dateRange['start'], $dateRange['end']]);
+        }
+        
+        // Hoàn thành câu truy vấn với group by và order by
+        $bestSellingProductsQuery->groupBy('products.id', 'products.name', 'products.price', 'products.image_thumnail', 'products.quantity', 'products.created_at')
             ->orderByDesc('total_sold');
+        
+        // Đếm tổng số bản ghi để phân trang
+        $totalBestSellingProducts = count(DB::select(
+            "SELECT products.id FROM order_items 
+            JOIN products ON order_items.product_id = products.id 
+            JOIN orders ON order_items.order_id = orders.id 
+            WHERE orders.payment_status = 'paid' " .
+            ($dateRange ? "AND orders.created_at BETWEEN '".$dateRange['start']."' AND '".$dateRange['end']."' " : "") .
+            "GROUP BY products.id"
+        ));
         
         // Lấy tham số phân trang từ request hoặc sử dụng giá trị mặc định
         $currentPage = request()->get('product_page', 1);
@@ -101,6 +114,48 @@ class DashboardController extends Controller
             $currentPage,
             ['path' => request()->url(), 'query' => request()->query()]
         );
+        
+        // Top người mua hàng nhiều nhất - Query builder
+        $topBuyersQuery = DB::table('users')
+            ->join('orders', 'users.id', '=', 'orders.user_id')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->select(
+                'users.id', 
+                'users.name', 
+                'users.email', 
+                'users.avatar',
+                DB::raw('COUNT(DISTINCT orders.id) as orders_count'), 
+                DB::raw('SUM(order_items.price * order_items.quantity) as total_spent')
+            )
+            ->where('orders.payment_status', 'paid')
+            ->groupBy('users.id', 'users.name', 'users.email', 'users.avatar')
+            ->orderByDesc('orders_count');
+            
+        // Đếm tổng số người mua để phân trang
+        $totalTopBuyers = count(DB::select(
+            "SELECT users.id FROM users 
+            JOIN orders ON users.id = orders.user_id 
+            WHERE orders.payment_status = 'paid' 
+            GROUP BY users.id"
+        ));
+            
+        // Phân trang cho người mua hàng nhiều nhất
+        $buyerCurrentPage = request()->get('buyer_page', 1);
+        $buyerPerPage = 5;
+        $topBuyers = $topBuyersQuery->skip(($buyerCurrentPage - 1) * $buyerPerPage)->take($buyerPerPage)->get();
+        $topBuyersPaginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $topBuyers,
+            $totalTopBuyers,
+            $buyerPerPage,
+            $buyerCurrentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+            
+        // Thống kê cho người mua hàng nhiều nhất
+        $topBuyerStats = (object)[
+            'max_orders' => $topBuyers->isEmpty() ? 0 : $topBuyers->max('orders_count'),
+            'total' => $totalTopBuyers
+        ];
         
         // Đơn hàng gần đây - với dữ liệu đánh giá
         $recentOrders = Order::with([
@@ -172,47 +227,6 @@ class DashboardController extends Controller
             ->orderByDesc('created_at')
             ->limit(5)
             ->get();
-            
-        // Tổng số người mua hàng nhiều nhất
-        $totalTopBuyers = DB::table('users')
-            ->join('orders', 'users.id', '=', 'orders.user_id')
-            ->where('orders.payment_status', 'paid')
-            ->groupBy('users.id')
-            ->count();
-            
-        // Top người mua hàng nhiều nhất - Query builder
-        $topBuyersQuery = DB::table('users')
-            ->join('orders', 'users.id', '=', 'orders.user_id')
-            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-            ->select(
-                'users.id', 
-                'users.name', 
-                'users.email', 
-                'users.avatar',
-                DB::raw('COUNT(DISTINCT orders.id) as orders_count'), 
-                DB::raw('SUM(order_items.price * order_items.quantity) as total_spent')
-            )
-            ->where('orders.payment_status', 'paid')
-            ->groupBy('users.id', 'users.name', 'users.email', 'users.avatar')
-            ->orderByDesc('orders_count');
-            
-        // Phân trang cho người mua hàng nhiều nhất
-        $buyerCurrentPage = request()->get('buyer_page', 1);
-        $buyerPerPage = 5;
-        $topBuyers = $topBuyersQuery->skip(($buyerCurrentPage - 1) * $buyerPerPage)->take($buyerPerPage)->get();
-        $topBuyersPaginator = new \Illuminate\Pagination\LengthAwarePaginator(
-            $topBuyers,
-            $totalTopBuyers,
-            $buyerPerPage,
-            $buyerCurrentPage,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
-            
-        // Thống kê cho người mua hàng nhiều nhất
-        $topBuyerStats = (object)[
-            'max_orders' => $topBuyers->isEmpty() ? 0 : $topBuyers->max('orders_count'),
-            'total' => $totalTopBuyers
-        ];
         
         // Lấy dữ liệu doanh thu theo tháng cho biểu đồ
         $monthlyData = $this->getMonthlyRevenueData();
@@ -239,8 +253,54 @@ class DashboardController extends Controller
             'chartData' => $chartData, // Dữ liệu đã định dạng cho biểu đồ kết hợp
             'earningsPercentage' => $earningsPercentage,
             'ordersPercentage' => $ordersPercentage,
-            'customersPercentage' => $customersPercentage
+            'customersPercentage' => $customersPercentage,
+            'currentSort' => $sortType // Thêm biến currentSort để hiển thị trạng thái đang chọn
         ]);
+    }
+    
+    /**
+     * Lấy khoảng thời gian dựa vào loại sắp xếp
+     * @param string $sortType
+     * @return array|null
+     */
+    private function getDateRangeBySort($sortType)
+    {
+        $now = Carbon::now();
+        
+        switch ($sortType) {
+            case 'today':
+                return [
+                    'start' => $now->copy()->startOfDay(),
+                    'end' => $now->copy()->endOfDay(),
+                ];
+            case 'yesterday':
+                return [
+                    'start' => $now->copy()->subDay()->startOfDay(),
+                    'end' => $now->copy()->subDay()->endOfDay(),
+                ];
+            case 'week':
+                return [
+                    'start' => $now->copy()->subDays(7)->startOfDay(),
+                    'end' => $now->copy()->endOfDay(),
+                ];
+            case 'month':
+                return [
+                    'start' => $now->copy()->subDays(30)->startOfDay(),
+                    'end' => $now->copy()->endOfDay(),
+                ];
+            case 'current_month':
+                return [
+                    'start' => $now->copy()->startOfMonth(),
+                    'end' => $now->copy()->endOfMonth(),
+                ];
+            case 'last_month':
+                return [
+                    'start' => $now->copy()->subMonth()->startOfMonth(),
+                    'end' => $now->copy()->subMonth()->endOfMonth(),
+                ];
+            default:
+                return null;
+        }
     }
     
     /**
@@ -316,6 +376,31 @@ class DashboardController extends Controller
         $refundsData = array_column($monthlyData, 'refunds');
         $refundAmountData = array_column($monthlyData, 'refundAmount');
         
+        // Mô phỏng dữ liệu lượt truy cập (visits) - sẽ được thay thế bằng dữ liệu thực từ bảng thống kê truy cập
+        // trong phiên bản sau nếu có theo dõi lượt truy cập
+        $visitsData = [];
+        foreach ($ordersData as $orderCount) {
+            // Mô phỏng số lượt truy cập khoảng 5-10 lần số đơn hàng
+            $visits = $orderCount * rand(5, 10);
+            $visitsData[] = $visits > 0 ? $visits : rand(50, 100);
+        }
+        
+        // Tính tỷ lệ chuyển đổi (đơn hàng / lượt truy cập)
+        $conversionRateData = [];
+        foreach ($ordersData as $key => $orderCount) {
+            $visits = $visitsData[$key];
+            // Tránh chia cho 0
+            if ($visits > 0) {
+                $conversionRateData[] = round(($orderCount / $visits) * 100, 2);
+            } else {
+                $conversionRateData[] = 0;
+            }
+        }
+        
+        // Tính tỷ lệ chuyển đổi trung bình
+        $averageConversionRate = !empty($conversionRateData) ? array_sum($conversionRateData) / count($conversionRateData) : 0;
+        $averageConversionRate = round($averageConversionRate, 2);
+        
         // Chuẩn bị dữ liệu cho biểu đồ kết hợp (cột + đường)
         $chartData = [
             'months' => $months,
@@ -344,7 +429,10 @@ class DashboardController extends Controller
                 'revenue' => $revenueData,
                 'orders' => $ordersData,
                 'refunds' => $refundsData,
-                'refundAmount' => $refundAmountData
+                'refundAmount' => $refundAmountData,
+                'visits' => $visitsData,
+                'conversionRate' => $conversionRateData,
+                'averageConversionRate' => $averageConversionRate
             ]
         ];
         
