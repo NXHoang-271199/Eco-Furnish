@@ -169,12 +169,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 connectionAttempts = 0;
 
                 // Đăng ký là admin
-                // socket.emit("adminConnect", { token: adminToken }, (response) => {
-                //     if (response && response.success) {
-                //     } else {
-                //         reconnectWithDelay();
-                //     }
-                // });
+                socket.emit("adminConnect", {}, (response) => {
+                    if (response && response.success) {
+                        console.log("✅ Đăng ký làm admin thành công");
+                        // Nếu response có danh sách người dùng, cập nhật ngay
+                        if (response.userList && Array.isArray(response.userList)) {
+                            console.log("📋 Đã nhận danh sách người dùng từ đăng ký admin:", response.userList);
+                            updateUserList(response.userList);
+                        } else {
+                            console.log("⏳ Chờ cập nhật danh sách người dùng từ sự kiện currentUsers...");
+                            // Chủ động tải lại danh sách người dùng sau 3 giây nếu không nhận được sự kiện
+                            setTimeout(() => {
+                                if (userList.innerHTML.includes('Chưa có người dùng kết nối') && socket.connected) {
+                                    console.log("🔄 Gửi yêu cầu lấy danh sách người dùng...");
+                                    socket.emit("adminConnect", {}, () => {
+                                        console.log("🔄 Đã gửi lại yêu cầu adminConnect");
+                                    });
+                                }
+                            }, 3000);
+                        }
+                    } else {
+                        console.error("❌ Đăng ký admin thất bại:", response ? response.error : "Không có phản hồi");
+                        reconnectWithDelay();
+                    }
+                });
             });
 
             // Thêm hàm retry kết nối

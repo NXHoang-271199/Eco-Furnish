@@ -2,9 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger
 } from './ui/dropdown-menu';
 import { Bell } from 'lucide-react';
@@ -14,8 +11,7 @@ import axios from 'axios';
 import { format, isToday, isYesterday } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { getSocket, markNotificationAsRead, subscribeToNotifications } from '../utils/socketConfig';
-import { toast } from 'react-hot-toast';
+import { subscribeToNotifications } from '../utils/socketConfig';
 import { showOrderStatusToast } from './ui/toast';
 
 const Notifications = () => {
@@ -23,10 +19,12 @@ const Notifications = () => {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isMarkAllLoading, setIsMarkAllLoading] = useState(false);
     const navigate = useNavigate();
     const audioRef = useRef(null);
     const recentNotificationIds = useRef(new Set());
     const toastShownIds = useRef(new Set());
+    const notificationContainerRef = useRef(null);
 
     useEffect(() => {
         // Đăng ký nhận thông báo từ socket
@@ -57,6 +55,13 @@ const Notifications = () => {
     useEffect(() => {
         fetchNotifications();
     }, []);
+
+    // Khi dropdown mở, cuộn lên đầu danh sách
+    useEffect(() => {
+        if (isDropdownOpen && notificationContainerRef.current) {
+            notificationContainerRef.current.scrollTop = 0;
+        }
+    }, [isDropdownOpen]);
 
     const fetchNotifications = async () => {
         const token = localStorage.getItem('authToken');
@@ -191,7 +196,10 @@ const Notifications = () => {
     };
 
     const markAllAsRead = async () => {
+        if (isMarkAllLoading) return;
+
         try {
+            setIsMarkAllLoading(true);
             const token = localStorage.getItem('authToken');
             await axios.patch('http://localhost:8000/api/user/notifications/read-all', {}, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -205,7 +213,67 @@ const Notifications = () => {
             setUnreadCount(0);
         } catch (error) {
             console.error('Lỗi khi đánh dấu tất cả đã đọc:', error);
+        } finally {
+            setIsMarkAllLoading(false);
         }
+    };
+
+    // Nhóm thông báo theo ngày
+    const groupNotificationsByDate = () => {
+        const groups = {
+            today: [],
+            yesterday: [],
+            older: []
+        };
+
+        notifications.forEach(notification => {
+            const date = new Date(notification.created_at);
+            if (isToday(date)) {
+                groups.today.push(notification);
+            } else if (isYesterday(date)) {
+                groups.yesterday.push(notification);
+            } else {
+                groups.older.push(notification);
+            }
+        });
+
+        return groups;
+    };
+
+    const notificationGroups = groupNotificationsByDate();
+
+    const renderNotificationGroup = (title, items) => {
+        if (items.length === 0) return null;
+
+        return (
+            <div key={title}>
+                <div className="sticky top-0 bg-white px-4 py-1 text-xs font-medium text-gray-500 border-b z-10">
+                    {title}
+                </div>
+                {items.map(notification => (
+                    <div
+                        key={notification.id}
+                        className={`flex flex-col items-start py-3 px-4 cursor-pointer hover:bg-gray-50 ${!notification.is_read ? 'bg-green-50 hover:bg-green-100/70' : ''} border-b border-gray-100`}
+                        onClick={() => handleNotificationClick(notification)}
+                    >
+                        <div className="flex w-full">
+                            <div className="flex-1 min-w-0">
+                                <p className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
+                                    {notification.message ||
+                                        `Đơn hàng #${notification.order_code || 'Không xác định'} đã chuyển sang trạng thái: ${notification.order_status || 'Không xác định'}`}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {formatTime(notification.created_at)}
+                                </p>
+                            </div>
+                            {!notification.is_read && (
+                                <div className="ml-2 h-2 w-2 bg-green-500 rounded-full flex-shrink-0 mt-1"></div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
     };
 
     return (
@@ -213,23 +281,31 @@ const Notifications = () => {
             <DropdownMenuTrigger asChild>
                 <Button
                     variant="ghost"
-                    className="relative p-2 rounded-full hover:bg-gray-100 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    className="relative p-2 rounded-full hover:bg-gray-100 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors duration-200"
                 >
                     <Bell size={20} strokeWidth={1.8} className="text-gray-600 hover:text-green-600" />
-                    <NotificationBadge count={unreadCount} />
+                    {unreadCount > 0 && <NotificationBadge count={unreadCount} />}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-80 md:w-96 mt-1" align="end">
-                <div className="flex justify-between items-center py-2 px-4 border-b">
+            <DropdownMenuContent className="w-80 md:w-96 mt-1 p-0" align="end">
+                <div className="flex justify-between items-center py-2 px-4 border-b sticky top-0 bg-white z-20">
                     <span className="text-base font-semibold">Thông báo</span>
                     {unreadCount > 0 && (
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 px-2 text-xs text-green-600 hover:text-green-700 hover:bg-green-50"
+                            className="h-8 px-2 text-xs text-green-600 hover:text-green-700 hover:bg-green-50 transition-colors"
                             onClick={markAllAsRead}
+                            disabled={isMarkAllLoading}
                         >
-                            Đánh dấu tất cả đã đọc
+                            {isMarkAllLoading ? (
+                                <span className="flex items-center">
+                                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-500 mr-1"></span>
+                                    Đang xử lý...
+                                </span>
+                            ) : (
+                                'Đánh dấu tất cả đã đọc'
+                            )}
                         </Button>
                     )}
                 </div>
@@ -239,43 +315,27 @@ const Notifications = () => {
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
                     </div>
                 ) : notifications.length === 0 ? (
-                    <div className="py-6 text-center text-gray-500">
+                    <div className="py-8 text-center text-gray-500">
                         <Bell size={32} className="mx-auto mb-2 opacity-20" />
                         <p>Bạn chưa có thông báo nào</p>
                     </div>
                 ) : (
-                    <div className="overflow-y-auto max-h-[400px] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        {notifications.map(notification => (
-                            <div
-                                key={notification.id}
-                                className={`flex flex-col items-start py-3 px-4 cursor-pointer hover:bg-gray-50 ${!notification.is_read ? 'bg-green-50 hover:bg-green-100/70' : ''} border-b border-gray-100`}
-                                onClick={() => handleNotificationClick(notification)}
-                            >
-                                <div className="flex w-full">
-                                    <div className="flex-1 min-w-0">
-                                        <p className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
-                                            {notification.message ||
-                                                `Đơn hàng #${notification.order_code || 'Không xác định'} đã chuyển sang trạng thái: ${notification.order_status || 'Không xác định'}`}
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            {formatTime(notification.created_at)}
-                                        </p>
-                                    </div>
-                                    {!notification.is_read && (
-                                        <div className="ml-2 h-2 w-2 bg-green-500 rounded-full flex-shrink-0 mt-1"></div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                    <div
+                        ref={notificationContainerRef}
+                        className="overflow-y-auto max-h-[400px] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                    >
+                        {renderNotificationGroup('Hôm nay', notificationGroups.today)}
+                        {renderNotificationGroup('Hôm qua', notificationGroups.yesterday)}
+                        {renderNotificationGroup('Trước đó', notificationGroups.older)}
                     </div>
                 )}
 
-                {notifications.length > 10 && (
-                    <div className="py-2 text-center border-t">
+                {notifications.length > 0 && (
+                    <div className="py-2 text-center border-t sticky bottom-0 bg-white">
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs text-green-600 hover:text-green-700"
+                            className="text-xs text-green-600 hover:text-green-700 transition-colors"
                             onClick={() => {
                                 navigate('/account/notifications');
                                 setIsDropdownOpen(false);

@@ -12,17 +12,34 @@ export const getSocket = () => {
       return null;
     }
 
-    // Nếu đã có kết nối, trả về kết nối đó
+    // Nếu đã có kết nối và đã kết nối, trả về kết nối đó
     if (socketInstance && socketInstance.connected) {
-      console.log("✅ Sử dụng kết nối socket hiện có");
+      console.log("✅ Sử dụng kết nối socket hiện có:", socketInstance.id);
+
+      // Phát sự kiện để thông báo cho các component khác về trạng thái kết nối
+      window.dispatchEvent(new CustomEvent('socket-connected', { detail: true }));
+
       return socketInstance;
     }
 
-    // Nếu có kết nối cũ nhưng đang trong quá trình kết nối, đóng kết nối đó
+    // Gửi sự kiện đang kết nối nếu chưa có hoặc đang kết nối
+    window.dispatchEvent(new CustomEvent('socket-connecting'));
+
+    // Nếu có kết nối cũ nhưng đang trong quá trình kết nối, kiểm tra thời gian kết nối
     if (socketInstance) {
-      console.log("⚠️ Đóng kết nối socket cũ đang trong quá trình kết nối");
-      socketInstance.disconnect();
-      socketInstance = null;
+      // Nếu socket đã tồn tại nhưng không kết nối, thử kết nối lại nếu chưa kết nối
+      if (!socketInstance.connected && !socketInstance.connecting) {
+        console.log("🔄 Thử kết nối lại socket...");
+        socketInstance.connect();
+        return socketInstance;
+      } else if (socketInstance.connecting) {
+        console.log("⏳ Socket đang kết nối, chờ đợi...");
+        return socketInstance;
+      } else {
+        console.log("⚠️ Đóng kết nối socket cũ và tạo kết nối mới");
+        socketInstance.disconnect();
+        socketInstance = null;
+      }
     }
 
     // Lấy thông tin người dùng
@@ -49,34 +66,39 @@ export const getSocket = () => {
         sessionId: sessionId // Thêm sessionId để theo dõi phiên
       },
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10, // Tăng số lần thử kết nối lại
       reconnectionDelay: 1000,
-      // Tắt kết nối tự động để kiểm soát tốt hơn việc kết nối
-      autoConnect: false,
-      withCredentials: true // Thêm credentails để hỗ trợ CORS
+      timeout: 10000, // Giảm thời gian timeout để phát hiện lỗi kết nối sớm hơn
+      withCredentials: true
     });
 
     // Thêm sự kiện trước khi kết nối
     socketInstance.on("disconnect", (reason) => {
       console.log("🔌 Socket bị ngắt kết nối, lý do:", reason);
 
+      // Phát sự kiện để thông báo cho các component khác
+      window.dispatchEvent(new CustomEvent('socket-disconnected', {
+        detail: { reason: reason }
+      }));
+
       // Nếu ngắt kết nối do lỗi mạng, thử kết nối lại
-      if (reason === "io server disconnect" || reason === "transport close") {
-        console.log("⚠️ Ngắt kết nối do server hoặc mạng, thử kết nối lại sau 3 giây");
+      if (reason === "io server disconnect" || reason === "transport close" || reason === "ping timeout") {
+        console.log("⚠️ Ngắt kết nối do server hoặc mạng, thử kết nối lại sau 2 giây");
         setTimeout(() => {
           if (socketInstance) {
+            console.log("🔄 Thử kết nối lại sau ngắt kết nối");
             socketInstance.connect();
+
+            // Phát sự kiện đang kết nối lại
+            window.dispatchEvent(new CustomEvent('socket-connecting'));
           }
-        }, 3000);
+        }, 2000);
       }
     });
 
-    // Kết nối socket sau khi đã thiết lập xong tất cả sự kiện
-    socketInstance.connect();
-
     // Xử lý sự kiện connect
     socketInstance.on("connect", () => {
-      console.log("🔌 Socket đã kết nối thành công!");
+      console.log("🔌 Socket đã kết nối thành công:", socketInstance.id);
       console.log("👤 Thông tin người dùng:", {
         id: userData.id,
         name: userData.name,
@@ -90,73 +112,49 @@ export const getSocket = () => {
         socketInstance.emit("adminConnect");
       } else {
         console.log("🔑 Đăng ký kết nối với vai trò Client");
-        socketInstance.emit("clientConnect");
+        socketInstance.emit("clientConnect", {}, response => {
+          console.log("✅ Phản hồi từ sự kiện clientConnect:", response);
+        });
       }
+
+      // Phát sự kiện để thông báo cho các component khác
+      window.dispatchEvent(new CustomEvent('socket-connected', { detail: true }));
     });
 
-    // Lưu trữ ID thông báo đã nhận gần đây
-    const recentNotifications = new Set();
+    // Gửi ping định kỳ để kiểm tra kết nối
+    let pingInterval;
 
-    // Thêm sự kiện nhận thông báo đơn hàng
-    socketInstance.on("order_status_notification", (data) => {
-      console.log("📣 Nhận thông báo cập nhật trạng thái đơn hàng:", data);
+    socketInstance.on("connect", () => {
+      // Thiết lập ping định kỳ sau khi kết nối thành công
+      pingInterval = setInterval(() => {
+        if (socketInstance && socketInstance.connected) {
+          socketInstance.emit("ping", { timestamp: Date.now() }, (response) => {
+            if (response && response.success) {
+              console.log("🏓 Ping thành công");
+            }
+          });
+        }
+      }, 30000); // 30 giây ping một lần
+    });
 
-      if (!data || !data.order_id || !data.order_code) {
-        console.error("❌ Thông báo không hợp lệ:", data);
-        return;
+    socketInstance.on("disconnect", () => {
+      // Xóa interval ping khi ngắt kết nối
+      if (pingInterval) {
+        clearInterval(pingInterval);
       }
-
-      // Kiểm tra xem thông báo đã được xử lý chưa
-      if (data.id && recentNotifications.has(data.id)) {
-        console.log("⚠️ Thông báo đã được xử lý trước đó, bỏ qua:", data.id);
-        return;
-      }
-
-      // Đảm bảo thông báo có đầy đủ thông tin trước khi sử dụng
-      const enhancedData = {
-        ...data,
-        order_id: data.order_id,
-        order_code: data.order_code || 'Không xác định',
-        order_status: data.order_status || 'Không xác định',
-        message: data.message || `Đơn hàng #${data.order_code || 'Không xác định'} đã chuyển sang trạng thái: ${data.order_status || 'Không xác định'}`,
-        created_at: data.created_at || new Date().toISOString(),
-        is_read: data.is_read || false
-      };
-
-      // Ghi log thông tin chi tiết để debug
-      console.log("�� Chi tiết thông báo:", {
-        id: enhancedData.id,
-        order_id: enhancedData.order_id,
-        order_code: enhancedData.order_code,
-        order_status: enhancedData.order_status,
-        message: enhancedData.message,
-        created_at: enhancedData.created_at,
-        is_read: enhancedData.is_read
-      });
-
-      // Thêm ID thông báo vào danh sách đã xử lý
-      if (data.id) {
-        recentNotifications.add(data.id);
-
-        // Sau 10 giây, xóa khỏi danh sách để tránh danh sách quá lớn
-        setTimeout(() => {
-          recentNotifications.delete(data.id);
-        }, 10000);
-      }
-
-      // Tạo một event để thông báo cho các component khác
-      const notificationEvent = new CustomEvent('order-notification', {
-        detail: enhancedData  // Sử dụng dữ liệu đã được đảm bảo
-      });
-      window.dispatchEvent(notificationEvent);
     });
 
     // Xử lý lỗi xác thực
     socketInstance.on("connect_error", (error) => {
       console.error("❌ Lỗi kết nối socket:", error.message);
 
+      // Phát sự kiện để thông báo cho các component khác
+      window.dispatchEvent(new CustomEvent('socket-error', {
+        detail: { message: error.message }
+      }));
+
       // Nếu lỗi xác thực, đóng kết nối
-      if (error.message.includes("Authentication error")) {
+      if (error.message.includes("Authentication error") || error.message.includes("jwt")) {
         console.error("🔒 Lỗi xác thực socket - token không hợp lệ");
         closeSocket();
 
@@ -166,12 +164,31 @@ export const getSocket = () => {
 
         // Phát sự kiện để thông báo đăng xuất
         window.dispatchEvent(new Event("auth-change"));
+      } else {
+        // Thử kết nối lại nếu là lỗi mạng
+        setTimeout(() => {
+          if (socketInstance) {
+            console.log("🔄 Thử kết nối lại sau lỗi:", error.message);
+
+            // Phát sự kiện đang kết nối lại
+            window.dispatchEvent(new CustomEvent('socket-connecting'));
+
+            // Thử kết nối lại
+            socketInstance.connect();
+          }
+        }, 3000);
       }
     });
 
     return socketInstance;
   } catch (error) {
     console.error("❌ Lỗi khi khởi tạo socket:", error);
+
+    // Phát sự kiện để thông báo cho các component khác
+    window.dispatchEvent(new CustomEvent('socket-error', {
+      detail: { message: error.message }
+    }));
+
     return null;
   }
 };

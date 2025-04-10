@@ -241,8 +241,66 @@ const ChatRealTime = () => {
 
             if (socketConnection) {
                 setSocket(socketConnection);
-                setIsConnected(socketConnection.connected);
-                console.log("✅ Đã thiết lập kết nối socket", socketConnection.id);
+
+                // Kiểm tra nếu socket đã kết nối
+                if (socketConnection.connected) {
+                    console.log("✅ Socket đã được kết nối sẵn:", socketConnection.id);
+                    setIsConnected(true);
+                    setLastError("");
+                } else {
+                    console.log("⏳ Socket đã khởi tạo nhưng đang kết nối...");
+                    // Không cập nhật trạng thái kết nối ở đây, để khi connect event được kích hoạt
+                }
+
+                // Thiết lập sự kiện kết nối
+                socketConnection.on("connect", () => {
+                    console.log("✅ Socket kết nối thành công:", socketConnection.id);
+                    setIsConnected(true);
+                    setLastError("");
+
+                    // Thông báo server rằng client đã kết nối
+                    socketConnection.emit("clientConnect");
+                    console.log("📣 Đã gửi sự kiện clientConnect");
+
+                    // Tải lịch sử tin nhắn khi kết nối thành công
+                    if (userData && userData.id) {
+                        loadChatHistory(userData.id);
+                    }
+                });
+
+                // Thiết lập sự kiện ngắt kết nối
+                socketConnection.on("disconnect", (reason) => {
+                    console.log("❌ Socket ngắt kết nối, lý do:", reason);
+                    setIsConnected(false);
+                    setLastError(`Mất kết nối với server: ${reason}`);
+                });
+
+                // Thiết lập sự kiện lỗi kết nối
+                socketConnection.on("connect_error", (error) => {
+                    console.error("❌ Lỗi kết nối socket:", error.message);
+                    setIsConnected(false);
+                    setLastError("Lỗi kết nối: " + error.message);
+                });
+
+                // Ping server 5 giây một lần để kiểm tra kết nối
+                const pingInterval = setInterval(() => {
+                    if (socketConnection.connected) {
+                        socketConnection.emit("ping", {}, (response) => {
+                            if (response && response.success) {
+                                // Cập nhật trạng thái kết nối
+                                if (!isConnected) {
+                                    console.log("✅ Kết nối đã được khôi phục");
+                                    setIsConnected(true);
+                                    setLastError("");
+                                }
+                            }
+                        });
+                    }
+                }, 5000);
+
+                // Lưu trữ interval để clear khi component unmount
+                socketConnection.pingInterval = pingInterval;
+
                 return socketConnection;
             } else {
                 setLastError("Không thể khởi tạo kết nối socket");
@@ -260,6 +318,7 @@ const ChatRealTime = () => {
         // Kiểm tra đăng nhập
         const authToken = localStorage.getItem("authToken");
         const userDataStr = localStorage.getItem("userData");
+        let socketConnection = null;
 
         if (authToken && userDataStr) {
             try {
@@ -268,35 +327,10 @@ const ChatRealTime = () => {
                 setIsAuthenticated(true);
 
                 // Khởi tạo kết nối socket
-                const socketConnection = connectSocket();
+                socketConnection = connectSocket();
 
                 if (socketConnection) {
-                    // Kiểm tra kết nối
-                    socketConnection.on("connect", () => {
-                        console.log("✅ Socket kết nối thành công");
-                        setIsConnected(true);
-                        setLastError("");
-
-                        // Thông báo server rằng client đã kết nối
-                        socketConnection.emit("clientConnect");
-                        console.log("📣 Đã gửi sự kiện clientConnect");
-
-                        // Tải lịch sử tin nhắn khi kết nối thành công
-                        loadChatHistory(parsedUserData.id);
-                    });
-
-                    socketConnection.on("disconnect", () => {
-                        console.log("❌ Socket ngắt kết nối");
-                        setIsConnected(false);
-                        setLastError("Mất kết nối với server");
-                    });
-
-                    socketConnection.on("connect_error", (error) => {
-                        console.error("❌ Lỗi kết nối socket:", error.message);
-                        setIsConnected(false);
-                        setLastError("Lỗi kết nối: " + error.message);
-                    });
-
+                    // Thêm sự kiện lắng nghe tin nhắn mới
                     socketConnection.on("newClientMessage", (data) => {
                         console.log("📩 Nhận tin nhắn mới từ client:", data);
                         setMessages(prev => processMessagesWithImageGroups([...prev, data]));
@@ -314,11 +348,20 @@ const ChatRealTime = () => {
 
         // Cleanup khi unmount
         return () => {
-            if (socket) {
-                socket.off("connect");
-                socket.off("disconnect");
-                socket.off("connect_error");
-                socket.off("newClientMessage");
+            if (socketConnection) {
+                console.log("🧹 Dọn dẹp các sự kiện socket và đóng kết nối");
+                socketConnection.off("connect");
+                socketConnection.off("disconnect");
+                socketConnection.off("connect_error");
+                socketConnection.off("newClientMessage");
+
+                // Xóa interval kiểm tra kết nối
+                if (socketConnection.pingInterval) {
+                    clearInterval(socketConnection.pingInterval);
+                }
+
+                // Đóng kết nối socket
+                socketConnection.disconnect();
             }
         };
     }, []);
@@ -364,7 +407,7 @@ const ChatRealTime = () => {
         }
     }, [isOpen, isAuthenticated, userData]);
 
-    // Lắng nghe sự kiện auth-change để kết nối lại socket
+    // Thêm useEffect để lắng nghe sự kiện auth-change để kết nối lại socket
     useEffect(() => {
         const handleAuthChangeForSocket = () => {
             console.log("🔄 Nhận sự kiện auth-change, đang khởi tạo lại socket...");
@@ -606,6 +649,53 @@ const ChatRealTime = () => {
             }
         };
     }, [socket, isOpen]);
+
+    // Thêm useEffect mới để lắng nghe các sự kiện socket từ socketConfig
+    useEffect(() => {
+        const handleSocketConnected = (event) => {
+            console.log("✅ Nhận sự kiện socket-connected");
+            setIsConnected(true);
+            setLastError("");
+        };
+
+        const handleSocketDisconnected = (event) => {
+            console.log("❌ Nhận sự kiện socket-disconnected:", event.detail?.reason);
+            setIsConnected(false);
+            setLastError(`Mất kết nối: ${event.detail?.reason || 'Lỗi không xác định'}`);
+        };
+
+        const handleSocketError = (event) => {
+            console.log("❌ Nhận sự kiện socket-error:", event.detail?.message);
+            setIsConnected(false);
+            setLastError(`Lỗi: ${event.detail?.message || 'Lỗi không xác định'}`);
+        };
+
+        const handleSocketConnecting = () => {
+            console.log("⏳ Nhận sự kiện socket-connecting");
+            // Không đặt isConnected = false ở đây để tránh nhấp nháy UI
+            // setLastError("Đang kết nối...");
+        };
+
+        // Đăng ký các sự kiện
+        window.addEventListener("socket-connected", handleSocketConnected);
+        window.addEventListener("socket-disconnected", handleSocketDisconnected);
+        window.addEventListener("socket-error", handleSocketError);
+        window.addEventListener("socket-connecting", handleSocketConnecting);
+
+        // Kiểm tra trạng thái kết nối hiện tại
+        if (socket && socket.connected) {
+            setIsConnected(true);
+            setLastError("");
+        }
+
+        // Cleanup khi unmount
+        return () => {
+            window.removeEventListener("socket-connected", handleSocketConnected);
+            window.removeEventListener("socket-disconnected", handleSocketDisconnected);
+            window.removeEventListener("socket-error", handleSocketError);
+            window.removeEventListener("socket-connecting", handleSocketConnecting);
+        };
+    }, [socket]);
 
     // Hàm xử lý khi chọn ảnh
     const handleImageSelect = (e) => {
