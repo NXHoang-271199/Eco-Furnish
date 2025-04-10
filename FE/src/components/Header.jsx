@@ -32,6 +32,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import axios from "axios";
+import Notifications from "./Notifications";
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -297,6 +298,7 @@ const Header = () => {
           </nav>
 
           <div className="flex items-center space-x-6">
+            {isLoggedIn && <Notifications />}
             <Link
               to="/cart"
               className="text-gray-600 hover:text-green-600 transition-all duration-300 p-2 hover:bg-gray-100 rounded-full relative"

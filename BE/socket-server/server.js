@@ -156,6 +156,71 @@ app.post("/broadcast-admin", (req, res) => {
     }
 });
 
+// Thêm Map để lưu trữ thông báo đã gửi gần đây
+const recentBroadcasts = new Map();
+
+// Thêm endpoint mới để nhận thông báo từ Laravel và phát tới client cụ thể
+app.post("/broadcast-client", (req, res) => {
+    try {
+        // Kiểm tra dữ liệu gửi đến
+        const { event, userId, data } = req.body;
+
+        if (!event || !userId || !data) {
+            return res.status(400).json({
+                success: false,
+                message: 'Thiếu thông tin sự kiện, userId hoặc dữ liệu'
+            });
+        }
+
+        console.log(`📣 Nhận yêu cầu phát thông báo '${event}' đến user ${userId}:`, data);
+
+        // Tạo một ID duy nhất cho thông báo này
+        const broadcastId = `${event}_${userId}_${data.id || Date.now()}`;
+
+        // Kiểm tra xem thông báo này đã được gửi gần đây chưa
+        if (recentBroadcasts.has(broadcastId)) {
+            console.log(`⚠️ Phát hiện thông báo trùng lặp: ${broadcastId}`);
+            return res.json({
+                success: true,
+                message: 'Thông báo đã được gửi trước đó, không gửi lại',
+                isDuplicate: true
+            });
+        }
+
+        // Lưu vào danh sách đã gửi
+        recentBroadcasts.set(broadcastId, Date.now());
+
+        // Xóa các thông báo cũ khỏi map (giữ map nhỏ)
+        const now = Date.now();
+        for (const [key, timestamp] of recentBroadcasts.entries()) {
+            if (now - timestamp > 30000) { // 30 giây
+                recentBroadcasts.delete(key);
+            }
+        }
+
+        // Phát thông báo đến phòng của user cụ thể
+        io.to(`user_${userId}`).emit(event, data);
+
+        // Lấy mảng socketIds của userId này
+        const userSocketIds = userIdToSocketsMap.get(parseInt(userId, 10)) || [];
+        console.log(`✅ Đã phát thông báo '${event}' đến user ${userId} (${userSocketIds.length} kết nối)`);
+
+        return res.json({
+            success: true,
+            message: 'Đã phát thông báo thành công',
+            connectionCount: userSocketIds.length,
+            broadcastId: broadcastId
+        });
+    } catch (error) {
+        console.error("❌ Lỗi khi xử lý broadcast-client:", error);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi xử lý yêu cầu',
+            error: error.message
+        });
+    }
+});
+
 const server = http.createServer(app);
 
 // Thêm xử lý lỗi cho server
@@ -946,6 +1011,84 @@ io.on("connection", (socket) => {
         } catch (error) {
             console.error("❌ Lỗi khi đánh dấu tin nhắn đã đọc:", error);
             callback({ success: false, error: error.message });
+        }
+    });
+
+    // Thêm event listener mới cho sự kiện đánh dấu đã đọc
+    socket.on("markNotificationAsRead", async (data, callback = () => { }) => {
+        try {
+            if (!data.id) {
+                return callback({ success: false, error: "Thiếu ID thông báo" });
+            }
+
+            console.log(`📬 Đánh dấu thông báo ${data.id} đã đọc cho user ${socket.userId}`);
+
+            const token = socket.handshake.auth.token;
+            if (!token) {
+                return callback({ success: false, error: "Không có token xác thực" });
+            }
+
+            // Gọi API để đánh dấu thông báo đã đọc
+            const response = await fetch(`${API_URL}/api/user/notifications/${data.id}/read`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log(`📬 Kết quả đánh dấu đã đọc:`, result);
+
+            callback({ success: true, data: result });
+        } catch (error) {
+            console.error("❌ Lỗi khi đánh dấu thông báo đã đọc:", error);
+            callback({ success: false, error: error.message });
+        }
+    });
+
+    /**
+     * 📌 Xử lý khi Client hoặc Admin ngắt kết nối
+     */
+    socket.on("disconnect", () => {
+        if (onlineUsers.has(socket.id)) {
+            const userData = onlineUsers.get(socket.id);
+
+            // Cập nhật mảng socketIds cho userId này
+            let userSockets = userIdToSocketsMap.get(userData.userId) || [];
+            userSockets = userSockets.filter(id => id !== socket.id);
+
+            if (userSockets.length === 0) {
+                // Nếu không còn kết nối nào, xóa khỏi map
+                userIdToSocketsMap.delete(userData.userId);
+                // Chỉ xóa khỏi userIdToSocketMap khi không còn kết nối nào
+                userIdToSocketMap.delete(userData.userId);
+
+                // Thông báo cho admin biết người dùng đã offline
+                io.to("admin_room").emit("clientDisconnected", { userId: userData.userId });
+                console.log(`👤 Client ${socket.user.name} đã ngắt kết nối hoàn toàn`);
+            } else {
+                // Cập nhật lại mảng socketIds
+                userIdToSocketsMap.set(userData.userId, userSockets);
+                // Cập nhật socketId chính cho userId (lấy cái đầu tiên trong mảng)
+                userIdToSocketMap.set(userData.userId, userSockets[0]);
+                console.log(`👤 Client ${socket.user.name} còn ${userSockets.length} kết nối khác`);
+            }
+
+            onlineUsers.delete(socket.id);
+            console.log(`👤 Client ${socket.id} (${userData.name}) disconnected`);
+            console.log(`📊 Tổng số client online còn lại: ${onlineUsers.size}`);
+        }
+
+        if (onlineAdmins.has(socket.id)) {
+            onlineAdmins.delete(socket.id);
+            console.log(`👨‍💼 Admin ${socket.id} (${socket.user.name}) disconnected`);
+            console.log(`📊 Tổng số admin online còn lại: ${onlineAdmins.size}`);
         }
     });
 });

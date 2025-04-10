@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
 use App\Http\Controllers\Api\UserAddressController;
+use App\Http\Controllers\Api\UserNotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -216,6 +217,14 @@ Route::get('/users/{id}', function ($id) {
         'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
     ]);
 });
+
+// API cho thông báo người dùng
+Route::middleware('auth:sanctum')->prefix('user/notifications')->group(function () {
+    Route::get('/', [UserNotificationController::class, 'index']);
+    Route::patch('/{id}/read', [UserNotificationController::class, 'markAsRead']);
+    Route::patch('/read-all', [UserNotificationController::class, 'markAllAsRead']);
+});
+
 // Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động // FE ko được động tới
 // Cart Routers
 Route::middleware('auth:sanctum')->group(function () {
