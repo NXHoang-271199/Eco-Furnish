@@ -28,7 +28,8 @@
                                 <tr>
                                     <td class="text-center">{{ $key + 1 }}</td>
                                     <td>
-                                        <a href="{{ route('users.show', $wallet->user->id) }}" class="fw-semibold">
+                                        <a href="{{ route('users.show', $wallet->user->id) }}"
+                                            class="fw-semibold text-dark text-decoration-none">
                                             {{ $wallet->user->name }}
                                         </a>
                                     </td>

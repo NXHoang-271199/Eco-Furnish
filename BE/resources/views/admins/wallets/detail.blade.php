@@ -29,12 +29,14 @@
                     <thead class="table-light text-center">
                         <tr>
                             <th>STT</th>
+                            <th>Mã GD</th>
+                            <th>Loại GD</th>
                             <th>Số tiền</th>
-                            <th>Loại giao dịch</th>
+                            <th>Số dư trước</th>
+                            <th>Số dư sau</th>
                             <th>Trạng thái</th>
-                            <th>Mã đơn hàng</th>
-                            <th>Kênh nạp</th>
-                            <th>Người cộng tiền</th>
+                            <th>Kênh</th>
+                            <th>Người thực hiện</th>
                             <th>Mô tả</th>
                             <th>Thời gian</th>
                         </tr>
@@ -43,25 +45,34 @@
                         @forelse ($transactions as $key => $tran)
                             <tr>
                                 <td class="text-center">{{ $key + 1 }}</td>
-                                <td>{{ number_format($tran->amount, 0, ',', '.') }} đ</td>
+                                <td>
+                                    @if ($tran->type === 'nap_tien')
+                                        {{ $tran->wallet_code ?? 'N/A' }}
+                                    @elseif (in_array($tran->type, ['thanh_toan_don_hang', 'hoan_tien']) && $tran->order)
+                                        <a href="{{ route('orders.detail', $tran->order_id) }}"
+                                            class="text-dark text-decoration-none">
+                                            {{ $tran->order->order_code }}
+                                        </a>
+                                    @else
+                                        N/A
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="badge bg-{{ getTransactionTypeColor($tran->type) }}">
                                         {{ getTransactionTypeLabel($tran->type) }}
                                     </span>
                                 </td>
+                                <td>{{ number_format($tran->amount, 0, ',', '.') }}đ</td>
+                                <td>{{ number_format($tran->balance_before ?? 0, 0, ',', '.') }}đ</td>
+                                <td>{{ number_format($tran->balance_after ?? 0, 0, ',', '.') }}đ</td>
                                 <td>
                                     <span class="badge bg-{{ getTransactionStatusColor($tran->status) }}">
                                         {{ getTransactionStatusLabel($tran->status) }}
                                     </span>
                                 </td>
-                                <td>{{ $tran->order->order_code ?? 'N/A' }}</td>
                                 <td>{{ $tran->paymentMethod->name ?? 'N/A' }}</td>
                                 <td>
-                                    @if($tran->createdBy)
-                                        {{ $tran->createdBy->name }}  <!-- Hiển thị tên người cộng tiền -->
-                                    @else
-                                        N/A
-                                    @endif
+                                    {{ $tran->createdBy?->name ?? ($tran->updatedBy?->name ?? 'N/A') }}
                                 </td>
                                 <td>{{ $tran->description }}</td>
                                 <td>{{ $tran->created_at->format('d/m/Y H:i') }}</td>

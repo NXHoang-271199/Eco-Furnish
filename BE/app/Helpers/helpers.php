@@ -98,7 +98,7 @@ if (!function_exists('getTransactionStatusColor')) {
             case 'that_bai':
                 return 'danger';
             case 'da_huy':
-                return 'secondary';
+                return 'danger';
             default:
                 return 'dark';
         }

@@ -18,8 +18,8 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-2">
-                            @if($product->thumbnail)
-                                <img src="{{ asset('storage/' . $product->thumbnail) }}" alt="{{ $product->name }}" class="img-fluid">
+                            @if($product->image_thumnail)
+                                <img src="{{ Storage::url($product->image_thumnail) }}" alt="{{ $product->name }}" class="img-fluid">
                             @else
                                 <div class="text-center p-4 bg-light">
                                     <i class="fas fa-image fa-3x text-muted"></i>

@@ -60,7 +60,8 @@
                                 <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
                             </div>
                             <div class="col-md-2">
-                                <button type="reset" class="btn btn-danger w-100" onclick="window.location='{{ route('wallets.transactions') }}'">Xóa tìm kiếm</button>
+                                <button type="reset" class="btn btn-danger w-100"
+                                    onclick="window.location='{{ route('wallets.transactions') }}'">Xóa tìm kiếm</button>
                             </div>
                         </div>
                     </form>
@@ -69,12 +70,12 @@
                             <tr>
                                 <th>#</th>
                                 <th>Khách hàng</th>
+                                <th>Mã GD</th>
                                 <th>Loại GD</th>
-                                <th>Trạng thái</th>
-                                <th>Mã đơn hàng</th>
                                 <th>Số tiền</th>
-                                <th>Kênh nạp</th>
-                                <th>Người cộng tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Kênh</th>
+                                <th>Người thực hiện</th>
                                 <th>Ghi chú</th>
                                 <th>Thời gian</th>
                             </tr>
@@ -84,22 +85,34 @@
                                 <tr>
                                     <td class="text-center">{{ $key + 1 }}</td>
                                     <td>
-                                        <a href="{{ route('wallets.show', $transaction->wallet_id) }}" class="fw-semibold">
+                                        <a href="{{ route('wallets.show', $transaction->wallet_id) }}"
+                                            class="fw-semibold text-dark text-decoration-none">
                                             {{ $transaction->wallet->user->name ?? '[N/A]' }}
                                         </a>
+                                    </td>
+                                    <td>
+                                        @if ($transaction->type === 'nap_tien')
+                                            {{ $transaction->wallet_code ?? 'N/A' }}
+                                        @elseif (in_array($transaction->type, ['thanh_toan_don_hang', 'hoan_tien']) && $transaction->order)
+                                            <a href="{{ route('orders.detail', $transaction->order_id) }}"
+                                                class="text-dark text-decoration-none">
+                                                {{ $transaction->order->order_code }}
+                                            </a>
+                                        @else
+                                            N/A
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="badge bg-{{ getTransactionTypeColor($transaction->type) }}">
                                             {{ getTransactionTypeLabel($transaction->type) }}
                                         </span>
                                     </td>
+                                    <td class="text-end">{{ number_format($transaction->amount, 0, ',', '.') }} đ</td>
                                     <td>
                                         <span class="badge bg-{{ getTransactionStatusColor($transaction->status) }}">
                                             {{ getTransactionStatusLabel($transaction->status) }}
                                         </span>
                                     </td>
-                                    <td>{{ $transaction->order->oder_code ?? 'N/A' }}</td>
-                                    <td class="text-end">{{ number_format($transaction->amount, 0, ',', '.') }} đ</td>
                                     <td>{{ $transaction->paymentMethod->name ?? 'N/A' }}</td>
                                     <td>{{ $transaction->createdBy->name ?? 'N/A' }}</td>
                                     <td>{{ $transaction->description ?? '-' }}</td>

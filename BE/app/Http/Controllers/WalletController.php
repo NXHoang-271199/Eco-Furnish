@@ -12,7 +12,7 @@ class WalletController extends Controller
     // Danh sách ví người dùng
     public function index()
     {
-        $wallets = Wallet::with('user')->paginate(10);
+        $wallets = Wallet::with('user')->orderBy('balance', 'desc')->paginate(10);
         return view('admins.wallets.index', compact('wallets'));
     }
 
@@ -29,13 +29,6 @@ class WalletController extends Controller
         return view('admins.wallets.detail', compact('wallet', 'transactions'));
     }
 
-    // // Form cộng tiền vào ví
-    // public function editBalance($id)
-    // {
-    //     $wallet = Wallet::with('user')->findOrFail($id);
-    //     return view('admins.wallets.edit_balance', compact('wallet'));
-    // }
-
     // Xử lý cộng tiền
     public function updateBalance(Request $request, $id)
     {
@@ -49,11 +42,10 @@ class WalletController extends Controller
         DB::beginTransaction();
 
         try {
-            // Cộng tiền
+            $balanceBefore = $wallet->balance;
             $wallet->balance += $request->amount;
             $wallet->save();
 
-            // Lưu giao dịch
             WalletTransaction::create([
                 'wallet_id' => $wallet->id,
                 'amount' => $request->amount,
@@ -61,6 +53,8 @@ class WalletController extends Controller
                 'status' => 'thanh_cong',
                 'description' => $request->description ?? 'Giao dịch cộng tiền từ admin',
                 'created_by' => auth()->user()->id,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $wallet->balance,
             ]);
 
             DB::commit();
@@ -73,10 +67,12 @@ class WalletController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Số tiền không hợp lệ'
+                'message' => 'Lỗi khi cộng tiền',
+                'error' => $e->getMessage()
             ], 400);
         }
     }
+
     public function allTransactions(Request $request)
     {
         // Tạo query mặc định cho tất cả giao dịch
@@ -114,5 +110,4 @@ class WalletController extends Controller
 
         return view('admins.wallets.transactions', compact('transactions'));
     }
-
 }

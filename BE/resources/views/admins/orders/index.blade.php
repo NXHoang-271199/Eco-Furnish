@@ -402,7 +402,7 @@
                                             <label class="form-check-label cursor-pointer"
                                                 for="selectAll-{{ Str::slug($status) }}">
                                                 <span class="fw-medium">Chọn tất cả đơn hàng</span>
-                                                <small class="text-muted">(trừ đơn đã hoàn tất/hủy/hoàn hàng)</small>
+                                                <small class="text-muted">(trừ đơn có trạng thái Đã Giao/ Đã Nhận/ Hủy Đơn/ Hoàn Hàng)</small>
                                             </label>
                                         </div>
                                     </div>

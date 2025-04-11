@@ -21,15 +21,15 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             PaymentMethodSeeder::class,
             VoucherSeeder::class,
-            OrderSeeder::class,
-            OrderItemSeeder::class,
-            OrderNotificationSeeder::class,
+            // OrderSeeder::class,
+            // OrderItemSeeder::class,
+            // OrderNotificationSeeder::class,
             CommentSeeder::class,
             // TopBuyersSeeder::class,
-            CartSeeder::class,
-            CartItemSeeder::class,
-            ReviewSeeder::class,
-            WalletSeeder::class,
+            // CartSeeder::class,
+            // CartItemSeeder::class,
+            // ReviewSeeder::class,
+            // WalletSeeder::class,
         ]);
 
         // Tạo tài khoản admin

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Variant;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Models\RefundRequest;
 use App\Models\ProductVariant;
 use App\Mail\RefundRequestMail;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -34,14 +36,13 @@ class OrderController extends Controller
         $search = $request->input('search');
         $perPage = 10;
 
-        $ordersQuery = Order::with(['user', 'paymentMethod', 'voucher', 'refundRequest', 'orderItems.product', 'updatedBy']) // Thêm 'orderItems.product'
+        $ordersQuery = Order::with(['user', 'paymentMethod', 'voucher', 'refundRequest', 'orderItems.product', 'updatedBy'])
             ->where(function ($query) use ($search) {
                 if ($search) {
                     $query->where('order_code', 'like', "%$search%")
                         ->orWhereHas('user', function ($userQuery) use ($search) {
                             $userQuery->where('name', 'like', "%$search%");
                         })
-                        // Thêm tìm kiếm theo tên sản phẩm trong orderItems
                         ->orWhereHas('orderItems', function ($itemQuery) use ($search) {
                             $itemQuery->where('product_name', 'like', "%$search%");
                         });
@@ -49,12 +50,11 @@ class OrderController extends Controller
             })
             ->orderBy('created_at', 'desc');
 
-        // Áp dụng paginate cho query chính
         $orders = $ordersQuery->paginate($perPage)->appends($request->query());
 
-        // Gom nhóm đơn hàng theo trạng thái
+        // Gom nhóm đơn hàng theo trạng thái + thêm "Yêu cầu hoàn hàng"
         $statuses = [
-            'Tất cả' => Order::query(), // Bắt đầu với query cơ bản
+            'Tất cả' => Order::query(),
             'Chưa Xác Nhận' => Order::where('order_status', 'Chưa Xác Nhận'),
             'Đã Xác Nhận' => Order::where('order_status', 'Đã Xác Nhận'),
             'Đang Chuẩn Bị Hàng' => Order::where('order_status', 'Đang Chuẩn Bị Hàng'),
@@ -63,20 +63,19 @@ class OrderController extends Controller
             'Đã Nhận' => Order::where('order_status', 'Đã Nhận'),
             'Hoàn Hàng' => Order::where('order_status', 'Hoàn Hàng'),
             'Hủy Đơn' => Order::where('order_status', 'Hủy Đơn'),
+            'Yêu cầu hoàn hàng' => Order::whereHas('refundRequest'),
         ];
 
         $groupedOrders = [];
 
         foreach ($statuses as $status => $query) {
-            // Sao chép query gốc để không ảnh hưởng lẫn nhau
-            $statusQuery = $query->with(['user', 'paymentMethod', 'voucher', 'refundRequest', 'orderItems.product']) // Thêm 'orderItems.product'
+            $statusQuery = $query->with(['user', 'paymentMethod', 'voucher', 'refundRequest', 'orderItems.product'])
                 ->where(function ($query) use ($search) {
                     if ($search) {
                         $query->where('order_code', 'like', "%$search%")
                             ->orWhereHas('user', function ($userQuery) use ($search) {
                                 $userQuery->where('name', 'like', "%$search%");
                             })
-                            // Thêm tìm kiếm theo tên sản phẩm trong orderItems
                             ->orWhereHas('orderItems', function ($itemQuery) use ($search) {
                                 $itemQuery->where('product_name', 'like', "%$search%");
                             });
@@ -84,16 +83,16 @@ class OrderController extends Controller
                 })
                 ->orderBy('created_at', 'desc');
 
-            // Áp dụng điều kiện trạng thái nếu không phải là "Tất cả"
-            if ($status !== 'Tất cả') {
+            if ($status !== 'Tất cả' && $status !== 'Yêu cầu hoàn hàng') {
                 $statusQuery->where('order_status', $status);
             }
 
-            $groupedOrders[$status] = $statusQuery->paginate($perPage);
+            $groupedOrders[$status] = $statusQuery->paginate($perPage)->appends($request->query());
         }
 
         return view('admins.orders.index', compact('orders', 'search', 'groupedOrders'));
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -192,6 +191,10 @@ class OrderController extends Controller
             if ($order->payment_status == 2 && $request->order_status !== 'Hủy Đơn') {
                 return back()->with('error', 'Đơn hàng đang chờ thanh toán. Chỉ có thể hủy đơn.');
             }
+            // ❌ Nếu đã thanh toán (payment_status = 1) thì không được hủy đơn
+            if ($order->payment_status == 1 && $request->order_status == 'Hủy Đơn') {
+                return back()->with('error', 'Đơn hàng đã thanh toán. Không được hủy đơn');
+            }
 
             // Danh sách trạng thái cho phép chuyển đổi
             $validTransitions = [
@@ -251,7 +254,7 @@ class OrderController extends Controller
                 $order->update(['order_status' => 'Hoàn Hàng']);
             }
 
-            // Hoàn lại số lượng sản phẩm
+            // ✅ Hoàn lại số lượng sản phẩm
             foreach ($order->orderItems as $item) {
                 if ($item->product_variant_id) {
                     ProductVariant::where('id', $item->product_variant_id)->increment('quantity', $item->quantity);
@@ -260,9 +263,45 @@ class OrderController extends Controller
                 }
             }
 
+            // ✅ Hoàn tiền nếu đơn đã thanh toán
+            if ($order->payment_status == 1) {
+                $user = User::with('wallet')->find($order->user_id);
+                if (!$user || !$user->wallet) {
+                    throw new \Exception('Không tìm thấy ví của người dùng');
+                }
+
+                $wallet = $user->wallet;
+
+                // ✅ Tìm giao dịch hoàn tiền đang chờ xử lý
+                $walletTransaction = WalletTransaction::where('order_id', $order->id)
+                    ->where('type', 'hoan_tien')
+                    ->where('status', 'cho_thanh_toan')
+                    ->first();
+
+                if (!$walletTransaction) {
+                    throw new \Exception('Không tìm thấy giao dịch ví cần cập nhật');
+                }
+
+                $refundAmount = $walletTransaction->amount;
+                $balanceBefore = $wallet->balance;
+                $balanceAfter = $balanceBefore + $refundAmount;
+
+                // ✅ Cập nhật số dư ví
+                $wallet->update(['balance' => $balanceAfter]);
+
+                // ✅ Cập nhật lại giao dịch ví
+                $walletTransaction->update([
+                    'status' => 'thanh_cong',
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                    'updated_by' => auth()->id(),
+                    'description' => 'Hoàn tiền đơn hàng #' . $order->order_code . ' sau khi được duyệt yêu cầu hoàn hàng'
+                ]);
+            }
+
             DB::commit();
 
-            // Gửi mail
+            // ✅ Gửi mail
             Mail::to($order->user->email)->send(new RefundRequestMail($refundRequest, $order, 'đã được duyệt.'));
 
             return back()->with('success', 'Yêu cầu hoàn hàng đã được duyệt.');
@@ -274,18 +313,40 @@ class OrderController extends Controller
 
     public function rejectRefundRequest($orderId, $refundRequestId)
     {
-        $order = Order::findOrFail($orderId);
-        $refundRequest = RefundRequest::findOrFail($refundRequestId);
+        DB::beginTransaction();
+        try {
+            $order = Order::findOrFail($orderId);
+            $refundRequest = RefundRequest::findOrFail($refundRequestId);
 
-        $refundRequest->update([
-            'status' => 'Từ Chối',
-        ]);
+            // Cập nhật trạng thái yêu cầu hoàn hàng
+            $refundRequest->update(['status' => 'Từ Chối']);
 
-        // Gửi mail thông báo từ chối
-        Mail::to($order->user->email)->send(new RefundRequestMail($refundRequest, $order, 'đã bị từ chối.'));
+            // ❌ Không hoàn tiền, chỉ cập nhật giao dịch ví nếu có
+            $walletTransaction = WalletTransaction::where('order_id', $order->id)
+                ->where('type', 'hoan_tien')
+                ->where('status', 'cho_thanh_toan')
+                ->first();
 
-        return redirect()->route('orders.index')->with('success', 'Yêu cầu hoàn hàng đã bị từ chối.');
+            if ($walletTransaction) {
+                $walletTransaction->update([
+                    'status' => 'that_bai',
+                    'description' => 'Hoàn tiền đơn hàng #' . $order->order_code . ' thất bại do yêu cầu hoàn hàng bị từ chối',
+                    'updated_by' => auth()->id()
+                ]);
+            }
+
+            DB::commit();
+
+            // Gửi mail thông báo từ chối
+            Mail::to($order->user->email)->send(new RefundRequestMail($refundRequest, $order, 'đã bị từ chối.'));
+
+            return redirect()->route('orders.index')->with('success', 'Yêu cầu hoàn hàng đã bị từ chối.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Lỗi khi từ chối yêu cầu hoàn hàng: ' . $e->getMessage());
+        }
     }
+
 
     /**
      * Cập nhật trạng thái cho nhiều đơn hàng cùng lúc
@@ -307,13 +368,19 @@ class OrderController extends Controller
         $errorCount = 0;
         $results = [];
 
-        // Xử lý từng đơn hàng
+        $validTransitions = [
+            'Chưa Xác Nhận' => ['Đã Xác Nhận', 'Hủy Đơn'],
+            'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng', 'Hủy Đơn'],
+            'Đang Chuẩn Bị Hàng' => ['Đang Giao'],
+            'Đang Giao' => ['Đã Giao'],
+        ];
+
         foreach ($orderIds as $orderId) {
             try {
                 $order = Order::with('orderItems')->findOrFail($orderId);
                 $currentStatus = $currentStatuses[$orderId] ?? null;
 
-                // Kiểm tra nếu trạng thái hiện tại khác với trạng thái đã lưu (có thể đã bị thay đổi)
+                // Check trạng thái đơn hàng có bị thay đổi không
                 if ($currentStatus !== $order->order_status) {
                     $results[$orderId] = [
                         'success' => false,
@@ -329,16 +396,71 @@ class OrderController extends Controller
                     continue;
                 }
 
-                // Kiểm tra các chuyển đổi trạng thái hợp lệ
-                $validTransitions = [
-                    'Chưa Xác Nhận' => ['Đã Xác Nhận', 'Hủy Đơn'],
-                    'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng', 'Hủy Đơn'],
-                    'Đang Chuẩn Bị Hàng' => ['Đang Giao'],
-                    'Đang Giao' => ['Đã Giao'],
-                    'Đã Giao' => ['Đã Nhận', 'Hoàn Hàng'],
-                    'Đã Nhận' => ['Hoàn Hàng']
-                ];
+                // Không cho cập nhật nếu trạng thái mới là "Đã Nhận" hoặc "Hoàn Hàng"
+                if (in_array($newStatus, ['Đã Nhận', 'Hoàn Hàng'])) {
+                    $results[$orderId] = [
+                        'success' => false,
+                        'order' => [
+                            'id' => $order->id,
+                            'order_code' => $order->order_code,
+                            'user_name' => $order->user_name,
+                            'order_status' => $order->order_status,
+                        ],
+                        'message' => 'Bạn không có quyền chuyển đơn sang trạng thái này.'
+                    ];
+                    $errorCount++;
+                    continue;
+                }
 
+                // Nếu đơn đã là "Đã Nhận" thì không thay đổi được nữa
+                if ($order->order_status === 'Đã Nhận') {
+                    $results[$orderId] = [
+                        'success' => false,
+                        'order' => [
+                            'id' => $order->id,
+                            'order_code' => $order->order_code,
+                            'user_name' => $order->user_name,
+                            'order_status' => $order->order_status,
+                        ],
+                        'message' => 'Đơn đã nhận không thể thay đổi trạng thái.'
+                    ];
+                    $errorCount++;
+                    continue;
+                }
+
+                // Nếu chờ thanh toán thì chỉ được hủy đơn
+                if ($order->payment_status == 2 && $newStatus !== 'Hủy Đơn') {
+                    $results[$orderId] = [
+                        'success' => false,
+                        'order' => [
+                            'id' => $order->id,
+                            'order_code' => $order->order_code,
+                            'user_name' => $order->user_name,
+                            'order_status' => $order->order_status,
+                        ],
+                        'message' => 'Đơn hàng đang chờ thanh toán. Chỉ có thể hủy đơn.'
+                    ];
+                    $errorCount++;
+                    continue;
+                }
+                // Nếu đã thanh toán thì không được hủy đơn
+                if ($order->payment_status == 1 && $newStatus == 'Hủy Đơn') {
+                    $results[$orderId] = [
+                        'success' => false,
+                        'order' => [
+                            'id' => $order->id,
+                            'order_code' => $order->order_code,
+                            'user_name' => $order->user_name,
+                            'order_status' => $order->order_status,
+                        ],
+                        'message' => 'Đơn hàng đã thanh toán. Không thể hủy đơn.'
+                    ];
+                    $errorCount++;
+                    continue;
+                }
+
+
+                // Kiểm tra trạng thái chuyển đổi có hợp lệ không
                 if (!in_array($newStatus, $validTransitions[$currentStatus] ?? [])) {
                     $results[$orderId] = [
                         'success' => false,
@@ -356,19 +478,24 @@ class OrderController extends Controller
 
                 DB::beginTransaction();
 
-                // Nếu trạng thái chuyển sang "Hủy Đơn" hoặc "Hoàn Hàng", hoàn lại số lượng sản phẩm
-                if (in_array($newStatus, ['Hủy Đơn', 'Hoàn Hàng'])) {
+                // Nếu là Hủy Đơn → hoàn số lượng
+                if ($newStatus === 'Hủy Đơn') {
                     foreach ($order->orderItems as $item) {
                         if ($item->product_variant_id) {
-                            ProductVariant::where('id', $item->product_variant_id)->increment('quantity', $item->quantity);
+                            ProductVariant::where('id', $item->product_variant_id)
+                                ->increment('quantity', $item->quantity);
                         } else {
-                            Product::where('id', $item->product_id)->increment('quantity', $item->quantity);
+                            Product::where('id', $item->product_id)
+                                ->increment('quantity', $item->quantity);
                         }
                     }
                 }
 
-                // Cập nhật trạng thái đơn hàng
-                $order->update(['order_status' => $newStatus]);
+                // Cập nhật trạng thái + updated_by
+                $order->update([
+                    'order_status' => $newStatus,
+                    'updated_by' => auth()->id()
+                ]);
 
                 DB::commit();
 
@@ -401,7 +528,6 @@ class OrderController extends Controller
             }
         }
 
-        // Trả về kết quả dưới dạng JSON để xử lý bằng JS
         return response()->json([
             'success' => true,
             'results' => $results,
