@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * ChatController - Xử lý các yêu cầu trò chuyện AI và tìm kiếm sản phẩm
- * 
+ *
  * Tính năng:
  * - Xử lý yêu cầu chat từ người dùng
  * - Phát hiện ý định tìm kiếm sản phẩm
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  * - Tìm kiếm sản phẩm theo từ khóa, giá, tên sản phẩm và không gian
  * - Phân loại sản phẩm theo danh mục
  * - Gọi API Gemini để tạo phản hồi thông minh
- * 
+ *
  * Cập nhật: Hỗ trợ tìm kiếm thông qua các không gian (spaces) như phòng khách,
  * phòng ngủ, phòng ăn, v.v. và lọc sản phẩm dựa trên các danh mục phù hợp với không gian đó.
  * Cập nhật 2: Thêm logic ưu tiên tìm kiếm theo tên sản phẩm.
@@ -38,7 +38,7 @@ class ChatController extends Controller
         'phòng tắm' => 'bathroom',
         'khác' => 'other'
     ];
-    
+
     // Từ vựng mở rộng liên quan đến không gian
     private $extendedSpaceVocab = [
         'living_room' => ['phòng khách', 'tiếp khách', 'phòng lớn', 'phòng chung', 'phòng tiếp khách'],
@@ -49,7 +49,7 @@ class ChatController extends Controller
         'outdoor' => ['ngoài trời', 'sân vườn', 'ban công', 'sân thượng', 'hiên nhà'],
         'bathroom' => ['phòng tắm', 'nhà tắm', 'phòng vệ sinh', 'toilet', 'wc', 'nhà vệ sinh']
     ];
-    
+
     /**
      * Xử lý yêu cầu chat và gửi đến API Gemini
      *
@@ -73,18 +73,18 @@ class ChatController extends Controller
                 $keywords = $searchInfo['keywords'];
                 $priceInfo = $searchInfo['price_info'];
                 $spaceKey = $searchInfo['space_key'] ?? null;
-                
+
                 // Thêm space_key vào thông tin giá để truyền đến phương thức searchProducts
                 if ($spaceKey) {
                     $priceInfo['space_key'] = $spaceKey;
                 }
-                
+
                 // Tìm kiếm sản phẩm
                 $searchResults = $this->searchProducts($keywords, $priceInfo);
                 $products = $searchResults['products'];
                 $categories = $searchResults['categories'];
                 $hasProductsInPriceRange = $searchResults['has_products_in_price_range'];
-                
+
                 // Log chi tiết về kết quả tìm kiếm
                 Log::info("Kết quả tìm kiếm cho '{$keywords}':", [
                     'số_lượng_sản_phẩm' => count($products),
@@ -92,13 +92,13 @@ class ChatController extends Controller
                     'không_gian' => $spaceKey,
                     'giá_yêu_cầu' => $priceInfo['has_price'] ? json_encode($priceInfo) : 'Không có'
                 ]);
-                
+
                 if (count($products) === 0 && $priceInfo && $priceInfo['has_price']) {
                     // Nếu không tìm thấy sản phẩm nào thỏa mãn điều kiện giá
                     // Thử tìm kiếm lại không có điều kiện giá để hiển thị một số kết quả gợi ý
                     $priceInfoWithoutPrice = $priceInfo;
                     $priceInfoWithoutPrice['has_price'] = false;
-                    
+
                     $fallbackResults = $this->searchProducts($keywords, $priceInfoWithoutPrice);
                     if (count($fallbackResults['products']) > 0) {
                         Log::info("Tìm kiếm lại không có điều kiện giá: " . count($fallbackResults['products']) . " sản phẩm");
@@ -107,13 +107,13 @@ class ChatController extends Controller
                         // Vẫn giữ hasProductsInPriceRange = false
                     }
                 }
-                
+
                 // Gọi API Gemini để có phản hồi thông minh
                 // Truyền thêm thông tin về kết quả tìm kiếm để Gemini có thể đưa ra phản hồi phù hợp
                 $aiResponse = $this->callGeminiApi($userMessage, [
                     'is_product_search' => true,
                     'search_keywords' => $keywords,
-                    'found_products' => count($products) > 0, 
+                    'found_products' => count($products) > 0,
                     'product_count' => count($products),
                     'categories_found' => $categories,
                     'price_info' => $priceInfo,
@@ -173,13 +173,13 @@ class ChatController extends Controller
     private function detectProductSearchIntent($message)
     {
         $message = mb_strtolower($message, 'UTF-8');
-        
+
         // Kiểm tra nếu tin nhắn chỉ là lời chào đơn giản
         $greetings = [
-            'chào', 'hello', 'hi', 'xin chào', 'chào bạn', 
+            'chào', 'hello', 'hi', 'xin chào', 'chào bạn',
             'chào trợ lý', 'hey', 'alo', 'hola'
         ];
-        
+
         // Nếu tin nhắn chỉ chứa lời chào và ít hơn 15 ký tự, không coi là tìm kiếm sản phẩm
         if (mb_strlen($message) < 15) {
             foreach ($greetings as $greeting) {
@@ -191,7 +191,7 @@ class ChatController extends Controller
                 }
             }
         }
-        
+
         // Các từ khóa liên quan đến tìm kiếm sản phẩm
         $searchKeywords = [
             'tìm', 'kiếm', 'mua', 'sản phẩm', 'đồ', 'nội thất',
@@ -207,7 +207,7 @@ class ChatController extends Controller
                 return true;
             }
         }
-        
+
         // Kiểm tra trong từ vựng mở rộng về không gian
         foreach ($this->extendedSpaceVocab as $spaceKey => $spaceTerms) {
             foreach ($spaceTerms as $term) {
@@ -216,10 +216,10 @@ class ChatController extends Controller
                 }
             }
         }
-        
+
         // Các cụm từ chỉ rõ ý định tìm kiếm sản phẩm
         $searchPhrases = [
-            'có sản phẩm', 'tìm sản phẩm', 'mua sản phẩm', 
+            'có sản phẩm', 'tìm sản phẩm', 'mua sản phẩm',
 
             'giới thiệu sản phẩm', 'tư vấn sản phẩm',
             'có bán', 'mua được', 'tìm mua', 'giới thiệu cho tôi',
@@ -297,13 +297,13 @@ class ChatController extends Controller
 
         // Các từ mô tả không gian
         $spaces = array_keys($this->spaceKeyMapping);
-        
+
         // Các từ mô tả phong cách
         $styles = ['hiện đại', 'cổ điển', 'tối giản', 'scandinavian', 'vintage', 'industrial', 'bohemian', 'rustic'];
-        
+
         // Các từ mô tả chất liệu
         $materials = ['gỗ', 'kim loại', 'nhựa', 'tre', 'mây', 'vải', 'da', 'thủy tinh', 'đá'];
-        
+
         // Các từ/ký hiệu liên quan đến giá cần loại bỏ sau khi trích xuất giá
         $priceRelatedWords = [
             'giá', 'tiền', 'vnd', 'đồng', 'đ', 'k', 'tr', 'triệu', 'nghìn', 'ngàn',
@@ -368,7 +368,7 @@ class ChatController extends Controller
                         $foundSpaceKey = $spaceKey;
                         $foundSpace = array_search($spaceKey, $this->spaceKeyMapping);
                         // Ưu tiên key gốc nếu tồn tại
-                        if (!$foundSpace) $foundSpace = $term; 
+                        if (!$foundSpace) $foundSpace = $term;
                         break 2; // Thoát cả 2 vòng lặp
                     }
                 }
@@ -403,7 +403,7 @@ class ChatController extends Controller
         if ($foundSpace) {
             // Ưu tiên dùng tên không gian gốc (VD: 'phòng khách') thay vì từ đồng nghĩa
             $originalSpaceName = array_search($foundSpaceKey, $this->spaceKeyMapping);
-            $keywords[] = $originalSpaceName ?: $foundSpace; 
+            $keywords[] = $originalSpaceName ?: $foundSpace;
         }
 
         if ($foundStyle) {
@@ -459,9 +459,9 @@ class ChatController extends Controller
         // Kết hợp các từ khóa tìm được và loại bỏ trùng lặp
         $finalKeywords = implode(' ', array_unique($keywords));
         Log::info("Từ khóa cuối cùng từ các phần tử được trích xuất: '{$finalKeywords}'");
-        
+
         return [
-            'keywords' => $finalKeywords, 
+            'keywords' => $finalKeywords,
             'price_info' => $priceInfo,
             'space_key' => $foundSpaceKey
         ];
@@ -469,7 +469,7 @@ class ChatController extends Controller
 
     /**
      * Trích xuất thông tin giá từ tin nhắn
-     * 
+     *
      * @param string $message
      * @return array
      */
@@ -483,13 +483,13 @@ class ChatController extends Controller
             'exact_price' => null,
             'price_type' => null // 'exact', 'range', 'min', 'max'
         ];
-        
+
         // Chuyển tin nhắn về chữ thường
         $message = mb_strtolower($message, 'UTF-8');
-        
+
         // Log tin nhắn để debug
         Log::info("Đang phân tích giá từ tin nhắn: {$message}");
-        
+
         // 1. Tìm phạm vi giá (ưu tiên cao nhất)
         // Ví dụ: "từ 1 triệu đến 2 triệu", "1tr-2tr", "500k đến 1 triệu"
         $rangePatterns = [
@@ -500,36 +500,36 @@ class ChatController extends Controller
             // "X-Y" (dùng dấu gạch ngang)
             '/(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)\s*-\s*(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu'
         ];
-        
+
         foreach ($rangePatterns as $pattern) {
             if (preg_match($pattern, $message, $matches)) {
                 $minPriceText = $matches[1];
                 $maxPriceText = $matches[2];
-                
+
                 Log::info("Phát hiện phạm vi giá: '{$minPriceText}' đến '{$maxPriceText}'");
-                
+
                 // Chuyển đổi chuỗi giá thành số
                 $minPrice = $this->convertPriceTextToNumber($minPriceText);
                 $maxPrice = $this->convertPriceTextToNumber($maxPriceText);
-                
+
                 // Đảm bảo min luôn nhỏ hơn max
                 if ($minPrice > $maxPrice) {
                     $temp = $minPrice;
                     $minPrice = $maxPrice;
                     $maxPrice = $temp;
                 }
-                
+
                 // Cập nhật thông tin giá
                 $priceInfo['has_price'] = true;
                 $priceInfo['price_type'] = 'range';
                 $priceInfo['min_price'] = $minPrice;
                 $priceInfo['max_price'] = $maxPrice;
-                
+
                 Log::info("Đã chuyển đổi phạm vi giá: {$minPrice} VND đến {$maxPrice} VND");
                 return $priceInfo;
             }
         }
-        
+
         // 2. Tìm giá tối đa (nếu không tìm thấy phạm vi giá)
         // Ví dụ: "dưới 1 triệu", "không quá 500k", "tối đa 2tr", "giá dưới 1tr"
         $maxPricePatterns = [
@@ -542,25 +542,25 @@ class ChatController extends Controller
             // "giá dưới X" - pattern mới
             '/giá\s+(?:dưới|không quá|tối đa|chỉ)\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu'
         ];
-        
+
         foreach ($maxPricePatterns as $pattern) {
             if (preg_match($pattern, $message, $matches)) {
                 $priceText = $matches[1];
                 Log::info("Phát hiện giá tối đa: '{$priceText}'");
-                
+
                 // Chuyển đổi chuỗi giá thành số
                 $maxPrice = $this->convertPriceTextToNumber($priceText);
-                
+
                 // Cập nhật thông tin giá
                 $priceInfo['has_price'] = true;
                 $priceInfo['price_type'] = 'max';
                 $priceInfo['max_price'] = $maxPrice;
-                
+
                 Log::info("Đã chuyển đổi giá tối đa: {$maxPrice} VND");
                 return $priceInfo;
             }
         }
-        
+
         // 3. Tìm giá tối thiểu (nếu không tìm thấy phạm vi giá và giá tối đa)
         // Ví dụ: "trên 1 triệu", "từ 500k trở lên", "tối thiểu 2tr"
         $minPricePatterns = [
@@ -573,25 +573,25 @@ class ChatController extends Controller
             // "giá trên X" - pattern mới
             '/giá\s+(?:trên|từ|tối thiểu)\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu'
         ];
-        
+
         foreach ($minPricePatterns as $pattern) {
             if (preg_match($pattern, $message, $matches)) {
                 $priceText = $matches[1];
                 Log::info("Phát hiện giá tối thiểu: '{$priceText}'");
-                
+
                 // Chuyển đổi chuỗi giá thành số
                 $minPrice = $this->convertPriceTextToNumber($priceText);
-                
+
                 // Cập nhật thông tin giá
                 $priceInfo['has_price'] = true;
                 $priceInfo['price_type'] = 'min';
                 $priceInfo['min_price'] = $minPrice;
-                
+
                 Log::info("Đã chuyển đổi giá tối thiểu: {$minPrice} VND");
                 return $priceInfo;
             }
         }
-        
+
         // 4. Tìm giá chính xác (nếu không tìm thấy các loại giá khác)
         // Ví dụ: "giá 1 triệu", "giá khoảng 500k", "có giá 2tr"
         $exactPricePatterns = [
@@ -606,16 +606,16 @@ class ChatController extends Controller
             // Pattern mới cho "có giá X" với "có" và "giá" cách xa nhau
             '/có\s+(?:\w+\s+){0,3}giá\s+(?:là\s+)?(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu'
         ];
-        
+
         foreach ($exactPricePatterns as $pattern) {
             if (preg_match($pattern, $message, $matches)) {
                 $priceText = $matches[1];
                 Log::info("Phát hiện giá chính xác: '{$priceText}'");
-                
+
                 // Kiểm tra tính hợp lệ của đơn vị tiền tệ nếu không rõ ràng
                 $hasUnit = preg_match('/(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)/iu', $matches[0]);
                 $isValidPrice = true;
-                
+
                 if (!$hasUnit && (int)$priceText < 1000) {
                     // Nếu số quá nhỏ và không có đơn vị, có thể là số ngẫu nhiên không phải giá
                     // Đảm bảo đây là số tiền chính xác
@@ -628,57 +628,57 @@ class ChatController extends Controller
                         $isValidPrice = false;
                     }
                 }
-                
+
                 // Chỉ xử lý nếu giá hợp lệ
                 if ($isValidPrice) {
                     // Chuyển đổi chuỗi giá thành số
                     $exactPrice = $this->convertPriceTextToNumber($priceText);
-                    
+
                     // Cập nhật thông tin giá
                     $priceInfo['has_price'] = true;
                     $priceInfo['price_type'] = 'exact';
                     $priceInfo['exact_price'] = $exactPrice;
-                    
+
                     // Nếu có từ "khoảng", xác định phạm vi giá
                     if (mb_strpos($message, 'khoảng') !== false) {
                         $priceInfo['price_type'] = 'range';
                         $priceInfo['min_price'] = $exactPrice * 0.8; // Giảm 20%
                         $priceInfo['max_price'] = $exactPrice * 1.2; // Tăng 20%
-                        
+
                         Log::info("Đã chuyển đổi giá khoảng: {$exactPrice} VND (phạm vi: {$priceInfo['min_price']} - {$priceInfo['max_price']} VND)");
                     } else {
                         Log::info("Đã chuyển đổi giá chính xác: {$exactPrice} VND");
                     }
-                    
+
                     return $priceInfo;
                 }
             }
         }
-        
+
         // 5. Tìm số tiền đơn lẻ trong tin nhắn (ưu tiên thấp nhất)
         // Ví dụ: "500k", "1 triệu", "2tr", "150k" - mở rộng điều kiện áp dụng
         // Không chỉ khi có từ "giá" hoặc "bao nhiêu", mà còn khi có từ liên quan đến tìm kiếm sản phẩm
         $searchTerms = ['giá', 'bao nhiêu', 'tìm', 'sản phẩm', 'sp', 'nội thất', 'đồ', 'có', 'mua'];
         $shouldApplyMoneyPattern = false;
-        
+
         foreach ($searchTerms as $term) {
             if (mb_strpos($message, $term) !== false) {
                 $shouldApplyMoneyPattern = true;
                 break;
             }
         }
-        
+
         if ($shouldApplyMoneyPattern) {
             $moneyPattern = '/\b(\d+[k\.]?\d*)\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?\b/iu';
-            
+
             if (preg_match($moneyPattern, $message, $matches)) {
                 $priceText = $matches[1];
                 Log::info("Phát hiện số tiền: '{$priceText}'");
-                
+
                 // Kiểm tra tính hợp lệ của đơn vị tiền tệ nếu không rõ ràng
                 $hasUnit = preg_match('/(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)/iu', $matches[0]);
                 $isValidPrice = true;
-                
+
                 if (!$hasUnit && (int)$priceText < 1000) {
                     // Nếu số quá nhỏ và không có đơn vị, có thể là số ngẫu nhiên không phải giá
                     // Đảm bảo đây là số tiền chính xác
@@ -691,31 +691,31 @@ class ChatController extends Controller
                         $isValidPrice = false;
                     }
                 }
-                
+
                 // Chỉ xử lý nếu giá hợp lệ
                 if ($isValidPrice) {
                     // Chuyển đổi chuỗi giá thành số
                     $exactPrice = $this->convertPriceTextToNumber($priceText);
-                    
+
                     // Cập nhật thông tin giá
                     $priceInfo['has_price'] = true;
                     $priceInfo['price_type'] = 'exact';
                     $priceInfo['exact_price'] = $exactPrice;
-                    
+
                     Log::info("Đã chuyển đổi số tiền: {$exactPrice} VND");
                     return $priceInfo;
                 }
             }
         }
-        
+
         // Không tìm thấy thông tin giá
         Log::info("Không tìm thấy thông tin giá trong tin nhắn");
         return $priceInfo;
     }
-    
+
     /**
      * Chuyển đổi chuỗi giá thành số
-     * 
+     *
      * @param string $priceText
      * @return float
      */
@@ -723,29 +723,29 @@ class ChatController extends Controller
     {
         // Loại bỏ dấu chấm ngăn cách hàng nghìn và khoảng trắng
         $priceText = trim($priceText);
-        
+
         // Kiểm tra và xử lý đơn vị "nghìn" hoặc "k"
         if (preg_match('/(nghìn|ngàn|k)/iu', $priceText)) {
             $priceText = preg_replace('/(nghìn|ngàn|k)/iu', '', $priceText);
             $price = (float) preg_replace('/[^\d]/', '', $priceText);
             return $price * 1000;
         }
-        
+
         // Kiểm tra và xử lý đơn vị "triệu" hoặc "tr"
         if (preg_match('/(triệu|tr)/iu', $priceText)) {
             $priceText = preg_replace('/(triệu|tr)/iu', '', $priceText);
             $price = (float) preg_replace('/[^\d]/', '', $priceText);
             return $price * 1000000;
         }
-        
+
         // Nếu số đã có "k" ở cuối (ví dụ: 20k)
         if (preg_match('/(\d+)k$/iu', $priceText, $matches)) {
             return (float)$matches[1] * 1000;
         }
-        
+
         // Loại bỏ tất cả ký tự không phải số
         $price = (float) preg_replace('/[^\d]/', '', $priceText);
-        
+
         return $price;
     }
 
@@ -767,7 +767,7 @@ class ChatController extends Controller
             // Tách từ khóa thành các phần riêng biệt
             $keywordParts = explode(' ', trim($keywords));
 
-            // Lấy space_key từ phương thức extractSearchKeywords 
+            // Lấy space_key từ phương thức extractSearchKeywords
             $spaceKey = isset($priceInfo['space_key']) ? $priceInfo['space_key'] : null;
 
             // Ghi log space_key
@@ -780,9 +780,9 @@ class ChatController extends Controller
 
             // Kiểm tra xem có phải tìm kiếm theo tên sản phẩm cụ thể không
             $isProductNameSearch = false;
-            $potentialProductName = trim($keywords); 
+            $potentialProductName = trim($keywords);
             $commonSearchTerms = ['phòng', 'không gian', 'khu vực', 'nơi', 'bàn', 'ghế', 'tủ', 'giường', 'kệ', 'đèn', 'thảm', 'gương', 'sofa', 'giá'];
-            
+
             if (count($keywordParts) > 1) {
                 $isProductNameSearch = true;
                 foreach ($commonSearchTerms as $term) {
@@ -810,7 +810,7 @@ class ChatController extends Controller
             } else {
                  Log::info('Thực hiện tìm kiếm theo từ khóa chung, không gian và danh mục.');
                 // Nếu không phải tìm kiếm theo tên, tiếp tục logic cũ
-                
+
                 // Nếu có space_key, lọc sản phẩm theo danh mục thuộc không gian đó
                 if ($spaceKey) {
                     $categoryIdsInSpace = DB::table('category_space')
@@ -818,7 +818,7 @@ class ChatController extends Controller
                                             ->pluck('category_id')
                                             ->unique()
                                             ->toArray();
-                    
+
                     if (!empty($categoryIdsInSpace)) {
                         Log::info('Lọc theo các danh mục thuộc không gian: ' . $spaceKey . ', IDs: ' . implode(', ', $categoryIdsInSpace));
                         $query->whereIn('category_id', $categoryIdsInSpace);
@@ -834,7 +834,7 @@ class ChatController extends Controller
                     'ban công' => ['ghế ngoài trời', 'bàn ngoài trời', 'ghế thư giãn', 'đèn ngoài trời'],
                     'phòng tắm' => ['kệ phòng tắm', 'gương phòng tắm', 'tủ lavabo', 'giá treo khăn']
                 ];
-                
+
                 // Ánh xạ từ khóa không gian vào tiếng Anh để tìm kiếm rộng hơn
                 $spaceMapping = [
                     'phòng khách' => ['living room', 'lounge'],
@@ -852,7 +852,7 @@ class ChatController extends Controller
                         $detectedSpaces[] = $space;
                     }
                 }
-                
+
                 if ($spaceKey && empty($detectedSpaces)) {
                     $spaceName = $this->getSpaceNameFromKey($spaceKey);
                     if ($spaceName && $spaceName !== $spaceKey) {
@@ -864,14 +864,14 @@ class ChatController extends Controller
                 // Các từ khóa thể hiện tìm kiếm theo không gian
                 $spaceSearchTerms = ['phòng', 'không gian', 'khu vực', 'nơi'];
                 $isSpaceSearch = false;
-                
+
                 foreach ($spaceSearchTerms as $term) {
                     if (mb_strpos(mb_strtolower($keywords, 'UTF-8'), $term) !== false) {
                         $isSpaceSearch = true;
                         break;
                     }
                 }
-                
+
                 if ($spaceKey && !$isSpaceSearch) {
                     $isSpaceSearch = true;
                     Log::info('Đánh dấu là tìm kiếm theo không gian dựa trên space_key');
@@ -889,14 +889,14 @@ class ChatController extends Controller
                     'thảm' => ['thảm', 'carpet', 'rug'],
                     'kệ' => ['kệ', 'shelf', 'shelve', 'rack']
                 ];
-                
+
                 $specificCategories = [];
                 $relatedProductTerms = [];
-                
+
                 // Nếu tìm thấy từ khóa không gian, thêm các sản phẩm liên quan
                 if (!empty($detectedSpaces) || $isSpaceSearch) {
                      Log::info('Phát hiện tìm kiếm theo không gian: ' . implode(', ', $detectedSpaces));
-                    
+
                     foreach ($detectedSpaces as $space) {
                         if (isset($spaceToProductMapping[$space])) {
                             $relatedProductTerms = array_merge($relatedProductTerms, $spaceToProductMapping[$space]);
@@ -905,7 +905,7 @@ class ChatController extends Controller
                             }
                         }
                     }
-                    
+
                     if (empty($detectedSpaces) && $isSpaceSearch && !$spaceKey) {
                         $possibleSpaceHints = [];
                         $spaceHints = [
@@ -933,10 +933,10 @@ class ChatController extends Controller
                             $keywordParts = array_merge($keywordParts, $spaceMapping['phòng khách']);
                         }
                     }
-                    
+
                     $relatedProductTerms = array_unique($relatedProductTerms);
                     Log::info('Mở rộng tìm kiếm sang các sản phẩm liên quan đến không gian: ' . implode(', ', $relatedProductTerms));
-                    
+
                     foreach ($relatedProductTerms as $term) {
                         $isCategoryTerm = false;
                         foreach ($productCategories as $category => $terms) {
@@ -953,7 +953,7 @@ class ChatController extends Controller
                     }
                     $keywordParts = array_unique($keywordParts);
                 }
-                
+
                 // Tìm tất cả danh mục sản phẩm trong từ khóa ban đầu
                 foreach ($productCategories as $category => $terms) {
                     foreach ($terms as $term) {
@@ -1016,12 +1016,12 @@ class ChatController extends Controller
             // Áp dụng bộ lọc giá
             if ($priceInfo && $priceInfo['has_price']) {
                 Log::info('Đang áp dụng bộ lọc giá...');
-                
+
                 // Xử lý giá chính xác (với khoảng dao động nhỏ)
                 if ($priceInfo['price_type'] === 'exact' && $priceInfo['exact_price'] !== null) {
                     $exactPrice = $priceInfo['exact_price'];
-                    $minPrice = $exactPrice * 0.85; 
-                    $maxPrice = $exactPrice * 1.15; 
+                    $minPrice = $exactPrice * 0.85;
+                    $maxPrice = $exactPrice * 1.15;
                     Log::info("Lọc sản phẩm với giá chính xác: {$exactPrice} VND, phạm vi [{$minPrice} - {$maxPrice}] VND");
                     $this->applyPriceBetweenFilter($query, $minPrice, $maxPrice); // Apply directly
                 }
@@ -1056,16 +1056,16 @@ class ChatController extends Controller
                 ->get();
 
             Log::info('Tìm thấy ' . $products->count() . ' sản phẩm sau khi lọc.');
-            
+
             // Debug chi tiết các sản phẩm tìm thấy
             foreach ($products as $product) {
                 $hasVariants = $product->variants->isNotEmpty();
                 $productPrice = $product->price;
                 $productDiscountPrice = $product->discount_price;
                 $displayPrice = $productDiscountPrice ?? $productPrice;
-                
+
                 Log::info("Sản phẩm: {$product->name}, ID: {$product->id}, Giá: {$displayPrice}, Có biến thể: " . ($hasVariants ? 'Có' : 'Không'));
-                
+
                 if ($hasVariants) {
                     foreach ($product->variants as $index => $variant) {
                         $variantPrice = $variant->price;
@@ -1077,31 +1077,31 @@ class ChatController extends Controller
             }
 
             // Kiểm tra xem có sản phẩm nào phù hợp với khoảng giá yêu cầu không
-            // Đơn giản hóa logic: Nếu $products không rỗng sau khi lọc giá (nếu có), 
+            // Đơn giản hóa logic: Nếu $products không rỗng sau khi lọc giá (nếu có),
             // thì tức là có sản phẩm trong khoảng giá đó.
             $hasProductsInPriceRange = $products->isNotEmpty();
             if ($priceInfo && $priceInfo['has_price']) {
                 Log::info('Kiểm tra sản phẩm trong khoảng giá yêu cầu (sau khi lọc): ' . ($hasProductsInPriceRange ? 'Có' : 'Không'));
             } // Không cần else vì nếu không lọc giá, hasProductsInPriceRange chỉ đơn giản là $products có rỗng không.
-            
+
             // Phân loại sản phẩm theo danh mục và định dạng lại
             $categorizedProducts = [];
             $foundCategories = [];
-            $productsInPriceRangeList = []; 
+            $productsInPriceRangeList = [];
 
             $formattedProducts = $products->map(function ($product) use (&$categorizedProducts, &$foundCategories, &$productsInPriceRangeList, $priceInfo) {
                 $imagePath = $product->image_thumnail ?? null;
                 $categoryName = $product->category ? $product->category->name : 'N/A';
-                
+
                 if (!in_array($categoryName, $foundCategories)) {
                     $foundCategories[] = $categoryName;
                 }
-                
+
                 $displayPrice = 0;
                 $productPrice = 0;
                 $productDiscountPrice = null;
                 $hasVariants = $product->variants->isNotEmpty();
-                
+
                 if ($hasVariants) {
                     // Thay đổi ở đây: Kiểm tra tất cả các biến thể và chọn biến thể phù hợp nhất với điều kiện giá
                     // Nếu có điều kiện giá, ưu tiên biến thể nằm trong khoảng giá
@@ -1111,14 +1111,14 @@ class ChatController extends Controller
                             $variantPrice = $variant->price;
                             $variantDiscountPrice = $variant->discount_price;
                             $effectivePrice = $variantDiscountPrice ?? $variantPrice;
-                            
+
                             $matchesPrice = false;
                             if ($priceInfo['price_type'] === 'exact' && $priceInfo['exact_price'] !== null) {
                                 $exactPrice = $priceInfo['exact_price'];
                                 $minPrice = $exactPrice * 0.85;
                                 $maxPrice = $exactPrice * 1.15;
                                 $matchesPrice = ($effectivePrice >= $minPrice && $effectivePrice <= $maxPrice);
-                            } 
+                            }
                             else if ($priceInfo['price_type'] === 'range' && $priceInfo['min_price'] !== null && $priceInfo['max_price'] !== null) {
                                 $matchesPrice = ($effectivePrice >= $priceInfo['min_price'] && $effectivePrice <= $priceInfo['max_price']);
                             }
@@ -1128,12 +1128,12 @@ class ChatController extends Controller
                             else if ($priceInfo['price_type'] === 'min' && $priceInfo['min_price'] !== null) {
                                 $matchesPrice = ($effectivePrice >= $priceInfo['min_price']);
                             }
-                            
+
                             // Log chi tiết về biến thể
-                            $variantPriceInfo = "Biến thể ID {$variant->id}: Giá {$variantPrice}, Giá KM " . 
-                                            ($variantDiscountPrice ? $variantDiscountPrice : "không có") . 
+                            $variantPriceInfo = "Biến thể ID {$variant->id}: Giá {$variantPrice}, Giá KM " .
+                                            ($variantDiscountPrice ? $variantDiscountPrice : "không có") .
                                             ", Giá hiệu lực {$effectivePrice}";
-                            
+
                             if ($matchesPrice) {
                                 Log::info("SP {$product->id} - {$product->name}: {$variantPriceInfo} - KHỚP VỚI ĐIỀU KIỆN GIÁ");
                                 $matchingVariants[] = [
@@ -1144,7 +1144,7 @@ class ChatController extends Controller
                                 Log::info("SP {$product->id} - {$product->name}: {$variantPriceInfo} - KHÔNG KHỚP VỚI ĐIỀU KIỆN GIÁ");
                             }
                         }
-                        
+
                         // Nếu có biến thể phù hợp với giá, chọn biến thể đầu tiên (sau khi sắp xếp theo giá)
                         if (!empty($matchingVariants)) {
                             // Sắp xếp theo giá tăng dần (cho max, exact, range) hoặc giảm dần (cho min)
@@ -1157,7 +1157,7 @@ class ChatController extends Controller
                                     return $a['price'] - $b['price']; // Sắp xếp tăng dần
                                 });
                             }
-                            
+
                             $bestVariant = $matchingVariants[0]['variant'];
                             $productPrice = $bestVariant->price;
                             $productDiscountPrice = $bestVariant->discount_price;
@@ -1167,7 +1167,7 @@ class ChatController extends Controller
                             $lowestPriceVariant = $product->variants->sortBy(function($variant) {
                                 return $variant->discount_price ?? $variant->price;
                             })->first();
-                            
+
                             if ($lowestPriceVariant) {
                                 $productPrice = $lowestPriceVariant->price;
                                 $productDiscountPrice = $lowestPriceVariant->discount_price;
@@ -1179,7 +1179,7 @@ class ChatController extends Controller
                         $lowestPriceVariant = $product->variants->sortBy(function($variant) {
                             return $variant->discount_price ?? $variant->price;
                         })->first();
-                        
+
                         if ($lowestPriceVariant) {
                             $productPrice = $lowestPriceVariant->price;
                             $productDiscountPrice = $lowestPriceVariant->discount_price;
@@ -1191,7 +1191,7 @@ class ChatController extends Controller
                     $productDiscountPrice = $product->discount_price;
                     $displayPrice = $productDiscountPrice ?? $productPrice;
                 }
-                 
+
                  $formattedProduct = [
                      'id' => $product->id,
                      'name' => $product->name,
@@ -1209,7 +1209,7 @@ class ChatController extends Controller
                              'id' => $variant->id,
                              'price' => $variant->price,
                              'discount_price' => $variant->discount_price,
-                             'variant_details' => $variant->variant_details ?? null 
+                             'variant_details' => $variant->variant_details ?? null
                          ];
                      })->toArray() : []
                  ];
@@ -1218,13 +1218,13 @@ class ChatController extends Controller
                     $categorizedProducts[$categoryName] = [];
                 }
                 $categorizedProducts[$categoryName][] = $formattedProduct;
-                $productsInPriceRangeList[] = $formattedProduct; 
+                $productsInPriceRangeList[] = $formattedProduct;
 
                 return $formattedProduct;
 
             })->values()->all(); // Ensure it's a plain array
 
-            // --- Bắt đầu thay đổi logic --- 
+            // --- Bắt đầu thay đổi logic ---
 
             // Gán trực tiếp kết quả map vào $sortedProducts
             $sortedProducts = $formattedProducts;
@@ -1266,11 +1266,11 @@ class ChatController extends Controller
                  });
                  Log::info('Không có lọc giá, sắp xếp sản phẩm theo ID.');
             }
-            
+
             // --- Kết thúc thay đổi logic ---
 
             Log::info('Số sản phẩm cuối cùng trả về: ' . count($sortedProducts));
-            
+
             // Log chi tiết cấu trúc $sortedProducts trước khi return
             Log::info('Cấu trúc dữ liệu sản phẩm trả về:', $sortedProducts);
 
@@ -1287,7 +1287,7 @@ class ChatController extends Controller
             return [
                 'products' => $sortedProducts,
                 'categories' => array_values(array_unique($foundCategories)),
-                'categorized_products' => $sortedCategorizedProducts, 
+                'categorized_products' => $sortedCategorizedProducts,
                 'has_products_in_price_range' => $hasProductsInPriceRange
             ];
         } catch (\Exception $e) {
@@ -1344,7 +1344,7 @@ class ChatController extends Controller
                  });
              });
          });
-         
+
          // Log để debug
          Log::info("Áp dụng lọc giá BETWEEN: $minPrice - $maxPrice");
      }
@@ -1387,7 +1387,7 @@ class ChatController extends Controller
                  });
              });
          });
-         
+
          // Log để debug
          Log::info("Áp dụng lọc giá MAX: $maxPrice");
      }
@@ -1430,7 +1430,7 @@ class ChatController extends Controller
                  });
              });
          });
-         
+
          // Log để debug
          Log::info("Áp dụng lọc giá MIN: $minPrice");
      }
@@ -1488,9 +1488,9 @@ Khi trả lời:
                 $priceInfo = $context['price_info'] ?? null;
                 $hasProductsInPriceRange = isset($context['has_products_in_price_range']) ? $context['has_products_in_price_range'] : false;
                 $spaceKey = $context['space_key'] ?? null;
-                
+
                 $expertPrompt .= "\n\nĐây là yêu cầu tìm kiếm sản phẩm với từ khóa: \"$searchKeywords\".";
-                
+
                 // Thêm thông tin về không gian nếu có
                 if ($spaceKey) {
                     $spaceName = $this->getSpaceNameFromKey($spaceKey);
@@ -1500,12 +1500,12 @@ Khi trả lời:
                          $expertPrompt .= " Khách hàng đang tìm sản phẩm liên quan đến \"$spaceKey\"."; // Nếu không dịch được, dùng key
                     }
                 }
-                
+
                 // Thêm thông tin về giá nếu có
                 if ($priceInfo && $priceInfo['has_price']) {
                     $priceType = $priceInfo['price_type'];
                     $priceDetail = '';
-                    
+
                     if ($priceType === 'exact') {
                         $priceDetail = "giá khoảng " . number_format($priceInfo['exact_price']) . "đ";
                     } elseif ($priceType === 'range') {
@@ -1515,13 +1515,13 @@ Khi trả lời:
                     } elseif ($priceType === 'max') {
                         $priceDetail = "giá dưới " . number_format($priceInfo['max_price']) . "đ";
                     }
-                    
+
                     $expertPrompt .= " Khách hàng đang tìm sản phẩm với $priceDetail.";
                 }
-                
+
                 if (!$foundProducts) {
                     $expertPrompt .= "\nKHÔNG tìm thấy sản phẩm nào phù hợp với từ khóa này trong cơ sở dữ liệu của chúng tôi.";
-                    
+
                     // Gợi ý chung chung hơn
                     $expertPrompt .= "\nHãy trả lời: \"Xin lỗi, tôi chưa tìm thấy sản phẩm nào khớp hoàn toàn với \"$searchKeywords\"";
                     if ($priceInfo && $priceInfo['has_price']) {
@@ -1531,7 +1531,7 @@ Khi trả lời:
 
                 } else { // Đã tìm thấy sản phẩm ($foundProducts = true)
                     $expertPrompt .= "\nĐã tìm thấy $productCount sản phẩm thuộc " . count($categoriesFound) . " danh mục: " . implode(', ', $categoriesFound) . ".";
-                    
+
                     if ($priceInfo && $priceInfo['has_price']) {
                         if ($hasProductsInPriceRange) {
                             // Tìm thấy sản phẩm VÀ có sản phẩm trong khoảng giá yêu cầu
@@ -1552,7 +1552,7 @@ Khi trả lời:
                              }
                               $expertPrompt .= ", nhưng tiếc là không có sản phẩm nào khớp với mức giá bạn đưa ra. Bạn có thể tham khảo các sản phẩm này hoặc thử tìm với mức giá khác xem sao.\"";
                         }
-                    } else { 
+                    } else {
                         // Tìm thấy sản phẩm và KHÔNG có yêu cầu về giá
                          $expertPrompt .= "\nHãy trả lời: \"Tôi đã tìm thấy một số sản phẩm \"$searchKeywords\" phù hợp";
                           if ($spaceKey) {
@@ -1561,7 +1561,7 @@ Khi trả lời:
                          }
                          $expertPrompt .= ". Bạn xem các sản phẩm bên dưới nhé.\"";
                     }
-                    
+
                      $expertPrompt .= "\n\nTrả lời NGẮN GỌN và TRỰC TIẾP (1-2 câu). KHÔNG giải thích dài dòng. KHÔNG đề xuất sản phẩm ngoài kết quả.";
                 }
             } else {
@@ -1599,7 +1599,7 @@ Khi trả lời:
                  if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
                     // Xóa các dấu * hoặc markdown dư thừa nếu Gemini trả về
                     $responseText = $responseData['candidates'][0]['content']['parts'][0]['text'];
-                    return trim(str_replace(['*', '#'], '', $responseText)); 
+                    return trim(str_replace(['*', '#'], '', $responseText));
                 } else {
                     Log::warning('Gemini API response format unexpected', ['response' => $responseData]);
                     return 'Xin lỗi, tôi không thể xử lý yêu cầu của bạn lúc này. (Lỗi định dạng phản hồi)';
@@ -1624,7 +1624,7 @@ Khi trả lời:
 
      /**
      * Chuyển đổi space_key sang tên hiển thị tiếng Việt
-     * 
+     *
      * @param string $spaceKey
      * @return string|null Tên không gian tiếng Việt hoặc chính key nếu không tìm thấy
      */
@@ -1632,15 +1632,15 @@ Khi trả lời:
     {
         // Đảo ngược mapping gốc để lấy tên tiếng Việt từ key
         $keyToVnMap = array_flip($this->spaceKeyMapping); // Đảo ngược map gốc
-        
+
         // Bổ sung các key còn thiếu nếu cần (đảm bảo tính đầy đủ)
         $keyToVnMap = $keyToVnMap + [
-             'kitchen' => 'phòng bếp', 
-             'office' => 'văn phòng', 
+             'kitchen' => 'phòng bếp',
+             'office' => 'văn phòng',
              'outdoor' => 'ngoài trời',
-             'bathroom' => 'phòng tắm' 
+             'bathroom' => 'phòng tắm'
         ];
-        
+
         return $keyToVnMap[$spaceKey] ?? $spaceKey; // Trả về tên TV hoặc chính key nếu không tìm thấy
     }
 

@@ -360,15 +360,17 @@
         <div class="card shadow-sm mb-4 border-0 rounded-lg overflow-hidden">
             <div class="card-body p-0">
                 <ul class="nav nav-pills nav-fill sticky-top bg-white border-bottom" id="orderStatusTabs" role="tablist">
-                    @foreach ($groupedOrders as $status => $statusOrders)
-                        @php $slug = Str::slug($status) @endphp
-                        <li class="nav-item" role="presentation">
-                            <button
-                                class="nav-link rounded-0 border-0 py-3 position-relative {{ $loop->first ? 'active' : '' }}"
-                                id="pills-{{ Str::slug($slug) }}-tab" data-bs-toggle="pill"
-                                data-bs-target="#pills-{{ Str::slug($slug) }}" type="button" role="tab"
-                                aria-controls="pills-{{ Str::slug($slug) }}"
-                                aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                @foreach ($groupedOrders as $status => $statusOrders)
+                    @php $slug = Str::slug($status) @endphp
+                    <li class="nav-item" role="presentation">
+                            <button class="nav-link rounded-0 border-0 py-3 position-relative {{ $loop->first ? 'active' : '' }}"
+                                id="pills-{{ Str::slug($slug) }}-tab"
+                                data-bs-toggle="pill"
+                                data-bs-target="#pills-{{ Str::slug($slug) }}"
+                                type="button"
+                                role="tab"
+                            aria-controls="pills-{{ Str::slug($slug) }}"
+                            aria-selected="{{ $loop->first ? 'true' : 'false' }}">
                                 <div class="d-flex flex-column align-items-center">
                                     <span class="fs-6 fw-bold">{{ $status }}</span>
                                     <span
@@ -477,8 +479,7 @@
                                                     <div class="row mb-3">
                                                         <div class="col-md-6">
                                                             <p class="mb-1">
-                                                                <span class="text-muted"><i class="far fa-user me-1"></i>
-                                                                    Người nhận:</span>
+                                                                <span class="text-muted"><i class="far fa-user me-1"></i> Người nhận:</span>
                                                                 <span class="fw-medium">{{ $order->user_name }}</span>
                                                             </p>
                                                             <p class="mb-1">
@@ -657,22 +658,82 @@
 @endsection
 
 @section('JS')
-    <script>
-        // Định nghĩa biến toàn cục ở đầu file
-        const BASE_URL = window.location.origin;
-        let CSRF_TOKEN;
+<script>
+    // Định nghĩa biến toàn cục ở đầu file
+    const BASE_URL = window.location.origin;
+    let CSRF_TOKEN;
+    
+    // Đảm bảo DOM đã sẵn sàng
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM đã sẵn sàng, bắt đầu khởi tạo JavaScript');
+        
+        // Lấy CSRF token từ meta tag
+        CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
+        // Ghi log để debug
+        console.log('BASE_URL:', BASE_URL);
+        
+        initOrderBulkActions();
+    });
+    
+    // Đảm bảo cả trang đã tải hoàn toàn (bao gồm cả hình ảnh)
+    window.addEventListener('load', function() {
+        console.log('Trang đã tải hoàn toàn');
+        checkAllCheckboxes();
+    });
+    
+    function checkAllCheckboxes() {
+        // Kiểm tra lại trạng thái checkbox sau khi trang đã tải hoàn toàn
+        const anyChecked = document.querySelector('.order-checkbox:checked');
+        if (anyChecked) {
+            console.log('Có checkbox đã được chọn sau khi trang tải hoàn toàn:', anyChecked);
+            updateSelectedOrders();
+        }
+    }
+    
+    function initOrderBulkActions() {
+        // Thêm hiệu ứng khi chuyển tab
+        const tabButtons = document.querySelectorAll('[data-bs-toggle="pill"]');
 
-        // Đảm bảo DOM đã sẵn sàng
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM đã sẵn sàng, bắt đầu khởi tạo JavaScript');
+        tabButtons.forEach(button => {
+            button.addEventListener('shown.bs.tab', function (event) {
+                // Xóa active indicator cho tất cả các tab
+                tabButtons.forEach(btn => {
+                    btn.querySelector('.position-absolute')?.remove();
+                });
 
-            // Lấy CSRF token từ meta tag
-            CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                // Thêm active indicator cho tab đang active
+                const activeIndicator = document.createElement('span');
+                activeIndicator.className = 'position-absolute bottom-0 start-0 end-0 bg-primary';
+                activeIndicator.style.height = '3px';
+                activeIndicator.style.transition = 'all 0.3s ease';
+                event.target.appendChild(activeIndicator);
+            });
+        });
 
-            // Ghi log để debug
-            console.log('BASE_URL:', BASE_URL);
+        // Thêm hiệu ứng hover cho card
+        const orderCards = document.querySelectorAll('.order-card');
+        orderCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)';
+            });
 
-            initOrderBulkActions();
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 0.125rem 0.25rem rgba(0,0,0,0.075)';
+            });
+        });
+
+        // Thêm hiệu ứng cho select status
+        const statusSelects = document.querySelectorAll('.status-select');
+        statusSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                this.classList.add('border-primary');
+                setTimeout(() => {
+                    this.classList.remove('border-primary');
+                }, 1000);
+            });
         });
 
         // Đảm bảo cả trang đã tải hoàn toàn (bao gồm cả hình ảnh)

@@ -11,9 +11,9 @@ if (!function_exists('getStatusBadgeColor')) {
             case 'Đã Xác Nhận':
                 return 'info';
             case 'Đang Chuẩn Bị Hàng':
-                return 'primary';
+                return 'info';
             case 'Đang Giao':
-                return 'warning'; // Assuming you have an 'indigo' color defined in your CSS/framework
+                return 'warning';
             case 'Đã Giao':
             case 'Đã Nhận':
                 return 'success';
