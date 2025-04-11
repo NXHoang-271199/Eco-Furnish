@@ -9,14 +9,15 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PostApiController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserApiController;
+use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
-use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
 use App\Http\Controllers\Api\UserAddressController;
@@ -78,14 +79,14 @@ Route::prefix('users')->group(function () {
     Route::post('/verify-email', [UserApiController::class, 'verifyEmail']);
     Route::post('/resend-verification', [UserApiController::class, 'resendVerification']);
     Route::put('/update/{id}', [UserApiController::class, 'updateProfile']);
-    
+
     Route::middleware('auth:sanctum')->group(function () {
         // Thêm routes cho quản lý địa chỉ
         Route::get('/{userId}/addresses', [UserAddressController::class, 'getUserAddresses']);
         Route::post('/{userId}/addresses', [UserAddressController::class, 'storeUserAddress']);
         Route::put('/{userId}/addresses/{addressId}', [UserAddressController::class, 'updateUserAddress']);
         Route::delete('/{userId}/addresses/{addressId}', [UserAddressController::class, 'deleteUserAddress']);
-        
+
         Route::post('/upload-avatar/{id}', [UserApiController::class, 'uploadAvatar']);
         Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
         Route::post('/logout', [UserApiController::class, 'apiLogout']);
@@ -233,36 +234,44 @@ Route::middleware('auth:sanctum')->prefix('user/notifications')->group(function 
 // Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động // FE ko được động tới
 // Cart Routers
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/cart', [CartController::class, 'index']); // Lấy giỏ hàng
-    Route::post('/cart/add', [CartController::class, 'addToCart']); // Thêm vào giỏ hàng
-    Route::put('/cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
-    Route::delete('/cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
-    Route::delete('/cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
+    Route::get('cart', [CartController::class, 'index']); // Lấy giỏ hàng
+    Route::post('cart/add', [CartController::class, 'addToCart']); // Thêm vào giỏ hàng
+    Route::put('cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
+    Route::delete('cart/remove/{id}', [CartController::class, 'removeFromCart']); // Xóa 1 sản phẩm
+    Route::delete('cart/clear', [CartController::class, 'clearCart']); // Xóa toàn bộ giỏ hàng
 });
 
 // Payment Method routes
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/payment-methods', [PaymentMethodController::class, 'index']); // đổ danh sách thanh toán
-    Route::post('/payment-method/retry/{orderId}', [PaymentMethodController::class, 'retryPayment']); // api gọi lại trang thanh toán
+    Route::get('payment-methods', [PaymentMethodController::class, 'index']); // đổ danh sách thanh toán
+    Route::get('payment-methods/deposit', [PaymentMethodController::class, 'getDepositMethods']); // đổ danh sách thanh toán cho nạp tiền vào ví
+    Route::post('payment-method/retry/{orderId}', [PaymentMethodController::class, 'retryPayment']); // api gọi lại trang thanh toán cho đơn hàng
+    Route::post('payment-method/retry-deposit/{id}', [PaymentMethodController::class, 'retryDepositPayment']); // api nạp tiền lại
 });
 Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // FE ko được động tới
 Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']); // FE ko được động tới
 
 // Order routes
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/orders', [OrderController::class, 'index']); // Danh sách đơn hàng
-    Route::get('/orders/{id}', [OrderController::class, 'show']); // Chi tiết đơn hàng
-    Route::post('/orders', [OrderController::class, 'createOrder']); // Tạo đơn hàng
-    Route::post('/orders/buy-now', [OrderController::class, 'quickOrder']); // Tạo đơn hàng nhanh
-    Route::post('/orders/{id}/request-refund', [OrderController::class, 'requestRefund']); // Gửi yêu cầu hoàn hàng
-    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
-    Route::post('/orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
-    Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
+    Route::get('orders', [OrderController::class, 'index']); // Danh sách đơn hàng
+    Route::get('orders/{id}', [OrderController::class, 'show']); // Chi tiết đơn hàng
+    Route::post('orders', [OrderController::class, 'createOrder']); // Tạo đơn hàng
+    Route::post('orders/buy-now', [OrderController::class, 'quickOrder']); // Tạo đơn hàng nhanh
+    Route::post('orders/{id}/request-refund', [OrderController::class, 'requestRefund']); // Gửi yêu cầu hoàn hàng
+    Route::post('orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn
+    Route::post('orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
+    Route::post('check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
 });
 // review routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
     Route::get('/products/{productId}/can-review', [ReviewController::class, 'canReview']); // kiểm tra quyền đánh giá
 });
-Route::get('/products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
+Route::get('products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('wallet/balance', [WalletController::class, 'getBalance']); // số dư ví
+    Route::post('wallet/deposit', [WalletController::class, 'deposit']); // nạp tiền
+    Route::get('wallet/transactions', [WalletController::class, 'transactions']); // lịch sử giao dịch
+    Route::delete('/wallet/transactions/{id}/cancel', [WalletController::class, 'cancelTransaction']); // hủy giao dịch
+});

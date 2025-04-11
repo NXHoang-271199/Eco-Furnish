@@ -17,6 +17,11 @@ class WalletTransaction extends Model
         'status',
         'created_by',
         'order_id',
+        'wallet_code',
+        'balance_before',
+        'balance_after',
+        'updated_by',
+
     ];
 
     public function wallet()

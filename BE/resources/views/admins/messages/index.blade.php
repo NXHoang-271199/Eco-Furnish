@@ -85,7 +85,7 @@
 
 <!-- Script kích hoạt tương tác người dùng cho âm thanh -->
 <script>
-// Kích hoạt audio elements từ order-notifications.js 
+// Kích hoạt audio elements từ order-notifications.js
 document.addEventListener('DOMContentLoaded', function() {
     // Tạo tương tác người dùng giả khi trang chat được tải
     const triggerAudioActivation = () => {
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.warn('⚠️ Lỗi khi khởi tạo audio trong trang chat:', e);
             }
         });
-        
+
         // Kích hoạt audio events từ order-notifications.js
         const event = new MouseEvent('click', {
             view: window,

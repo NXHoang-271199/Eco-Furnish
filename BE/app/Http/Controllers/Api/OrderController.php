@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Cart;
+use App\Models\User;
 use App\Models\Order;
+use App\Models\Wallet;
 use App\Models\Product;
 use App\Models\Voucher;
 use App\Models\OrderItem;
@@ -13,6 +15,7 @@ use App\Models\PaymentMethod;
 use App\Models\RefundRequest;
 use App\Models\ProductVariant;
 use App\Models\OrderNotification;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\OrderRequest;
 use App\Mail\OrderConfirmationMail;
@@ -157,13 +160,53 @@ class OrderController extends Controller
 
             $totalPrice = max(0, $subtotal - $discountAmount);
 
-            // ✅ Kiểm tra phương thức thanh toán
-            $paymentMethod = PaymentMethod::find($request->payment_method_id);
-            if (!$paymentMethod || $paymentMethod->is_connected != 1) {
+            // Xử lý phương thức thanh toán
+            $paymentMethodId = PaymentMethod::find($request->payment_method_id);
+
+            if (!$paymentMethodId || $paymentMethodId->is_connected != 1) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Phương thức thanh toán chưa được kích hoạt'
                 ], 400);
+            }
+
+            $paymentMethod = $paymentMethodId->name;
+            // Thiết lập trạng thái mặc định
+            $paymentStatus = $paymentMethod === 'Tiền mặt' ? 0 : 2;
+            $orderStatus = 'Chưa Xác Nhận';
+            // Nếu chọn thanh toán bằng ví
+            if ($paymentMethod === 'Ví') {
+                $wallet = Wallet::where('user_id', $userId)->first();
+                if (!$wallet || $wallet->balance < $totalPrice) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Số dư ví không đủ để thanh toán đơn hàng này.'
+                    ], 400);
+                }
+
+                // Lưu số dư trước
+                $balanceBefore = $wallet->balance;
+
+                // Trừ tiền
+                $wallet->decrement('balance', $totalPrice);
+
+                // Lưu số dư sau
+                $balanceAfter = $wallet->fresh()->balance;
+
+                // Ghi log giao dịch ví (order_id sẽ cập nhật sau)
+                $walletTransaction = WalletTransaction::create([
+                    'wallet_id' => $wallet->id,
+                    'order_id' => null,
+                    'amount' => $totalPrice,
+                    'type' => 'thanh_toan_don_hang',
+                    'payment_method_id' => $paymentMethodId->id,
+                    'description' => 'Thanh toán đơn hàng',
+                    'status' => 'thanh_cong',
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                ]);
+                $paymentStatus = 1; // Đã thanh toán
+                $orderStatus = 'Đã Xác Nhận';
             }
 
             // ✅ Tạo đơn hàng
@@ -175,12 +218,32 @@ class OrderController extends Controller
                 'user_phone' => $request->user_phone,
                 'user_address' => $request->user_address,
                 'payment_method_id' => $request->payment_method_id,
-                'payment_status' => $paymentMethod->name === 'Tiền mặt' ? 0 : 2, // 2 = Đang chờ thanh toán,
-                'order_status' => 'Chưa Xác Nhận',
+                'payment_status' => $paymentStatus,
+                'order_status' => $orderStatus,
                 'total_price' => $totalPrice,
                 'voucher_id' => $request->voucher_id ?? null,
                 'discount_amount' => $discountAmount,
             ]);
+            if (in_array($paymentMethod, ['MoMo', 'VNPAY'])) {
+                WalletTransaction::create([
+                    'wallet_id' => Wallet::where('user_id', $userId)->value('id'),
+                    'order_id' => $order->id,
+                    'amount' => $totalPrice,
+                    'type' => 'thanh_toan_don_hang',
+                    'payment_method_id' => $paymentMethodId->id,
+                    'description' => 'Thanh toán đơn hàng #' . $order->order_code . ' bằng ' . $paymentMethod,
+                    'status' => 'cho_thanh_toan', // trạng thái đúng
+                    'balance_before' => null,
+                    'balance_after' => null,
+                ]);
+            }
+            // Cập nhật lại order_id cho transaction ví nếu có
+            if (isset($walletTransaction)) {
+                $walletTransaction->update([
+                    'order_id' => $order->id,
+                    'description' => 'Thanh toán đơn hàng #' . $order->order_code
+                ]);
+            }
 
             // ✅ Thêm sản phẩm vào order_items & cập nhật tồn kho
             foreach ($cartItems as $item) {
@@ -256,18 +319,18 @@ class OrderController extends Controller
             DB::commit();
 
             // ✅ Xử lý thanh toán online (MoMo, VNPAY)
-            if (in_array($paymentMethod->name, ['MoMo', 'VNPAY'])) {
+            if (in_array($paymentMethod, ['MoMo', 'VNPAY'])) {
                 return app(PaymentMethodController::class)->processPayment(new Request([
                     'order_id' => $order->id,
                     'order_code' => $order->order_code,
                     'total_price' => $totalPrice,
-                    'payment_method' => $paymentMethod->name,
+                    'payment_method' => $paymentMethod,
                     'payment_method_id' => $order->payment_method_id
                 ]));
             }
 
-            // ✅ Gửi email xác nhận đơn hàng nếu thanh toán tiền mặt
-            if ($paymentMethod->name === 'Tiền mặt') {
+            // Gửi mail xác nhận nếu là Tiền mặt hoặc Ví
+            if (in_array($paymentMethod, ['Tiền mặt', 'Ví'])) {
                 Mail::to($order->user_email)->send(new OrderConfirmationMail($order));
             }
 
@@ -329,7 +392,6 @@ class OrderController extends Controller
 
             // Kiểm tra voucher nếu có
             if ($request->voucher_id) {
-                // ✅ Lấy thông tin voucher trước
                 $voucher = Voucher::find($request->voucher_id);
                 $voucherResponse = app(VoucherApiController::class)->checkVoucher(new Request([
                     'voucher_code' => $voucher->code,
@@ -357,7 +419,49 @@ class OrderController extends Controller
                     'message' => 'Phương thức thanh toán chưa được kích hoạt'
                 ], 400);
             }
+
             $paymentMethod = $paymentMethodId->name;
+
+            // Thiết lập trạng thái mặc định
+            $paymentStatus = $paymentMethod === 'Tiền mặt' ? 0 : 2;
+            $orderStatus = 'Chưa Xác Nhận';
+
+            // Nếu chọn thanh toán bằng ví
+            if ($paymentMethod === 'Ví') {
+                $wallet = Wallet::where('user_id', $userId)->first();
+                if (!$wallet || $wallet->balance < $totalPrice) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Số dư ví không đủ để thanh toán đơn hàng này.'
+                    ], 400);
+                }
+
+                // Lưu số dư trước
+                $balanceBefore = $wallet->balance;
+
+                // Trừ tiền
+                $wallet->decrement('balance', $totalPrice);
+
+                // Lưu số dư sau
+                $balanceAfter = $wallet->fresh()->balance;
+
+                // Ghi log giao dịch ví (order_id sẽ cập nhật sau)
+                $walletTransaction = WalletTransaction::create([
+                    'wallet_id' => $wallet->id,
+                    'order_id' => null,
+                    'amount' => $totalPrice,
+                    'type' => 'thanh_toan_don_hang',
+                    'payment_method_id' => $paymentMethodId->id,
+                    'description' => 'Thanh toán đơn hàng',
+                    'status' => 'thanh_cong',
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                ]);
+
+
+                $paymentStatus = 1; // Đã thanh toán
+                $orderStatus = 'Đã Xác Nhận';
+            }
 
             // Tạo đơn hàng
             $order = Order::create([
@@ -368,12 +472,33 @@ class OrderController extends Controller
                 'user_phone' => $request->user_phone,
                 'user_address' => $request->user_address,
                 'payment_method_id' => $request->payment_method_id,
-                'payment_status' => $paymentMethod === 'Tiền mặt' ? 0 : 2, // 2 = Đang chờ thanh toán,
-                'order_status' => 'Chưa Xác Nhận',
+                'payment_status' => $paymentStatus,
+                'order_status' => $orderStatus,
                 'total_price' => $totalPrice,
                 'voucher_id' => $request->voucher_id ?? null,
                 'discount_amount' => $discountAmount
             ]);
+            if (in_array($paymentMethod, ['MoMo', 'VNPAY'])) {
+                WalletTransaction::create([
+                    'wallet_id' => Wallet::where('user_id', $userId)->value('id'),
+                    'order_id' => $order->id,
+                    'amount' => $totalPrice,
+                    'type' => 'thanh_toan_don_hang',
+                    'payment_method_id' => $paymentMethodId->id,
+                    'description' => 'Thanh toán đơn hàng #' . $order->order_code . ' bằng ' . $paymentMethod,
+                    'status' => 'cho_thanh_toan', // trạng thái đúng
+                    'balance_before' => null,
+                    'balance_after' => null,
+                ]);
+            }
+
+            // Cập nhật lại order_id cho transaction ví nếu có
+            if (isset($walletTransaction)) {
+                $walletTransaction->update([
+                    'order_id' => $order->id,
+                    'description' => 'Thanh toán đơn hàng #' . $order->order_code
+                ]);
+            }
 
             // Thêm sản phẩm vào order_items
             OrderItem::create([
@@ -437,7 +562,7 @@ class OrderController extends Controller
 
             DB::commit();
 
-            // Xử lý thanh toán nếu không phải tiền mặt
+            // Xử lý redirect thanh toán nếu là MoMo hoặc VNPAY
             if (in_array($paymentMethod, ['MoMo', 'VNPAY'])) {
                 return app(PaymentMethodController::class)->processPayment(new Request([
                     'order_id' => $order->id,
@@ -447,10 +572,12 @@ class OrderController extends Controller
                     'payment_method_id' => $order->payment_method_id
                 ]));
             }
-            // gửi mail xác nhận đơn hàng
-            if ($paymentMethod === 'Tiền mặt') {
+
+            // Gửi mail xác nhận nếu là Tiền mặt hoặc Ví
+            if (in_array($paymentMethod, ['Tiền mặt', 'Ví'])) {
                 Mail::to($order->user_email)->send(new OrderConfirmationMail($order));
             }
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Đơn hàng đã được tạo thành công',
@@ -465,7 +592,6 @@ class OrderController extends Controller
             ], 500);
         }
     }
-
     /**
      * 📌 5. Xác nhận đơn hàng
      */
@@ -514,6 +640,7 @@ class OrderController extends Controller
     public function requestRefund($orderId, Request $request)
     {
         $userId = Auth::id();
+
         // Tìm đơn hàng của người dùng
         $order = Order::where('id', $orderId)
             ->where('user_id', $userId)
@@ -526,21 +653,24 @@ class OrderController extends Controller
                 'message' => 'Không tìm thấy đơn hàng'
             ], 400);
         }
-        // Kiểm tra nếu trạng thái đơn hàng là 'Hoàn Hàng' hoặc 'Từ Chối Hoàn Hàng', không cho phép gửi yêu cầu hoàn hàng nữa
+
+        // Không cho gửi lại yêu cầu nếu đã có yêu cầu hoàn hàng rồi
         if (in_array($order->order_status, ['Hoàn Hàng'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng trước đó, không thể gửi lại yêu cầu'
             ], 400);
         }
-        // Kiểm tra trạng thái của đơn hàng: chỉ cho phép yêu cầu hoàn hàng khi trạng thái là 'Đã Giao'
+
+        // Chỉ cho phép hoàn hàng khi đã giao
         if ($order->order_status !== 'Đã Giao') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Yêu cầu hoàn hàng chỉ có thể gửi khi đơn hàng đã giao'
             ], 400);
         }
-        // Kiểm tra nếu đơn hàng đã có yêu cầu hoàn hàng nào đang trong trạng thái "Chờ Duyệt"
+
+        // Kiểm tra xem có yêu cầu nào đã tạo chưa
         $existingRefundRequest = RefundRequest::where('order_id', $orderId)
             ->whereIn('status', ['Chờ Duyệt', 'Đã Duyệt', 'Từ Chối'])
             ->first();
@@ -551,19 +681,52 @@ class OrderController extends Controller
                 'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng không thể gửi lại yêu cầu'
             ], 400);
         }
-        // Tạo yêu cầu hoàn hàng (Lý do có thể là null)
-        RefundRequest::create([
-            'order_id' => $orderId,
-            'user_id' => $userId,
-            'reason' => $request->reason,
-            'status' => 'Chờ Duyệt',  // Trạng thái mặc định là "Chờ Duyệt"
-        ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Yêu cầu hoàn hàng của bạn đã được gửi, vui lòng chờ xét duyệt'
-        ], 200);
+        DB::beginTransaction();
+        try {
+            // Tạo yêu cầu hoàn hàng
+            RefundRequest::create([
+                'order_id' => $orderId,
+                'user_id' => $userId,
+                'reason' => $request->reason,
+                'status' => 'Chờ Duyệt',
+            ]);
+
+            // Tạo giao dịch ví tạm thời với trạng thái cho_thanh_toan
+            $user = User::with('wallet')->find($userId);
+            if (!$user || !$user->wallet) {
+                throw new \Exception('Không tìm thấy ví người dùng');
+            }
+
+            $wallet = $user->wallet;
+
+            WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'amount' => $order->total_price,
+                'type' => 'hoan_tien',
+                'status' => 'cho_thanh_toan',
+                'description' => 'Yêu cầu hoàn tiền cho đơn hàng #' . $order->order_code,
+                'order_id' => $orderId,
+                'balance_before' => null,
+                'balance_after' => null, // chưa thay đổi vì chưa cộng tiền
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Yêu cầu hoàn hàng của bạn đã được gửi, vui lòng chờ xét duyệt'
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lỗi khi gửi yêu cầu hoàn hàng',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
+
     /**
      * 📌 7. Hủy đơn hàng
      */
@@ -580,14 +743,21 @@ class OrderController extends Controller
                 ], 404);
             }
 
-            if ($order->order_status !== 'Chưa Xác Nhận' && $order->order_status !== 'Đã Xác Nhận') {
+            if ($order->order_status === 'Hủy Đơn') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Đơn hàng đã xử lý, không thể hủy'
+                    'message' => 'Đơn hàng đã bị hủy trước đó, không thể hủy lại.'
                 ], 400);
             }
 
-            // Hoàn lại số lượng sản phẩm
+            if (!in_array($order->order_status, ['Chưa Xác Nhận', 'Đã Xác Nhận'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Đơn hàng đã được xử lý, không thể hủy.'
+                ], 400);
+            }
+
+            // ✅ Hoàn lại số lượng sản phẩm
             foreach ($order->orderItems as $item) {
                 if ($item->product_variant_id) {
                     ProductVariant::where('id', $item->product_variant_id)->increment('quantity', $item->quantity);
@@ -596,13 +766,62 @@ class OrderController extends Controller
                 }
             }
 
-            // Cập nhật trạng thái đơn hàng
+            // ✅ Cập nhật trạng thái đơn hàng
             $order->update(['order_status' => 'Hủy Đơn']);
 
+            $refundAmount = 0;
+            if ($order->payment_status == 1) { // Đã thanh toán
+
+                // ✅ Check nếu đã hoàn tiền trước đó
+                $existingRefund = WalletTransaction::where('order_id', $order->id)
+                    ->where('type', 'hoan_tien')
+                    ->where('status', 'thanh_cong')
+                    ->first();
+
+                if ($existingRefund) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Đơn hàng đã được hoàn tiền trước đó.'
+                    ], 400);
+                }
+
+                $refundAmount = $order->total_price;
+
+                $user = User::with('wallet')->find($order->user_id);
+                if (!$user || !$user->wallet) {
+                    throw new \Exception('Không tìm thấy ví của người dùng');
+                }
+
+                $wallet = $user->wallet;
+                $balanceBefore = $wallet->balance;
+                $balanceAfter = $balanceBefore + $refundAmount;
+
+                // ✅ Cập nhật số dư ví
+                $wallet->update(['balance' => $balanceAfter]);
+
+                // ✅ Ghi lịch sử giao dịch hoàn tiền
+                WalletTransaction::create([
+                    'wallet_id' => $wallet->id,
+                    'amount' => $refundAmount,
+                    'type' => 'hoan_tien',
+                    'status' => 'thanh_cong',
+                    'description' => 'Hoàn tiền đơn hàng #' . $order->order_code . ' do người dùng hủy đơn',
+                    'order_id' => $order->id,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                ]);
+            }
+
             DB::commit();
+
+            $message = 'Đơn hàng đã được hủy.';
+            if ($refundAmount > 0) {
+                $message .= ' Số dư ví đã được hoàn lại.';
+            }
+
             return response()->json([
                 'status' => 'success',
-                'message' => 'Đơn hàng đã bị hủy và số lượng hàng hóa đã được hoàn lại'
+                'message' => $message
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();

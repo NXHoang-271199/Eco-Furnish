@@ -21,8 +21,6 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             PaymentMethodSeeder::class,
             VoucherSeeder::class,
-            OrderSeeder::class,
-            WalletSeeder::class,
         ]);
 
         // Tạo tài khoản admin
