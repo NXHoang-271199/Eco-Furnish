@@ -2,10 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import { BsChatDots, BsXLg } from "react-icons/bs";
 import { IoMdSend } from "react-icons/io";
 import { MdImage } from "react-icons/md";
-import { getSocket } from "../utils/socketConfig";
+import { getSocket, closeSocket, resetSocket } from "../utils/socketConfig";
 import axios from "axios";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
+import { toast } from "react-hot-toast";
 
 // Tạo audio elements toàn cục để khởi tạo sớm
 const messageAudio = new Audio('/sounds/message.mp3');
@@ -107,6 +108,7 @@ const ChatRealTime = () => {
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [lightboxImages, setLightboxImages] = useState([]);
+    const [socketStatus, setSocketStatus] = useState("disconnected");
 
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
@@ -358,7 +360,16 @@ const ChatRealTime = () => {
                 socketConnection.on("connect_error", (error) => {
                     console.error("❌ Lỗi kết nối socket:", error.message);
                     setIsConnected(false);
-                    setLastError("Lỗi kết nối: " + error.message);
+
+                    // Xử lý lỗi xác thực đặc biệt
+                    if (error.message.includes("Authentication error") || error.message.includes("Invalid token")) {
+                        console.log("🔑 Lỗi xác thực, có thể token đã hết hạn. Thử làm mới token...");
+
+                        // Thử làm mới token
+                        tryRefreshToken();
+                    } else {
+                        setLastError("Lỗi kết nối: " + error.message);
+                    }
                 });
 
                 // Ping server 5 giây một lần để kiểm tra kết nối
@@ -390,6 +401,61 @@ const ChatRealTime = () => {
             setLastError(error.message);
             console.error("❌ Lỗi khi kết nối socket:", error);
             return null;
+        }
+    };
+
+    // Hàm thử làm mới token khi xảy ra lỗi xác thực
+    const tryRefreshToken = async () => {
+        try {
+            console.log("🔄 Đang thử làm mới token...");
+            setLastError("Đang làm mới phiên đăng nhập...");
+
+            const refreshToken = localStorage.getItem("refreshToken");
+            if (!refreshToken) {
+                throw new Error("Không tìm thấy refresh token");
+            }
+
+            // Gọi API làm mới token
+            const response = await axios.post("http://localhost:8000/api/users/refresh-token", {
+                refresh_token: refreshToken
+            });
+
+            if (response.data.status === "success") {
+                // Lưu token mới vào localStorage
+                const newToken = response.data.data.access_token;
+                const newRefreshToken = response.data.data.refresh_token;
+
+                localStorage.setItem("authToken", newToken);
+                localStorage.setItem("refreshToken", newRefreshToken);
+
+                console.log("✅ Làm mới token thành công, thử kết nối lại socket...");
+                setLastError("");
+
+                // Kích hoạt sự kiện auth-change để các component khác cập nhật
+                window.dispatchEvent(new Event("auth-change"));
+
+                // Đóng và kết nối lại socket với token mới
+                if (socket) {
+                    socket.disconnect();
+                }
+                // Đợi một chút trước khi kết nối lại
+                setTimeout(() => {
+                    connectSocket();
+                }, 1000);
+            } else {
+                throw new Error("Làm mới token thất bại");
+            }
+        } catch (error) {
+            console.error("❌ Lỗi khi làm mới token:", error);
+            setLastError(`Lỗi kết nối: ${error.message}. Vui lòng đăng nhập lại.`);
+
+            // Xóa thông tin đăng nhập
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("refreshToken");
+            localStorage.removeItem("userData");
+
+            // Kích hoạt sự kiện auth-change để các component khác cập nhật
+            window.dispatchEvent(new Event("auth-change"));
         }
     };
 

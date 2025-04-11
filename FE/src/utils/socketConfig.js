@@ -1,4 +1,5 @@
 import { io } from "socket.io-client";
+import axios from "axios";
 
 let socketInstance = null;
 
@@ -153,26 +154,39 @@ export const getSocket = () => {
         detail: { message: error.message }
       }));
 
-      // Nếu lỗi xác thực, đóng kết nối
-      if (error.message.includes("Authentication error") || error.message.includes("jwt")) {
-        console.error("🔒 Lỗi xác thực socket - token không hợp lệ");
-        closeSocket();
+      // Nếu lỗi xác thực, thử làm mới token trước khi đóng kết nối
+      if (error.message.includes("Authentication error") || error.message.includes("jwt") || error.message.includes("Invalid token")) {
+        console.error("🔒 Lỗi xác thực socket - token có thể không hợp lệ hoặc hết hạn");
 
-        // Xóa token và thông báo cho người dùng
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("userData");
-
-        // Phát sự kiện để thông báo đăng xuất
-        window.dispatchEvent(new Event("auth-change"));
+        // Thử làm mới token
+        tryRefreshToken()
+          .then(success => {
+            if (success) {
+              console.log("🔄 Token đã được làm mới, thử kết nối lại socket");
+              if (socketInstance) {
+                socketInstance.disconnect();
+                socketInstance = null;
+              }
+              // Phát sự kiện thông báo token đã được làm mới
+              window.dispatchEvent(new Event("auth-change"));
+            } else {
+              console.error("🔒 Không thể làm mới token, đóng kết nối");
+              closeSocket();
+              // Xóa token và thông báo cho người dùng
+              localStorage.removeItem("authToken");
+              localStorage.removeItem("refreshToken");
+              localStorage.removeItem("userData");
+              // Phát sự kiện để thông báo đăng xuất
+              window.dispatchEvent(new Event("auth-change"));
+            }
+          });
       } else {
         // Thử kết nối lại nếu là lỗi mạng
         setTimeout(() => {
           if (socketInstance) {
             console.log("🔄 Thử kết nối lại sau lỗi:", error.message);
-
             // Phát sự kiện đang kết nối lại
             window.dispatchEvent(new CustomEvent('socket-connecting'));
-
             // Thử kết nối lại
             socketInstance.connect();
           }
@@ -190,6 +204,42 @@ export const getSocket = () => {
     }));
 
     return null;
+  }
+};
+
+// Hàm thử làm mới token
+const tryRefreshToken = async () => {
+  try {
+    console.log("🔄 Đang thử làm mới token...");
+
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) {
+      console.error("❌ Không tìm thấy refresh token trong localStorage");
+      return false;
+    }
+
+    // Gọi API làm mới token
+    const response = await axios.post("http://localhost:8000/api/users/refresh-token", {
+      refresh_token: refreshToken
+    });
+
+    if (response.data.status === "success") {
+      // Lưu token mới vào localStorage
+      const newToken = response.data.data.access_token;
+      const newRefreshToken = response.data.data.refresh_token;
+
+      localStorage.setItem("authToken", newToken);
+      localStorage.setItem("refreshToken", newRefreshToken);
+
+      console.log("✅ Làm mới token thành công");
+      return true;
+    } else {
+      console.error("❌ Làm mới token không thành công:", response.data);
+      return false;
+    }
+  } catch (error) {
+    console.error("❌ Lỗi khi làm mới token:", error.message);
+    return false;
   }
 };
 

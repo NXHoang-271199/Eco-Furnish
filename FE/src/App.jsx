@@ -35,6 +35,7 @@ import { useEffect } from "react";
 import OrderDetail from "./pages/(website)/UserAccount/OrderHistory/OrderDetail";
 import OAuthCallback from "./pages/OAuthCallback/OAuthCallback";
 import { Toaster } from 'react-hot-toast';
+import NotificationsPage from "./pages/(website)/UserAccount/Notifications/NotificationsPage";
 
 function App() {
   return (
@@ -83,6 +84,7 @@ function App() {
             <Route path="password" element={<Edit_Pass />} />
             <Route path="list_order" element={<OrderHistory />} />
             <Route path="order_detail/:id" element={<OrderDetail />} />
+            <Route path="notifications" element={<NotificationsPage />} />
           </Route>
         </Route>
         <Route path="/sign-in" element={<SignIn />} />
