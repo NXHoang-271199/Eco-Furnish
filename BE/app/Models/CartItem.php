@@ -13,7 +13,24 @@ class CartItem extends Model
         'product_id',
         'product_variant_id',
         'quantity',
+        'variant_details',
     ];
+    
+    protected $casts = [
+        'variant_details' => 'json',
+        'quantity' => 'integer',
+    ];
+    
+    public function setQuantityAttribute($value)
+    {
+        $this->attributes['quantity'] = (int) $value;
+    }
+    
+    public function getQuantityAttribute($value)
+    {
+        return (int) $value;
+    }
+    
     public function cart()
     {
         return $this->belongsTo(Cart::class);

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { IoCartOutline } from "react-icons/io5";
+import { BsStarFill, BsStarHalf, BsStar } from "react-icons/bs";
 import axios from "axios";
 import { Link, Links } from "react-router-dom";
 const ProductsSlide = () => {
@@ -42,6 +43,25 @@ const ProductsSlide = () => {
     startIndex,
     startIndex + productsPerPage
   );
+
+  // Render sao đánh giá
+  const renderStars = (rating) => {
+    const stars = [];
+    const totalStars = 5;
+
+    for (let i = 1; i <= totalStars; i++) {
+      if (i <= rating) {
+        stars.push(<BsStarFill key={i} className="text-yellow-500" />);
+      } else if (i - 0.5 <= rating) {
+        stars.push(<BsStarHalf key={i} className="text-yellow-500" />);
+      } else {
+        stars.push(<BsStar key={i} className="text-yellow-500" />);
+      }
+    }
+
+    return <div className="flex space-x-1">{stars}</div>;
+  };
+
   return (
     <section>
       <div className="max-w-6xl mx-auto mt-20 my-5">
@@ -120,6 +140,28 @@ const ProductsSlide = () => {
                         <h3 className="mb-2 hover:text-yellow-400">
                           {product.name}
                         </h3>
+                        {/* Hiển thị đánh giá sao */}
+                        <div className="flex items-center mb-2">
+                          {product.rating ? (
+                            <>
+                              {renderStars(product.rating)}
+                              <span className="text-xs text-gray-500 ml-1">
+                                ({product.rating_count || 0})
+                              </span>
+                            </>
+                          ) : (
+                            <div className="flex text-gray-300">
+                              {Array(5)
+                                .fill()
+                                .map((_, i) => (
+                                  <BsStar key={i} size={14} />
+                                ))}
+                              <span className="text-xs text-gray-400 ml-1">
+                                (0)
+                              </span>
+                            </div>
+                          )}
+                        </div>
                         <p className="font-medium">
                           {new Intl.NumberFormat("vi-VN", {
                             style: "currency",

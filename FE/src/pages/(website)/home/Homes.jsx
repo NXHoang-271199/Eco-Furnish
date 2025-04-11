@@ -9,15 +9,36 @@ import {
   useInView,
   useAnimation,
 } from "framer-motion";
+import { BsStarFill, BsStarHalf, BsStar } from "react-icons/bs";
 import api from "../../../service/api";
 import Banner from "../../../components/Banner";
 import { IoCartOutline, IoStar } from "react-icons/io5";
 import { HiOutlineArrowNarrowRight } from "react-icons/hi";
-import { FaLeaf, FaTree, FaSeedling } from "react-icons/fa";
+import { FaLeaf, FaTree, FaSeedling, FaRobot, FaFire } from "react-icons/fa";
+
+// Helper function để theo dõi hoạt động khi ChatBot chưa tải
+const trackActivity = (type, data) => {
+  try {
+    const storedActivities = localStorage.getItem('userActivities') || '[]';
+    const activities = JSON.parse(storedActivities);
+    activities.unshift({ ...data, type, timestamp: new Date().toISOString() });
+    localStorage.setItem('userActivities', JSON.stringify(activities.slice(0, 30)));
+    // Kích hoạt sự kiện nếu có thể
+    if (typeof CustomEvent === 'function') {
+      const event = new CustomEvent('userActivityUpdate');
+      window.dispatchEvent(event);
+    }
+  } catch (error) {
+    console.error('Error tracking activity:', error);
+  }
+};
 
 const Homes = () => {
   const [products, setProducts] = useState([]);
+  const [bestSellers, setBestSellers] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [aiRecommendations, setAiRecommendations] = useState([]);
+  const [hasActivityData, setHasActivityData] = useState(false);
   const bannerRef = useRef(null);
   const bannerInView = useInView(bannerRef, { once: false, amount: 0.5 });
   const bannerControls = useAnimation();
@@ -30,6 +51,190 @@ const Homes = () => {
   const springY = useSpring(y, { stiffness: 50, damping: 15 });
   const springOpacity = useSpring(opacity, { stiffness: 50, damping: 15 });
   const springScale = useSpring(scale, { stiffness: 50, damping: 15 });
+
+  // Lắng nghe cập nhật hoạt động người dùng và sinh gợi ý sản phẩm
+  useEffect(() => {
+    // Function để phân tích hoạt động người dùng và tạo gợi ý
+    const analyzeUserActivities = () => {
+      try {
+        const storedActivities = localStorage.getItem('userActivities');
+        if (!storedActivities) {
+          setHasActivityData(false);
+          return;
+        }
+
+        const activities = JSON.parse(storedActivities);
+
+        if (activities.length === 0) {
+          setHasActivityData(false);
+          return;
+        }
+
+        setHasActivityData(true);
+
+        // Phân tích hoạt động người dùng để tạo gợi ý
+        const viewedProducts = activities
+          .filter(activity => activity.type === 'view_product')
+          .map(activity => ({
+            id: activity.productId,
+            name: activity.productName,
+            category: activity.category,
+          }));
+
+        const searchedKeywords = activities
+          .filter(activity => activity.type === 'search_product')
+          .map(activity => activity.keyword);
+
+        const cartProducts = activities
+          .filter(activity => activity.type === 'add_to_cart')
+          .map(activity => ({
+            id: activity.productId,
+            name: activity.productName,
+            category: activity.category,
+          }));
+
+        // Gửi request để nhận gợi ý
+        fetchRecommendations(viewedProducts, searchedKeywords, cartProducts);
+      } catch (error) {
+        console.error('Error analyzing user activities:', error);
+      }
+    };
+
+    // Lắng nghe sự kiện khi có hoạt động mới
+    const handleActivityUpdate = () => {
+      analyzeUserActivities();
+    };
+
+    // Đăng ký lắng nghe sự kiện
+    window.addEventListener('userActivityUpdate', handleActivityUpdate);
+
+    // Phân tích lần đầu khi component mount
+    analyzeUserActivities();
+
+    // Cleanup listener
+    return () => {
+      window.removeEventListener('userActivityUpdate', handleActivityUpdate);
+    };
+  }, []);
+
+  // Thêm useEffect mới để kiểm tra trực tiếp localStorage mỗi khi component re-render
+  useEffect(() => {
+    const checkUserActivities = () => {
+      try {
+        const storedActivities = localStorage.getItem('userActivities');
+        if (storedActivities) {
+          const activities = JSON.parse(storedActivities);
+          if (activities.length > 0) {
+            setHasActivityData(true);
+
+            // Phân tích hoạt động người dùng để tạo gợi ý
+            const viewedProducts = activities
+              .filter(activity => activity.type === 'view_product')
+              .map(activity => ({
+                id: activity.productId,
+                name: activity.productName,
+                category: activity.category,
+              }));
+
+            const searchedKeywords = activities
+              .filter(activity => activity.type === 'search_product')
+              .map(activity => activity.keyword);
+
+            const cartProducts = activities
+              .filter(activity => activity.type === 'add_to_cart')
+              .map(activity => ({
+                id: activity.productId,
+                name: activity.productName,
+                category: activity.category,
+              }));
+
+            // Gửi request để nhận gợi ý
+            fetchRecommendations(viewedProducts, searchedKeywords, cartProducts);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user activities:', error);
+      }
+    };
+
+    // Kiểm tra mỗi khi component mount hoặc được render lại
+    checkUserActivities();
+  }, []);
+
+  // Function gọi API để lấy sản phẩm gợi ý dựa trên hoạt động người dùng
+  const fetchRecommendations = async (viewedProducts, searchedKeywords, cartProducts) => {
+    try {
+      const response = await api.post("ai-recommendations", {
+        viewedProducts,
+        searchedKeywords,
+        cartProducts
+      });
+
+      if (response.data.status === "success" && Array.isArray(response.data.recommendations)) {
+        setAiRecommendations(response.data.recommendations);
+      }
+    } catch (error) {
+      console.log("Lỗi khi gọi API gợi ý:", error);
+
+      // Fallback: Phân tích nâng cao khi API chưa hoạt động
+      if (products.length > 0) {
+        // Nếu có hoạt động người dùng, tạo gợi ý dựa trên hoạt động
+        if (viewedProducts.length > 0 || searchedKeywords.length > 0 || cartProducts.length > 0) {
+          // 1. Thu thập các danh mục đã quan tâm
+          const interestedCategories = [...new Set([
+            ...viewedProducts.map(p => p.category),
+            ...cartProducts.map(p => p.category)
+          ])].filter(Boolean);
+
+          // 2. Thu thập các ID sản phẩm đã xem để loại trừ
+          const viewedIds = viewedProducts.map(p => p.id);
+
+          // 3. Tìm các sản phẩm liên quan đến từ khóa tìm kiếm
+          let keywordRelatedProducts = [];
+          if (searchedKeywords.length > 0) {
+            const keywords = searchedKeywords.join(' ').toLowerCase().split(' ');
+            keywordRelatedProducts = products.filter(p =>
+              keywords.some(keyword =>
+                p.name.toLowerCase().includes(keyword) ||
+                (p.description && p.description.toLowerCase().includes(keyword))
+              ) && !viewedIds.includes(p.id)
+            );
+          }
+
+          // 4. Tìm các sản phẩm cùng danh mục
+          let categoryRelatedProducts = [];
+          if (interestedCategories.length > 0) {
+            categoryRelatedProducts = products.filter(p =>
+              interestedCategories.includes(p.category) &&
+              !viewedIds.includes(p.id) &&
+              !keywordRelatedProducts.some(kp => kp.id === p.id)
+            );
+          }
+
+          // 5. Kết hợp kết quả, ưu tiên sản phẩm theo từ khóa trước
+          const combinedResults = [
+            ...keywordRelatedProducts,
+            ...categoryRelatedProducts
+          ].slice(0, 4); // Giới hạn kết quả
+
+          // 6. Nếu vẫn thiếu sản phẩm, bổ sung thêm sản phẩm ngẫu nhiên
+          if (combinedResults.length < 4) {
+            const randomProducts = products
+              .filter(p =>
+                !viewedIds.includes(p.id) &&
+                !combinedResults.some(cp => cp.id === p.id)
+              )
+              .sort(() => 0.5 - Math.random())
+              .slice(0, 4 - combinedResults.length);
+
+            combinedResults.push(...randomProducts);
+          }
+
+          setAiRecommendations(combinedResults);
+        }
+      }
+    }
+  };
 
   // Hiệu ứng vị trí mặt trời (gradient)
   const mouseX = useMotionValue(0);
@@ -80,6 +285,22 @@ const Homes = () => {
       }
     };
 
+    const fetchBestSellers = async () => {
+      try {
+        const response = await api.get("best-sellers");
+        if (
+          response.data.status === "success" &&
+          Array.isArray(response.data.data)
+        ) {
+          setBestSellers(response.data.data);
+        } else {
+          console.log("Dữ liệu không phải là mảng hoặc API trả về lỗi");
+        }
+      } catch (error) {
+        console.log("Lỗi khi gọi API sản phẩm bán chạy:", error);
+      }
+    };
+
     const fetchPosts = async () => {
       try {
         const response = await api.get("posts");
@@ -100,8 +321,21 @@ const Homes = () => {
     };
 
     fetchProducts();
+    fetchBestSellers();
     fetchPosts();
   }, []);
+
+  // Tạo gợi ý mặc định khi có sản phẩm
+  useEffect(() => {
+    // Nếu có sản phẩm nhưng chưa có gợi ý AI, tạo gợi ý mặc định
+    if (products.length > 0 && aiRecommendations.length === 0) {
+      // Lấy một số sản phẩm ngẫu nhiên để hiển thị như gợi ý mặc định
+      const randomRecommendations = [...products]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 4);
+      setAiRecommendations(randomRecommendations);
+    }
+  }, [products, aiRecommendations]);
 
   // Animation variants
   const fadeInUp = {
@@ -139,6 +373,7 @@ const Homes = () => {
     },
   };
 
+  console.log("Sản phẩm:", products);
   // Banner text variants
   const bannerTextVariants = {
     hidden: {
@@ -172,6 +407,24 @@ const Homes = () => {
         repeat: Infinity,
       },
     },
+  };
+
+  // Render sao đánh giá
+  const renderStars = (rating) => {
+    const stars = [];
+    const totalStars = 5;
+
+    for (let i = 1; i <= totalStars; i++) {
+      if (i <= rating) {
+        stars.push(<BsStarFill key={i} className="text-yellow-500" />);
+      } else if (i - 0.5 <= rating) {
+        stars.push(<BsStarHalf key={i} className="text-yellow-500" />);
+      } else {
+        stars.push(<BsStar key={i} className="text-yellow-500" />);
+      }
+    }
+
+    return <div className="flex space-x-1">{stars}</div>;
   };
 
   return (
@@ -269,6 +522,536 @@ const Homes = () => {
           </div>
         </div>
       </motion.section>
+      {/* Sản phẩm được AI gợi ý */}
+      {hasActivityData && aiRecommendations.length > 0 && (
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.05 }}
+          variants={fadeInUp}
+          className="py-20 bg-gradient-to-b from-blue-50 to-white"
+        >
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
+              <div className="max-w-2xl">
+                <motion.div
+                  className="inline-flex items-center px-4 py-1 bg-blue-100 rounded-full text-blue-700 font-medium text-sm mb-4"
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6 }}
+                  viewport={{ once: true }}
+                >
+                  <FaRobot className="mr-2" />
+                  <span>AI RECOMMENDATIONS</span>
+                </motion.div>
+                <motion.h2
+                  className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8 }}
+                  viewport={{ once: true }}
+                >
+                  Sản phẩm được{" "}
+                  <span className="text-blue-500">trợ lý AI</span> gợi ý
+                </motion.h2>
+                <motion.p
+                  className="text-gray-600"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  viewport={{ once: true }}
+                >
+                  Dựa trên hoạt động gần đây của bạn, trợ lý AI của chúng tôi đã chọn ra những sản phẩm bạn có thể quan tâm.
+                </motion.p>
+              </div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8 }}
+                viewport={{ once: true }}
+              >
+                <Link
+                  to="/products"
+                  className="inline-flex items-center text-blue-600 font-medium hover:text-blue-700 group mt-6 md:mt-0"
+                >
+                  <span>Khám phá thêm</span>
+                  <HiOutlineArrowNarrowRight className="ml-2 group-hover:translate-x-1 transition-transform w-5 h-5" />
+                </Link>
+              </motion.div>
+            </div>
+
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.1 }}
+            >
+              {aiRecommendations.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  variants={fadeInUp}
+                  custom={index}
+                  whileHover={{
+                    y: -12,
+                    transition: { duration: 0.3, ease: "easeOut" },
+                  }}
+                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
+                >
+                  <Link
+                    to={`product-detail/${product.id}`}
+                    className="block"
+                    onClick={() => {
+                      // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
+                      if (window.trackProductView) {
+                        window.trackProductView(product.id, product.name, product.category);
+                      } else {
+                        trackActivity('view_product', {
+                          productId: product.id,
+                          productName: product.name,
+                          category: product.category
+                        });
+                      }
+                    }}
+                  >
+                    <div className="relative overflow-hidden">
+                      <div className="aspect-square overflow-hidden">
+                        <motion.img
+                          src={`http://localhost:8000/storage/${product.image_thumnail}`}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                          initial={{ scale: 1.2, y: 20 }}
+                          animate={{ scale: 1, y: 0 }}
+                          transition={{ duration: 0.8, delay: index * 0.1 }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://via.placeholder.com/300x300?text=Image+Not+Found';
+                          }}
+                        />
+                      </div>
+
+                      {/* Nhãn AI Gợi ý */}
+                      <motion.div
+                        className="absolute top-3 right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20 flex items-center"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          delay: 0.5 + index * 0.1,
+                        }}
+                      >
+                        <FaRobot className="mr-1" /> AI
+                      </motion.div>
+
+                      {/* Nút mua nhanh */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <motion.button
+                          className="bg-white text-blue-500 p-3 rounded-full shadow-md hover:bg-blue-500 hover:text-white transition-all duration-300"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Sử dụng window.trackAddToCart nếu có, nếu không thì dùng helper function
+                            if (window.trackAddToCart) {
+                              window.trackAddToCart(product.id, product.name, product.category);
+                            } else {
+                              trackActivity('add_to_cart', {
+                                productId: product.id,
+                                productName: product.name,
+                                category: product.category
+                              });
+                            }
+                            window.location.href = `/cart/add/${product.id}`;
+                          }}
+                        >
+                          <IoCartOutline className="text-xl" />
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      {/* Sao đánh giá */}
+                      <div className="flex items-center mb-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <IoStar
+                            key={star}
+                            className={`${star <= 4 ? "text-blue-400" : "text-gray-300"
+                              } w-4 h-4`}
+                          />
+                        ))}
+                        <span className="text-gray-500 text-sm ml-2">
+                          (4.0)
+                        </span>
+                      </div>
+
+                      <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-blue-500 transition-colors">
+                        {product.name}
+                      </h3>
+
+                      <p className="text-gray-500 text-sm mb-3 line-clamp-2">
+                        Phù hợp với sở thích của bạn
+                      </p>
+
+                      {product.has_variants ? (
+                        // Sản phẩm có biến thể
+                        <div>
+                          {product.price_range?.min_discount ? (
+                            // Có giá khuyến mãi
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-blue-600 text-lg">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price_range.min_discount)}
+                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                  ` - ${new Intl.NumberFormat("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                  }).format(product.price_range.max_discount)}`
+                                }
+                              </span>
+                              <span className="text-gray-400 line-through text-sm">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price_range.min)}
+                              </span>
+                            </div>
+                          ) : (
+                            // Không có khuyến mãi
+                            <span className="font-semibold text-blue-600 text-lg">
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(product.price_range?.min || 0)}
+                              {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                                ` - ${new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price_range.max)}`
+                              }
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        // Sản phẩm thường
+                        <div>
+                          {product.discount_price ? (
+                            // Có giá khuyến mãi
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-blue-600 text-lg">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.discount_price)}
+                              </span>
+                              <span className="text-gray-400 line-through text-sm">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price)}
+                              </span>
+                            </div>
+                          ) : (
+                            // Không có khuyến mãi
+                            <span className="font-semibold text-blue-600 text-lg">
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(product.price || 0)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </motion.section>
+      )}
+
+      {/* Sản phẩm bán chạy */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.05 }}
+        variants={fadeInUp}
+        className="py-20 bg-white"
+      >
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
+            <div className="max-w-2xl">
+              <motion.div
+                className="inline-block px-4 py-1 bg-rose-100 rounded-full text-rose-700 font-medium text-sm mb-4"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                <FaFire className="inline-block mr-1" /> BÁN CHẠY NHẤT
+              </motion.div>
+              <motion.h2
+                className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                viewport={{ once: true }}
+              >
+                Sản phẩm <span className="text-rose-500">bán chạy nhất</span>
+              </motion.h2>
+              <motion.p
+                className="text-gray-600"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                Những sản phẩm được khách hàng yêu thích và chọn mua nhiều nhất tại Eco-Furnish.
+              </motion.p>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <Link
+                to="/products"
+                className="inline-flex items-center text-rose-600 font-medium hover:text-rose-700 group mt-6 md:mt-0"
+              >
+                <span>Xem tất cả sản phẩm</span>
+                <HiOutlineArrowNarrowRight className="ml-2 group-hover:translate-x-1 transition-transform w-5 h-5" />
+              </Link>
+            </motion.div>
+          </div>
+
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.1 }}
+          >
+            {bestSellers.length > 0 ? (
+              bestSellers.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  variants={fadeInUp}
+                  custom={index}
+                  whileHover={{
+                    y: -12,
+                    transition: { duration: 0.3, ease: "easeOut" },
+                  }}
+                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
+                >
+                  <Link to={`product-detail/${product.id}`} className="block" onClick={() => {
+                    // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
+                    if (window.trackProductView) {
+                      window.trackProductView(product.id, product.name, product.category);
+                    } else {
+                      trackActivity('view_product', {
+                        productId: product.id,
+                        productName: product.name,
+                        category: product.category
+                      });
+                    }
+                  }}>
+                    <div className="relative overflow-hidden">
+                      <div className="aspect-square overflow-hidden">
+                        <motion.img
+                          src={`http://localhost:8000/storage/${product.image_thumnail}`}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                          initial={{ scale: 1.2, y: 20 }}
+                          animate={{ scale: 1, y: 0 }}
+                          transition={{ duration: 0.8, delay: index * 0.1 }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://via.placeholder.com/300x300?text=Image+Not+Found';
+                          }}
+                        />
+                      </div>
+
+                      {/* Nhãn bán chạy */}
+                      <motion.div
+                        className="absolute top-3 right-3 bg-rose-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20 flex items-center"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          delay: 0.5 + index * 0.1,
+                        }}
+                      >
+                        <FaFire className="mr-1" /> BÁN CHẠY
+                      </motion.div>
+
+                      {/* Số thứ tự xếp hạng */}
+                      <motion.div
+                        className="absolute top-3 left-3 bg-rose-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 500,
+                          delay: 0.7 + index * 0.1,
+                        }}
+                      >
+                        {index + 1}
+                      </motion.div>
+
+                      {/* Nút mua nhanh */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <motion.button
+                          className="bg-white text-rose-500 p-3 rounded-full shadow-md hover:bg-rose-500 hover:text-white transition-all duration-300"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Sử dụng window.trackAddToCart nếu có, nếu không thì dùng helper function
+                            if (window.trackAddToCart) {
+                              window.trackAddToCart(product.id, product.name, product.category);
+                            } else {
+                              trackActivity('add_to_cart', {
+                                productId: product.id,
+                                productName: product.name,
+                                category: product.category
+                              });
+                            }
+                            window.location.href = `/cart/add/${product.id}`;
+                          }}
+                        >
+                          <IoCartOutline className="text-xl" />
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      {/* Sao đánh giá */}
+                      <div className="flex items-center mb-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <IoStar
+                            key={star}
+                            className={`${star <= 4 ? "text-rose-400" : "text-gray-300"
+                              } w-4 h-4`}
+                          />
+                        ))}
+                        <span className="text-gray-500 text-sm ml-2">
+                          (4.0)
+                        </span>
+                      </div>
+
+                      <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-rose-500 transition-colors">
+                        {product.name}
+                      </h3>
+
+                      <p className="text-gray-500 text-sm mb-3 line-clamp-2">
+                        Sản phẩm bán chạy hàng đầu
+                      </p>
+
+                      {product.has_variants ? (
+                        // Sản phẩm có biến thể
+                        <div>
+                          {product.price_range?.min_discount ? (
+                            // Có giá khuyến mãi
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-rose-600 text-lg">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price_range.min_discount)}
+                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                  ` - ${new Intl.NumberFormat("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                  }).format(product.price_range.max_discount)}`
+                                }
+                              </span>
+                              <span className="text-gray-400 line-through text-sm">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price_range.min)}
+                              </span>
+                            </div>
+                          ) : (
+                            // Không có khuyến mãi
+                            <span className="font-semibold text-rose-600 text-lg">
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(product.price_range?.min || 0)}
+                              {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                                ` - ${new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price_range.max)}`
+                              }
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        // Sản phẩm thường
+                        <div>
+                          {product.discount_price ? (
+                            // Có giá khuyến mãi
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-rose-600 text-lg">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.discount_price)}
+                              </span>
+                              <span className="text-gray-400 line-through text-sm">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price)}
+                              </span>
+                            </div>
+                          ) : (
+                            // Không có khuyến mãi
+                            <span className="font-semibold text-rose-600 text-lg">
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(product.price || 0)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                </motion.div>
+              ))
+            ) : (
+              <>
+                {[1, 2, 3, 4].map((index) => (
+                  <motion.div
+                    key={index}
+                    variants={fadeInUp}
+                    custom={index}
+                    className="bg-white rounded-xl shadow-sm overflow-hidden animate-pulse"
+                  >
+                    <div className="aspect-square bg-gray-200"></div>
+                    <div className="p-5">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full mb-3"></div>
+                      <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                    </div>
+                  </motion.div>
+                ))}
+              </>
+            )}
+          </motion.div>
+        </div>
+      </motion.section>
 
       {/* Sản phẩm mới */}
       <motion.section
@@ -276,7 +1059,7 @@ const Homes = () => {
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
         variants={fadeInUp}
-        className="py-20"
+        className="py-20 bg-white"
       >
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
@@ -346,7 +1129,18 @@ const Homes = () => {
                   }}
                   className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
                 >
-                  <Link to={`product/${product.id}`} className="block">
+                  <Link to={`product-detail/${product.id}`} className="block" onClick={() => {
+                    // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function 
+                    if (window.trackProductView) {
+                      window.trackProductView(product.id, product.name, product.category);
+                    } else {
+                      trackActivity('view_product', {
+                        productId: product.id,
+                        productName: product.name,
+                        category: product.category
+                      });
+                    }
+                  }}>
                     <div className="relative overflow-hidden">
                       <div className="aspect-square overflow-hidden">
                         <motion.img
@@ -379,6 +1173,21 @@ const Homes = () => {
                           className="bg-white text-amber-500 p-3 rounded-full shadow-md hover:bg-amber-500 hover:text-white transition-all duration-300"
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Sử dụng window.trackAddToCart nếu có, nếu không thì dùng helper function
+                            if (window.trackAddToCart) {
+                              window.trackAddToCart(product.id, product.name, product.category);
+                            } else {
+                              trackActivity('add_to_cart', {
+                                productId: product.id,
+                                productName: product.name,
+                                category: product.category
+                              });
+                            }
+                            window.location.href = `/cart/add/${product.id}`;
+                          }}
                         >
                           <IoCartOutline className="text-xl" />
                         </motion.button>
@@ -408,12 +1217,77 @@ const Homes = () => {
                         Sản phẩm nội thất cao cấp, bền đẹp
                       </p>
 
-                      <p className="font-semibold text-amber-600 text-lg">
-                        {new Intl.NumberFormat("vi-VN", {
-                          style: "currency",
-                          currency: "VND",
-                        }).format(product.price || 0)}
-                      </p>
+                      {product.has_variants ? (
+                        // Sản phẩm có biến thể
+                        <div>
+                          {product.price_range?.min_discount ? (
+                            // Có giá khuyến mãi
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-amber-600 text-lg">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price_range.min_discount)}
+                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                  ` - ${new Intl.NumberFormat("vi-VN", {
+                                    style: "currency",
+                                    currency: "VND",
+                                  }).format(product.price_range.max_discount)}`
+                                }
+                              </span>
+                              <span className="text-gray-400 line-through text-sm">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price_range.min)}
+                              </span>
+                            </div>
+                          ) : (
+                            // Không có khuyến mãi
+                            <span className="font-semibold text-amber-600 text-lg">
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(product.price_range?.min || 0)}
+                              {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                                ` - ${new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price_range.max)}`
+                              }
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        // Sản phẩm thường
+                        <div>
+                          {product.discount_price ? (
+                            // Có giá khuyến mãi
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-amber-600 text-lg">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.discount_price)}
+                              </span>
+                              <span className="text-gray-400 line-through text-sm">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(product.price)}
+                              </span>
+                            </div>
+                          ) : (
+                            // Không có khuyến mãi
+                            <span className="font-semibold text-amber-600 text-lg">
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(product.price || 0)}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </Link>
                 </motion.div>
@@ -448,7 +1322,7 @@ const Homes = () => {
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
         variants={fadeInUp}
-        className="py-20 bg-gray-50"
+        className="py-20 bg-white"
       >
         <div className="max-w-6xl mx-auto px-4 relative">
           <motion.h2
@@ -621,6 +1495,8 @@ const Homes = () => {
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
         />
+
+
 
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <motion.div className="mb-16 text-center" variants={fadeInUp}>
@@ -824,7 +1700,7 @@ const Homes = () => {
                   >
                     <div className="bg-gray-300 aspect-[16/10]"></div>
                     <div className="p-6">
-                      <div className="h-4 bg-gray-300 rounded w-1/4 mb-3"></div>
+                      <div className="h-4 bg-gray-300 rounded w-3/4 mb-3"></div>
                       <div className="h-6 bg-gray-300 rounded w-3/4 mb-3"></div>
                       <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
                       <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>

@@ -27,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'address',
+        'phone',
         'role_id',
         'is_active',
         'avatar',
@@ -156,5 +157,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function refundRequest()
     {
         return $this->hasMany(RefundRequest::class);
+    }
+
+    /**
+     * Get the addresses for the user.
+     */
+    public function addresses()
+    {
+        return $this->hasMany(UserAddress::class);
     }
 }

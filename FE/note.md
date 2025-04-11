@@ -101,3 +101,10 @@ currency: 'VND'
 };
 
 export default Detail;
+
+# test MoMo account
+NGUYEN VAN A 
+9704 0000 0000 0018
+03/07
+OTP
+Card Successful
