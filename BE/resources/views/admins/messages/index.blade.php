@@ -85,7 +85,7 @@
 
 <!-- Script kích hoạt tương tác người dùng cho âm thanh -->
 <script>
-// Kích hoạt audio elements từ order-notifications.js 
+// Kích hoạt audio elements từ order-notifications.js
 document.addEventListener('DOMContentLoaded', function() {
     // Tạo tương tác người dùng giả khi trang chat được tải
     const triggerAudioActivation = () => {
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.warn('⚠️ Lỗi khi khởi tạo audio trong trang chat:', e);
             }
         });
-        
+
         // Kích hoạt audio events từ order-notifications.js
         const event = new MouseEvent('click', {
             view: window,
@@ -180,8 +180,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Thử tất cả các cách kết nối có thể
             const possibleUrls = [
-                'http://localhost:3001',
-                'http://127.0.0.1:3001'
+                'http://localhost:3002',
+                'http://127.0.0.1:3002'
             ];
 
             // Chọn URL đầu tiên trong danh sách
@@ -860,9 +860,6 @@ document.addEventListener('DOMContentLoaded', function() {
         sendMessageBtn.disabled = false;
         imageUploadBtn.disabled = false;
         messageInput.focus();
-
-        // Cập nhật trạng thái nút gửi dựa trên nội dung hiện tại
-        setTimeout(updateSendButtonState, 100); // Thêm timeout để đảm bảo các phần tử UI đã cập nhật
     }
 
     // Tắt chức năng chat
@@ -874,52 +871,32 @@ document.addEventListener('DOMContentLoaded', function() {
         chattingWith.textContent = "Chưa chọn người dùng";
     }
 
-    // Gửi tin nhắn
+    // Gửi tin nhắn (Cập nhật để xử lý cả text và ảnh)
     function sendMessage() {
-        console.log('⚡ Gọi hàm sendMessage()');
-
         const text = messageInput.value.trim();
         const hasImages = selectedImageFiles.length > 0;
 
-        // Kiểm tra điều kiện để gửi
-        if (!currentUserId) {
-            console.log('❌ Không thể gửi: chưa chọn người dùng');
-            return;
-        }
-
-        if (!text && !hasImages) {
-            console.log('❌ Không thể gửi: không có nội dung tin nhắn');
-            return;
-        }
-
-        if (!socket || !socket.connected) {
-            console.log('❌ Không thể gửi: mất kết nối socket');
-            alert('Mất kết nối đến server, vui lòng tải lại trang');
-            return;
-        }
-
-        console.log('✅ Điều kiện gửi tin nhắn OK, đang gửi...');
+        if (!currentUserId || (!text && !hasImages)) return;
 
         // Ưu tiên gửi ảnh nếu có
         if (hasImages) {
-            console.log('📸 Phát hiện có ảnh, gửi ảnh...');
             uploadAndSendAdminImages();
         } else if (text) {
             // Gửi tin nhắn văn bản
-            console.log('💬 Gửi tin nhắn văn bản:', text);
-            const messageData = {
-                text: text,
-                userId: currentUserId
-            };
+        const messageData = {
+            text: text,
+            userId: currentUserId
+        };
 
-            socket.emit('adminMessage', messageData, (response) => {
-                if (response.success) {
-                    console.log('✅ Tin nhắn văn bản đã được gửi thành công');
+        socket.emit('adminMessage', messageData, (response) => {
+            if (response.success) {
+                    console.log('Tin nhắn văn bản đã được gửi thành công');
                     addMessageToChat({ text: text, sent_at: new Date().toLocaleString() }, 'admin');
                     messageInput.value = ''; // Clear input sau khi gửi thành công
                     updateSendButtonState();
                 } else {
-                    console.error('❌ Lỗi khi gửi tin nhắn văn bản:', response.error);
+                    console.error('Lỗi khi gửi tin nhắn văn bản:', response.error);
+                    // addDebugInfo(`Lỗi khi gửi tin nhắn văn bản: ${response.error}`, "error");
                     alert('Không thể gửi tin nhắn văn bản: ' + response.error);
                 }
             });
@@ -954,7 +931,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 try {
                     // Sử dụng fetch để upload (hoặc XMLHttpRequest nếu cần theo dõi progress chi tiết hơn)
-                    const response = await fetch('http://localhost:3001/upload', {
+                    const response = await fetch('http://localhost:3002/upload', {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${adminToken}`,
@@ -1093,44 +1070,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateSendButtonState() {
         const hasText = messageInput.value.trim().length > 0;
         const hasImages = selectedImageFiles.length > 0;
-        const hasContent = hasText || hasImages;
-
-        // Chỉ kích hoạt nút khi có nội dung để gửi VÀ đã chọn người dùng
-        sendMessageBtn.disabled = !hasContent || !currentUserId || !socket?.connected;
-
-        console.log('🔄 Cập nhật trạng thái nút gửi:', {
-            hasText,
-            hasImages,
-            currentUserId: !!currentUserId,
-            socketConnected: !!socket?.connected,
-            buttonDisabled: sendMessageBtn.disabled
-        });
-
-        // Kích hoạt/vô hiệu hóa nút upload ảnh dựa trên việc đã chọn người dùng và socket đã kết nối
-        imageUploadBtn.disabled = !currentUserId || !socket?.connected;
+        sendMessageBtn.disabled = (!hasText && !hasImages) || !currentUserId;
+        // Có thể thêm logic disable nút upload nếu đã chọn ảnh...
+        imageUploadBtn.disabled = !currentUserId;
     }
 
     // Gọi updateSendButtonState khi input text thay đổi
     messageInput.addEventListener('input', updateSendButtonState);
-
-    // Cũng gọi updateSendButtonState khi nhấp vào input để đảm bảo trạng thái nút luôn cập nhật
-    messageInput.addEventListener('focus', updateSendButtonState);
-
-    // Xử lý sự kiện nhấn phím Enter để gửi tin nhắn
-    messageInput.addEventListener('keypress', function(e) {
-        if (e.key === "Enter" && !e.shiftKey) {
-            console.log('🔑 Phát hiện phím Enter, đang thử gửi tin nhắn...');
-            e.preventDefault(); // Ngăn xuống dòng
-
-            // Kiểm tra trạng thái nút gửi
-            if (!sendMessageBtn.disabled) {
-                console.log('✅ Nút gửi đang được kích hoạt, thực hiện gửi tin nhắn...');
-                sendMessage();
-            } else {
-                console.log('❌ Nút gửi đang bị vô hiệu hóa, không thể gửi tin nhắn');
-            }
-        }
-    });
 
     // Kích hoạt nút upload ảnh
     imageUploadBtn.addEventListener('click', function() {
