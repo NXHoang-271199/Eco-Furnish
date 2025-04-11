@@ -534,7 +534,6 @@ class OrderController extends Controller
 
                 // Cập nhật trạng thái đơn hàng
                 $order->update(['order_status' => $newStatus]);
-
                 // Tạo thông báo cho đơn hàng
                 $notification = OrderNotification::create([
                     'order_id' => $order->id,

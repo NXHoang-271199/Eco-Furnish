@@ -18,40 +18,6 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {   
-        // Tạo tài khoản admin
-        User::create([
-            'name' => 'Admin',
-            'age' => 25,
-            'email' => 'admin@gmail.com',
-            'password' => Hash::make(1),
-            'address' => 'Hà Nội, Việt Nam',
-            'role_id' => Role::where('name', 'admin')->first()->id,
-            'avatar' => "https://picsum.photos/200/200?random=1",
-            'email_verified_at' => now(),
-            'is_active' => 1,
-            'access_token' => Str::uuid(),
-            'refresh_token' => Str::uuid(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // Tạo tài khoản staff
-        User::create([
-            'name' => 'Staff',
-            'age' => 22,
-            'email' => 'staff@gmail.com',
-            'password' => Hash::make(1),
-            'address' => 'Hồ Chí Minh, Việt Nam',
-            'role_id' => Role::where('name', 'staff')->first()->id,
-            'avatar' => "https://picsum.photos/200/200?random=2",
-            'email_verified_at' => now(),
-            'is_active' => 1,
-            'access_token' => Str::uuid(),
-            'refresh_token' => Str::uuid(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         $faker = Faker::create();
         $roleIds = Role::pluck('id')->toArray();
         for ($i = 0; $i < 5; $i++) {

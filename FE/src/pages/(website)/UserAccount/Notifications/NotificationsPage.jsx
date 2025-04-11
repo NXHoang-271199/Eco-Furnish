@@ -1,384 +1,428 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Bell, Check, Filter } from 'lucide-react';
-import { Button } from '../../../../components/ui/button';
-import axios from 'axios';
-import { format, isToday, isYesterday } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
-import { subscribeToNotifications } from '../../../../utils/socketConfig';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
+import React, { useEffect, useRef } from "react";
+import { TbTargetArrow } from "react-icons/tb";
+import { PiRoadHorizonFill } from "react-icons/pi";
+import { BiSolidBookHeart } from "react-icons/bi";
+import { motion, useAnimation } from "framer-motion";
+import { useInView } from "react-intersection-observer";
 
-const NotificationsPage = () => {
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isMarkAllLoading, setIsMarkAllLoading] = useState(false);
-    const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
-    const navigate = useNavigate();
-    const audioRef = useRef(null);
-    const recentNotificationIds = useRef(new Set());
-    const toastShownIds = useRef(new Set());
+const FadeInAnimation = ({ children, delay = 0, direction = null }) => {
+  const controls = useAnimation();
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.2,
+  });
 
-    useEffect(() => {
-        // Đăng ký nhận thông báo từ socket
-        const unsubscribe = subscribeToNotifications(handleNewNotification);
-
-        // Tạo thẻ audio
-        audioRef.current = new Audio('/sounds/notification-sound.mp3');
-        audioRef.current.volume = 0.5;
-
-        // Đăng ký sự kiện lắng nghe event từ window
-        const handleOrderNotification = (event) => {
-            if (event.detail) {
-                handleNewNotification(event.detail);
-            }
+  const getDirectionVariants = () => {
+    switch (direction) {
+      case "left":
+        return {
+          hidden: { x: -50, opacity: 0 },
+          visible: { x: 0, opacity: 1 },
         };
-        window.addEventListener('order-notification', handleOrderNotification);
-
-        // Cleanup khi component unmount
-        return () => {
-            unsubscribe();
-            window.removeEventListener('order-notification', handleOrderNotification);
-            recentNotificationIds.current.clear();
-            toastShownIds.current.clear();
+      case "right":
+        return {
+          hidden: { x: 50, opacity: 0 },
+          visible: { x: 0, opacity: 1 },
         };
-    }, []);
-
-    // Load thông báo khi component được tạo
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
-
-    const fetchNotifications = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            navigate('/sign-in');
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            const response = await axios.get('http://localhost:8000/api/user/notifications', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (response.data.success) {
-                // Xử lý thông báo từ API để đảm bảo có đầy đủ thông tin
-                const processedNotifications = (response.data.notifications || []).map(notification => {
-                    // Lấy thông tin từ order nếu có
-                    const order = notification.order || {};
-
-                    return {
-                        ...notification,
-                        order_code: notification.order_code || order.order_code || 'Không xác định',
-                        order_status: notification.order_status || order.order_status || 'Không xác định',
-                        // Tạo message mặc định nếu chưa có
-                        message: notification.message ||
-                            `Đơn hàng #${notification.order_code || order.order_code || 'Không xác định'} đã chuyển sang trạng thái: ${notification.order_status || order.order_status || 'Không xác định'}`
-                    };
-                });
-
-                setNotifications(processedNotifications);
-                setUnreadCount(response.data.unreadCount || 0);
-            }
-        } catch (error) {
-            console.error('Lỗi khi lấy thông báo:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleNewNotification = (notification) => {
-        console.log("Nhận thông báo mới:", notification);
-
-        // Đảm bảo dữ liệu thông báo hợp lệ
-        if (!notification || !notification.id) return;
-
-        // Kiểm tra nếu thông báo đã được xử lý gần đây
-        if (recentNotificationIds.current.has(notification.id)) {
-            console.log("⚠️ Đã nhận thông báo này gần đây, bỏ qua:", notification.id);
-            return;
-        }
-
-        // Thêm vào danh sách đã xử lý
-        recentNotificationIds.current.add(notification.id);
-
-        // Sau 5 giây, xóa khỏi danh sách đã xử lý (để tránh danh sách quá lớn)
-        setTimeout(() => {
-            recentNotificationIds.current.delete(notification.id);
-        }, 5000);
-
-        // Thêm thông báo mới vào danh sách
-        setNotifications(prevNotifications => {
-            // Kiểm tra nếu thông báo đã tồn tại (tránh trùng lặp)
-            const exists = prevNotifications.some(item => item.id === notification.id);
-            if (exists) return prevNotifications;
-            return [notification, ...prevNotifications];
-        });
-
-        // Tăng số lượng thông báo chưa đọc
-        setUnreadCount(prev => prev + 1);
-
-        // Phát âm thanh thông báo
-        if (audioRef.current) {
-            audioRef.current.play().catch(e => console.error('Không thể phát âm thanh:', e));
-        }
-    };
-
-    const markAsRead = async (notification) => {
-        try {
-            if (notification.is_read) return;
-
-            // Gọi API để đánh dấu đã đọc
-            const token = localStorage.getItem('authToken');
-            await axios.patch(`http://localhost:8000/api/user/notifications/${notification.id}/read`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            // Cập nhật state
-            setNotifications(prevNotifications =>
-                prevNotifications.map(item =>
-                    item.id === notification.id ? { ...item, is_read: true } : item
-                )
-            );
-
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        } catch (error) {
-            console.error('Lỗi khi đánh dấu đã đọc:', error);
-        }
-    };
-
-    const handleNotificationClick = (notification) => {
-        markAsRead(notification);
-
-        // Chuyển hướng đến trang chi tiết đơn hàng nếu có
-        if (notification.order_id) {
-            navigate(`/account/order_detail/${notification.order_id}`);
-        }
-    };
-
-    const formatTime = (dateString) => {
-        const date = new Date(dateString);
-
-        if (isToday(date)) {
-            return `Hôm nay, ${format(date, 'HH:mm', { locale: vi })}`;
-        } else if (isYesterday(date)) {
-            return `Hôm qua, ${format(date, 'HH:mm', { locale: vi })}`;
-        } else {
-            return format(date, 'dd/MM/yyyy HH:mm', { locale: vi });
-        }
-    };
-
-    const markAllAsRead = async () => {
-        if (isMarkAllLoading) return;
-
-        try {
-            setIsMarkAllLoading(true);
-            const token = localStorage.getItem('authToken');
-            await axios.patch('http://localhost:8000/api/user/notifications/read-all', {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            // Cập nhật state
-            setNotifications(prevNotifications =>
-                prevNotifications.map(item => ({ ...item, is_read: true }))
-            );
-
-            setUnreadCount(0);
-        } catch (error) {
-            console.error('Lỗi khi đánh dấu tất cả đã đọc:', error);
-        } finally {
-            setIsMarkAllLoading(false);
-        }
-    };
-
-    // Nhóm thông báo theo ngày
-    const groupNotificationsByDate = () => {
-        // Lọc thông báo theo trạng thái nếu có bộ lọc
-        const filteredNotifications = notifications.filter(notification => {
-            if (filter === 'unread') return !notification.is_read;
-            if (filter === 'read') return notification.is_read;
-            return true; // 'all'
-        });
-
-        const groups = {
-            today: [],
-            yesterday: [],
-            older: []
+      case "up":
+        return {
+          hidden: { y: 50, opacity: 0 },
+          visible: { y: 0, opacity: 1 },
         };
+      case "down":
+        return {
+          hidden: { y: -50, opacity: 0 },
+          visible: { y: 0, opacity: 1 },
+        };
+      default:
+        return {
+          hidden: { opacity: 0 },
+          visible: { opacity: 1 },
+        };
+    }
+  };
 
-        filteredNotifications.forEach(notification => {
-            const date = new Date(notification.created_at);
-            if (isToday(date)) {
-                groups.today.push(notification);
-            } else if (isYesterday(date)) {
-                groups.yesterday.push(notification);
-            } else {
-                groups.older.push(notification);
-            }
-        });
+  useEffect(() => {
+    if (inView) {
+      controls.start("visible");
+    }
+  }, [controls, inView]);
 
-        return groups;
-    };
-
-    const notificationGroups = groupNotificationsByDate();
-
-    const renderNotificationGroup = (title, items) => {
-        if (items.length === 0) return null;
-
-        return (
-            <div key={title} className="mb-6">
-                <h3 className="px-4 py-2 bg-gray-50 text-sm font-medium text-gray-600 rounded-lg mb-2">
-                    {title}
-                </h3>
-                <div className="space-y-2">
-                    {items.map(notification => (
-                        <div
-                            key={notification.id}
-                            className={`flex p-4 rounded-lg cursor-pointer hover:bg-gray-50 ${!notification.is_read ? 'bg-green-50 border-l-4 border-green-500' : 'bg-white border border-gray-100'
-                                }`}
-                            onClick={() => handleNotificationClick(notification)}
-                        >
-                            <div className="flex-1 min-w-0">
-                                <p className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
-                                    {notification.message ||
-                                        `Đơn hàng #${notification.order_code || 'Không xác định'} đã chuyển sang trạng thái: ${notification.order_status || 'Không xác định'}`}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    {formatTime(notification.created_at)}
-                                </p>
-                            </div>
-                            {!notification.is_read && (
-                                <div className="ml-4 flex-shrink-0">
-                                    <div className="h-3 w-3 bg-green-500 rounded-full"></div>
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
-
-    // Kiểm tra nếu không có thông báo nào sau khi lọc
-    const hasNoFilteredNotifications = () => {
-        const groups = notificationGroups;
-        return (
-            groups.today.length === 0 &&
-            groups.yesterday.length === 0 &&
-            groups.older.length === 0
-        );
-    };
-
-    return (
-        <div className="container mx-auto pt-8 pb-10 px-4 md:px-6">
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="mb-8"
-            >
-                <h1 className="text-3xl font-bold tracking-tight mb-2">Thông báo của tôi</h1>
-                <p className="text-muted-foreground">
-                    Quản lý và theo dõi thông báo từ hệ thống
-                </p>
-            </motion.div>
-
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-            >
-                <Card>
-                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                        <CardTitle>Tất cả thông báo</CardTitle>
-                        <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-2 bg-white border rounded-lg p-1">
-                                <Button
-                                    variant={filter === 'all' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setFilter('all')}
-                                    className="text-xs h-8"
-                                >
-                                    Tất cả
-                                </Button>
-                                <Button
-                                    variant={filter === 'unread' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setFilter('unread')}
-                                    className="text-xs h-8"
-                                >
-                                    Chưa đọc {unreadCount > 0 && `(${unreadCount})`}
-                                </Button>
-                                <Button
-                                    variant={filter === 'read' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setFilter('read')}
-                                    className="text-xs h-8"
-                                >
-                                    Đã đọc
-                                </Button>
-                            </div>
-
-                            {unreadCount > 0 && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-xs flex items-center gap-1"
-                                    onClick={markAllAsRead}
-                                    disabled={isMarkAllLoading}
-                                >
-                                    {isMarkAllLoading ? (
-                                        <span className="flex items-center">
-                                            <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-500 mr-1"></span>
-                                            Đang xử lý...
-                                        </span>
-                                    ) : (
-                                        <>
-                                            <Check size={14} />
-                                            Đánh dấu tất cả đã đọc
-                                        </>
-                                    )}
-                                </Button>
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoading ? (
-                            <div className="py-12 flex justify-center items-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-                            </div>
-                        ) : notifications.length === 0 ? (
-                            <div className="py-12 text-center">
-                                <Bell size={48} className="mx-auto mb-4 text-gray-300" />
-                                <p className="text-gray-500">Bạn chưa có thông báo nào</p>
-                            </div>
-                        ) : hasNoFilteredNotifications() ? (
-                            <div className="py-12 text-center">
-                                <Filter size={48} className="mx-auto mb-4 text-gray-300" />
-                                <p className="text-gray-500">Không có thông báo nào phù hợp với bộ lọc</p>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="mt-4"
-                                    onClick={() => setFilter('all')}
-                                >
-                                    Xem tất cả thông báo
-                                </Button>
-                            </div>
-                        ) : (
-                            <div>
-                                {renderNotificationGroup('Hôm nay', notificationGroups.today)}
-                                {renderNotificationGroup('Hôm qua', notificationGroups.yesterday)}
-                                {renderNotificationGroup('Trước đó', notificationGroups.older)}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </motion.div>
-        </div>
-    );
+  return (
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={controls}
+      variants={getDirectionVariants()}
+      transition={{ duration: 0.6, delay: delay, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
 };
 
-export default NotificationsPage; 
+const About = () => {
+  return (
+    <div className="bg-neutral-50">
+      <main className="mb-16">
+        {/* Hero Banner */}
+        <div className="relative h-[70vh] overflow-hidden">
+          <motion.div
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.5 }}
+            className="absolute inset-0"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1920&q=80"
+              alt="Eco-Friendly Furniture"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+          </motion.div>
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+            <motion.h1
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8 }}
+              className="text-5xl md:text-6xl font-bold mb-4 text-center"
+            >
+              Về Eco-Furnish
+            </motion.h1>
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="h-1 w-24 bg-orange-400 mb-6"
+            ></motion.div>
+            <motion.p
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="text-xl md:text-2xl max-w-2xl text-center px-4"
+            >
+              Chúng tôi luôn kiên định với sứ mệnh tạo ra những sản phẩm nội
+              thất bền vững, thân thiện với môi trường
+            </motion.p>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-w-6xl mx-auto px-4 pt-20">
+          {/* Mission, Vision, Values */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20">
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 h-full"
+            >
+              <div className="flex w-full justify-center mb-6">
+                <div className="bg-orange-50 p-5 rounded-full">
+                  <TbTargetArrow className="text-orange-500 w-16 h-16" />
+                </div>
+              </div>
+              <h3 className="font-bold text-2xl uppercase text-center mb-4">
+                Sứ mệnh
+              </h3>
+              <p className="text-center text-gray-600">
+                Chúng tôi mang đến những sản phẩm nội thất chất lượng cao, được
+                sản xuất từ nguyên liệu bền vững, góp phần bảo vệ môi trường và
+                nâng cao chất lượng cuộc sống.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+              className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 h-full"
+            >
+              <div className="flex w-full justify-center mb-6">
+                <div className="bg-orange-50 p-5 rounded-full">
+                  <PiRoadHorizonFill className="text-orange-500 w-16 h-16" />
+                </div>
+              </div>
+              <h3 className="font-bold text-2xl uppercase text-center mb-4">
+                Tầm nhìn
+              </h3>
+              <p className="text-center text-gray-600">
+                Trở thành thương hiệu nội thất hàng đầu tại Việt Nam trong lĩnh
+                vực nội thất bền vững, mang đến những giải pháp thiết kế hiện
+                đại và thân thiện với môi trường.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              viewport={{ once: true }}
+              className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 h-full"
+            >
+              <div className="flex w-full justify-center mb-6">
+                <div className="bg-orange-50 p-5 rounded-full">
+                  <BiSolidBookHeart className="text-orange-500 w-16 h-16" />
+                </div>
+              </div>
+              <h3 className="font-bold text-2xl uppercase text-center mb-4">
+                Giá trị cốt lõi
+              </h3>
+              <p className="text-center text-gray-600">
+                Chất lượng - Sáng tạo - Bền vững - Trách nhiệm - Khách hàng là
+                trọng tâm. Những giá trị này định hướng mọi quyết định và hành
+                động của chúng tôi.
+              </p>
+            </motion.div>
+          </div>
+
+          {/* About Company */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20 items-center">
+            <FadeInAnimation direction="left">
+              <div className="overflow-hidden rounded-lg">
+                <motion.img
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.5 }}
+                  src="https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=700&q=80"
+                  alt="Về chúng tôi"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              </div>
+            </FadeInAnimation>
+
+            <FadeInAnimation direction="right">
+              <h2 className="font-bold text-3xl uppercase mb-6 text-gray-800">
+                Về <span className="text-orange-500">Eco-Furnish</span>
+              </h2>
+              <div className="h-1 w-20 bg-orange-400 mb-6"></div>
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                Được thành lập vào năm 2020, Eco-Furnish là thương hiệu tiên
+                phong trong lĩnh vực nội thất bền vững tại Việt Nam. Chúng tôi
+                chuyên sản xuất và phân phối các sản phẩm nội thất được làm từ
+                gỗ tự nhiên, được khai thác có trách nhiệm từ các khu rừng được
+                quản lý bền vững.
+              </p>
+              <p className="text-gray-600 leading-relaxed">
+                Với đội ngũ thiết kế tài năng và đam mê, chúng tôi luôn nỗ lực
+                sáng tạo những sản phẩm nội thất không chỉ đẹp về mặt thẩm mỹ mà
+                còn bền vững, thân thiện với môi trường và mang lại không gian
+                sống lành mạnh cho khách hàng.
+              </p>
+            </FadeInAnimation>
+          </div>
+
+          {/* Products Showcase */}
+          <div className="mb-20">
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-center text-3xl font-bold text-gray-800 mb-2">
+                CHÚNG TÔI TẠO RA NỘI THẤT GỖ TỰ NHIÊN
+              </h2>
+              <h3 className="text-center text-3xl font-bold text-gray-800 mb-8">
+                CHẤT LƯỢNG CAO
+              </h3>
+              <div className="h-1 w-20 bg-orange-400 mx-auto mb-10"></div>
+            </motion.div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                viewport={{ once: true }}
+                className="group relative overflow-hidden rounded-lg cursor-pointer"
+              >
+                <motion.img
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ duration: 0.5 }}
+                  src="https://images.unsplash.com/photo-1617103996702-96ff29b1c467?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=396&q=80"
+                  alt="Sàn gỗ"
+                  className="w-full h-80 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                  <h4 className="text-white uppercase text-lg font-semibold mb-2">
+                    Sàn gỗ
+                  </h4>
+                  <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    Sàn gỗ tự nhiên cao cấp, đa dạng mẫu mã, phù hợp với mọi
+                    không gian sống.
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                viewport={{ once: true }}
+                className="group relative overflow-hidden rounded-lg cursor-pointer"
+              >
+                <motion.img
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ duration: 0.5 }}
+                  src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=396&q=80"
+                  alt="Hoàn thiện"
+                  className="w-full h-80 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                  <h4 className="text-white uppercase text-lg font-semibold mb-2">
+                    Hoàn thiện
+                  </h4>
+                  <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    Dịch vụ hoàn thiện chuyên nghiệp với các sản phẩm sơn, dầu
+                    bảo vệ gỗ thân thiện với môi trường.
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                viewport={{ once: true }}
+                className="group relative overflow-hidden rounded-lg cursor-pointer"
+              >
+                <motion.img
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ duration: 0.5 }}
+                  src="https://images.unsplash.com/photo-1615876234886-fd9a39fda97f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1932&q=80"
+                  alt="Lắp đặt"
+                  className="w-full h-80 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                  <h4 className="text-white uppercase text-lg font-semibold mb-2">
+                    Lắp đặt
+                  </h4>
+                  <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    Dịch vụ lắp đặt chuyên nghiệp, nhanh chóng và tỉ mỉ đến từng
+                    chi tiết.
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                viewport={{ once: true }}
+                className="group relative overflow-hidden rounded-lg cursor-pointer"
+              >
+                <motion.img
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ duration: 0.5 }}
+                  src="https://images.unsplash.com/photo-1631679706909-1844bbd07221?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1992&q=80"
+                  alt="Sưởi ấm sàn"
+                  className="w-full h-80 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                  <h4 className="text-white uppercase text-lg font-semibold mb-2">
+                    Sưởi ấm sàn
+                  </h4>
+                  <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    Giải pháp sưởi ấm sàn hiện đại, tiết kiệm năng lượng, mang
+                    lại cảm giác ấm áp cho ngôi nhà.
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Team Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="bg-white p-10 rounded-xl shadow-sm mb-20"
+          >
+            <h2 className="text-center text-3xl font-bold text-gray-800 mb-2">
+              ĐỘI NGŨ CỦA CHÚNG TÔI
+            </h2>
+            <div className="h-1 w-20 bg-orange-400 mx-auto mb-10"></div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="mb-4 overflow-hidden rounded-full w-40 h-40 mx-auto">
+                  <img
+                    src="/public/images/avatarAbout/avatar3.jpg"
+                    alt="CEO"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="font-bold text-xl mb-1">Nguyễn Xuân Hoàng</h3>
+                <p className="text-orange-500 mb-3">Giám đốc điều hành</p>
+                <p className="text-gray-600">
+                  Với hơn 15 năm kinh nghiệm trong lĩnh vực nội thất và thiết kế
+                  bền vững.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="mb-4 overflow-hidden rounded-full w-40 h-40 mx-auto">
+                  <img
+                    src="/public/images/avatarAbout/avatar1.jpg"
+                    alt="Design Director"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="font-bold text-xl mb-1">Nguyễn Đức Việt</h3>
+                <p className="text-orange-500 mb-3">Giám đốc thiết kế</p>
+                <p className="text-gray-600">
+                  Chuyên gia thiết kế với nhiều dự án nổi bật trong nước và quốc
+                  tế.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="mb-4 overflow-hidden rounded-full w-40 h-40 mx-auto">
+                  <img
+                    src="/public/images/avatarAbout/avatar2.jpg"
+                    alt="Marketing Manager"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="font-bold text-xl mb-1">Nguyễn Huy Hoàng</h3>
+                <p className="text-orange-500 mb-3">Giám đốc Marketing</p>
+                <p className="text-gray-600">
+                  Chuyên gia về chiến lược marketing và phát triển thương hiệu
+                  bền vững.
+                </p>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default About;

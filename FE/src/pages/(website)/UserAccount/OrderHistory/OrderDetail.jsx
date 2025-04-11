@@ -29,7 +29,8 @@ const OrderDetail = () => {
   const [error, setError] = useState(null);
   const [autoConfirmTimerSet, setAutoConfirmTimerSet] = useState(false);
   const autoConfirmTimerIdRef = useRef(null); // Ref để lưu ID của timer
-
+  const [autoCancelTimerSet, setAutoCancelTimerSet] = useState(false);
+  const autoCancelTimerIdRef = useRef(null);
   // --- Logic Polling ---
   const fetchOrderDetailCallback = useCallback(
     async (isPolling = false) => {
@@ -246,6 +247,143 @@ const OrderDetail = () => {
     // Thêm performOrderConfirmation vào dependencies
   }, [order, autoConfirmTimerSet, performOrderConfirmation]);
   // --- Tự động xác nhận sau 30 phút --- END ---
+
+  // --- Tự động hủy đơn hàng chưa thanh toán online sau 30 phút --- START ---
+  // Hàm xử lý hủy tự động
+  const handleAutoCancelOrder = useCallback(async () => {
+    console.log("Attempting auto-cancel for order:", id);
+    try {
+      const token = localStorage.getItem("authToken");
+      // Kiểm tra trạng thái mới nhất trước khi hủy
+      const latestOrderResponse = await axiosInstance.get(`/orders/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (latestOrderResponse.data.status === "success") {
+        const latestOrder = latestOrderResponse.data.data;
+        const isOnlinePayment =
+          latestOrder.payment_method.name === "MoMo" ||
+          latestOrder.payment_method.name === "VNPAY";
+        const isUnpaidOrPending =
+          latestOrder.payment_status === 0 || latestOrder.payment_status === 2;
+        const isCancelableStatus =
+          latestOrder.order_status !== "Hủy Đơn" &&
+          latestOrder.order_status !== "Đã Nhận";
+
+        if (isOnlinePayment && isUnpaidOrPending && isCancelableStatus) {
+          console.log("Conditions met for auto-cancel. Proceeding...");
+          const response = await axiosInstance.post(
+            `/orders/${id}/cancel`,
+            {}, // Backend không yêu cầu reason
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (response.data.status === "success") {
+            console.log(
+              "Đơn hàng đã được tự động hủy do quá 30 phút chưa thanh toán online"
+            );
+            // Cập nhật trạng thái local
+            setOrder((prevOrder) => ({
+              ...prevOrder,
+              order_status: "Hủy Đơn",
+            }));
+            setAutoCancelTimerSet(true); // Đánh dấu đã hủy để không set timer lại
+          } else {
+            console.error(
+              "Lỗi API khi tự động hủy đơn hàng:",
+              response.data.message
+            );
+          }
+        } else {
+          console.log(
+            "Auto-cancel skipped: Order conditions no longer met after checking latest status.",
+            latestOrder
+          );
+        }
+      } else {
+        console.log(
+          "Auto-cancel skipped: Failed to fetch latest order status."
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Lỗi khi tự động hủy đơn hàng:",
+        error.response?.data || error.message
+      );
+    }
+  }, [id, setOrder]); // Thêm setOrder vào dependencies
+
+  // useEffect cho tự động hủy
+  useEffect(() => {
+    // Hàm cleanup để xóa timer
+    const clearCancelTimer = () => {
+      if (autoCancelTimerIdRef.current) {
+        clearTimeout(autoCancelTimerIdRef.current);
+        autoCancelTimerIdRef.current = null;
+        console.log("Cleared auto-cancel timer.");
+      }
+    };
+
+    // Điều kiện kiểm tra để tự động hủy
+    const shouldCheckAutoCancel =
+      order &&
+      (order.payment_method.name === "MoMo" ||
+        order.payment_method.name === "VNPAY") && // Thanh toán online
+      (order.payment_status === 0 || order.payment_status === 2) && // Chưa thanh toán hoặc đang chờ
+      order.order_status !== "Hủy Đơn" && // Chưa bị hủy
+      order.order_status !== "Đã Nhận"; // Chưa nhận
+
+    if (shouldCheckAutoCancel) {
+      const orderCreatedTime = new Date(order.created_at).getTime();
+      const currentTime = new Date().getTime();
+      const timeSinceCreated = currentTime - orderCreatedTime;
+      const autoCancelDelayMs = 24 * 60 * 60 * 1000; // 24 giờ
+
+      if (timeSinceCreated >= autoCancelDelayMs) {
+        console.log(
+          "Order unpaid online for over 30 minutes. Triggering auto-cancel immediately."
+        );
+        clearCancelTimer(); // Xóa timer cũ nếu có
+        if (!autoCancelTimerSet) {
+          // Chỉ hủy nếu chưa bị hủy hoặc đang trong quá trình set timer
+          handleAutoCancelOrder(); // Gọi hủy ngay
+        }
+      } else if (!autoCancelTimerSet) {
+        // Nếu chưa đủ 30 phút và chưa set timer/chưa bị hủy
+        const remainingDelay = autoCancelDelayMs - timeSinceCreated;
+        console.log(
+          `Setting auto-cancel timer for ${Math.round(
+            remainingDelay / 1000
+          )} seconds.`
+        );
+        clearCancelTimer(); // Xóa timer cũ trước khi set mới
+        autoCancelTimerIdRef.current = setTimeout(() => {
+          console.log(
+            "Auto-cancel timer expired. Calling handleAutoCancelOrder."
+          );
+          handleAutoCancelOrder();
+        }, remainingDelay);
+        // Không set autoCancelTimerSet = true ở đây vì chỉ set khi timer thực sự chạy và hủy
+        // Nếu không, reload trang trước khi timer chạy sẽ không set lại timer
+      }
+    } else {
+      // Nếu điều kiện không còn đúng (đã thanh toán, đã hủy, đã nhận, hoặc là COD), xóa timer
+      clearCancelTimer();
+      // Reset cờ nếu cần (ví dụ nếu trạng thái thay đổi trước khi timer chạy)
+      if (autoCancelTimerSet) {
+        setAutoCancelTimerSet(false);
+      }
+    }
+
+    // Hàm cleanup chính của useEffect
+    return () => {
+      clearCancelTimer();
+    };
+    // Thêm handleAutoCancelOrder và autoCancelTimerSet vào dependencies
+  }, [order, autoCancelTimerSet, handleAutoCancelOrder]);
+  // --- Tự động hủy đơn hàng chưa thanh toán online sau 30 phút --- END ---
 
   // Chuyển đổi mã trạng thái thanh toán thành text và màu sắc
   const getPaymentStatusInfo = (statusCode) => {

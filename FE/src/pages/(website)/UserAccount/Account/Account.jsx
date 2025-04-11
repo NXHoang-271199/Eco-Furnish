@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  Wallet,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 
@@ -55,6 +56,7 @@ import { Label } from "../../../../components/ui/label";
 import { Switch } from "../../../../components/ui/switch";
 import OrderHistory from "../OrderHistory/OrderHistory";
 import axiosInstance from "../../../../utils/axiosConfig";
+import WalletPage from "../Wallet/WalletPage";
 const Account = () => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
@@ -184,7 +186,7 @@ const Account = () => {
 
           setError(
             error.response.data?.message ||
-            `Lỗi từ máy chủ: ${error.response.status}`
+              `Lỗi từ máy chủ: ${error.response.status}`
           );
         } else if (error.request) {
           console.error("Không nhận được phản hồi từ máy chủ");
@@ -253,7 +255,7 @@ const Account = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid grid-cols-3 md:w-[300px] mb-8">
+            <TabsList className="grid grid-cols-4 md:w-[500px] mb-8">
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User size={16} />
                 <span className="hidden sm:inline">Hồ sơ</span>
@@ -265,6 +267,10 @@ const Account = () => {
               <TabsTrigger value="billing" className="flex items-center gap-2">
                 <CreditCard size={16} />
                 <span className="hidden sm:inline">Đơn hàng</span>
+              </TabsTrigger>
+              <TabsTrigger value="wallet" className="flex items-center gap-2">
+                <Wallet size={16} />
+                <span className="hidden sm:inline">Ví tiền</span>
               </TabsTrigger>
             </TabsList>
 
@@ -282,6 +288,10 @@ const Account = () => {
 
             <TabsContent value="billing" className="space-y-6">
               <BillingSection />
+            </TabsContent>
+
+            <TabsContent value="wallet" className="space-y-6">
+              <WalletSection />
             </TabsContent>
           </Tabs>
         </motion.div>
@@ -392,7 +402,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       setIsUploading(false);
       setUploadError(
         error.response?.data?.message ||
-        "Không thể tải lên avatar. Vui lòng thử lại!"
+          "Không thể tải lên avatar. Vui lòng thử lại!"
       );
       toast.error("Không thể tải lên avatar. Vui lòng thử lại!");
     }
@@ -458,7 +468,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       console.error("Lỗi khi cập nhật thông tin:", error);
       setSaveError(
         error.response?.data?.message ||
-        "Không thể cập nhật thông tin. Vui lòng thử lại sau."
+          "Không thể cập nhật thông tin. Vui lòng thử lại sau."
       );
       toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
     } finally {
@@ -503,7 +513,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
                     <>
                       <AvatarImage
                         src={
-                          avatar && !avatar.includes('placeholder.com')
+                          avatar && !avatar.includes("placeholder.com")
                             ? avatar
                             : "/images/avatarEmpty/avatarUser.png"
                         }
@@ -602,40 +612,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-      >
-        {/* <Card>
-          <CardHeader>
-            <CardTitle>Mạng xã hội</CardTitle>
-            <CardDescription>
-              Kết nối tài khoản mạng xã hội của bạn với hồ sơ
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="facebook">Facebook</Label>
-                <Input id="facebook" placeholder="facebook.com/username" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="instagram">Instagram</Label>
-                <Input id="instagram" placeholder="@username" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="twitter">Twitter</Label>
-                <Input id="twitter" placeholder="@username" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
-                <Input id="website" placeholder="https://example.com" />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end gap-2">
-            <Button variant="outline">Hủy bỏ</Button>
-            <Button>Lưu thay đổi</Button>
-          </CardFooter>
-        </Card> */}
-      </motion.div>
+      ></motion.div>
     </>
   );
 };
@@ -652,9 +629,11 @@ const SecuritySection = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isCurrentPasswordFocused, setIsCurrentPasswordFocused] = useState(false);
+  const [isCurrentPasswordFocused, setIsCurrentPasswordFocused] =
+    useState(false);
   const [isNewPasswordFocused, setIsNewPasswordFocused] = useState(false);
-  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] =
+    useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -663,10 +642,10 @@ const SecuritySection = () => {
       [id === "current-password"
         ? "currentPassword"
         : id === "new-password"
-          ? "newPassword"
-          : id === "confirm-password"
-            ? "confirmPassword"
-            : id]: value,
+        ? "newPassword"
+        : id === "confirm-password"
+        ? "confirmPassword"
+        : id]: value,
     }));
   };
 
@@ -747,7 +726,7 @@ const SecuritySection = () => {
       } else {
         setError(
           error.response?.data?.message ||
-          "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
+            "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
         );
       }
 
@@ -826,11 +805,7 @@ const SecuritySection = () => {
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setShowNewPassword((prev) => !prev)}
                 >
-                  {showNewPassword ? (
-                    <EyeOff size={16} />
-                  ) : (
-                    <Eye size={16} />
-                  )}
+                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </Button>
               )}
             </div>
@@ -898,6 +873,18 @@ const BillingSection = () => {
       transition={{ duration: 0.4 }}
     >
       <OrderHistory />
+    </motion.div>
+  );
+};
+
+const WalletSection = () => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <WalletPage />
     </motion.div>
   );
 };
