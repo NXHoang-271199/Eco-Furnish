@@ -208,6 +208,7 @@ const SignIn = () => {
                   type="email"
                   placeholder="Địa chỉ email của bạn"
                   name="email"
+                  autoComplete="email"
                   className="w-full px-10 py-3 border bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   {...register("email", {
                     required: "Email là bắt buộc",
@@ -231,6 +232,7 @@ const SignIn = () => {
                   placeholder="Mật khẩu"
                   className="w-full px-10 py-3 border bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   name="password"
+                  autoComplete="current-password"
                   {...register("password", {
                     required: "Mật khẩu là bắt buộc",
                   })}
@@ -312,8 +314,8 @@ const SignIn = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() =>
-                  (window.location.href =
-                    "http://localhost:8000/api/auth/google/redirect")
+                (window.location.href =
+                  "http://localhost:8000/api/auth/google/redirect")
                 }
               >
                 <FcGoogle className="mr-3" size={20} />
@@ -326,8 +328,8 @@ const SignIn = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() =>
-                  (window.location.href =
-                    "http://localhost:8000/api/auth/facebook/redirect")
+                (window.location.href =
+                  "http://localhost:8000/api/auth/facebook/redirect")
                 }
               >
                 <FiFacebook className="mr-3 text-blue-600" size={20} />
