@@ -190,9 +190,10 @@ class OrderController extends Controller
             }
 
             // ❌ Nếu đã thanh toán (payment_status = 2) thì chỉ được hủy đơn
-            if ($order->payment_status == 2 && $request->order_status !== 'Hủy Đơn') {
-                return back()->with('error', 'Đơn hàng đang chờ thanh toán. Chỉ có thể hủy đơn.');
+            if ($order->payment_status == 2) {
+                return back()->with('error', 'Đơn hàng đang chờ thanh toán. Không thể thay đổi trạng thái.');
             }
+
             // ❌ Nếu đã thanh toán (payment_status = 1) thì không được hủy đơn
             if ($order->payment_status == 1 && $request->order_status == 'Hủy Đơn') {
                 return back()->with('error', 'Đơn hàng đã thanh toán. Không được hủy đơn');
@@ -469,7 +470,7 @@ class OrderController extends Controller
                 }
 
                 // Nếu chờ thanh toán thì chỉ được hủy đơn
-                if ($order->payment_status == 2 && $newStatus !== 'Hủy Đơn') {
+                if ($order->payment_status == 2) {
                     $results[$orderId] = [
                         'success' => false,
                         'order' => [
@@ -478,7 +479,7 @@ class OrderController extends Controller
                             'user_name' => $order->user_name,
                             'order_status' => $order->order_status,
                         ],
-                        'message' => 'Đơn hàng đang chờ thanh toán. Chỉ có thể hủy đơn.'
+                        'message' => 'Đơn hàng đang chờ thanh toán. Không thể thay đổi trạng thái.'
                     ];
                     $errorCount++;
                     continue;
