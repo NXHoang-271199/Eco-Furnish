@@ -23,9 +23,28 @@
         function removeThumbnail() {
             const preview = document.getElementById('thumbnailPreview');
             const input = document.getElementById('image_thumnail');
+            
+            // Ẩn preview
             preview.style.display = 'none';
             preview.querySelector('img').src = '';
+            
+            // Xóa giá trị của input
             input.value = '';
+            
+            // Xóa tất cả các class validation
+            input.classList.remove('is-valid', 'is-invalid');
+            
+            // Xóa tất cả các phần tử feedback
+            const formGroup = input.closest('.form-group');
+            if (formGroup) {
+                const feedbacks = formGroup.querySelectorAll('.valid-feedback, .invalid-feedback');
+                feedbacks.forEach(feedback => feedback.remove());
+            }
+            
+            // Reset lại trạng thái validation của input
+            input.setCustomValidity('');
+            input.setAttribute('aria-invalid', 'false');
+            input.removeAttribute('aria-describedby');
         }
 
         // Hàm loại bỏ dấu tiếng Việt
@@ -808,21 +827,27 @@
             function clearValidation(field) {
                 if (!field) return;
                 
+                // Xóa tất cả các class validation
                 field.classList.remove('is-invalid', 'is-valid');
                 
                 // Ẩn thông báo lỗi
                 const feedback = field.nextElementSibling;
-                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                if (feedback && (feedback.classList.contains('invalid-feedback') || feedback.classList.contains('valid-feedback'))) {
                     feedback.style.display = 'none';
                 }
                 
                 // Ẩn thông báo lỗi trong input-group
                 const parent = field.parentElement;
                 if (parent && parent.classList.contains('input-group')) {
+                    // Tìm thông báo lỗi sau input-group
                     const groupFeedback = parent.nextElementSibling;
-                    if (groupFeedback && groupFeedback.classList.contains('invalid-feedback')) {
+                    if (groupFeedback && (groupFeedback.classList.contains('invalid-feedback') || groupFeedback.classList.contains('valid-feedback'))) {
                         groupFeedback.style.display = 'none';
                     }
+                    
+                    // Tìm và xóa các icon validation trong input-group nếu có
+                    const validationIcons = parent.querySelectorAll('.validation-icon');
+                    validationIcons.forEach(icon => icon.remove());
                 }
                 
                 // Ẩn thông báo lỗi custom cho trường số lượng
@@ -833,10 +858,19 @@
                     }
                 }
                 
+                // Tìm và xóa các phần tử validation tick có thể có
+                if (field.id === 'image_thumnail') {
+                    const fieldParent = field.closest('.form-group');
+                    if (fieldParent) {
+                        const validationTicks = fieldParent.querySelectorAll('.valid-tick, .invalid-tick');
+                        validationTicks.forEach(tick => tick.remove());
+                    }
+                }
+                
                 // Xóa các thông báo lỗi trùng lặp nếu có
                 const parentNode = field.parentElement.parentElement;
                 if (parentNode) {
-                    const duplicateErrors = parentNode.querySelectorAll('.invalid-feedback');
+                    const duplicateErrors = parentNode.querySelectorAll('.invalid-feedback, .valid-feedback');
                     if (duplicateErrors.length > 1) {
                         // Giữ lại error đầu tiên, xóa các error trùng lặp
                         for (let i = 1; i < duplicateErrors.length; i++) {
@@ -890,11 +924,21 @@
 
             // Hàm hiển thị thành công
             function showSuccess(input) {
+                if (!input) return;
+                
+                // Xóa tất cả trạng thái validation trước
                 clearValidation(input);
+                
+                // Nếu là input file và không có file được chọn, không hiển thị tick xanh
+                if (input.type === 'file' && (!input.files || input.files.length === 0)) {
+                    return;
+                }
+                
+                // Thêm lớp is-valid
                 input.classList.add('is-valid');
                 input.classList.remove('is-invalid');
                 
-                // Ẩn thông báo lỗi
+                // Ẩn thông báo lỗi nếu có
                 let parent = input.parentElement;
                 if (parent.classList.contains('input-group')) {
                     const errorDivs = parent.querySelectorAll('.invalid-feedback');

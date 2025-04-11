@@ -33,7 +33,7 @@
                             <th>Loại GD</th>
                             <th>Số tiền</th>
                             <th>Số dư trước</th>
-                            <th>Số dư sau</th>
+                            <th>Số dư cuối</th>
                             <th>Trạng thái</th>
                             <th>Kênh</th>
                             <th>Người thực hiện</th>

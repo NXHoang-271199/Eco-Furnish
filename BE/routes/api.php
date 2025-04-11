@@ -18,9 +18,10 @@ use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\VoucherApiController;
 use App\Http\Controllers\Api\CategoryApiController;
-use App\Http\Controllers\Api\UserAddressController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
+use App\Http\Controllers\Api\UserAddressController;
+use App\Http\Controllers\Api\UserNotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -145,6 +146,11 @@ Route::prefix('messages')->group(function () {
         Route::patch('/read/{messageId}', [MessageController::class, 'markAsRead']); // Đánh dấu đã đọc
         Route::patch('/read-all/{userId}', [MessageController::class, 'markAllAsRead']); // Đánh dấu tất cả là đã đọc
         Route::post('/admin/send', [MessageController::class, 'sendByAdmin']); // Admin gửi tin nhắn
+
+        // *** Thêm Route: Admin đánh dấu tin nhắn của client là đã đọc ***
+        Route::patch('/mark-client-messages-as-read/{clientId}', [MessageController::class, 'markClientMessagesAsReadByAdmin'])
+            ->middleware('auth:sanctum'); // Đảm bảo chỉ admin mới gọi được (cần kiểm tra role trong controller)
+        // *** Kết thúc thêm ***
     });
 });
 
@@ -217,6 +223,15 @@ Route::get('/users/{id}', function ($id) {
         'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
     ]);
 });
+
+// API cho thông báo người dùng
+Route::middleware('auth:sanctum')->prefix('user/notifications')->group(function () {
+    Route::get('/', [UserNotificationController::class, 'index']);
+    Route::patch('/{id}/read', [UserNotificationController::class, 'markAsRead']);
+    Route::patch('/read-all', [UserNotificationController::class, 'markAllAsRead']);
+});
+
+// Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động // FE ko được động tới
 // Cart Routers
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('cart', [CartController::class, 'index']); // Lấy giỏ hàng
@@ -249,7 +264,8 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 // review routes
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
+    Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
+    Route::get('/products/{productId}/can-review', [ReviewController::class, 'canReview']); // kiểm tra quyền đánh giá
 });
 Route::get('products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
 
