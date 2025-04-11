@@ -42,6 +42,9 @@ class CommentController extends Controller
      */
     public function productComments(Product $product, Request $request)
     {
+        // Thêm dòng debug để kiểm tra thông tin sản phẩm
+        // dd($product->toArray());
+        
         $comments = Comment::with(['user', 'product'])
             ->where('product_id', $product->id)
             ->when($request->search, function ($query, $search) {

@@ -59,6 +59,33 @@
                 </div>
 
                 <div class="filter-section mb-4">
+                    <p class="text-muted text-uppercase fs-12 fw-medium mb-2">Trạng thái</p>
+                    <ul class="list-unstyled mb-0 filter-list">
+                        <li>
+                            <a href="#" class="d-flex py-1 align-items-center stock-filter active" data-stock="all">
+                                <div class="flex-grow-1">
+                                    <h5 class="fs-13 mb-0 listname">Tất cả trạng thái</h5>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="d-flex py-1 align-items-center stock-filter" data-stock="instock">
+                                <div class="flex-grow-1">
+                                    <h5 class="fs-13 mb-0 listname">Còn hàng</h5>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="d-flex py-1 align-items-center stock-filter" data-stock="outofstock">
+                                <div class="flex-grow-1">
+                                    <h5 class="fs-13 mb-0 listname">Hết hàng</h5>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="filter-section mb-4">
                     <p class="text-muted text-uppercase fs-12 fw-medium mb-4">Giá (VNĐ)</p>
                     <div class="price-range-wrapper">
                         <div id="product-price-range"></div>
@@ -167,6 +194,7 @@
                                                                 $hasDiscount = $product->variants()->whereNull('deleted_at')->whereNotNull('discount_price')->count() > 0;
                                                                 $minDiscountPrice = $product->variants()->whereNull('deleted_at')->whereNotNull('discount_price')->min('discount_price');
                                                                 $maxDiscountPrice = $product->variants()->whereNull('deleted_at')->whereNotNull('discount_price')->max('discount_price');
+                                                                $totalVariantQuantity = $product->variants()->whereNull('deleted_at')->sum('quantity');
                                                             @endphp
                                                             @if($minPrice === $maxPrice)
                                                                 {{ number_format($minPrice) }} VNĐ
@@ -184,6 +212,13 @@
                                                             @endif
                                                         </div>
                                                         @endif
+                                                        <div class="mt-1">
+                                                            @if($totalVariantQuantity > 0)
+                                                                <span class="badge bg-success-subtle text-success">Còn hàng</span>
+                                                            @else
+                                                                <span class="badge bg-danger-subtle text-danger">Hết hàng</span>
+                                                            @endif
+                                                        </div>
                                                     @else
                                                         <div>
                                                             @if($product->discount_price)
@@ -195,6 +230,13 @@
                                                                 </div>
                                                             @else
                                                                 <strong>Giá: {{ number_format($product->price) }} VNĐ</strong>
+                                                            @endif
+                                                        </div>
+                                                        <div class="mt-1">
+                                                            @if($product->quantity > 0)
+                                                                <span class="badge bg-success-subtle text-success">Còn hàng</span>
+                                                            @else
+                                                                <span class="badge bg-danger-subtle text-danger">Hết hàng</span>
                                                             @endif
                                                         </div>
                                                     @endif

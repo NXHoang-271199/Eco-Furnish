@@ -10,33 +10,25 @@ trait TokenHandler
     {
         // Xóa tokens cũ
         $user->tokens()->delete();
-        
-        if ($remember) {
-            // Thời gian token dài hơn nếu remember_me = true
-            $accessTokenExpiry = now()->addDays(7);    // 7 ngày
-            $refreshTokenExpiry = now()->addDays(30);  // 30 ngày
-        } else {
-            // Thời gian token mặc định
-            $accessTokenExpiry = now()->addDays(1); // 30 phút
-            $refreshTokenExpiry = now()->addDays(7);    // 7 ngày
-        }
-        
-        // Tạo access token
-        $accessToken = $user->createToken('access_token', ['*'], $accessTokenExpiry)->plainTextToken;
-        
-        // Tạo refresh token
-        $refreshToken = $user->createToken('refresh_token', ['*'], $refreshTokenExpiry)->plainTextToken;
-        
-        // Lưu tokens
-        $user->access_token = $accessToken;
-        $user->refresh_token = $refreshToken;
-        $user->save();
+
+        // Tạo access token mới và lấy thời gian hết hạn
+        $accessTokenExpiresAt = now()->addMinutes(30);
+        $accessTokenInstance = $user->createToken('access_token', ['*'], $accessTokenExpiresAt);
+        $accessToken = $accessTokenInstance->plainTextToken;
+
+        // Tạo refresh token mới và lấy thời gian hết hạn
+        $refreshTokenExpiresAt = now()->addDays(7);
+        $refreshTokenInstance = $user->createToken('refresh_token', ['*'], $refreshTokenExpiresAt);
+        $refreshToken = $refreshTokenInstance->plainTextToken;
+
+        // Lưu tokens (không cần thiết vì Sanctum đã lưu trong DB)
+        // $user->access_token = $accessToken;
+        // $user->refresh_token = $refreshToken;
+        // $user->save(); // Không cần save lại ở đây
 
         return [
             'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
-            'access_token_expires_at' => $accessTokenExpiry,
-            'refresh_token_expires_at' => $refreshTokenExpiry
         ];
     }
 
@@ -63,4 +55,4 @@ trait TokenHandler
 
         return $user;
     }
-} 
+}

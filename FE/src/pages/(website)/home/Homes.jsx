@@ -1496,6 +1496,8 @@ const Homes = () => {
           transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
         />
 
+
+
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <motion.div className="mb-16 text-center" variants={fadeInUp}>
             <motion.span

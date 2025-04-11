@@ -2,6 +2,8 @@ import React from "react";
 import { FaCamera } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
+import { closeSocket } from "../utils/socketConfig";
 
 const Aside = () => {
   const handleLogout = async (e) => {
@@ -12,28 +14,30 @@ const Aside = () => {
 
     if (!token) {
       console.log("Không tìm thấy token");
+      closeSocket();
       localStorage.clear();
+      window.dispatchEvent(new Event("user-logout"));
       window.location.href = "/sign-in";
       return;
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/users/logout",
-        null,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.post("/users/logout", null, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       console.log("API Response:", response.data);
+      closeSocket();
       localStorage.clear();
+      window.dispatchEvent(new Event("user-logout"));
       window.location.href = "/sign-in";
     } catch (error) {
       console.error("Lỗi khi gọi API logout:", error.response?.data);
+      closeSocket();
       localStorage.clear();
+      window.dispatchEvent(new Event("user-logout"));
       window.location.href = "/sign-in";
     }
   };

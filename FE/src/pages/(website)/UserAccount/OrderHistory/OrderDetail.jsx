@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
+import axiosInstance from "../../../../utils/axiosConfig";
 import {
   FiArrowLeft,
   FiInfo,
@@ -17,7 +18,7 @@ import {
   FiShoppingBag,
   FiRefreshCw,
   FiHome,
-  FiUser
+  FiUser,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -26,43 +27,51 @@ const OrderDetail = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [autoConfirmTimerSet, setAutoConfirmTimerSet] = useState(false);
+  const autoConfirmTimerIdRef = useRef(null); // Ref để lưu ID của timer
 
-  // --- Logic Polling --- 
-  const fetchOrderDetailCallback = useCallback(async (isPolling = false) => {
-    // Không hiển thị loading toàn trang khi polling
-    // if (!isPolling) setLoading(true);
+  // --- Logic Polling ---
+  const fetchOrderDetailCallback = useCallback(
+    async (isPolling = false) => {
+      // Không hiển thị loading toàn trang khi polling
+      // if (!isPolling) setLoading(true);
 
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(
-        `http://localhost:8000/api/orders/${id}`,
-        {
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await axiosInstance.get(`/orders/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
           withCredentials: true,
-        }
-      );
+        });
 
-      if (response.data.status === "success") {
-        setOrder(response.data.data);
-        if (!isPolling) setError(null); // Chỉ xóa lỗi chính khi tải lần đầu thành công
-      } else {
-        // Xử lý trường hợp API trả về status không phải success
-        console.warn("API không trả về success khi lấy chi tiết đơn hàng:", response.data);
-        if (!isPolling) setError("Không thể tải thông tin đơn hàng.");
+        if (response.data.status === "success") {
+          setOrder(response.data.data);
+          if (!isPolling) setError(null); // Chỉ xóa lỗi chính khi tải lần đầu thành công
+        } else {
+          // Xử lý trường hợp API trả về status không phải success
+          console.warn(
+            "API không trả về success khi lấy chi tiết đơn hàng:",
+            response.data
+          );
+          if (!isPolling) setError("Không thể tải thông tin đơn hàng.");
+        }
+      } catch (error) {
+        console.error(
+          "Lỗi khi lấy chi tiết đơn hàng (polling: " + isPolling + "):",
+          error
+        );
+        // Chỉ hiển thị lỗi toàn trang khi tải lần đầu thất bại
+        if (!isPolling) {
+          setError("Không thể tải thông tin đơn hàng. Vui lòng thử lại sau.");
+        }
+      } finally {
+        // Không tắt loading toàn trang khi polling
+        // if (!isPolling) setLoading(false);
       }
-    } catch (error) {
-      console.error("Lỗi khi lấy chi tiết đơn hàng (polling: " + isPolling + "):", error);
-      // Chỉ hiển thị lỗi toàn trang khi tải lần đầu thất bại
-      if (!isPolling) {
-        setError("Không thể tải thông tin đơn hàng. Vui lòng thử lại sau.");
-      }
-    } finally {
-      // Không tắt loading toàn trang khi polling
-      // if (!isPolling) setLoading(false);
-    }
-  }, [id]);
+    },
+    [id]
+  );
 
   // useEffect cho lần tải đầu tiên
   useEffect(() => {
@@ -74,8 +83,14 @@ const OrderDetail = () => {
   useEffect(() => {
     // Điều kiện dừng polling
     const finalOrderStates = ["Đã Nhận", "Hủy Đơn"];
-    const finalRefundStates = ["completed", "rejected", "đã hoàn tiền", "từ chối"]; // lowercase
-    const latestRefundStatus = order?.refund_request?.[0]?.status?.toLowerCase();
+    const finalRefundStates = [
+      "completed",
+      "rejected",
+      "đã hoàn tiền",
+      "từ chối",
+    ]; // lowercase
+    const latestRefundStatus =
+      order?.refund_request?.[0]?.status?.toLowerCase();
     const isOrderInFinalState =
       finalOrderStates.includes(order?.order_status) ||
       (latestRefundStatus && finalRefundStates.includes(latestRefundStatus));
@@ -99,19 +114,170 @@ const OrderDetail = () => {
     // Chạy lại effect này nếu order thay đổi (để kiểm tra lại điều kiện dừng)
   }, [order, fetchOrderDetailCallback]);
 
-  // --- Kết thúc Logic Polling ---
+  // --- Tự động xác nhận sau 30 phút --- START ---
+  // Hàm thực hiện gọi API xác nhận
+  const performOrderConfirmation = useCallback(
+    async (isAutoConfirm = false) => {
+      // setLoading(true); // Cân nhắc hiển thị loading
+
+      try {
+        const token = localStorage.getItem("authToken");
+        // Lấy trạng thái mới nhất trước khi xác nhận (đề phòng race condition)
+        const latestOrderResponse = await axiosInstance.get(`/orders/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (
+          latestOrderResponse.data.status !== "success" ||
+          latestOrderResponse.data.data.order_status !== "Đã Giao"
+        ) {
+          console.log(
+            "Auto-confirmation skipped, status is no longer 'Đã Giao' or failed to fetch latest status."
+          );
+          // setLoading(false);
+          return; // Không xác nhận nếu trạng thái không còn là Đã Giao
+        }
+
+        // Chỉ hỏi nếu là xác nhận thủ công
+        if (
+          !isAutoConfirm &&
+          !window.confirm("Bạn đã nhận được hàng và muốn xác nhận?")
+        ) {
+          // setLoading(false);
+          return;
+        }
+
+        const response = await axiosInstance.post(
+          `/orders/${id}/confirm`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.status === "success") {
+          if (!isAutoConfirm) {
+            alert("Đã xác nhận nhận hàng thành công!");
+          } else {
+            console.log("Đơn hàng tự động xác nhận sau 30 phút.");
+            // Có thể thêm thông báo nhẹ nhàng hơn alert
+          }
+          // Cập nhật lại thông tin đơn hàng cục bộ
+          setOrder(response.data.data); // Sử dụng data trả về từ API confirm
+        } else {
+          // Xử lý lỗi từ API confirm
+          if (!isAutoConfirm) {
+            alert(response.data.message || "Không thể xác nhận đơn hàng.");
+          } else {
+            console.error("Lỗi tự động xác nhận:", response.data.message);
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Lỗi khi xác nhận đơn hàng:",
+          error.response?.data || error.message
+        );
+        if (!isAutoConfirm) {
+          alert("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.");
+        } // Lỗi tự động thì log
+      } finally {
+        // setLoading(false);
+      }
+    },
+    [id]
+  ); // Thêm id vào dependencies
+
+  // --- Tự động xác nhận sau 24 giờ --- START ---
+  // useEffect để thiết lập timer tự động xác nhận
+  useEffect(() => {
+    // Hàm cleanup để xóa timer cũ
+    const clearExistingTimer = () => {
+      if (autoConfirmTimerIdRef.current) {
+        clearTimeout(autoConfirmTimerIdRef.current);
+        autoConfirmTimerIdRef.current = null;
+        console.log("Cleared previous auto-confirm timer.");
+      }
+    };
+
+    if (order && order.order_status === "Đã Giao" && !autoConfirmTimerSet) {
+      // console.log("Order is 'Đã Giao'. Checking for auto-confirmation.");
+      // Giả định updated_at là thời điểm chuyển sang "Đã Giao"
+      const deliveredTime = new Date(order.updated_at).getTime();
+      const currentTime = new Date().getTime();
+      const timeSinceDelivered = currentTime - deliveredTime;
+      const autoConfirmDelayMs = 24 * 60 * 60 * 1000; // 24 giờ
+
+      if (timeSinceDelivered >= autoConfirmDelayMs) {
+        console.log(
+          "Order delivered more than 30 mins ago. Triggering auto-confirm."
+        );
+        // Dùng setTimeout 0 để đẩy ra khỏi luồng render hiện tại
+        clearExistingTimer(); // Xóa timer cũ nếu có
+        // Không cần set timer, gọi trực tiếp (hoặc qua setTimeout 0)
+        performOrderConfirmation(true); // Gọi xác nhận tự động
+        setAutoConfirmTimerSet(true); // Đánh dấu đã xử lý
+      } else {
+        const remainingDelay = autoConfirmDelayMs - timeSinceDelivered;
+        console.log(
+          `Setting auto-confirm timer for ${Math.round(
+            remainingDelay / 1000
+          )} seconds.`
+        );
+        clearExistingTimer(); // Xóa timer cũ trước khi set timer mới
+        autoConfirmTimerIdRef.current = setTimeout(() => {
+          performOrderConfirmation(true); // Gọi xác nhận tự động
+        }, remainingDelay);
+        setAutoConfirmTimerSet(true); // Đánh dấu đã set timer
+      }
+    } else if (order && order.order_status !== "Đã Giao") {
+      // Nếu trạng thái không còn là Đã Giao, xóa timer và reset cờ
+      clearExistingTimer();
+      if (autoConfirmTimerSet) {
+        setAutoConfirmTimerSet(false);
+      }
+    }
+
+    // Hàm cleanup chính của useEffect
+    return () => {
+      clearExistingTimer();
+    };
+    // Thêm performOrderConfirmation vào dependencies
+  }, [order, autoConfirmTimerSet, performOrderConfirmation]);
+  // --- Tự động xác nhận sau 30 phút --- END ---
 
   // Chuyển đổi mã trạng thái thanh toán thành text và màu sắc
   const getPaymentStatusInfo = (statusCode) => {
     switch (statusCode) {
       case 0:
-        return { text: "Chưa thanh toán", color: "text-yellow-600", bgColor: "bg-yellow-100", icon: <FiClock className="w-5 h-5" /> };
+        return {
+          text: "Chưa thanh toán",
+          color: "text-yellow-600",
+          bgColor: "bg-yellow-100",
+          icon: <FiClock className="w-5 h-5" />,
+        };
       case 1:
-        return { text: "Đã thanh toán", color: "text-green-600", bgColor: "bg-green-100", icon: <FiCheckCircle className="w-5 h-5" /> };
+        return {
+          text: "Đã thanh toán",
+          color: "text-green-600",
+          bgColor: "bg-green-100",
+          icon: <FiCheckCircle className="w-5 h-5" />,
+        };
       case 2:
-        return { text: "Đang chờ thanh toán", color: "text-blue-600", bgColor: "bg-blue-100", icon: <FiRefreshCw className="w-5 h-5" /> };
+        return {
+          text: "Đang chờ thanh toán",
+          color: "text-blue-600",
+          bgColor: "bg-blue-100",
+          icon: <FiRefreshCw className="w-5 h-5" />,
+        };
       default:
-        return { text: "Không xác định", color: "text-gray-600", bgColor: "bg-gray-100", icon: <FiAlertCircle className="w-5 h-5" /> };
+        return {
+          text: "Không xác định",
+          color: "text-gray-600",
+          bgColor: "bg-gray-100",
+          icon: <FiAlertCircle className="w-5 h-5" />,
+        };
     }
   };
 
@@ -119,25 +285,65 @@ const OrderDetail = () => {
   const getOrderStatusInfo = (status) => {
     switch (status) {
       case "Đang Xử Lý":
-        return { color: "text-blue-600", bgColor: "bg-blue-100", icon: <FiRefreshCw className="w-5 h-5" /> };
+        return {
+          color: "text-blue-600",
+          bgColor: "bg-blue-100",
+          icon: <FiRefreshCw className="w-5 h-5" />,
+        };
       case "Chưa Xác Nhận":
-        return { color: "text-yellow-600", bgColor: "bg-yellow-100", icon: <FiClock className="w-5 h-5" /> };
+        return {
+          color: "text-yellow-600",
+          bgColor: "bg-yellow-100",
+          icon: <FiClock className="w-5 h-5" />,
+        };
       case "Đã Xác Nhận":
-        return { color: "text-purple-600", bgColor: "bg-purple-100", icon: <FiCheckCircle className="w-5 h-5" /> };
+        return {
+          color: "text-purple-600",
+          bgColor: "bg-purple-100",
+          icon: <FiCheckCircle className="w-5 h-5" />,
+        };
       case "Đang Chuẩn Bị Hàng":
-        return { color: "text-blue-600", bgColor: "bg-blue-100", icon: <FiPackage className="w-5 h-5" /> };
+        return {
+          color: "text-blue-600",
+          bgColor: "bg-blue-100",
+          icon: <FiPackage className="w-5 h-5" />,
+        };
       case "Đang Giao":
-        return { color: "text-amber-600", bgColor: "bg-amber-100", icon: <FiTruck className="w-5 h-5" /> };
+        return {
+          color: "text-amber-600",
+          bgColor: "bg-amber-100",
+          icon: <FiTruck className="w-5 h-5" />,
+        };
       case "Đã Giao":
-        return { color: "text-green-600", bgColor: "bg-green-100", icon: <FiTruck className="w-5 h-5" /> };
+        return {
+          color: "text-green-600",
+          bgColor: "bg-green-100",
+          icon: <FiTruck className="w-5 h-5" />,
+        };
       case "Đã Nhận":
-        return { color: "text-green-600", bgColor: "bg-green-100", icon: <FiCheckCircle className="w-5 h-5" /> };
+        return {
+          color: "text-green-600",
+          bgColor: "bg-green-100",
+          icon: <FiCheckCircle className="w-5 h-5" />,
+        };
       case "Hủy Đơn":
-        return { color: "text-red-600", bgColor: "bg-red-100", icon: <FiXCircle className="w-5 h-5" /> };
+        return {
+          color: "text-red-600",
+          bgColor: "bg-red-100",
+          icon: <FiXCircle className="w-5 h-5" />,
+        };
       case "Hoàn Hàng":
-        return { color: "text-orange-600", bgColor: "bg-orange-100", icon: <FiPackage className="w-5 h-5" /> };
+        return {
+          color: "text-orange-600",
+          bgColor: "bg-orange-100",
+          icon: <FiPackage className="w-5 h-5" />,
+        };
       default:
-        return { color: "text-gray-600", bgColor: "bg-gray-100", icon: <FiInfo className="w-5 h-5" /> };
+        return {
+          color: "text-gray-600",
+          bgColor: "bg-gray-100",
+          icon: <FiInfo className="w-5 h-5" />,
+        };
     }
   };
 
@@ -152,7 +358,10 @@ const OrderDetail = () => {
     }
 
     return variant.variant_details.map((detail, index) => (
-      <div key={index} className="text-sm text-gray-600 inline-flex items-center mr-3">
+      <div
+        key={index}
+        className="text-sm text-gray-600 inline-flex items-center mr-3"
+      >
         <span className="font-medium mr-1">{detail.name}:</span> {detail.value}
       </div>
     ));
@@ -167,8 +376,8 @@ const OrderDetail = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        `http://localhost:8000/api/orders/${id}/cancel`,
+      const response = await axiosInstance.post(
+        `/orders/${id}/cancel`,
         {},
         {
           headers: {
@@ -191,34 +400,9 @@ const OrderDetail = () => {
     }
   };
 
-  // Xử lý xác nhận đã nhận hàng
+  // Xử lý xác nhận đã nhận hàng (thủ công)
   const handleConfirmOrder = async () => {
-    if (!window.confirm("Bạn đã nhận được hàng và muốn xác nhận?")) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        `http://localhost:8000/api/orders/${id}/confirm`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.status === "success") {
-        alert("Đã xác nhận nhận hàng thành công!");
-        // Cập nhật lại thông tin đơn hàng
-        const updatedOrder = { ...order, order_status: "Đã Nhận" };
-        setOrder(updatedOrder);
-      }
-    } catch (error) {
-      console.error("Lỗi khi xác nhận đơn hàng:", error);
-      alert("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.");
-    }
+    await performOrderConfirmation(false); // false = xác nhận thủ công
   };
 
   // Xử lý yêu cầu hoàn hàng
@@ -229,8 +413,8 @@ const OrderDetail = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        `http://localhost:8000/api/orders/${id}/request-refund`,
+      const response = await axiosInstance.post(
+        `/orders/${id}/request-refund`,
         { reason },
         {
           headers: {
@@ -244,19 +428,67 @@ const OrderDetail = () => {
         // Cập nhật state với yêu cầu hoàn hàng (dưới dạng mảng)
         setOrder({
           ...order,
-          refund_request: [{
-            status: "pending", // Giả sử trạng thái ban đầu là pending
-            reason: reason,
-            created_at: new Date().toISOString()
-          }]
+          refund_request: [
+            {
+              status: "pending", // Giả sử trạng thái ban đầu là pending
+              reason: reason,
+              created_at: new Date().toISOString(),
+            },
+          ],
         });
       }
     } catch (error) {
       console.error("Lỗi khi yêu cầu hoàn hàng:", error);
       alert(
         error.response?.data?.message ||
-        "Không thể gửi yêu cầu hoàn hàng. Vui lòng thử lại sau."
+          "Không thể gửi yêu cầu hoàn hàng. Vui lòng thử lại sau."
       );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xử lý thanh toán lại
+  const handleRetryPayment = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("authToken");
+      const response = await axiosInstance.post(
+        `/payment-method/retry/${id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("Response từ API thanh toán lại:", response);
+
+      // Kiểm tra phản hồi và chuyển hướng
+      if (response.data.status === "success" && response.data.payUrl) {
+        // Nếu backend trả về payUrl
+        window.location.href = response.data.payUrl;
+      } else if (response.data.message === "success" && response.data.data) {
+        // Nếu backend trả về data (trường hợp VNPAY)
+        window.location.href = response.data.data;
+      } else if (response.data.payUrl) {
+        // Nếu backend chỉ trả về payUrl (trường hợp MoMo có thể)
+        window.location.href = response.data.payUrl;
+      } else {
+        // Hiển thị thông báo lỗi cụ thể hơn nếu có
+        alert(
+          response.data.message ||
+            "Không thể lấy link thanh toán lại. Vui lòng kiểm tra console."
+        );
+        console.error(
+          "API response không chứa URL thanh toán hợp lệ:",
+          response.data
+        );
+      }
+    } catch (error) {
+      console.error("Lỗi khi thanh toán lại:", error);
+      alert("Không thể thanh toán lại. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -310,7 +542,12 @@ const OrderDetail = () => {
           <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
             <motion.div
               initial={{ width: 0 }}
-              animate={{ width: `${Math.min(100, (currentStep / refundSteps.length) * 100)}%` }}
+              animate={{
+                width: `${Math.min(
+                  100,
+                  (currentStep / refundSteps.length) * 100
+                )}%`,
+              }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-orange-500"
             ></motion.div>
@@ -319,15 +556,25 @@ const OrderDetail = () => {
             {refundSteps.map((step, index) => (
               <div
                 key={step.id}
-                className={`flex flex-col items-center ${currentStep >= step.id ? "text-orange-600" : "text-gray-400"}`}
+                className={`flex flex-col items-center ${
+                  currentStep >= step.id ? "text-orange-600" : "text-gray-400"
+                }`}
               >
-                <div className={`
+                <div
+                  className={`
                   rounded-full h-8 w-8 flex items-center justify-center border-2 mb-1
-                  ${currentStep >= step.id ? "border-orange-500 bg-orange-100" : "border-gray-300"}
-                `}>
+                  ${
+                    currentStep >= step.id
+                      ? "border-orange-500 bg-orange-100"
+                      : "border-gray-300"
+                  }
+                `}
+                >
                   {step.icon}
                 </div>
-                <span className="text-xs font-medium text-center">{step.name}</span>
+                <span className="text-xs font-medium text-center">
+                  {step.name}
+                </span>
               </div>
             ))}
           </div>
@@ -339,9 +586,12 @@ const OrderDetail = () => {
   // Hiển thị tiến trình đơn hàng
   const renderOrderProgress = (status) => {
     // Nếu có yêu cầu hoàn tiền (là mảng và không rỗng), hiển thị thanh tiến trình hoàn tiền
-    if (Array.isArray(order.refund_request) && order.refund_request.length > 0) {
+    if (
+      Array.isArray(order.refund_request) &&
+      order.refund_request.length > 0
+    ) {
       // Lấy trạng thái từ yêu cầu hoàn tiền đầu tiên (giả định chỉ có 1 yêu cầu active)
-      const currentRefundStatus = order.refund_request[0]?.status || 'pending';
+      const currentRefundStatus = order.refund_request[0]?.status || "pending";
       return renderRefundProgress(currentRefundStatus);
     }
 
@@ -357,17 +607,33 @@ const OrderDetail = () => {
     let currentStep = 0;
 
     switch (status) {
-      case "Chưa Xác Nhận": currentStep = 1; break;
-      case "Đã Xác Nhận": currentStep = 2; break;
-      case "Đang Chuẩn Bị Hàng": currentStep = 3; break;
-      case "Đang Giao": currentStep = 4; break;
-      case "Đã Giao": currentStep = 5; break;
-      case "Đã Nhận": currentStep = 6; break;
-      case "Đang Xử Lý": currentStep = 1; break;
+      case "Chưa Xác Nhận":
+        currentStep = 1;
+        break;
+      case "Đã Xác Nhận":
+        currentStep = 2;
+        break;
+      case "Đang Chuẩn Bị Hàng":
+        currentStep = 3;
+        break;
+      case "Đang Giao":
+        currentStep = 4;
+        break;
+      case "Đã Giao":
+        currentStep = 5;
+        break;
+      case "Đã Nhận":
+        currentStep = 6;
+        break;
+      case "Đang Xử Lý":
+        currentStep = 1;
+        break;
       case "Hủy Đơn":
       case "Hoàn Hàng":
-        currentStep = -1; break;
-      default: currentStep = 0;
+        currentStep = -1;
+        break;
+      default:
+        currentStep = 0;
     }
 
     return (
@@ -386,7 +652,12 @@ const OrderDetail = () => {
             <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, (currentStep / steps.length) * 100)}%` }}
+                animate={{
+                  width: `${Math.min(
+                    100,
+                    (currentStep / steps.length) * 100
+                  )}%`,
+                }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-amber-500"
               ></motion.div>
@@ -395,13 +666,20 @@ const OrderDetail = () => {
               {steps.map((step, index) => (
                 <div
                   key={step.id}
-                  className={`flex flex-col items-center ${currentStep >= step.id ? "text-amber-600" : "text-gray-400"
-                    }`}
+                  className={`flex flex-col items-center ${
+                    currentStep >= step.id ? "text-amber-600" : "text-gray-400"
+                  }`}
                 >
-                  <div className={`
+                  <div
+                    className={`
                     rounded-full h-8 w-8 flex items-center justify-center border-2 mb-1
-                    ${currentStep >= step.id ? "border-amber-500 bg-amber-100" : "border-gray-300"}
-                  `}>
+                    ${
+                      currentStep >= step.id
+                        ? "border-amber-500 bg-amber-100"
+                        : "border-gray-300"
+                    }
+                  `}
+                  >
                     {step.icon}
                   </div>
                   <span className="text-xs font-medium">{step.name}</span>
@@ -434,7 +712,9 @@ const OrderDetail = () => {
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           className="rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-4"
         ></motion.div>
-        <p className="text-gray-600 animate-pulse">Đang tải thông tin đơn hàng...</p>
+        <p className="text-gray-600 animate-pulse">
+          Đang tải thông tin đơn hàng...
+        </p>
       </div>
     );
   }
@@ -449,7 +729,9 @@ const OrderDetail = () => {
       >
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-8 text-center">
           <FiAlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <p className="text-red-500 text-lg mb-6">{error || "Không tìm thấy đơn hàng"}</p>
+          <p className="text-red-500 text-lg mb-6">
+            {error || "Không tìm thấy đơn hàng"}
+          </p>
           <Link
             to="/account/list_order"
             className="inline-flex items-center px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition duration-200"
@@ -474,7 +756,8 @@ const OrderDetail = () => {
     const latestRefundStatus = order.refund_request[0]?.status?.toLowerCase();
     if (latestRefundStatus === "rejected" || latestRefundStatus === "từ chối") {
       isRefundRejected = true;
-    } else if (latestRefundStatus) { // Các trạng thái khác (pending, accepted, completed)
+    } else if (latestRefundStatus) {
+      // Các trạng thái khác (pending, accepted, completed)
       isRefundActive = true;
     }
   }
@@ -505,9 +788,16 @@ const OrderDetail = () => {
           <div className="flex items-center space-x-2">
             <FiHome className="text-gray-500" />
             <span className="text-gray-500">/</span>
-            <Link to="/account" className="text-gray-500 hover:text-amber-500">Tài khoản</Link>
+            <Link to="/account" className="text-gray-500 hover:text-amber-500">
+              Tài khoản
+            </Link>
             <span className="text-gray-500">/</span>
-            <Link to="/account/list_order" className="text-gray-500 hover:text-amber-500">Đơn hàng</Link>
+            <Link
+              to="/account/list_order"
+              className="text-gray-500 hover:text-amber-500"
+            >
+              Đơn hàng
+            </Link>
             <span className="text-gray-500">/</span>
             <span className="text-gray-700">Chi tiết</span>
           </div>
@@ -527,10 +817,21 @@ const OrderDetail = () => {
               </h1>
               <div className="flex items-center text-gray-600">
                 <FiCalendar className="mr-2" />
-                <span>Ngày đặt: {new Date(order.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                <span>
+                  Ngày đặt:{" "}
+                  {new Date(order.created_at).toLocaleDateString("vi-VN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
               </div>
             </div>
-            <div className={`mt-4 lg:mt-0 px-4 py-2 rounded-full ${orderStatusInfo.bgColor} ${orderStatusInfo.color} flex items-center`}>
+            <div
+              className={`mt-4 lg:mt-0 px-4 py-2 rounded-full ${orderStatusInfo.bgColor} ${orderStatusInfo.color} flex items-center`}
+            >
               {orderStatusInfo.icon}
               <span className="ml-2 font-medium">{effectiveOrderStatus}</span>
             </div>
@@ -550,24 +851,28 @@ const OrderDetail = () => {
                 Hủy đơn hàng
               </button>
             )}
-            {order?.order_status === "Đã Giao" && !isRefundActive && !isRefundRejected && (
-              <button
-                onClick={handleConfirmOrder}
-                className="px-4 py-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-lg transition-colors flex items-center"
-              >
-                <FiCheckCircle className="mr-2" />
-                Xác nhận đã nhận hàng
-              </button>
-            )}
-            {(order?.order_status === "Đã Giao") && !isRefundActive && !isRefundRejected && (
-              <button
-                onClick={handleRequestRefund}
-                className="px-4 py-2 bg-orange-100 text-orange-600 hover:bg-orange-200 rounded-lg transition-colors flex items-center"
-              >
-                <FiRefreshCw className="mr-2" />
-                Yêu cầu hoàn hàng
-              </button>
-            )}
+            {order?.order_status === "Đã Giao" &&
+              !isRefundActive &&
+              !isRefundRejected && (
+                <button
+                  onClick={handleConfirmOrder}
+                  className="px-4 py-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-lg transition-colors flex items-center"
+                >
+                  <FiCheckCircle className="mr-2" />
+                  Xác nhận đã nhận hàng
+                </button>
+              )}
+            {order?.order_status === "Đã Giao" &&
+              !isRefundActive &&
+              !isRefundRejected && (
+                <button
+                  onClick={handleRequestRefund}
+                  className="px-4 py-2 bg-orange-100 text-orange-600 hover:bg-orange-200 rounded-lg transition-colors flex items-center"
+                >
+                  <FiRefreshCw className="mr-2" />
+                  Yêu cầu hoàn hàng
+                </button>
+              )}
           </div>
         </motion.div>
 
@@ -591,21 +896,31 @@ const OrderDetail = () => {
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div className="mb-4">
-                    <h3 className="text-sm font-medium text-gray-500 mb-2">PHƯƠNG THỨC THANH TOÁN</h3>
+                    <h3 className="text-sm font-medium text-gray-500 mb-2">
+                      PHƯƠNG THỨC THANH TOÁN
+                    </h3>
                     <p className="flex items-center">
-                      <span className={`inline-block w-3 h-3 rounded-full mr-2 ${paymentStatusInfo.bgColor}`}></span>
-                      <span>{order.payment_method.name} - {paymentStatusInfo.text}</span>
+                      <span
+                        className={`inline-block w-3 h-3 rounded-full mr-2 ${paymentStatusInfo.bgColor}`}
+                      ></span>
+                      <span>
+                        {order.payment_method.name} - {paymentStatusInfo.text}
+                      </span>
                     </p>
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-2">TRẠNG THÁI ĐƠN HÀNG</h3>
+                    <h3 className="text-sm font-medium text-gray-500 mb-2">
+                      TRẠNG THÁI ĐƠN HÀNG
+                    </h3>
                     <p>{order.order_status}</p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">THÔNG TIN GIAO HÀNG</h3>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">
+                    THÔNG TIN GIAO HÀNG
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex">
                       <FiUser className="text-gray-400 mt-1 mr-3 flex-shrink-0" />
@@ -647,9 +962,10 @@ const OrderDetail = () => {
                   <div key={item.id} className="p-6 flex flex-col sm:flex-row">
                     <div className="sm:w-20 sm:h-20 h-32 w-full mb-4 sm:mb-0 sm:mr-4 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
                       <img
-                        src={item.image_url
-                          ? `http://localhost:8000/storage/${item.image_url}`
-                          : "https://via.placeholder.com/80"
+                        src={
+                          item.image_url
+                            ? `http://localhost:8000/storage/${item.image_url}`
+                            : "https://via.placeholder.com/80"
                         }
                         alt={item.product_name}
                         className="w-full h-full object-cover object-center"
@@ -674,7 +990,8 @@ const OrderDetail = () => {
                             </div>
                           )}
                           <div className="mt-1 text-gray-600">
-                            Số lượng: {item.quantity} × {formatCurrency(item.price)}
+                            Số lượng: {item.quantity} ×{" "}
+                            {formatCurrency(item.price)}
                           </div>
                         </div>
                         <div className="mt-2 sm:mt-0 text-lg font-semibold text-amber-600">
@@ -721,19 +1038,26 @@ const OrderDetail = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-medium">Tổng cộng:</span>
                   <span className="text-xl font-bold text-amber-600">
-                    {formatCurrency(order.total_price - (order.discount_amount || 0))}
+                    {formatCurrency(
+                      order.total_price - (order.discount_amount || 0)
+                    )}
                   </span>
                 </div>
               </div>
 
-              {order.payment_status !== 1 && order.payment_method.payment_type === 'online' && (
-                <div className="mt-6">
-                  <button className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors flex items-center justify-center">
-                    <FiRefreshCw className="mr-2" />
-                    Thanh toán lại
-                  </button>
-                </div>
-              )}
+              {order.payment_status !== 1 &&
+                (order.payment_method.name === "MoMo" ||
+                  order.payment_method.name === "VNPAY") && (
+                  <div className="mt-6">
+                    <button
+                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors flex items-center justify-center"
+                      onClick={handleRetryPayment}
+                    >
+                      <FiRefreshCw className="mr-2" />
+                      Thanh toán lại
+                    </button>
+                  </div>
+                )}
             </div>
           </motion.div>
         </div>

@@ -237,5 +237,157 @@
                     }, 200); // Thêm độ trễ để đảm bảo sự kiện Enter được xử lý trước
                 });
             });
+
+            const addBlock = $('#addCategoryBlock');
+            const editBlock = $('#editCategoryBlock');
+            const editForm = $('#editCategoryForm');
+            const editNameInput = $('#edit_name');
+            const editSpacesSelect = $('#edit_spaces');
+            const editCategoryIdInput = $('#edit_category_id'); // Input ẩn lưu ID
+            const cancelEditBtn = $('#cancelEditBtn');
+
+            // Xử lý khi click nút Sửa
+            $('.edit-trigger').on('click', function() {
+                const categoryId = $(this).data('id');
+                const getDataUrl = `/admin/categories/${categoryId}/data`;
+
+                $.ajax({
+                    url: getDataUrl,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            const categoryData = response.data;
+
+                            // Điền tên
+                            editNameInput.val(categoryData.name);
+                            editCategoryIdInput.val(categoryData.id);
+
+                            // --- Xử lý Select Multiple ---
+                            // Reset lựa chọn cũ trên select multiple
+                            editSpacesSelect.val(null); // Đặt giá trị là null để xóa các lựa chọn
+
+                            // Chọn các options tương ứng với categoryData.spaces
+                            if (categoryData.spaces && Array.isArray(categoryData.spaces)) {
+                                editSpacesSelect.val(categoryData.spaces);
+                            }
+
+                            // Nếu bạn dùng choices.js, bạn cần cập nhật nó sau khi thay đổi giá trị
+                            // Ví dụ:
+                            // const choicesInstance = editSpacesSelect[0].choices; // Lấy instance choices.js
+                            // if (choicesInstance) {
+                            //    choicesInstance.clearStore(); // Xóa cache
+                            //    choicesInstance.setChoiceByValue(categoryData.spaces); // Đặt lại giá trị
+                            // } else {
+                                   // Nếu không dùng choices.js, trình duyệt tự xử lý .val() cho select multiple
+                            // }
+
+
+                            // Cập nhật action form
+                            const updateUrl = `/admin/categories/${categoryData.id}`;
+                            editForm.attr('action', updateUrl);
+
+                            // Hiển thị form sửa
+                            addBlock.hide();
+                            editBlock.show();
+                            $('html, body').animate({ scrollTop: editBlock.offset().top - 100 }, 500);
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: response.message || 'Không thể lấy dữ liệu danh mục.',
+                            });
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                         console.error("AJAX error:", textStatus, errorThrown);
+                         Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Có lỗi xảy ra khi kết nối đến máy chủ.',
+                        });
+                    }
+                });
+            });
+
+            // Xử lý khi click nút Hủy
+            cancelEditBtn.on('click', function() {
+                editBlock.hide();
+                addBlock.show();
+                editForm[0].reset();
+                editSpacesSelect.val(null); // Reset select multiple
+                // Nếu dùng choices.js, cũng cần reset nó
+                // const choicesInstance = editSpacesSelect[0].choices;
+                // if (choicesInstance) { choicesInstance.clearStore(); choicesInstance.clearInput(); }
+                editForm.attr('action', '');
+            });
+
+            // Xử lý nếu có lỗi validation khi update
+            const editIdOnError = @json(session('edit_id'));
+            const hasUpdateErrors = @json($errors->update->isNotEmpty());
+
+            if (editIdOnError && hasUpdateErrors) {
+                editNameInput.val(@json(old('name')));
+                editCategoryIdInput.val(editIdOnError);
+                // Lấy lại giá trị spaces cũ và chọn lại select multiple
+                const oldSpaces = @json(old('spaces', [])); // Lấy mảng spaces cũ
+                 editSpacesSelect.val(oldSpaces);
+                // Nếu dùng choices.js, cập nhật lại
+                // const choicesInstance = editSpacesSelect[0].choices;
+                // if (choicesInstance) { choicesInstance.setChoiceByValue(oldSpaces); }
+
+
+                const updateUrl = `/admin/categories/${editIdOnError}`;
+                editForm.attr('action', updateUrl);
+
+                addBlock.hide();
+                editBlock.show();
+            }
+
+            // Xử lý xóa (giữ nguyên logic xóa cũ của bạn, thường là dùng SweetAlert và AJAX/Form submit)
+            $('.delete-item').on('click', function() {
+                const categoryId = $(this).data('id');
+                const deleteUrl = `/admin/categories/${categoryId}`;
+
+                Swal.fire({
+                    title: 'Bạn chắc chắn muốn xóa?',
+                    text: "Danh mục sẽ bị chuyển vào thùng rác!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Đồng ý, xóa!',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                         // Tạo form ẩn để submit DELETE request
+                         const form = document.createElement('form');
+                         form.method = 'POST';
+                         form.action = deleteUrl;
+
+                         const csrfInput = document.createElement('input');
+                         csrfInput.type = 'hidden';
+                         csrfInput.name = '_token';
+                         csrfInput.value = '{{ csrf_token() }}'; // Lấy CSRF token từ Blade
+                         form.appendChild(csrfInput);
+
+                         const methodInput = document.createElement('input');
+                         methodInput.type = 'hidden';
+                         methodInput.name = '_method';
+                         methodInput.value = 'DELETE';
+                         form.appendChild(methodInput);
+
+                         document.body.appendChild(form);
+                         form.submit();
+                    }
+                });
+            });
+
+            // Khởi tạo tooltips (nếu dùng Bootstrap)
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+
         });
     </script>

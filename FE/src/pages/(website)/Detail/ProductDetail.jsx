@@ -14,7 +14,7 @@ import {
 } from "react-icons/io5";
 import { FaTruck, FaExchangeAlt, FaShieldAlt } from "react-icons/fa";
 import { toast, Toaster } from "react-hot-toast";
-
+import axiosInstance from "../../../utils/axiosConfig";
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -150,7 +150,7 @@ const ProductDetail = () => {
           // Lỗi từ server
           setError(
             error.response.data.message ||
-              "Có lỗi xảy ra khi tải thông tin sản phẩm"
+            "Có lỗi xảy ra khi tải thông tin sản phẩm"
           );
         } else if (error.request) {
           // Lỗi không có phản hồi từ server
@@ -179,11 +179,61 @@ const ProductDetail = () => {
     checkReviewStatus();
   }, [id]);
 
+  // Kiểm tra và hiển thị dữ liệu comment đến console để debug
+  useEffect(() => {
+    if (comments.length > 0) {
+      console.log("Comments data:", comments);
+      // Kiểm tra cấu trúc avatar
+      comments.forEach((comment, index) => {
+        console.log(`Comment ${index} user avatar:`, comment.user?.avatar);
+      });
+    }
+  }, [comments]);
+
+  // Kiểm tra và hiển thị dữ liệu currentUser để debug
+  useEffect(() => {
+    if (currentUser) {
+      console.log("Current user data:", currentUser);
+      console.log("Current user avatar:", currentUser.avatar);
+      console.log("Processed avatar URL:", processAvatar(currentUser.avatar));
+    }
+  }, [currentUser]);
+
   // Hàm kiểm tra trạng thái đánh giá đơn giản
   const checkReviewStatus = () => {
     // Đặt giá trị mặc định
-    setCanReview(false); // Luôn ẩn phần đánh giá
+    setCanReview(false); // Mặc định ẩn phần đánh giá
     setCanComment(true); // Luôn cho phép bình luận
+    setPurchaseMessage("");
+
+    // Kiểm tra xem người dùng có token không
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      return; // Nếu chưa đăng nhập thì không cần gọi API
+    }
+
+    // Gọi API kiểm tra quyền đánh giá
+    axiosInstance.get(`/products/${id}/can-review`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        if (response.data && response.data.success) {
+          setCanReview(true); // Nếu API trả về thành công, cho phép đánh giá
+        } else if (response.data && response.data.message) {
+          setPurchaseMessage(response.data.message);
+        }
+      })
+      .catch(error => {
+        console.error("Lỗi khi kiểm tra quyền đánh giá:", error);
+        // Nếu có thông báo lỗi từ server, hiển thị
+        if (error.response && error.response.data && error.response.data.message) {
+          setPurchaseMessage(error.response.data.message);
+        } else {
+          setPurchaseMessage("Bạn cần mua và nhận sản phẩm này trước khi đánh giá");
+        }
+      });
 
     // Lấy danh sách đánh giá để hiển thị
     axios
@@ -301,6 +351,24 @@ const ProductDetail = () => {
       hour: "2-digit",
       minute: "2-digit",
     }).format(date);
+  };
+
+  // Hàm xử lý avatar đồng nhất với các trường hợp khác nhau
+  const processAvatar = (avatarPath) => {
+    if (!avatarPath) return null;
+
+    // Nếu avatar đã là URL đầy đủ (bắt đầu bằng http hoặc https)
+    if (avatarPath.startsWith('http')) {
+      return avatarPath;
+    }
+
+    // Nếu avatar bắt đầu bằng /storage/ (từ localStorage)
+    if (avatarPath.startsWith('/storage/')) {
+      return `http://localhost:8000${avatarPath}`;
+    }
+
+    // Nếu avatar là đường dẫn tương đối (không bắt đầu bằng /)
+    return `http://localhost:8000/storage/${avatarPath}`;
   };
 
   // Hiển thị số sao đánh giá
@@ -467,7 +535,10 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = async () => {
-    console.log("handleAddToCart: Checking token...", localStorage.getItem("authToken"));
+    console.log(
+      "handleAddToCart: Checking token...",
+      localStorage.getItem("authToken")
+    );
     const token = localStorage.getItem("authToken");
 
     if (!token) {
@@ -491,15 +562,11 @@ const ProductDetail = () => {
         quantity: quantity,
       };
 
-      const response = await axios.post(
-        "http://localhost:8000/api/cart/add",
-        cartData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.post("/cart/add", cartData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.status === 201) {
         // Lưu hoạt động của người dùng vào localStorage
@@ -547,9 +614,8 @@ const ProductDetail = () => {
         toast.custom(
           (t) => (
             <div
-              className={`${
-                t.visible ? "animate-enter" : "animate-leave"
-              } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+              className={`${t.visible ? "animate-enter" : "animate-leave"
+                } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
             >
               <div className="flex-1 w-0 p-4">
                 <div className="flex items-start">
@@ -564,8 +630,8 @@ const ProductDetail = () => {
                       {product.name}{" "}
                       {selectedVariantId
                         ? `(${Object.entries(selectedVariantAttributes)
-                            .map(([key, value]) => `${key}: ${value}`)
-                            .join(", ")})`
+                          .map(([key, value]) => `${key}: ${value}`)
+                          .join(", ")})`
                         : ""}
                     </p>
                   </div>
@@ -617,102 +683,55 @@ const ProductDetail = () => {
       return;
     }
 
-    setAddingToBuy(true);
+    // Lấy thông tin biến thể nếu có
+    const selectedVariant = selectedVariantId
+      ? product.variants?.find((v) => v.id === selectedVariantId)
+      : null;
 
-    try {
-      // Thêm vào giỏ hàng trước
-      const cartData = {
-        product_id: product.id,
-        product_variant_id: selectedVariantId,
-        quantity: quantity,
-      };
-
-      const response = await axios.post(
-        "http://localhost:8000/api/cart/add",
-        cartData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+    // Tạo dữ liệu sản phẩm để chuyển sang trang thanh toán
+    const productData = {
+      product: {
+        id: product.id,
+        name: product.name,
+        discount_price: product.discount_price ?? product.price,
+        price: product.price,
+        image_thumbnail: product.image_thumnail,
+      },
+      product_variant: selectedVariantId
+        ? {
+          id: selectedVariantId,
+          discount_price:
+            selectedVariant?.discount_price ?? selectedVariant?.price, // Lấy giá từ biến thể
+          price: selectedVariant?.price, // Lấy giá gốc từ biến thể
+          variant_details: selectedVariant?.variant_details || {},
         }
-      );
+        : null,
+      quantity: quantity,
+      total_price: selectedVariantId
+        ? (selectedVariant?.discount_price ?? selectedVariant?.price) * quantity // Tính tổng giá dựa trên giá của biến thể
+        : (product.discount_price ?? product.price) * quantity, // Tính tổng giá dựa trên giá của sản phẩm
+    };
 
-      if (response.status === 201) {
-        // Lưu hoạt động của người dùng vào localStorage
-        try {
-          const userActivities = JSON.parse(
-            localStorage.getItem("userActivities")
-          ) || {
-            viewedProducts: [],
-            searchedKeywords: [],
-            cartProducts: [],
-          };
+    console.log("productData", productData);
 
-          // Thêm sản phẩm vào cartProducts
-          const cartProduct = {
-            id: product.id,
-            name: product.name,
-            category: product.category?.name || "",
-            timestamp: new Date().toISOString(),
-          };
-
-          // Kiểm tra xem sản phẩm đã có trong cart chưa
-          const existingIndex = userActivities.cartProducts.findIndex(
-            (item) => item.id === product.id
-          );
-          if (existingIndex !== -1) {
-            // Cập nhật timestamp nếu sản phẩm đã tồn tại
-            userActivities.cartProducts[existingIndex].timestamp =
-              cartProduct.timestamp;
-          } else {
-            // Thêm mới nếu chưa tồn tại
-            userActivities.cartProducts.push(cartProduct);
-          }
-
-          localStorage.setItem(
-            "userActivities",
-            JSON.stringify(userActivities)
-          );
-
-          // Gửi sự kiện để thông báo userActivities đã được cập nhật
-          window.dispatchEvent(new CustomEvent("userActivitiesUpdated"));
-        } catch (error) {
-          console.error("Lỗi khi lưu hoạt động người dùng:", error);
-        }
-
-        // Chuyển tới trang thanh toán với các thông tin sản phẩm vừa thêm
-        navigate("/payment", {
-          state: {
-            selectedProducts: [enhancedCartItem],
-            total: enhancedCartItem.total_price,
-            buyNow: true,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Lỗi khi mua ngay:", error);
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("Có lỗi xảy ra khi xử lý mua ngay");
-      }
-    } finally {
-      setAddingToBuy(false);
-    }
+    navigate("/payment_buy_now", {
+      state: {
+        selectedProducts: [productData],
+        total: productData.total_price,
+        buyNow: true,
+      },
+    });
   };
 
   // Hàm gửi đánh giá
   const handleSubmitReview = async (e) => {
     e.preventDefault();
 
-    toast.error("Bạn cần mua và nhận sản phẩm này trước khi đánh giá");
-    return;
+    if (!canReview) {
+      toast.error(purchaseMessage || "Bạn cần mua và nhận sản phẩm này trước khi đánh giá");
+      return;
+    }
 
-    // Code bên dưới sẽ không được thực thi vì return ở trên
     if (!reviewText.trim()) {
       toast.error("Vui lòng nhập nội dung đánh giá");
       return;
@@ -741,16 +760,12 @@ const ProductDetail = () => {
         });
       }
 
-      const response = await axios.post(
-        "http://localhost:8000/api/reviews",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axiosInstance.post("/reviews", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.data && response.data.success) {
         // Reset input và hiển thị thông báo thành công
@@ -861,11 +876,10 @@ const ProductDetail = () => {
                           setSelectedVariantId(matchingVariant.id);
                         }
                       }}
-                      className={`px-3 py-1 rounded-md text-sm font-medium ${
-                        selectedVariantAttributes[variantName] === value
-                          ? "bg-amber-500 text-white"
-                          : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                      }`}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${selectedVariantAttributes[variantName] === value
+                        ? "bg-amber-500 text-white"
+                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                        }`}
                     >
                       {value}
                     </button>
@@ -952,11 +966,10 @@ const ProductDetail = () => {
         <div className="flex space-x-2 overflow-x-auto pb-2">
           <div
             onClick={() => setActiveImage(product.image_thumnail)}
-            className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden cursor-pointer border-2 ${
-              activeImage === product.image_thumnail
-                ? "border-amber-500"
-                : "border-transparent"
-            }`}
+            className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden cursor-pointer border-2 ${activeImage === product.image_thumnail
+              ? "border-amber-500"
+              : "border-transparent"
+              }`}
           >
             <img
               src={getImageUrl(product.image_thumnail)}
@@ -970,11 +983,10 @@ const ProductDetail = () => {
             <div
               key={index}
               onClick={() => setActiveImage(image.image_url)}
-              className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden cursor-pointer border-2 ${
-                activeImage === image.image_url
-                  ? "border-amber-500"
-                  : "border-transparent"
-              }`}
+              className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden cursor-pointer border-2 ${activeImage === image.image_url
+                ? "border-amber-500"
+                : "border-transparent"
+                }`}
             >
               <img
                 src={getImageUrl(image.image_url)}
@@ -1096,7 +1108,7 @@ const ProductDetail = () => {
                               <span className="px-2 py-1 text-xs font-semibold bg-red-50 text-red-600 rounded-md">
                                 {Math.round(
                                   (1 - getCurrentPrice() / getOriginalPrice()) *
-                                    100
+                                  100
                                 )}
                                 % giảm
                               </span>
@@ -1105,38 +1117,32 @@ const ProductDetail = () => {
                         </>
                       )}
                     </div>
-
-                    <p className="text-gray-600">
-                      {product.short_description || "Không có mô tả"}
-                    </p>
                   </div>
 
                   {/* Stock Status */}
                   <div className="py-6 border-b border-gray-100">
                     <div className="flex items-center">
                       <div
-                        className={`w-3 h-3 rounded-full mr-2 ${
-                          getStockQuantity() > 10
-                            ? "bg-green-500"
-                            : getStockQuantity() > 0
+                        className={`w-3 h-3 rounded-full mr-2 ${getStockQuantity() > 10
+                          ? "bg-green-500"
+                          : getStockQuantity() > 0
                             ? "bg-yellow-500"
                             : "bg-red-500"
-                        }`}
+                          }`}
                       ></div>
                       <span
-                        className={`font-medium ${
-                          getStockQuantity() > 10
-                            ? "text-green-600"
-                            : getStockQuantity() > 0
+                        className={`font-medium ${getStockQuantity() > 10
+                          ? "text-green-600"
+                          : getStockQuantity() > 0
                             ? "text-yellow-600"
                             : "text-red-600"
-                        }`}
+                          }`}
                       >
                         {getStockQuantity() > 10
                           ? "Còn hàng"
                           : getStockQuantity() > 0
-                          ? "Sắp hết hàng"
-                          : "Hết hàng"}
+                            ? "Sắp hết hàng"
+                            : "Hết hàng"}
                       </span>
                       {getStockQuantity() > 0 && (
                         <span className="ml-2 text-sm text-gray-500">
@@ -1204,11 +1210,10 @@ const ProductDetail = () => {
                     <button
                       onClick={handleAddToCart}
                       disabled={addingToCart || getStockQuantity() === 0}
-                      className={`flex-1 py-3 px-6 text-white font-medium rounded-lg flex items-center justify-center transition-colors ${
-                        addingToCart || getStockQuantity() === 0
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-amber-500 hover:bg-amber-600"
-                      }`}
+                      className={`flex-1 py-3 px-6 text-white font-medium rounded-lg flex items-center justify-center transition-colors ${addingToCart || getStockQuantity() === 0
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-amber-500 hover:bg-amber-600"
+                        }`}
                     >
                       {addingToCart ? (
                         <>
@@ -1228,11 +1233,10 @@ const ProductDetail = () => {
                     <button
                       onClick={handleBuyNow}
                       disabled={addingToBuy || getStockQuantity() === 0}
-                      className={`flex-1 py-3 px-6 text-white font-medium rounded-lg flex items-center justify-center transition-colors ${
-                        addingToBuy || getStockQuantity() === 0
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-green-600 hover:bg-green-700"
-                      }`}
+                      className={`flex-1 py-3 px-6 text-white font-medium rounded-lg flex items-center justify-center transition-colors ${addingToBuy || getStockQuantity() === 0
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700"
+                        }`}
                     >
                       {addingToBuy ? (
                         <>
@@ -1255,31 +1259,28 @@ const ProductDetail = () => {
               <div className="border-b border-gray-100">
                 <div className="flex overflow-x-auto scrollbar-hide">
                   <button
-                    className={`px-8 py-4 font-medium text-sm whitespace-nowrap ${
-                      activeTab === "description"
-                        ? "text-amber-500 border-b-2 border-amber-500"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`px-8 py-4 font-medium text-sm whitespace-nowrap ${activeTab === "description"
+                      ? "text-amber-500 border-b-2 border-amber-500"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                     onClick={() => setActiveTab("description")}
                   >
                     Mô tả sản phẩm
                   </button>
                   <button
-                    className={`px-8 py-4 font-medium text-sm whitespace-nowrap ${
-                      activeTab === "reviews"
-                        ? "text-amber-500 border-b-2 border-amber-500"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`px-8 py-4 font-medium text-sm whitespace-nowrap ${activeTab === "reviews"
+                      ? "text-amber-500 border-b-2 border-amber-500"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                     onClick={() => setActiveTab("reviews")}
                   >
                     Đánh giá sản phẩm ({reviews.length})
                   </button>
                   <button
-                    className={`px-8 py-4 font-medium text-sm whitespace-nowrap ${
-                      activeTab === "comments"
-                        ? "text-amber-500 border-b-2 border-amber-500"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`px-8 py-4 font-medium text-sm whitespace-nowrap ${activeTab === "comments"
+                      ? "text-amber-500 border-b-2 border-amber-500"
+                      : "text-gray-500 hover:text-gray-700"
+                      }`}
                     onClick={() => setActiveTab("comments")}
                   >
                     Bình luận ({comments.length})
@@ -1464,10 +1465,17 @@ const ProductDetail = () => {
                         </form>
                       </div>
                     ) : !currentUser ? (
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
-                        <p className="font-medium text-center text-amber-700">
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8 flex flex-col items-center justify-center text-center">
+                        <p className="font-medium text-amber-700 mb-4">
                           Vui lòng đăng nhập để đánh giá sản phẩm
                         </p>
+                        <button
+                          onClick={() => navigate("/sign-in")}
+                          className="px-6 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center"
+                        >
+                          <IoArrowForward className="mr-2" />
+                          Đăng nhập ngay
+                        </button>
                       </div>
                     ) : (
                       <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
@@ -1563,9 +1571,30 @@ const ProductDetail = () => {
                         </h3>
                         <form onSubmit={handleSubmitComment}>
                           <div className="flex gap-4">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-white font-medium text-lg shrink-0">
-                              {currentUser.name.charAt(0).toUpperCase()}
-                            </div>
+                            {/* === START EDIT: Show user avatar correctly === */}
+                            {
+                              currentUser && (
+                                currentUser.avatar ? (
+                                  <img
+                                    src={processAvatar(currentUser.avatar)}
+                                    alt={currentUser.name}
+                                    className="w-12 h-12 rounded-full object-cover border border-gray-200 shrink-0"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      const fallbackDiv = document.createElement('div');
+                                      fallbackDiv.className = "w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-white font-medium text-lg shrink-0";
+                                      fallbackDiv.textContent = currentUser.name.charAt(0).toUpperCase();
+                                      e.target.parentNode.replaceChild(fallbackDiv, e.target);
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-white font-medium text-lg shrink-0">
+                                    {currentUser.name.charAt(0).toUpperCase()}
+                                  </div>
+                                )
+                              )
+                            }
+                            {/* === END EDIT === */}
                             <div className="flex-1 relative">
                               <textarea
                                 value={commentInput}
@@ -1614,9 +1643,32 @@ const ProductDetail = () => {
                               className="border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow"
                             >
                               <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-white font-medium text-lg">
-                                  {comment.user.name.charAt(0).toUpperCase()}
-                                </div>
+                                {/* === START EDIT: Display user avatar in comments list === */}
+                                {
+                                  comment.user.avatar ? (
+                                    <img
+                                      // Avatar đã là URL đầy đủ từ API
+                                      src={processAvatar(comment.user.avatar)}
+                                      alt={comment.user.name}
+                                      className="w-12 h-12 rounded-full object-cover border border-gray-200" // Thêm object-cover và border
+                                      // Fallback nếu ảnh lỗi
+                                      onError={(e) => {
+                                        e.target.onerror = null; // Tránh lặp vô hạn nếu ảnh fallback cũng lỗi
+                                        // Thay bằng div hiển thị chữ cái đầu
+                                        const fallbackDiv = document.createElement('div');
+                                        fallbackDiv.className = "w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-white font-medium text-lg";
+                                        fallbackDiv.textContent = comment.user.name.charAt(0).toUpperCase();
+                                        e.target.parentNode.replaceChild(fallbackDiv, e.target);
+                                      }}
+                                    />
+                                  ) : (
+                                    // Fallback nếu user không có avatar
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-white font-medium text-lg">
+                                      {comment.user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                  )
+                                }
+                                {/* === END EDIT === */}
                                 <div className="flex-1">
                                   <div className="flex flex-wrap items-center gap-2 mb-2">
                                     <h3 className="text-gray-800 font-medium">

@@ -11,6 +11,7 @@ import About from "./pages/(website)/About/About";
 import BlogsDetail from "./pages/(website)/BlogDetail/BlogsDetail";
 import SignIn from "./pages/auth/SignIn/SignIn";
 import SignUp from "./pages/auth/SignUp/SignUp";
+import PaymentBuyNow from "./pages/(website)/Payment/PaymentBuyNow";
 
 // import CursorGlow from "./CursorGlow";
 // import VerifyEmail from "./pages/VerifyEmail/VerifyEmail";
@@ -26,15 +27,43 @@ import Account from "./pages/(website)/UserAccount/Account/Account";
 import Address from "./pages/(website)/UserAccount/Address/Address";
 import Edit_Pass from "./pages/(website)/UserAccount/Password/Edit_Pass";
 import ForgotPasswordModal from "./pages/auth/SignIn/ForgotPasswordModal";
-import ChatBot from "./components/ChatBot";
+import ModernChatBot from "./components/ChatBot";
+import Chat from "./components/ChatRealTime";
 import OrderSuccess from "./pages/(website)/OrderSuccess/OrderSuccess";
 import OrderHistory from "./pages/(website)/UserAccount/OrderHistory/OrderHistory";
 import { useEffect } from "react";
 import OrderDetail from "./pages/(website)/UserAccount/OrderHistory/OrderDetail";
+import OAuthCallback from "./pages/OAuthCallback/OAuthCallback";
+import { Toaster } from 'react-hot-toast';
+import NotificationsPage from "./pages/(website)/UserAccount/Notifications/NotificationsPage";
 
 function App() {
   return (
     <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#333',
+          },
+          success: {
+            duration: 2000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       {/* <CursorGlow /> */}
       <Routes>
         <Route path="/" element={<LayoutWebsite />}>
@@ -47,6 +76,7 @@ function App() {
           <Route path="blog-detail/:slug" element={<BlogsDetail />} />
           <Route path="about" element={<About />} />
           <Route path="payment" element={<Payment />} />
+          <Route path="payment_buy_now" element={<PaymentBuyNow />} />
           <Route path="order-success" element={<OrderSuccess />} />
           <Route path="account" element={<LayoutAccount />}>
             <Route index element={<Account />} />
@@ -54,6 +84,7 @@ function App() {
             <Route path="password" element={<Edit_Pass />} />
             <Route path="list_order" element={<OrderHistory />} />
             <Route path="order_detail/:id" element={<OrderDetail />} />
+            <Route path="notifications" element={<NotificationsPage />} />
           </Route>
         </Route>
         <Route path="/sign-in" element={<SignIn />} />
@@ -62,8 +93,10 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/confirm-password" element={<ConfirmPassword />} />
         <Route path="/forgot-password" element={<ForgotPasswordModal />} />
+        <Route path="/oauth-callback" element={<OAuthCallback />} />
       </Routes>
-      <ChatBot />
+      <ModernChatBot />
+      <Chat />
     </>
   );
 }
