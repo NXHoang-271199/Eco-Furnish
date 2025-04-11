@@ -65,13 +65,21 @@ class ProductVariant extends Model
     public function getVariantDetailsAttribute()
     {
         try {
+            \Log::info("Đang xử lý variant_details cho variant ID: " . $this->id);
+            
             $details = json_decode($this->attributes['variant_details'] ?? '{}', true);
-            if (!$details || !is_array($details)) return [];
+            \Log::info("Dữ liệu variant_details gốc:", ['details' => $details]);
+            
+            if (!$details || !is_array($details)) {
+                \Log::warning("variant_details không hợp lệ hoặc rỗng");
+                return [];
+            }
 
             $formattedDetails = [];
             
             // Kiểm tra nếu đã là mảng các đối tượng có name và value
             if (isset($details[0]) && isset($details[0]['name']) && isset($details[0]['value'])) {
+                \Log::info("variant_details đã ở định dạng name-value");
                 return $details;
             }
             
@@ -85,12 +93,21 @@ class ProductVariant extends Model
                         'name' => $variant->name,
                         'value' => $variantValue->value
                     ];
+                } else {
+                    \Log::warning("Không tìm thấy variant hoặc variant value", [
+                        'variant_id' => $variantId,
+                        'variant_value_id' => $variantValueId
+                    ]);
                 }
             }
 
+            \Log::info("Kết quả xử lý variant_details:", ['formatted_details' => $formattedDetails]);
             return $formattedDetails;
         } catch (\Exception $e) {
-            \Log::error('Error in getVariantDetailsAttribute: ' . $e->getMessage());
+            \Log::error("Lỗi trong getVariantDetailsAttribute: " . $e->getMessage(), [
+                'variant_id' => $this->id,
+                'error' => $e->getTraceAsString()
+            ]);
             return [];
         }
     }

@@ -1341,6 +1341,20 @@
                 
                 // Tạo các biến thể
                 $('#variants-container').empty();
+
+                // Lấy tên sản phẩm để tạo mã sản phẩm
+                let productCode = '';
+                const productName = document.getElementById('name').value;
+                if (productName) {
+                    // Tạo mã sản phẩm từ tên sản phẩm (lấy các chữ cái đầu của mỗi từ)
+                    productCode = productName
+                        .split(' ')
+                        .map(word => word.charAt(0))
+                        .join('')
+                        .toUpperCase();
+                } else {
+                    productCode = 'SKU';
+                }
                 
                 // Tạo biến thể cho mỗi tổ hợp
                 combinations.forEach((combination, index) => {
@@ -1349,10 +1363,21 @@
                     combination.forEach(item => {
                         variantDetails[item.variantId] = item.valueId;
                     });
+
+                    // Tạo SKU tự động
+                    let sku = productCode + '-';
+                    combination.forEach(item => {
+                        // Lấy 2 ký tự đầu của mỗi giá trị thuộc tính và loại bỏ dấu
+                        const valueWithoutAccent = removeVietnameseAccents(item.valueName);
+                        sku += valueWithoutAccent.substring(0, 2).toUpperCase();
+                    });
+                    
+                    // Thêm số ngẫu nhiên vào cuối SKU để đảm bảo không bị trùng lặp
+                    sku += '-' + Math.floor(100 + Math.random() * 100);
                     
                     // Tạo đối tượng biến thể mới
                     const variant = {
-                        sku: `SKU-${index + 1}`,
+                        sku: sku,
                         price: '',
                         discount_price: '',
                         quantity: '',

@@ -19,7 +19,7 @@ const Account = () => {
           console.log("Token không hợp lệ, chuyển hướng đến trang đăng nhập");
           localStorage.removeItem("authToken");
           localStorage.removeItem("userData");
-          navigate("/signin");
+          navigate("/sign-in");
           return;
         }
 
@@ -36,19 +36,19 @@ const Account = () => {
         const userData = JSON.parse(userDataStr);
 
         // Kiểm tra xem có email không
-        // if (!userData.email) {
-        //   console.error(
-        //     "Không tìm thấy email trong dữ liệu người dùng:",
-        //     userData
-        //   );
-        //   throw new Error("Không thể xác định ID người dùng");
-        // }
+        if (!userData.email) {
+          console.error(
+            "Không tìm thấy email trong dữ liệu người dùng:",
+            userData
+          );
+          throw new Error("Không thể xác định ID người dùng");
+        }
 
-        console.log("Email người dùng:", userData.email);
+        // console.log("Email người dùng:", userData.email);
 
         // Gọi API để lấy thông tin chi tiết của người dùng
         const response = await axios.get(
-          `http://127.0.0.1:8000/api/users/${userData.id}`,
+          `http://localhost:8000/api/users/${userData.id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -57,8 +57,6 @@ const Account = () => {
             },
           }
         );
-        console.log(response.data);
-
         console.log("Dữ liệu người dùng từ API:", response.data);
 
         // Cập nhật state với dữ liệu người dùng
@@ -82,17 +80,17 @@ const Account = () => {
 
           if (error.response.status === 401) {
             console.log(
-              "Token không hợp lệ hoặc hết hạn, đăng xuất và chuyển hướng"
+              "Token không hợp lệ hoặc hết hạn, chuyển hướng đến trang đăng nhập"
             );
             localStorage.removeItem("userData");
             localStorage.removeItem("authToken");
 
-            navigate("/signin");
+            navigate("/sign-in");
           }
 
           setError(
             error.response.data?.message ||
-              `Lỗi từ máy chủ: ${error.response.status}`
+            `Lỗi từ máy chủ: ${error.response.status}`
           );
         } else if (error.request) {
           console.error("Không nhận được phản hồi từ máy chủ");

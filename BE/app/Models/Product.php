@@ -24,6 +24,91 @@ class Product extends Model
     ];
 
     /**
+     * Các thuộc tính mặc định ẩn khi serialize thành JSON
+     */
+    protected $hidden = [
+        'updated_at',
+        'deleted_at',
+    ];
+
+    /**
+     * Các thuộc tính tính toán cần thêm vào JSON
+     */
+    protected $appends = [
+        'has_variants',
+        'price_range',
+        'total_quantity'
+    ];
+
+    /**
+     * Định nghĩa accessor cho thuộc tính has_variants
+     */
+    public function getHasVariantsAttribute()
+    {
+        try {
+            \Log::info("Kiểm tra has_variants cho sản phẩm ID: " . $this->id);
+            
+            // Kiểm tra xem có biến thể không bị xóa mềm nào không
+            $hasActiveVariants = $this->variants()
+                ->whereNull('deleted_at')
+                ->exists();
+            
+            \Log::info("Kết quả kiểm tra has_variants:", [
+                'product_id' => $this->id,
+                'has_active_variants' => $hasActiveVariants
+            ]);
+            
+            return $hasActiveVariants;
+        } catch (\Exception $e) {
+            \Log::error("Lỗi khi kiểm tra has_variants: " . $e->getMessage(), [
+                'product_id' => $this->id,
+                'error' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Định nghĩa accessor cho thuộc tính price_range
+     */
+    public function getPriceRangeAttribute()
+    {
+        if (!$this->getHasVariantsAttribute()) {
+            return null;
+        }
+
+        $variants = $this->variants()->whereNull('deleted_at')->get();
+        
+        if ($variants->isEmpty()) {
+            return null;
+        }
+
+        $minPrice = $variants->min('price');
+        $maxPrice = $variants->max('price');
+        $minDiscountPrice = $variants->where('discount_price', '>', 0)->min('discount_price');
+        $maxDiscountPrice = $variants->where('discount_price', '>', 0)->max('discount_price');
+
+        return [
+            'min' => $minPrice,
+            'max' => $maxPrice != $minPrice ? $maxPrice : null,
+            'min_discount' => $minDiscountPrice ?: null,
+            'max_discount' => $maxDiscountPrice != $minDiscountPrice ? $maxDiscountPrice : null
+        ];
+    }
+
+    /**
+     * Định nghĩa accessor cho thuộc tính total_quantity
+     */
+    public function getTotalQuantityAttribute()
+    {
+        if ($this->getHasVariantsAttribute()) {
+            return $this->variants()->whereNull('deleted_at')->sum('quantity');
+        }
+        
+        return $this->quantity;
+    }
+
+    /**
      * Get the category that owns the product.
      */
     public function category()

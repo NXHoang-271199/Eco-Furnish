@@ -313,6 +313,7 @@ class ChatController extends Controller
      */
     private function extractPriceInfo($message)
     {
+        // Chuẩn bị kết quả trả về
         $priceInfo = [
             'has_price' => false,
             'min_price' => null,
@@ -321,75 +322,173 @@ class ChatController extends Controller
             'price_type' => null // 'exact', 'range', 'min', 'max'
         ];
         
-        // Tìm phạm vi giá "từ X đến Y" (kiểm tra trước để ưu tiên hơn các mẫu khác)
-        // Mẫu: "từ 20k đến 30k" hoặc "từ 20.000 đến 30.000" hoặc "20k-30k"
-        $rangePattern = '/(?:từ\s+)?(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)(?:\s*(?:-|đến)\s*)(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu';
-        if (preg_match($rangePattern, $message, $matches)) {
-            $priceInfo['has_price'] = true;
-            $priceInfo['price_type'] = 'range';
-            
-            $minPriceText = $matches[1];
-            $maxPriceText = $matches[2];
-            
-            Log::info("Phát hiện phạm vi giá: {$minPriceText} đến {$maxPriceText}");
-            
-            $priceInfo['min_price'] = $this->convertPriceTextToNumber($minPriceText);
-            $priceInfo['max_price'] = $this->convertPriceTextToNumber($maxPriceText);
-            
-            // Mở rộng phạm vi giá thêm ±10% để tăng khả năng khớp
-            $priceInfo['min_price'] = $priceInfo['min_price'] * 0.9;
-            $priceInfo['max_price'] = $priceInfo['max_price'] * 1.1;
-            
-            Log::info("Sau khi chuyển đổi: {$priceInfo['min_price']} đến {$priceInfo['max_price']}");
-            
-            return $priceInfo;
-        }
+        // Chuyển tin nhắn về chữ thường
+        $message = mb_strtolower($message, 'UTF-8');
         
-        // Tìm mức giá chính xác
-        // Mẫu: "giá 100.000" hoặc "100.000 đồng" hoặc "100.000đ" hoặc "100.000 VND"
-        $exactPricePattern = '/(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu';
-        if (preg_match_all($exactPricePattern, $message, $matches)) {
-            $priceInfo['has_price'] = true;
-            
-            // Lấy giá từ kết quả match
-            $priceText = $matches[0][0];
-            $price = $this->convertPriceTextToNumber($priceText);
-            
-            $priceInfo['exact_price'] = $price;
-            $priceInfo['price_type'] = 'exact';
-            
-            // Nếu có từ "khoảng" trước giá, xác định một phạm vi giá
-            if (mb_strpos($message, 'khoảng') !== false) {
-                $priceInfo['min_price'] = $price * 0.8; // Giảm 20%
-                $priceInfo['max_price'] = $price * 1.2; // Tăng 20%
+        // Log tin nhắn để debug
+        Log::info("Đang phân tích giá từ tin nhắn: {$message}");
+        
+        // 1. Tìm phạm vi giá (ưu tiên cao nhất)
+        // Ví dụ: "từ 1 triệu đến 2 triệu", "1tr-2tr", "500k đến 1 triệu"
+        $rangePatterns = [
+            // "từ X đến Y"
+            '/từ\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)\s+(?:đến|tới|tới|tới)\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu',
+            // "X đến Y" (không có "từ")
+            '/(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)\s+(?:đến|tới|tới|tới)\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu',
+            // "X-Y" (dùng dấu gạch ngang)
+            '/(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)\s*-\s*(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu'
+        ];
+        
+        foreach ($rangePatterns as $pattern) {
+            if (preg_match($pattern, $message, $matches)) {
+                $minPriceText = $matches[1];
+                $maxPriceText = $matches[2];
+                
+                Log::info("Phát hiện phạm vi giá: '{$minPriceText}' đến '{$maxPriceText}'");
+                
+                // Chuyển đổi chuỗi giá thành số
+                $minPrice = $this->convertPriceTextToNumber($minPriceText);
+                $maxPrice = $this->convertPriceTextToNumber($maxPriceText);
+                
+                // Đảm bảo min luôn nhỏ hơn max
+                if ($minPrice > $maxPrice) {
+                    $temp = $minPrice;
+                    $minPrice = $maxPrice;
+                    $maxPrice = $temp;
+                }
+                
+                // Cập nhật thông tin giá
+                $priceInfo['has_price'] = true;
                 $priceInfo['price_type'] = 'range';
+                $priceInfo['min_price'] = $minPrice;
+                $priceInfo['max_price'] = $maxPrice;
+                
+                Log::info("Đã chuyển đổi phạm vi giá: {$minPrice} VND đến {$maxPrice} VND");
+                return $priceInfo;
             }
         }
         
-        // Tìm giá tối đa
-        // Mẫu: "dưới 200.000" hoặc "không quá 200.000" hoặc "tối đa 200.000"
-        $maxPricePattern = '/(dưới|không quá|tối đa|<=|<)(\s)*(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu';
-        if (preg_match($maxPricePattern, $message, $matches)) {
-            $priceInfo['has_price'] = true;
-            $priceInfo['price_type'] = 'max';
-            
-            // Lấy phần giá
-            $priceText = preg_replace('/(dưới|không quá|tối đa|<=|<)(\s)*/', '', $matches[0]);
-            $priceInfo['max_price'] = $this->convertPriceTextToNumber($priceText);
+        // 2. Tìm giá tối đa (nếu không tìm thấy phạm vi giá)
+        // Ví dụ: "dưới 1 triệu", "không quá 500k", "tối đa 2tr"
+        $maxPricePatterns = [
+            // "dưới X"
+            '/(?:dưới|không quá|tối đa|chỉ|<=|<)\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu',
+            // "dưới mức X"
+            '/(?:dưới|không quá|tối đa|chỉ)\s+(?:mức|giá)\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu',
+            // "X trở xuống"
+            '/(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)\s+trở xuống/iu'
+        ];
+        
+        foreach ($maxPricePatterns as $pattern) {
+            if (preg_match($pattern, $message, $matches)) {
+                $priceText = $matches[1];
+                Log::info("Phát hiện giá tối đa: '{$priceText}'");
+                
+                // Chuyển đổi chuỗi giá thành số
+                $maxPrice = $this->convertPriceTextToNumber($priceText);
+                
+                // Cập nhật thông tin giá
+                $priceInfo['has_price'] = true;
+                $priceInfo['price_type'] = 'max';
+                $priceInfo['max_price'] = $maxPrice;
+                
+                Log::info("Đã chuyển đổi giá tối đa: {$maxPrice} VND");
+                return $priceInfo;
+            }
         }
         
-        // Tìm giá tối thiểu
-        // Mẫu: "trên 100.000" hoặc "từ 100.000" hoặc "tối thiểu 100.000"
-        $minPricePattern = '/(trên|từ|tối thiểu|>=|>)(\s)*(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu';
-        if (preg_match($minPricePattern, $message, $matches) && $priceInfo['price_type'] !== 'range') {
-            $priceInfo['has_price'] = true;
-            $priceInfo['price_type'] = 'min';
-            
-            // Lấy phần giá
-            $priceText = preg_replace('/(trên|từ|tối thiểu|>=|>)(\s)*/', '', $matches[0]);
-            $priceInfo['min_price'] = $this->convertPriceTextToNumber($priceText);
+        // 3. Tìm giá tối thiểu (nếu không tìm thấy phạm vi giá và giá tối đa)
+        // Ví dụ: "trên 1 triệu", "từ 500k trở lên", "tối thiểu 2tr"
+        $minPricePatterns = [
+            // "trên X"
+            '/(?:trên|từ|tối thiểu|>=|>)\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu',
+            // "trên mức X"
+            '/(?:trên|từ|tối thiểu)\s+(?:mức|giá)\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu',
+            // "X trở lên"
+            '/(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)\s+trở lên/iu'
+        ];
+        
+        foreach ($minPricePatterns as $pattern) {
+            if (preg_match($pattern, $message, $matches)) {
+                $priceText = $matches[1];
+                Log::info("Phát hiện giá tối thiểu: '{$priceText}'");
+                
+                // Chuyển đổi chuỗi giá thành số
+                $minPrice = $this->convertPriceTextToNumber($priceText);
+                
+                // Cập nhật thông tin giá
+                $priceInfo['has_price'] = true;
+                $priceInfo['price_type'] = 'min';
+                $priceInfo['min_price'] = $minPrice;
+                
+                Log::info("Đã chuyển đổi giá tối thiểu: {$minPrice} VND");
+                return $priceInfo;
+            }
         }
         
+        // 4. Tìm giá chính xác (nếu không tìm thấy các loại giá khác)
+        // Ví dụ: "giá 1 triệu", "giá khoảng 500k", "có giá 2tr"
+        $exactPricePatterns = [
+            // "giá X" hoặc "giá khoảng X"
+            '/(?:giá|giá tiền|giá bán|giá cả|trị giá|có giá|mức giá)(?:\s+khoảng)?\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu',
+            // "khoảng X đồng" (không có từ "giá")
+            '/khoảng\s+(\d+[k\.]?\d*\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?)/iu',
+            // "X đồng", "X VND" (số kèm đơn vị tiền tệ rõ ràng)
+            '/(\d+[k\.]?\d*)\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)\b/iu'
+        ];
+        
+        foreach ($exactPricePatterns as $pattern) {
+            if (preg_match($pattern, $message, $matches)) {
+                $priceText = $matches[1];
+                Log::info("Phát hiện giá chính xác: '{$priceText}'");
+                
+                // Chuyển đổi chuỗi giá thành số
+                $exactPrice = $this->convertPriceTextToNumber($priceText);
+                
+                // Cập nhật thông tin giá
+                $priceInfo['has_price'] = true;
+                $priceInfo['price_type'] = 'exact';
+                $priceInfo['exact_price'] = $exactPrice;
+                
+                // Nếu có từ "khoảng", xác định phạm vi giá
+                if (mb_strpos($message, 'khoảng') !== false) {
+                    $priceInfo['price_type'] = 'range';
+                    $priceInfo['min_price'] = $exactPrice * 0.8; // Giảm 20%
+                    $priceInfo['max_price'] = $exactPrice * 1.2; // Tăng 20%
+                    
+                    Log::info("Đã chuyển đổi giá khoảng: {$exactPrice} VND (phạm vi: {$priceInfo['min_price']} - {$priceInfo['max_price']} VND)");
+                } else {
+                    Log::info("Đã chuyển đổi giá chính xác: {$exactPrice} VND");
+                }
+                
+                return $priceInfo;
+            }
+        }
+        
+        // 5. Tìm số tiền đơn lẻ trong tin nhắn (ưu tiên thấp nhất)
+        // Ví dụ: "500k", "1 triệu", "2tr" - chỉ khi tin nhắn có hỏi về giá
+        if (mb_strpos($message, 'giá') !== false || mb_strpos($message, 'bao nhiêu') !== false) {
+            $moneyPattern = '/\b(\d+[k\.]?\d*)\s*(?:nghìn|ngàn|k|đồng|vnd|đ|triệu|tr)?\b/iu';
+            
+            if (preg_match($moneyPattern, $message, $matches)) {
+                $priceText = $matches[1];
+                Log::info("Phát hiện số tiền: '{$priceText}'");
+                
+                // Chuyển đổi chuỗi giá thành số
+                $exactPrice = $this->convertPriceTextToNumber($priceText);
+                
+                // Cập nhật thông tin giá
+                $priceInfo['has_price'] = true;
+                $priceInfo['price_type'] = 'exact';
+                $priceInfo['exact_price'] = $exactPrice;
+                
+                Log::info("Đã chuyển đổi số tiền: {$exactPrice} VND");
+                return $priceInfo;
+            }
+        }
+        
+        // Không tìm thấy thông tin giá
+        Log::info("Không tìm thấy thông tin giá trong tin nhắn");
         return $priceInfo;
     }
     
@@ -635,6 +734,8 @@ class ChatController extends Controller
             
             // Nếu có thông tin giá, áp dụng bộ lọc giá
             if ($priceInfo && $priceInfo['has_price']) {
+                Log::info('Đang áp dụng bộ lọc giá...');
+                
                 // Xử lý giá chính xác
                 if ($priceInfo['price_type'] === 'exact' && $priceInfo['exact_price'] !== null) {
                     // Tìm sản phẩm có giá xấp xỉ (sai số 15%)
@@ -642,54 +743,90 @@ class ChatController extends Controller
                     $minPrice = $exactPrice * 0.85; // Giảm 15%
                     $maxPrice = $exactPrice * 1.15; // Tăng 15%
                     
-                    Log::info("Tìm sản phẩm với giá chính xác: {$exactPrice}, phạm vi [{$minPrice} - {$maxPrice}]");
+                    Log::info("Tìm sản phẩm với giá chính xác: {$exactPrice} VND, phạm vi [{$minPrice} - {$maxPrice}] VND");
                     
                     $query->where(function($q) use ($minPrice, $maxPrice) {
-                        $q->whereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
+                        // Kiểm tra giá biến thể
+                        $q->orWhereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
                             $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
-                                $subQ->whereBetween('price', [$minPrice, $maxPrice]);
-                            })->orWhere(function($subQ) use ($minPrice, $maxPrice) {
-                                $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
-                                     ->whereNotNull('discount_price');
+                                // Giá gốc hoặc giá khuyến mãi nằm trong phạm vi
+                                $subQ->whereBetween('price', [$minPrice, $maxPrice])
+                                    ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
+                                        $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                            ->whereNotNull('discount_price');
+                                    });
                             });
+                        });
+                        
+                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
+                        $q->orWhere(function($subQ) use ($minPrice, $maxPrice) {
+                            $subQ->whereBetween('price', [$minPrice, $maxPrice])
+                                ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
+                                    $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                        ->whereNotNull('discount_price');
+                                });
                         });
                     });
                 }
                 
                 // Xử lý phạm vi giá
-                if ($priceInfo['price_type'] === 'range') {
-                    if ($priceInfo['min_price'] !== null && $priceInfo['max_price'] !== null) {
-                        $minPrice = $priceInfo['min_price'];
-                        $maxPrice = $priceInfo['max_price'];
-                        
-                        Log::info("Tìm sản phẩm với phạm vi giá: [{$minPrice} - {$maxPrice}]");
-                        
-                        $query->where(function($q) use ($minPrice, $maxPrice) {
-                            $q->whereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
-                                $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
-                                    $subQ->whereBetween('price', [$minPrice, $maxPrice]);
-                                })->orWhere(function($subQ) use ($minPrice, $maxPrice) {
-                                    $subQ->whereBetween('discount_price', [$minPrice, $maxPrice])
-                                         ->whereNotNull('discount_price');
-                                });
+                if ($priceInfo['price_type'] === 'range' && $priceInfo['min_price'] !== null && $priceInfo['max_price'] !== null) {
+                    $minPrice = $priceInfo['min_price'];
+                    $maxPrice = $priceInfo['max_price'];
+                    
+                    Log::info("Tìm sản phẩm với phạm vi giá: [{$minPrice} - {$maxPrice}] VND");
+                    
+                    $query->where(function($q) use ($minPrice, $maxPrice) {
+                        // Kiểm tra giá biến thể
+                        $q->orWhereHas('variants', function($variantQuery) use ($minPrice, $maxPrice) {
+                            $variantQuery->where(function($subQ) use ($minPrice, $maxPrice) {
+                                // Giá gốc nằm trong phạm vi
+                                $subQ->whereBetween('price', [$minPrice, $maxPrice])
+                                    // Hoặc giá khuyến mãi nằm trong phạm vi
+                                    ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
+                                        $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                            ->whereNotNull('discount_price');
+                                    });
                             });
                         });
-                    }
+                        
+                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
+                        $q->orWhere(function($subQ) use ($minPrice, $maxPrice) {
+                            $subQ->whereBetween('price', [$minPrice, $maxPrice])
+                                ->orWhere(function($priceQ) use ($minPrice, $maxPrice) {
+                                    $priceQ->whereBetween('discount_price', [$minPrice, $maxPrice])
+                                        ->whereNotNull('discount_price');
+                                });
+                        });
+                    });
                 }
                 
                 // Xử lý giá tối đa
                 if ($priceInfo['price_type'] === 'max' && $priceInfo['max_price'] !== null) {
                     $maxPrice = $priceInfo['max_price'];
-                    Log::info("Tìm sản phẩm với giá tối đa: {$maxPrice}");
+                    Log::info("Tìm sản phẩm với giá tối đa: {$maxPrice} VND");
                     
                     $query->where(function($q) use ($maxPrice) {
-                        $q->whereHas('variants', function($variantQuery) use ($maxPrice) {
+                        // Kiểm tra giá biến thể
+                        $q->orWhereHas('variants', function($variantQuery) use ($maxPrice) {
                             $variantQuery->where(function($subQ) use ($maxPrice) {
-                                $subQ->where('price', '<=', $maxPrice);
-                            })->orWhere(function($subQ) use ($maxPrice) {
-                                $subQ->where('discount_price', '<=', $maxPrice)
-                                     ->whereNotNull('discount_price');
+                                // Giá gốc <= maxPrice
+                                $subQ->where('price', '<=', $maxPrice)
+                                    // Hoặc giá khuyến mãi <= maxPrice
+                                    ->orWhere(function($priceQ) use ($maxPrice) {
+                                        $priceQ->where('discount_price', '<=', $maxPrice)
+                                            ->whereNotNull('discount_price');
+                                    });
                             });
+                        });
+                        
+                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
+                        $q->orWhere(function($subQ) use ($maxPrice) {
+                            $subQ->where('price', '<=', $maxPrice)
+                                ->orWhere(function($priceQ) use ($maxPrice) {
+                                    $priceQ->where('discount_price', '<=', $maxPrice)
+                                        ->whereNotNull('discount_price');
+                                });
                         });
                     });
                 }
@@ -697,16 +834,29 @@ class ChatController extends Controller
                 // Xử lý giá tối thiểu
                 if ($priceInfo['price_type'] === 'min' && $priceInfo['min_price'] !== null) {
                     $minPrice = $priceInfo['min_price'];
-                    Log::info("Tìm sản phẩm với giá tối thiểu: {$minPrice}");
+                    Log::info("Tìm sản phẩm với giá tối thiểu: {$minPrice} VND");
                     
                     $query->where(function($q) use ($minPrice) {
-                        $q->whereHas('variants', function($variantQuery) use ($minPrice) {
+                        // Kiểm tra giá biến thể
+                        $q->orWhereHas('variants', function($variantQuery) use ($minPrice) {
                             $variantQuery->where(function($subQ) use ($minPrice) {
-                                $subQ->where('price', '>=', $minPrice);
-                            })->orWhere(function($subQ) use ($minPrice) {
-                                $subQ->where('discount_price', '>=', $minPrice)
-                                     ->whereNotNull('discount_price');
+                                // Giá gốc >= minPrice
+                                $subQ->where('price', '>=', $minPrice)
+                                    // Hoặc giá khuyến mãi >= minPrice
+                                    ->orWhere(function($priceQ) use ($minPrice) {
+                                        $priceQ->where('discount_price', '>=', $minPrice)
+                                            ->whereNotNull('discount_price');
+                                    });
                             });
+                        });
+                        
+                        // Kiểm tra giá sản phẩm (nếu không có biến thể)
+                        $q->orWhere(function($subQ) use ($minPrice) {
+                            $subQ->where('price', '>=', $minPrice)
+                                ->orWhere(function($priceQ) use ($minPrice) {
+                                    $priceQ->where('discount_price', '>=', $minPrice)
+                                        ->whereNotNull('discount_price');
+                                });
                         });
                     });
                 }
@@ -1081,191 +1231,5 @@ Câu trả lời của bạn KHÔNG nên dài quá 1-2 câu.";
         }
     }
 
-    /**
-     * Gửi tin nhắn chúc mừng khi đặt hàng thành công và gợi ý sản phẩm
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function sendOrderSuccessMessage(Request $request)
-    {
-        try {
-            // Validate request
-            $request->validate([
-                'order_id' => 'required',
-                'order_total' => 'required',
-                'products' => 'required|array',
-            ]);
-
-            $orderId = $request->input('order_id');
-            $orderTotal = $request->input('order_total');
-            $orderedProducts = $request->input('products');
-
-            // Lấy danh sách sản phẩm được đề xuất dựa trên sản phẩm đã đặt
-            $recommendedProducts = $this->getRecommendedProducts($orderedProducts);
-
-            // Tạo tin nhắn chúc mừng
-            $message = "Cảm ơn bạn đã đặt hàng tại Eco-Furnish! Đơn hàng #$orderId với tổng giá trị " . 
-                       number_format($orderTotal, 0, ',', '.') . "đ đã được xác nhận. Dưới đây là một số sản phẩm bạn có thể quan tâm.";
-
-            return response()->json([
-                'success' => true,
-                'reply' => $message,
-                'has_products' => count($recommendedProducts['products']) > 0,
-                'products' => $recommendedProducts['products'],
-                'categories' => $recommendedProducts['categories'],
-                'type' => 'order_success'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Order Success Message Error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.',
-                'error' => $e->getMessage(),
-                'has_products' => false
-            ], 500);
-        }
-    }
-
-    /**
-     * Lấy sản phẩm được đề xuất dựa trên sản phẩm đã đặt
-     *
-     * @param  array  $orderedProducts
-     * @return array
-     */
-    private function getRecommendedProducts($orderedProducts)
-    {
-        try {
-            // Lấy các danh mục từ sản phẩm đã đặt
-            $categoryIds = [];
-            foreach ($orderedProducts as $product) {
-                if (isset($product['category_id']) && !in_array($product['category_id'], $categoryIds)) {
-                    $categoryIds[] = $product['category_id'];
-                }
-            }
-
-            // Thu thập ID sản phẩm đã đặt để loại trừ khỏi đề xuất
-            $orderedProductIds = [];
-            foreach ($orderedProducts as $product) {
-                if (isset($product['id'])) {
-                    $orderedProductIds[] = $product['id'];
-                }
-            }
-
-            // Tìm sản phẩm cùng danh mục, loại trừ những sản phẩm đã đặt
-            $query = Product::with(['category', 'gallery', 'variants'])
-                ->whereHas('category', function($q) use ($categoryIds) {
-                    $q->whereIn('id', $categoryIds);
-                })
-                ->whereNotIn('id', $orderedProductIds);
-
-            // Lấy kết quả
-            $products = $query->orderBy('created_at', 'desc')
-                ->limit(6)
-                ->get();
-
-            Log::info('Tìm thấy ' . $products->count() . ' sản phẩm đề xuất');
-
-            // Phân loại sản phẩm theo danh mục
-            $foundCategories = [];
-            
-            // Định dạng lại dữ liệu sản phẩm để hiển thị trong chat
-            $formattedProducts = $products->map(function ($product) use (&$foundCategories) {
-                // Đảm bảo có đường dẫn hình sảnh đúng
-                $imagePath = null;
-                
-                if (!empty($product->image_thumnail)) {
-                    $imagePath = $product->image_thumnail;
-                }
-                
-                $categoryName = $product->category ? $product->category->name : 'N/A';
-                
-                // Thêm thông tin phân loại
-                if (!in_array($categoryName, $foundCategories)) {
-                    $foundCategories[] = $categoryName;
-                }
-                
-                // Xác định giá hiển thị dựa trên việc sản phẩm có biến thể hay không
-                $displayPrice = 0;
-                $productPrice = 0;
-                $productDiscountPrice = null;
-                $hasVariants = $product->variants->isNotEmpty();
-                
-                if ($hasVariants) {
-                    // Nếu có biến thể, lấy biến thể có giá thấp nhất
-                    $lowestPriceVariant = $product->variants->sortBy(function($variant) {
-                        return $variant->discount_price ?? $variant->price;
-                    })->first();
-                    
-                    if ($lowestPriceVariant) {
-                        $productPrice = $lowestPriceVariant->price;
-                        $productDiscountPrice = $lowestPriceVariant->discount_price;
-                        $displayPrice = $productDiscountPrice ?? $productPrice;
-                    }
-                } else {
-                    // Nếu không có biến thể, sử dụng giá của sản phẩm
-                    $productPrice = $product->price;
-                    $productDiscountPrice = $product->discount_price;
-                    $displayPrice = $productDiscountPrice ?? $productPrice;
-                }
-                
-                // Đưa danh mục vào metadata sản phẩm
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'price' => $productPrice,
-                    'discount_price' => $productDiscountPrice,
-                    'image' => $imagePath,
-                    'category' => $categoryName,
-                    'category_group' => $categoryName,
-                    'description' => Str::limit($product->description, 100),
-                    'display_price' => $displayPrice,
-                    'has_variants' => $hasVariants,
-                    'variant_count' => $product->variants->count(),
-                ];
-            });
-            
-            return [
-                'products' => $formattedProducts, 
-                'categories' => $foundCategories,
-            ];
-        } catch (\Exception $e) {
-            Log::error('Error getting recommended products: ' . $e->getMessage());
-            return [
-                'products' => [],
-                'categories' => [],
-            ];
-        }
-    }
-
-    /**
-     * Gửi tin nhắn chào khi người dùng mở chatbot
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function sendWelcomeMessage()
-    {
-        try {
-            $welcomeMessage = "Xin chào! Tôi là trợ lý AI của Eco-Furnish. Tôi có thể giúp bạn tìm kiếm sản phẩm nội thất, tư vấn thiết kế không gian sống, hoặc giải đáp các thắc mắc về sản phẩm và dịch vụ của chúng tôi.";
-
-            return response()->json([
-                'success' => true,
-                'reply' => $welcomeMessage,
-                'has_products' => false,
-                'type' => 'welcome'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Welcome Message Error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.',
-                'error' => $e->getMessage(),
-                'has_products' => false
-            ], 500);
-        }
-    }
-
 }
+
