@@ -7,6 +7,7 @@ import { useLocation } from "react-router-dom";
 import axiosInstance from "../../../utils/axiosConfig";
 import addressService from "../../../service/addressService";
 import { toast } from "react-toastify";
+import { FaWallet } from "react-icons/fa";
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ const Payment = () => {
   const [voucherId, setVoucherId] = useState(null); // Lưu ID của voucher được áp dụng
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [orderCode, setOrderCode] = useState("");
+  const [walletBalance, setWalletBalance] = useState(0); // Thêm state để lưu số dư ví
+  const [loadingWallet, setLoadingWallet] = useState(false); // Thêm state để kiểm tra trạng thái loading của ví
 
   // State mới cho danh sách voucher
   const [availableVouchers, setAvailableVouchers] = useState([]);
@@ -88,6 +91,7 @@ const Payment = () => {
 
     getPaymentMethod();
     fetchProvinces();
+    getWalletBalance(); // Thêm gọi hàm lấy số dư ví
   }, [selectedProducts, navigate, state]);
 
   // Lấy danh sách tỉnh/thành phố
@@ -663,6 +667,27 @@ const Payment = () => {
     }
   };
 
+  // Thêm hàm để lấy số dư ví
+  const getWalletBalance = async () => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      try {
+        setLoadingWallet(true);
+        const response = await axiosInstance.get("/wallet/balance", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setWalletBalance(response.data.balance || 0);
+      } catch (error) {
+        console.error("Lỗi khi lấy số dư ví:", error);
+        setWalletBalance(0);
+      } finally {
+        setLoadingWallet(false);
+      }
+    }
+  };
+
   return (
     <div className="my-20">
       <div className="max-w-6xl mx-auto py-10 px-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -695,26 +720,60 @@ const Payment = () => {
             <h3 className="font-semibold">Phương thức thanh toán</h3>
             <div className="mt-2 space-y-2">
               {paymentMethods.length > 0 ? (
-                paymentMethods.map((method) => (
-                  <label
-                    key={method.id}
-                    className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={method.id} // Sử dụng ID từ API
-                      checked={paymentMethod === method.id.toString()} // So sánh với ID
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span>
-                      {method.name === "Tiền mặt"
-                        ? "Thanh toán khi nhận hàng"
-                        : method.name}
-                    </span>{" "}
-                    {/* Giả sử API trả về field "name" */}
-                  </label>
-                ))
+                paymentMethods.map((method) => {
+                  // Kiểm tra xem phương thức thanh toán có phải là Ví không
+                  const isWalletMethod = method.name === "Ví";
+                  // Kiểm tra xem số dư ví có đủ để thanh toán không
+                  const insufficientBalance = isWalletMethod && walletBalance < calculateTotal();
+                  // Quyết định disabled dựa trên điều kiện số dư
+                  const isDisabled = isWalletMethod && insufficientBalance;
+
+                  return (
+                    <label
+                      key={method.id}
+                      className={`flex items-center justify-between space-x-2 border p-3 rounded-lg ${isDisabled
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer hover:border-blue-500"
+                        } ${paymentMethod === method.id.toString() ? "border-blue-500 bg-blue-50" : ""}`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          name="payment"
+                          value={method.id}
+                          checked={paymentMethod === method.id.toString()}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          disabled={isDisabled}
+                        />
+                        <span className="flex items-center">
+                          {method.name === "Tiền mặt" ? (
+                            "Thanh toán khi nhận hàng"
+                          ) : isWalletMethod ? (
+                            <div className="flex items-center">
+                              <FaWallet className="text-amber-500 mr-2" />
+                              <span>
+                                Ví {!loadingWallet && (
+                                  <span className={`text-sm font-medium ${insufficientBalance ? "text-red-500" : "text-amber-600"}`}>
+                                    (Số dư: {formatPrice(walletBalance)})
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          ) : (
+                            method.name
+                          )}
+                        </span>
+                      </div>
+                      {isWalletMethod && insufficientBalance && (
+                        <div className="text-right">
+                          <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full">
+                            Số dư không đủ
+                          </span>
+                        </div>
+                      )}
+                    </label>
+                  );
+                })
               ) : (
                 <p>Đang tải phương thức thanh toán...</p>
               )}
