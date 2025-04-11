@@ -38,18 +38,21 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if (Auth::user()->hasPermission('delete-payment-methods'))
-                                        <form action="{{ route('payment-methods.destroy', $method->id) }}" method="POST"
-                                            class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm">
-                                                <i class="fas fa-trash-alt"></i> Xóa
-                                            </button>
-                                        </form>
+                                    @if (!$method->is_connected && $method->name !== 'Tiền mặt' && $method->name !== 'Ví' && $method->is_connected == 0)
+                                        @if (Auth::user()->hasPermission('delete-payment-methods'))
+                                            <form action="{{ route('payment-methods.destroy', $method->id) }}"
+                                                method="POST" class="d-inline"
+                                                onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="fas fa-trash-alt"></i> Xóa
+                                                </button>
+                                            </form>
+                                        @endif
                                     @endif
 
-                                    @if (!$method->is_connected && $method->name !== 'Tiền mặt' && $method->name !== 'Ví')
+                                    @if ($method->is_connected == 0 && $method->name !== 'Tiền mặt' && $method->name !== 'Ví')
                                         <!-- Nút Kết nối - Màu xanh lá -->
                                         <button class="btn btn-success btn-sm"
                                             onclick="openConnectModal('{{ route('payment-methods.connect', $method->id) }}')">
@@ -63,7 +66,7 @@
                                             <i class="fas fa-cogs"></i> Cấu hình
                                         </button>
                                         <ul class="dropdown-menu" aria-labelledby="settingsDropdown">
-                                            @if ($method->is_connected && $method->name !== 'Tiền mặt' && $method->name !== 'Ví')
+                                            @if ($method->is_connected == 1 && $method->name !== 'Tiền mặt' && $method->name !== 'Ví')
                                                 <li>
                                                     <a class="dropdown-item" href="#"
                                                         onclick="openEditConnectionModal('{{ route('payment-methods.edit_connection.form', $method->id) }}')">
@@ -85,7 +88,7 @@
                                             @endif
                                             @if (Auth::user()->hasPermission('update-payment-methods'))
                                                 <li>
-                                                        <a class="dropdown-item"
+                                                    <a class="dropdown-item"
                                                         href="{{ route('payment-methods.edit', $method->id) }}">
                                                         <i class="fas fa-edit"></i> Sửa
                                                     </a>
