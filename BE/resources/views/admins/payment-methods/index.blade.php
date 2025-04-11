@@ -38,7 +38,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if (!$method->is_connected && $method->name !== 'Tiền mặt' && $method->name !== 'Ví' && $method->is_connected == 0)
+                                    @if ($method->name !== 'Tiền mặt' && $method->name !== 'Ví' && $method->is_connected == 0)
                                         @if (Auth::user()->hasPermission('delete-payment-methods'))
                                             <form action="{{ route('payment-methods.destroy', $method->id) }}"
                                                 method="POST" class="d-inline"
