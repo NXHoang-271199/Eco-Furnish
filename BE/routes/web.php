@@ -11,6 +11,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TrashController;
 use App\Http\Controllers\BannerController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProductController;
@@ -24,11 +26,10 @@ use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\OrderNotificationController;
 use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
-use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\ReviewController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -148,7 +149,10 @@ Route::prefix('admin')->group(function () {
                 Route::get('{id}/connect', [PaymentMethodController::class, 'getConnectForm'])->name('connect.form');
                 Route::post('{id}/connect', [PaymentMethodController::class, 'connect'])->name('connect');
                 Route::post('{id}/disconnect', [PaymentMethodController::class, 'disconnect'])->name('disconnect');
+                Route::get('{id}/edit-connection', [PaymentMethodController::class, 'editConnection'])->name('edit_connection.form');
+                Route::post('{id}/update-connection', [PaymentMethodController::class, 'updateConnection'])->name('update_connection');
             });
+
         });
 
         // Orders Management
@@ -219,5 +223,16 @@ Route::prefix('admin')->group(function () {
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/send', [MessageController::class, 'send'])->name('messages.send');
     Route::post('/admin/messages/send', [MessageController::class, 'sendByAdmin'])->name('messages.send');
+
+    //Wallet Route
+    Route::middleware(['permission:view-wallets'])->prefix('wallets')->name('wallets.')->group(function () {
+        Route::get('transactions', [WalletController::class, 'allTransactions'])->name('transactions');
+
+        Route::get('/', [WalletController::class, 'index'])->name('index');
+        Route::get('{id}', [WalletController::class, 'show'])->name('show');
+        Route::post('{id}/update-balance', [WalletController::class, 'updateBalance'])->name('update_balance');
+
+    });
+
 
 });

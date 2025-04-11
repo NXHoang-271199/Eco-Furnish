@@ -152,8 +152,74 @@ class PaymentMethodController extends Controller
         }
 
         return redirect()->route('payment-methods.index')
-                    ->with('success', 'Phương thức thanh toán đã kết nối thành công!');
+            ->with('success', 'Phương thức thanh toán đã kết nối thành công!');
     }
+    public function editConnection($id)
+    {
+        $method = PaymentMethod::findOrFail($id);
+
+        $fields = [];
+        if ($method->name === 'MoMo') {
+            $fields = [
+                'partner_code' => 'Partner Code',
+                'access_key' => 'Access Key',
+                'secret_key' => 'Secret Key',
+            ];
+        } elseif ($method->name === 'VNPAY') {
+            $fields = [
+                'vnp_TmnCode' => 'VNPAY Tmn Code',
+                'vnp_HashSecret' => 'VNPAY Hash Secret',
+            ];
+        }
+
+        return response()->json([
+            'html' => view('admins.payment-methods.edit-connection', compact('method', 'fields'))->render()
+        ]);
+    }
+    public function updateConnection(Request $request, string $id)
+    {
+        $method = PaymentMethod::findOrFail($id);
+
+
+        // Xác thực thông tin kết nối theo từng phương thức
+        if ($method->name === 'MoMo') {
+            $request->validate([
+                'partner_code' => 'required',
+                'access_key' => 'required',
+                'secret_key' => 'required',
+            ]);
+
+            // Cập nhật thông tin kết nối
+            $method->update([
+                'config' => [
+                    'partner_code' => $request->partner_code,
+                    'access_key' => $request->access_key,
+                    'secret_key' => $request->secret_key,
+                ]
+            ]);
+        } elseif ($method->name === 'VNPAY') {
+            $request->validate([
+                'vnp_TmnCode' => 'required',
+                'vnp_HashSecret' => 'required',
+            ]);
+
+            // Cập nhật thông tin kết nối
+            $method->update([
+                'config' => [
+                    'vnp_TmnCode' => $request->vnp_TmnCode,
+                    'vnp_HashSecret' => $request->vnp_HashSecret,
+                ]
+            ]);
+        }
+
+        return redirect()->route('payment-methods.index')->with('success', 'Cập nhật thông tin kết nối thành công!');
+    }
+
+
+
+
+
+
     public function disconnect(string $id)
     {
         $method = PaymentMethod::findOrFail($id);
