@@ -79,8 +79,6 @@ class PaymentMethodController extends Controller
             $dataPaymentMethod = [
                 'image' => $filePath,
                 'name' => $request->input('name'),
-                'config' => $request->input('config'),
-                'is_connected' => $request->input('name') === 'Tiền mặt' ? true : false,
                 'updated_at' => now()
             ];
             $method->update($dataPaymentMethod);
