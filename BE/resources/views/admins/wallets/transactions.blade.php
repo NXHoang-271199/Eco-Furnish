@@ -114,7 +114,7 @@
                                         </span>
                                     </td>
                                     <td>{{ $transaction->paymentMethod->name ?? 'N/A' }}</td>
-                                    <td>{{ $transaction->createdBy->name ?? 'N/A' }}</td>
+                                    <td>{{ $transaction->createdBy?->name ?? ($transaction->updatedBy?->name ?? 'N/A') }}</td>
                                     <td>{{ $transaction->description ?? '-' }}</td>
                                     <td>{{ $transaction->created_at->format('d/m/Y H:i') }}</td>
                                 </tr>
