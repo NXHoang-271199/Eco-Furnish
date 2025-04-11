@@ -11,8 +11,8 @@ const cors = require("cors");
 
 // Các cài đặt từ biến môi trường
 const API_URL = process.env.API_URL || 'http://127.0.0.1:8000';
-// Sử dụng cổng 3002 cố định thay vì đọc từ biến môi trường
-const SOCKET_PORT = 3002;
+// Sử dụng cổng 3001 cố định thay vì đọc từ biến môi trường
+const SOCKET_PORT = 3001;
 
 console.log('📌 Cài đặt cổng socket:', {
     'SOCKET_PORT env': process.env.SOCKET_PORT,
