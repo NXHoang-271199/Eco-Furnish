@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
 use App\Http\Controllers\Api\UserAddressController;
+use App\Http\Controllers\Api\UserNotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -221,6 +222,14 @@ Route::get('/users/{id}', function ($id) {
         'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
     ]);
 });
+
+// API cho thông báo người dùng
+Route::middleware('auth:sanctum')->prefix('user/notifications')->group(function () {
+    Route::get('/', [UserNotificationController::class, 'index']);
+    Route::patch('/{id}/read', [UserNotificationController::class, 'markAsRead']);
+    Route::patch('/read-all', [UserNotificationController::class, 'markAllAsRead']);
+});
+
 // Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động // FE ko được động tới
 // Cart Routers
 Route::middleware('auth:sanctum')->group(function () {
@@ -253,6 +262,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // review routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
+    Route::get('/products/{productId}/can-review', [ReviewController::class, 'canReview']); // kiểm tra quyền đánh giá
 });
 Route::get('/products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
 

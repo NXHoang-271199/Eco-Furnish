@@ -11,10 +11,12 @@
     <script>
         let priceRangeSlider;
         let selectedCategoryId = 'all';
+        let selectedStockStatus = 'all';
         let searchTimeout;
         let currentFilters = {
             search: '',
             category: 'all',
+            stock: 'all',
             minPrice: 0,
             maxPrice: 100000000
         };
@@ -257,6 +259,9 @@
                 const categoryCell = row.querySelector('td:nth-child(3)');
                 const categoryName = categoryCell.textContent.trim();
                 const priceCell = row.querySelector('td:nth-child(4)');
+                const stockStatus = priceCell.querySelector('.badge') ? 
+                    priceCell.querySelector('.badge').textContent.trim() : '';
+                const isInStock = stockStatus === 'Còn hàng';
 
                 // Kiểm tra điều kiện tìm kiếm
                 const matchesSearch = currentFilters.search === '' || 
@@ -266,6 +271,11 @@
                 // Kiểm tra điều kiện danh mục
                 const matchesCategory = currentFilters.category === 'all' || 
                     categoryName === document.querySelector(`.category-filter[data-category-id="${currentFilters.category}"] .listname`).textContent.trim();
+                
+                // Kiểm tra điều kiện trạng thái tồn kho
+                const matchesStock = currentFilters.stock === 'all' || 
+                    (currentFilters.stock === 'instock' && isInStock) || 
+                    (currentFilters.stock === 'outofstock' && !isInStock);
 
                 // Kiểm tra điều kiện giá
                 let matchesPrice = false;
@@ -289,7 +299,7 @@
                 }
 
                 // Hiển thị hoặc ẩn sản phẩm dựa trên tất cả điều kiện
-                if (matchesSearch && matchesCategory && matchesPrice) {
+                if (matchesSearch && matchesCategory && matchesStock && matchesPrice) {
                     row.style.display = '';
                     visibleProducts++;
                 } else {
@@ -302,6 +312,11 @@
 
         function applyCategoryFilter() {
             currentFilters.category = selectedCategoryId;
+            const visibleProducts = applyAllFilters();
+        }
+        
+        function applyStockFilter() {
+            currentFilters.stock = selectedStockStatus;
             const visibleProducts = applyAllFilters();
         }
 
@@ -319,8 +334,8 @@
             if (visibleProducts === 0) {
                 Swal.fire({
                     title: 'Không tìm thấy sản phẩm!',
-                    html: `Không có sản phẩm nào có giá trong khoảng ${currentFilters.minPrice.toLocaleString('vi-VN')} - ${currentFilters.maxPrice.toLocaleString('vi-VN')} VNĐ<br>
-                          Vui lòng thử lại với khoảng giá khác.`,
+                    html: `Không có sản phẩm nào phù hợp với bộ lọc đã chọn.<br>
+                          Vui lòng thử lại với điều kiện lọc khác.`,
                     icon: 'info',
                     confirmButtonText: 'Đóng',
                     customClass: {
@@ -335,9 +350,29 @@
                     }
                 });
             } else {
+                // Tạo thông báo chi tiết về các bộ lọc đã áp dụng
+                let filterInfo = `Tìm thấy ${visibleProducts} sản phẩm`;
+                
+                // Thêm thông tin về danh mục
+                if (currentFilters.category !== 'all') {
+                    const categoryName = document.querySelector(`.category-filter[data-category-id="${currentFilters.category}"] .listname`).textContent.trim();
+                    filterInfo += ` thuộc danh mục "${categoryName}"`;
+                }
+                
+                // Thêm thông tin về trạng thái tồn kho
+                if (currentFilters.stock !== 'all') {
+                    const stockStatus = currentFilters.stock === 'instock' ? 'Còn hàng' : 'Hết hàng';
+                    filterInfo += ` với trạng thái "${stockStatus}"`;
+                }
+                
+                // Thêm thông tin về khoảng giá
+                if (currentFilters.minPrice > 0 || currentFilters.maxPrice < 100000000) {
+                    filterInfo += ` có giá trong khoảng ${currentFilters.minPrice.toLocaleString('vi-VN')} - ${currentFilters.maxPrice.toLocaleString('vi-VN')} VNĐ`;
+                }
+                
                 Swal.fire({
                     title: 'Đã lọc sản phẩm!',
-                    html: `Tìm thấy ${visibleProducts} sản phẩm có giá trong khoảng ${currentFilters.minPrice.toLocaleString('vi-VN')} - ${currentFilters.maxPrice.toLocaleString('vi-VN')} VNĐ`,
+                    html: filterInfo,
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false,
@@ -380,6 +415,7 @@
             currentFilters = {
                 search: '',
                 category: 'all',
+                stock: 'all',
                 minPrice: 0,
                 maxPrice: 100000000
             };
@@ -400,6 +436,13 @@
                 filter.classList.remove('active');
             });
             document.querySelector('.category-filter[data-category-id="all"]').classList.add('active');
+            
+            // Reset stock filter
+            selectedStockStatus = 'all';
+            document.querySelectorAll('.stock-filter').forEach(filter => {
+                filter.classList.remove('active');
+            });
+            document.querySelector('.stock-filter[data-stock="all"]').classList.add('active');
 
             // Áp dụng lại tất cả bộ lọc
             const visibleProducts = applyAllFilters();
@@ -444,6 +487,26 @@
                     
                     // Chỉ áp dụng lọc danh mục
                     applyCategoryFilter();
+                });
+            });
+            
+            // Xử lý lọc theo trạng thái tồn kho
+            const stockFilters = document.querySelectorAll('.stock-filter');
+            
+            stockFilters.forEach(filter => {
+                filter.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Cập nhật trạng thái active và lưu trạng thái đã chọn
+                    stockFilters.forEach(f => f.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedStockStatus = this.getAttribute('data-stock');
+                    
+                    // Hiệu ứng cho các stock filters
+                    animateElement(this);
+                    
+                    // Chỉ áp dụng lọc trạng thái tồn kho
+                    applyStockFilter();
                 });
             });
 

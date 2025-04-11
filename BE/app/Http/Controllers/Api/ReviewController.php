@@ -103,4 +103,66 @@ class ReviewController extends Controller
             'data' => $reviews
         ]);
     }
+
+    /**
+     * Kiểm tra xem người dùng có thể đánh giá sản phẩm hay không
+     * 
+     * @param int $productId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function canReview($productId)
+    {
+        $userId = Auth::id();
+        
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng đăng nhập để đánh giá sản phẩm'
+            ], 401);
+        }
+
+        // Kiểm tra xem người dùng có đơn hàng chứa sản phẩm không
+        $order = Order::where('user_id', $userId)
+            ->whereHas('orderItems', function ($query) use ($productId) {
+                $query->where('product_id', $productId);
+            })
+            ->whereNotIn('order_status', ['Hoàn Hàng', 'Hủy Đơn'])
+            ->orderBy('created_at', 'desc') // Lấy đơn mới nhất
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa mua sản phẩm này.'
+            ], 403);
+        }
+
+        // Kiểm tra trạng thái đơn hàng có đủ điều kiện để đánh giá không
+        if ($order->order_status !== 'Đã Nhận') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chỉ có thể đánh giá khi đơn hàng đã hoàn tất.'
+            ], 403);
+        }
+
+        // Kiểm tra xem người dùng đã đánh giá sản phẩm này chưa
+        $existingReview = Review::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->where('order_id', $order->id)
+            ->exists();
+
+        if ($existingReview) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã đánh giá sản phẩm này rồi.'
+            ], 403);
+        }
+
+        // Nếu tất cả các điều kiện đều thỏa mãn, người dùng có thể đánh giá
+        return response()->json([
+            'success' => true,
+            'message' => 'Bạn có thể đánh giá sản phẩm này',
+            'order_id' => $order->id
+        ]);
+    }
 }

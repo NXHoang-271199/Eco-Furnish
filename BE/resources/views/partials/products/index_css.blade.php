@@ -613,4 +613,49 @@
                 max-width: 250px;
             }
         }
+
+        .ripple-effect {
+            animation-name: ripple;
+        }
+            
+        .fadeInDown {
+            animation-name: fadeInDown;
+        }
+        
+        .fadeOutUp {
+            animation-name: fadeOutUp;
+        }
+        
+        .faster {
+            animation-duration: 0.3s;
+        }
+
+        /* Badge styling */
+        .badge {
+            padding: 0.35em 0.65em;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            display: inline-block;
+        }
+
+        .bg-success-subtle {
+            background-color: rgba(10, 179, 156, 0.15);
+        }
+
+        .text-success {
+            color: #0ab39c !important;
+        }
+
+        .bg-danger-subtle {
+            background-color: rgba(240, 101, 72, 0.15);
+        }
+
+        .text-danger {
+            color: #f06548 !important;
+        }
     </style>
