@@ -38,6 +38,7 @@ import { Toaster } from "react-hot-toast";
 import NotificationsPage from "./pages/(website)/UserAccount/Notifications/NotificationsPage";
 import WalletPage from "./pages/(website)/UserAccount/Wallet/WalletPage";
 import WalletSuccess from "./pages/(website)/UserAccount/Wallet/WalletSuccess";
+import WalletDeposit from "./pages/(website)/UserAccount/Wallet/WalletDeposit";
 function App() {
   return (
     <>
@@ -87,6 +88,7 @@ function App() {
             <Route path="order_detail/:id" element={<OrderDetail />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="wallet" element={<WalletPage />} />
+            <Route path="wallet/deposit" element={<WalletDeposit />} />
             <Route path="wallet/deposit-success" element={<WalletSuccess />} />
           </Route>
         </Route>
