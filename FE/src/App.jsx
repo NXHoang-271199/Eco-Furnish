@@ -34,9 +34,10 @@ import OrderHistory from "./pages/(website)/UserAccount/OrderHistory/OrderHistor
 import { useEffect } from "react";
 import OrderDetail from "./pages/(website)/UserAccount/OrderHistory/OrderDetail";
 import OAuthCallback from "./pages/OAuthCallback/OAuthCallback";
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
 import NotificationsPage from "./pages/(website)/UserAccount/Notifications/NotificationsPage";
-
+import WalletPage from "./pages/(website)/UserAccount/Wallet/WalletPage";
+import WalletSuccess from "./pages/(website)/UserAccount/Wallet/WalletSuccess";
 function App() {
   return (
     <>
@@ -45,21 +46,21 @@ function App() {
         toastOptions={{
           duration: 3000,
           style: {
-            background: '#fff',
-            color: '#333',
+            background: "#fff",
+            color: "#333",
           },
           success: {
             duration: 2000,
             iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
+              primary: "#10b981",
+              secondary: "#fff",
             },
           },
           error: {
             duration: 3000,
             iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
+              primary: "#ef4444",
+              secondary: "#fff",
             },
           },
         }}
@@ -85,6 +86,8 @@ function App() {
             <Route path="list_order" element={<OrderHistory />} />
             <Route path="order_detail/:id" element={<OrderDetail />} />
             <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="wallet" element={<WalletPage />} />
+            <Route path="wallet/deposit-success" element={<WalletSuccess />} />
           </Route>
         </Route>
         <Route path="/sign-in" element={<SignIn />} />

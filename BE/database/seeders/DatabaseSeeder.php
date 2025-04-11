@@ -22,13 +22,6 @@ class DatabaseSeeder extends Seeder
             PaymentMethodSeeder::class,
             VoucherSeeder::class,
             OrderSeeder::class,
-            OrderItemSeeder::class,
-            OrderNotificationSeeder::class,
-            CommentSeeder::class,
-            // TopBuyersSeeder::class,
-            CartSeeder::class,
-            CartItemSeeder::class,
-            ReviewSeeder::class,
             WalletSeeder::class,
         ]);
 
@@ -40,6 +33,17 @@ class DatabaseSeeder extends Seeder
             'role_id' => 1, // Role Admin
             'is_active' => 1,
             'email_verified_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+             // Tạo tài khoản staff
+        User::create([
+            'name' => 'Staff',
+            'email' => 'staff@gmail.com',
+            'password' => Hash::make(1),
+            'role_id' => 2,
+            'email_verified_at' => now(),
+            'is_active' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

@@ -17,27 +17,27 @@ const FadeInAnimation = ({ children, delay = 0, direction = null }) => {
       case "left":
         return {
           hidden: { x: -50, opacity: 0 },
-          visible: { x: 0, opacity: 1 }
+          visible: { x: 0, opacity: 1 },
         };
       case "right":
         return {
           hidden: { x: 50, opacity: 0 },
-          visible: { x: 0, opacity: 1 }
+          visible: { x: 0, opacity: 1 },
         };
       case "up":
         return {
           hidden: { y: 50, opacity: 0 },
-          visible: { y: 0, opacity: 1 }
+          visible: { y: 0, opacity: 1 },
         };
       case "down":
         return {
           hidden: { y: -50, opacity: 0 },
-          visible: { y: 0, opacity: 1 }
+          visible: { y: 0, opacity: 1 },
         };
       default:
         return {
           hidden: { opacity: 0 },
-          visible: { opacity: 1 }
+          visible: { opacity: 1 },
         };
     }
   };
@@ -102,7 +102,8 @@ const About = () => {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="text-xl md:text-2xl max-w-2xl text-center px-4"
             >
-              Chúng tôi luôn kiên định với sứ mệnh tạo ra những sản phẩm nội thất bền vững, thân thiện với môi trường
+              Chúng tôi luôn kiên định với sứ mệnh tạo ra những sản phẩm nội
+              thất bền vững, thân thiện với môi trường
             </motion.p>
           </div>
         </div>
@@ -123,9 +124,13 @@ const About = () => {
                   <TbTargetArrow className="text-orange-500 w-16 h-16" />
                 </div>
               </div>
-              <h3 className="font-bold text-2xl uppercase text-center mb-4">Sứ mệnh</h3>
+              <h3 className="font-bold text-2xl uppercase text-center mb-4">
+                Sứ mệnh
+              </h3>
               <p className="text-center text-gray-600">
-                Chúng tôi mang đến những sản phẩm nội thất chất lượng cao, được sản xuất từ nguyên liệu bền vững, góp phần bảo vệ môi trường và nâng cao chất lượng cuộc sống.
+                Chúng tôi mang đến những sản phẩm nội thất chất lượng cao, được
+                sản xuất từ nguyên liệu bền vững, góp phần bảo vệ môi trường và
+                nâng cao chất lượng cuộc sống.
               </p>
             </motion.div>
 
@@ -141,9 +146,13 @@ const About = () => {
                   <PiRoadHorizonFill className="text-orange-500 w-16 h-16" />
                 </div>
               </div>
-              <h3 className="font-bold text-2xl uppercase text-center mb-4">Tầm nhìn</h3>
+              <h3 className="font-bold text-2xl uppercase text-center mb-4">
+                Tầm nhìn
+              </h3>
               <p className="text-center text-gray-600">
-                Trở thành thương hiệu nội thất hàng đầu tại Việt Nam trong lĩnh vực nội thất bền vững, mang đến những giải pháp thiết kế hiện đại và thân thiện với môi trường.
+                Trở thành thương hiệu nội thất hàng đầu tại Việt Nam trong lĩnh
+                vực nội thất bền vững, mang đến những giải pháp thiết kế hiện
+                đại và thân thiện với môi trường.
               </p>
             </motion.div>
 
@@ -159,9 +168,13 @@ const About = () => {
                   <BiSolidBookHeart className="text-orange-500 w-16 h-16" />
                 </div>
               </div>
-              <h3 className="font-bold text-2xl uppercase text-center mb-4">Giá trị cốt lõi</h3>
+              <h3 className="font-bold text-2xl uppercase text-center mb-4">
+                Giá trị cốt lõi
+              </h3>
               <p className="text-center text-gray-600">
-                Chất lượng - Sáng tạo - Bền vững - Trách nhiệm - Khách hàng là trọng tâm. Những giá trị này định hướng mọi quyết định và hành động của chúng tôi.
+                Chất lượng - Sáng tạo - Bền vững - Trách nhiệm - Khách hàng là
+                trọng tâm. Những giá trị này định hướng mọi quyết định và hành
+                động của chúng tôi.
               </p>
             </motion.div>
           </div>
@@ -186,10 +199,17 @@ const About = () => {
               </h2>
               <div className="h-1 w-20 bg-orange-400 mb-6"></div>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Được thành lập vào năm 2020, Eco-Furnish là thương hiệu tiên phong trong lĩnh vực nội thất bền vững tại Việt Nam. Chúng tôi chuyên sản xuất và phân phối các sản phẩm nội thất được làm từ gỗ tự nhiên, được khai thác có trách nhiệm từ các khu rừng được quản lý bền vững.
+                Được thành lập vào năm 2020, Eco-Furnish là thương hiệu tiên
+                phong trong lĩnh vực nội thất bền vững tại Việt Nam. Chúng tôi
+                chuyên sản xuất và phân phối các sản phẩm nội thất được làm từ
+                gỗ tự nhiên, được khai thác có trách nhiệm từ các khu rừng được
+                quản lý bền vững.
               </p>
               <p className="text-gray-600 leading-relaxed">
-                Với đội ngũ thiết kế tài năng và đam mê, chúng tôi luôn nỗ lực sáng tạo những sản phẩm nội thất không chỉ đẹp về mặt thẩm mỹ mà còn bền vững, thân thiện với môi trường và mang lại không gian sống lành mạnh cho khách hàng.
+                Với đội ngũ thiết kế tài năng và đam mê, chúng tôi luôn nỗ lực
+                sáng tạo những sản phẩm nội thất không chỉ đẹp về mặt thẩm mỹ mà
+                còn bền vững, thân thiện với môi trường và mang lại không gian
+                sống lành mạnh cho khách hàng.
               </p>
             </FadeInAnimation>
           </div>
@@ -228,9 +248,12 @@ const About = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
                 <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                  <h4 className="text-white uppercase text-lg font-semibold mb-2">Sàn gỗ</h4>
+                  <h4 className="text-white uppercase text-lg font-semibold mb-2">
+                    Sàn gỗ
+                  </h4>
                   <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    Sàn gỗ tự nhiên cao cấp, đa dạng mẫu mã, phù hợp với mọi không gian sống.
+                    Sàn gỗ tự nhiên cao cấp, đa dạng mẫu mã, phù hợp với mọi
+                    không gian sống.
                   </p>
                 </div>
               </motion.div>
@@ -251,9 +274,12 @@ const About = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
                 <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                  <h4 className="text-white uppercase text-lg font-semibold mb-2">Hoàn thiện</h4>
+                  <h4 className="text-white uppercase text-lg font-semibold mb-2">
+                    Hoàn thiện
+                  </h4>
                   <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    Dịch vụ hoàn thiện chuyên nghiệp với các sản phẩm sơn, dầu bảo vệ gỗ thân thiện với môi trường.
+                    Dịch vụ hoàn thiện chuyên nghiệp với các sản phẩm sơn, dầu
+                    bảo vệ gỗ thân thiện với môi trường.
                   </p>
                 </div>
               </motion.div>
@@ -274,9 +300,12 @@ const About = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
                 <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                  <h4 className="text-white uppercase text-lg font-semibold mb-2">Lắp đặt</h4>
+                  <h4 className="text-white uppercase text-lg font-semibold mb-2">
+                    Lắp đặt
+                  </h4>
                   <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    Dịch vụ lắp đặt chuyên nghiệp, nhanh chóng và tỉ mỉ đến từng chi tiết.
+                    Dịch vụ lắp đặt chuyên nghiệp, nhanh chóng và tỉ mỉ đến từng
+                    chi tiết.
                   </p>
                 </div>
               </motion.div>
@@ -297,9 +326,12 @@ const About = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
                 <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                  <h4 className="text-white uppercase text-lg font-semibold mb-2">Sưởi ấm sàn</h4>
+                  <h4 className="text-white uppercase text-lg font-semibold mb-2">
+                    Sưởi ấm sàn
+                  </h4>
                   <p className="text-white/80 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    Giải pháp sưởi ấm sàn hiện đại, tiết kiệm năng lượng, mang lại cảm giác ấm áp cho ngôi nhà.
+                    Giải pháp sưởi ấm sàn hiện đại, tiết kiệm năng lượng, mang
+                    lại cảm giác ấm áp cho ngôi nhà.
                   </p>
                 </div>
               </motion.div>
@@ -337,7 +369,8 @@ const About = () => {
                 <h3 className="font-bold text-xl mb-1">Nguyễn Xuân Hoàng</h3>
                 <p className="text-orange-500 mb-3">Giám đốc điều hành</p>
                 <p className="text-gray-600">
-                  Với hơn 15 năm kinh nghiệm trong lĩnh vực nội thất và thiết kế bền vững.
+                  Với hơn 15 năm kinh nghiệm trong lĩnh vực nội thất và thiết kế
+                  bền vững.
                 </p>
               </motion.div>
 
@@ -358,7 +391,8 @@ const About = () => {
                 <h3 className="font-bold text-xl mb-1">Nguyễn Đức Việt</h3>
                 <p className="text-orange-500 mb-3">Giám đốc thiết kế</p>
                 <p className="text-gray-600">
-                  Chuyên gia thiết kế với nhiều dự án nổi bật trong nước và quốc tế.
+                  Chuyên gia thiết kế với nhiều dự án nổi bật trong nước và quốc
+                  tế.
                 </p>
               </motion.div>
 
@@ -379,7 +413,8 @@ const About = () => {
                 <h3 className="font-bold text-xl mb-1">Nguyễn Huy Hoàng</h3>
                 <p className="text-orange-500 mb-3">Giám đốc Marketing</p>
                 <p className="text-gray-600">
-                  Chuyên gia về chiến lược marketing và phát triển thương hiệu bền vững.
+                  Chuyên gia về chiến lược marketing và phát triển thương hiệu
+                  bền vững.
                 </p>
               </motion.div>
             </div>
