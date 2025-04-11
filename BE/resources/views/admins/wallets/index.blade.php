@@ -2,6 +2,10 @@
 
 @section('title', 'Quản lý ví tiền')
 
+@section('CSS')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+@endsection
+
 @section('content')
     <div class="container-fluid">
         <x-alert />
@@ -128,15 +132,44 @@
                 .then(data => {
                     if (data.success) {
                         bootstrap.Modal.getInstance(document.getElementById('balanceModal')).hide();
-                        alert('Cộng tiền thành công!');
-                        location.reload();
+                        Swal.fire({
+                            title: 'Thành công!',
+                            text: `Đã cộng ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)} vào ví thành công!`,
+                            icon: 'success',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            customClass: {
+                                popup: 'animate__animated animate__fadeInDown'
+                            },
+                            showClass: {
+                                popup: 'animate__animated animate__fadeInDown'
+                            },
+                            hideClass: {
+                                popup: 'animate__animated animate__fadeOutUp'
+                            }
+                        }).then(() => {
+                            location.reload();
+                        });
                     } else {
-                        alert(data.message || 'Đã có lỗi xảy ra!');
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: data.message || 'Đã có lỗi xảy ra!',
+                            icon: 'error',
+                            confirmButtonText: 'Đóng',
+                            confirmButtonColor: '#dc3545'
+                        });
                     }
                 })
                 .catch(error => {
                     console.error('Lỗi:', error);
-                    alert('Không thể kết nối đến máy chủ!');
+                    Swal.fire({
+                        title: 'Lỗi kết nối!',
+                        text: 'Không thể kết nối đến máy chủ!',
+                        icon: 'error',
+                        confirmButtonText: 'Đóng',
+                        confirmButtonColor: '#dc3545'
+                    });
                 });
         });
     </script>
