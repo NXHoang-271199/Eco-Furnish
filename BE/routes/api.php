@@ -145,6 +145,11 @@ Route::prefix('messages')->group(function () {
         Route::patch('/read/{messageId}', [MessageController::class, 'markAsRead']); // Đánh dấu đã đọc
         Route::patch('/read-all/{userId}', [MessageController::class, 'markAllAsRead']); // Đánh dấu tất cả là đã đọc
         Route::post('/admin/send', [MessageController::class, 'sendByAdmin']); // Admin gửi tin nhắn
+
+        // *** Thêm Route: Admin đánh dấu tin nhắn của client là đã đọc ***
+        Route::patch('/mark-client-messages-as-read/{clientId}', [MessageController::class, 'markClientMessagesAsReadByAdmin'])
+            ->middleware('auth:sanctum'); // Đảm bảo chỉ admin mới gọi được (cần kiểm tra role trong controller)
+        // *** Kết thúc thêm ***
     });
 });
 

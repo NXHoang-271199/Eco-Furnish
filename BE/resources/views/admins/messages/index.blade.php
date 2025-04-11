@@ -431,14 +431,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Thêm sự kiện click để chọn người dùng
         li.addEventListener('click', () => {
-            // Xóa highlight khỏi tất cả các user
-            userList.querySelectorAll('.user-item').forEach(item => {
-                item.classList.remove('active', 'list-group-item-warning');
+            // Tìm user đang active trước đó (nếu có)
+            const previouslyActiveUser = userList.querySelector('.user-item.active');
+            if (previouslyActiveUser && previouslyActiveUser !== li) {
+                previouslyActiveUser.classList.remove('active');
+                // Không xóa warning hoặc badge của user cũ ở đây, chỉ bỏ active
+            }
 
-                // Xóa badge thông báo tin nhắn mới
-                const badge = item.querySelector('.new-message-badge');
-                if (badge) badge.remove();
-            });
+            // Xóa highlight và badge của user vừa được click
+            li.classList.remove('list-group-item-warning');
+            const badge = li.querySelector('.new-message-badge');
+            if (badge) badge.remove();
 
             // Highlight user được chọn
             li.classList.add('active');
@@ -454,6 +457,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Tải tin nhắn cũ
             loadMessages(userId);
+
+            // *** Thêm: Gửi sự kiện báo admin đã xem chat của user này ***
+            if (socket && socket.connected) {
+                console.log(`📣 Admin đang xem chat của user: ${userId}`);
+                socket.emit('adminViewedClientChat', { clientId: userId });
+            }
+            // *** Kết thúc thêm ***
         });
 
         userList.appendChild(li);

@@ -645,11 +645,50 @@ io.on("connection", (socket) => {
             const messageForClient = {
                 ...savedMessage,
                 senderName: socket.user.name,
-                is_read: false // Thêm trạng thái chưa đọc
+                is_read: false // Tin nhắn admin mới gửi thì client chưa đọc
             };
-
             io.to(`user_${data.userId}`).emit("adminResponse", messageForClient);
             console.log(`📣 Đã gửi tin nhắn đến user_${data.userId}`);
+
+            // *** Thêm log kiểm tra ***
+            console.log('🚦 [Admin Sent Msg] Chuẩn bị gọi API đánh dấu đã đọc...');
+            // *** Kết thúc log kiểm tra ***
+
+            // *** Thêm: Sau khi admin gửi tin nhắn, tự động đánh dấu tin nhắn của client là đã đọc ***
+            try {
+                const clientId = data.userId;
+                const adminToken = socket.handshake.auth.token;
+                const markAsReadApiUrl = `${API_URL}/api/messages/mark-client-messages-as-read/${clientId}`;
+
+                console.log(`🔄 [Admin Sent Msg] Triggering mark client messages as read. Calling API: PATCH ${markAsReadApiUrl}`);
+
+                const markAsReadResponse = await fetch(markAsReadApiUrl, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "Authorization": `Bearer ${adminToken}`
+                    }
+                });
+
+                const markAsReadResult = await markAsReadResponse.json();
+
+                if (!markAsReadResponse.ok) {
+                    console.error(`❌ [Admin Sent Msg] Lỗi khi gọi API đánh dấu đã đọc sau khi gửi tin nhắn: ${markAsReadResponse.status}`, markAsReadResult);
+                } else {
+                    console.log(`✅ [Admin Sent Msg] API đánh dấu đã đọc thành công:`, markAsReadResult);
+                    // Chỉ gửi tín hiệu cập nhật UI về client nếu có tin nhắn được cập nhật
+                    if (markAsReadResult.success && markAsReadResult.updated_count > 0) {
+                        io.to(`user_${clientId}`).emit('clientMessagesReadByAdmin');
+                        console.log(`📣 [Admin Sent Msg] Đã gửi clientMessagesReadByAdmin đến user_${clientId} sau khi admin gửi tin nhắn.`);
+                    } else {
+                        console.log(`ℹ️ [Admin Sent Msg] Không có tin nhắn nào của client cần đánh dấu đã đọc.`);
+                    }
+                }
+            } catch (error) {
+                console.error("❌ [Admin Sent Msg] Lỗi nghiêm trọng khi trigger đánh dấu đã đọc sau khi gửi tin nhắn:", error);
+            }
+            // *** Kết thúc thêm ***
 
             callback({ success: true, message: savedMessage });
         } catch (error) {
@@ -931,6 +970,61 @@ io.on("connection", (socket) => {
             callback({ success: false, error: error.message });
         }
     });
+
+    // *** Thêm: Xử lý sự kiện Admin xem chat của Client ***
+    socket.on('adminViewedClientChat', async (data) => {
+        // *** Thêm log để kiểm tra sự kiện có được nhận không ***
+        console.log(`✅ [Server] Nhận được sự kiện adminViewedClientChat từ socket ${socket.id} với data:`, data);
+        // *** Kết thúc log ***
+
+        if (socket.user.role !== 'admin') {
+            console.error('⚠️ Lỗi: Chỉ admin mới có thể gửi sự kiện adminViewedClientChat');
+            return; // Bỏ qua nếu không phải admin
+        }
+        if (!data || !data.clientId) {
+            console.error('⚠️ Lỗi: Sự kiện adminViewedClientChat thiếu clientId');
+            return;
+        }
+
+        const clientId = data.clientId;
+        const adminToken = socket.handshake.auth.token; // Lấy token của admin đang thực hiện
+
+        console.log(`👀 Admin ${socket.user.name} đang xem tin nhắn của client ${clientId}`);
+
+        try {
+            // *** Gọi API mới để đánh dấu tin nhắn trong DB là đã đọc ***
+            const apiUrl = `${API_URL}/api/messages/mark-client-messages-as-read/${clientId}`;
+            console.log(`📞 Gọi API: PATCH ${apiUrl}`);
+
+            const response = await fetch(apiUrl, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Authorization": `Bearer ${adminToken}`
+                },
+                // Không cần body cho request PATCH này
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                console.error(`❌ Lỗi khi gọi API đánh dấu đã đọc: ${response.status}`, result);
+                // Có thể không gửi sự kiện về client nếu API lỗi
+                return;
+            }
+
+            console.log(`✅ API đánh dấu đã đọc thành công:`, result);
+
+            // *** Chỉ gửi sự kiện về client SAU KHI API thành công ***
+            io.to(`user_${clientId}`).emit('clientMessagesReadByAdmin');
+            console.log(`📣 Đã gửi clientMessagesReadByAdmin đến user_${clientId} sau khi DB cập nhật`);
+
+        } catch (error) {
+            console.error("❌ Lỗi nghiêm trọng khi xử lý adminViewedClientChat hoặc gọi API:", error);
+        }
+    });
+    // *** Kết thúc thêm ***
 
     /**
      * 📌 Xử lý khi Client hoặc Admin ngắt kết nối

@@ -102,13 +102,13 @@ const ChatRealTime = () => {
     const [selectedImages, setSelectedImages] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [imagePreviews, setImagePreviews] = useState([]);
-    // Thêm state để theo dõi quá trình nhóm ảnh (Thêm lại do vẫn được dùng)
-    const [imageGroups, setImageGroups] = useState({});
     // State cho lightbox
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [lightboxImages, setLightboxImages] = useState([]);
     const [socketStatus, setSocketStatus] = useState("disconnected");
+    // Thêm state để lưu URL socket server
+    const [socketServerUrl] = useState(import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3002");
 
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
@@ -616,13 +616,13 @@ const ChatRealTime = () => {
     useEffect(() => {
         if (socket) {
             socket.on("messagesMarkedAsRead", (data) => {
-                console.log("📬 Nhận sự kiện messagesMarkedAsRead:", data);
-                if (data.success) {
-                    // Cập nhật trạng thái đã đọc cho tất cả tin nhắn
+                console.log("📬 Nhận sự kiện messagesMarkedAsRead từ server:", data);
+                if (data.success && userData) { // Thêm kiểm tra userData tồn tại
+                    // Cập nhật trạng thái đã đọc cho các tin nhắn NHẬN được
                     setMessages(prevMessages =>
                         prevMessages.map(msg => {
-                            // Nếu là tin nhắn của người dùng hiện tại (từ sender_id), đánh dấu là đã đọc
-                            if (msg.sender_id === userData?.id) {
+                            // Nếu tin nhắn được gửi ĐẾN người dùng hiện tại, đánh dấu là đã đọc
+                            if (msg.receiver_id === userData.id || (!msg.isCurrentUser && !msg.isAdmin)) { // Check if received by current user
                                 return { ...msg, is_read: true };
                             }
                             return msg;
@@ -631,11 +631,30 @@ const ChatRealTime = () => {
                     console.log("✅ Đã cập nhật trạng thái tin nhắn thành đã đọc");
                 }
             });
+
+            // Thêm sự kiện lắng nghe tin nhắn của client đã được admin đọc
+            socket.on("clientMessagesReadByAdmin", () => {
+                console.log("📬 Nhận sự kiện clientMessagesReadByAdmin từ server: Admin đã đọc tin nhắn của bạn");
+
+                // Cập nhật trạng thái đã đọc cho các tin nhắn GỬI ĐI từ client
+                setMessages(prevMessages =>
+                    prevMessages.map(msg => {
+                        // Chỉ cập nhật cho tin nhắn do người dùng hiện tại gửi (isCurrentUser = true)
+                        if (msg.isCurrentUser || (userData && msg.sender_id === userData.id)) {
+                            return { ...msg, is_read: true };
+                        }
+                        return msg;
+                    })
+                );
+
+                console.log("✅ Đã cập nhật trạng thái tin nhắn của client thành đã đọc bởi admin");
+            });
         }
 
         return () => {
             if (socket) {
                 socket.off("messagesMarkedAsRead");
+                socket.off("clientMessagesReadByAdmin");
             }
         };
     }, [socket, userData]);
@@ -752,7 +771,7 @@ const ChatRealTime = () => {
                 // Xử lý buffer cũ trước khi thêm nhóm mới (tránh trùng lặp nếu server gửi cả 2)
                 processAdminImageBuffer();
 
-                if (data.images && data.images.length > 0) {
+                if (data.images && data.images.length > 0 && data.sender_id !== userData?.id) { // Check if from admin
                     // Tạo tin nhắn nhóm ảnh
                     const imageGroupMessage = {
                         id: `group-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Thêm ID duy nhất
@@ -1005,8 +1024,8 @@ const ChatRealTime = () => {
                         reject(new Error("Lỗi kết nối"));
                     };
 
-                    // Gửi request
-                    xhr.open('POST', 'http://localhost:3002/upload', true);
+                    // Gửi request - Sử dụng socketServerUrl thay vì hardcode
+                    xhr.open('POST', `${socketServerUrl}/upload`, true);
                     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
                     xhr.setRequestHeader('Accept', 'application/json');
                     xhr.send(formData);
@@ -1042,12 +1061,6 @@ const ChatRealTime = () => {
                                         };
                                     }
                                     return msg;
-                                }));
-
-                                // Lưu nhóm ảnh vào state để tham chiếu sau này
-                                setImageGroups(prev => ({
-                                    ...prev,
-                                    [groupId]: successfulUrls
                                 }));
 
                                 setLastError("");
@@ -1204,12 +1217,16 @@ const ChatRealTime = () => {
 
             // Cập nhật UI
             setUnreadCount(0); // Đặt rõ số tin nhắn chưa đọc là 0
-            setMessages(prev => prev.map(msg => ({
-                ...msg,
-                is_read: true
-            })));
+            setMessages(prev => prev.map(msg => {
+                // Chỉ đánh dấu tin nhắn nhận được (không phải của người dùng hiện tại) là đã đọc
+                if (msg.sender_id !== userData?.id && !msg.isCurrentUser) {
+                    return { ...msg, is_read: true };
+                }
+                // Giữ nguyên trạng thái is_read cho tin nhắn người dùng đã gửi
+                return msg;
+            }));
 
-            console.log("✅ Đã đánh dấu tất cả tin nhắn là đã đọc và reset unreadCount");
+            console.log("✅ Đã đánh dấu tin nhắn nhận được là đã đọc và reset unreadCount");
         } catch (error) {
             console.error("❌ Lỗi khi đánh dấu tin nhắn đã đọc:", error.message);
         }
@@ -1228,8 +1245,8 @@ const ChatRealTime = () => {
 
             // Tự động đánh dấu tin nhắn đã đọc nếu chat box đang mở
             if (isOpen) {
-                markMessagesAsRead();
-                setUnreadCount(0);
+                // markMessagesAsRead(); // <---- Loại bỏ dòng này
+                // setUnreadCount(0); // <---- Loại bỏ dòng này
             }
 
             console.log(`✅ Đã cập nhật số tin nhắn chưa đọc: ${unreadMessages.length}`);
@@ -1262,6 +1279,9 @@ const ChatRealTime = () => {
                         {unreadCount}
                     </span>
                 )}
+                {!isConnected && !isOpen && (
+                    <span className="absolute -bottom-1 -right-1 bg-yellow-500 w-3 h-3 rounded-full animate-pulse"></span>
+                )}
             </button>
 
             {/* Chat Box */}
@@ -1272,10 +1292,17 @@ const ChatRealTime = () => {
                         <h3 className="text-lg font-semibold">Chat Room</h3>
                         <div className="flex items-center">
                             <span className="flex items-center text-sm mr-2">
-                                <span
-                                    className={`w-2 h-2 rounded-full mr-2 ${isConnected ? "bg-white" : "bg-red-400"}`}
-                                ></span>
-                                {isConnected ? "Online" : "Connecting..."}
+                                {isConnected ? (
+                                    <>
+                                        <span className="w-2 h-2 rounded-full mr-2 bg-white animate-pulse"></span>
+                                        Online
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="w-2 h-2 rounded-full mr-2 bg-yellow-300 animate-pulse"></span>
+                                        {lastError ? "Mất kết nối" : "Đang kết nối..."}
+                                    </>
+                                )}
                             </span>
                         </div>
                     </div>
@@ -1283,7 +1310,7 @@ const ChatRealTime = () => {
                     {/* Error message */}
                     {lastError && (
                         <div className="bg-red-100 text-red-700 p-2 text-xs">
-                            Lỗi: {lastError}
+                            {lastError}
                         </div>
                     )}
 

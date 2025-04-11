@@ -57,8 +57,12 @@ export const getSocket = () => {
     // Tạo ID phiên duy nhất để server có thể theo dõi trang/tab
     const sessionId = generateSessionId();
 
+    // Lấy URL socket server từ biến môi trường, sử dụng giá trị mặc định nếu không có
+    const socketServerUrl = import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3002";
+    console.log("🔌 Kết nối đến socket server:", socketServerUrl);
+
     // Khởi tạo socket mới với token
-    socketInstance = io("http://localhost:3002", {
+    socketInstance = io(socketServerUrl, {
       transports: ["websocket", "polling"],
       auth: {
         token: token,
