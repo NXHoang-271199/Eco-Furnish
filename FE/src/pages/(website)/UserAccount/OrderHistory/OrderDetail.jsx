@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import { useParams, Link } from "react-router-dom";
 // import axios from "axios";
 import axiosInstance from "../../../../utils/axiosConfig";
+import Swal from 'sweetalert2';
 import {
   FiArrowLeft,
   FiInfo,
@@ -26,6 +27,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import axios from "axios";
 
 const RefundRequestModal = memo(({
   showModal,
@@ -258,7 +260,16 @@ const OrderDetail = () => {
         // Chỉ hỏi nếu là xác nhận thủ công
         if (
           !isAutoConfirm &&
-          !window.confirm("Bạn đã nhận được hàng và muốn xác nhận?")
+          !(await Swal.fire({
+            title: 'Xác nhận đã nhận hàng',
+            text: 'Bạn đã nhận được hàng và muốn xác nhận?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Hủy'
+          })).isConfirmed
         ) {
           // setLoading(false);
           return;
@@ -276,17 +287,92 @@ const OrderDetail = () => {
 
         if (response.data.status === "success") {
           if (!isAutoConfirm) {
-            alert("Đã xác nhận nhận hàng thành công!");
+            // Thay thế alert bằng toast tùy chỉnh
+            toast.custom(
+              (t) => (
+                <div className="bg-white shadow-lg rounded-lg overflow-hidden pointer-events-auto border-l-4 border-green-600">
+                  <div className="p-4">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 pt-0.5">
+                        <div className="h-10 w-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                          <FiCheckCircle className="h-6 w-6" />
+                        </div>
+                      </div>
+                      <div className="ml-3 flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          Xác nhận thành công!
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Đơn hàng #{order.order_code} đã được xác nhận đã nhận hàng.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ),
+              {
+                duration: 5000
+              }
+            );
+
+            // Gửi thông báo realtime đến BE thông qua Socket Server
+            try {
+              const socketServerUrl = import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3002";
+              const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+
+              // Chuẩn bị dữ liệu thông báo
+              const notificationData = {
+                event: 'order_confirmation',
+                data: {
+                  order_id: order.id,
+                  order_code: order.order_code,
+                  user_id: userData.id,
+                  user_name: order.user_name,
+                  total_price: order.total_price,
+                  created_at: new Date().toISOString(),
+                  message: `Đơn hàng #${order.order_code} đã được xác nhận đã nhận hàng.`
+                }
+              };
+
+              // Gửi thông báo đến Socket Server
+              axios.post(`${socketServerUrl}/broadcast-admin`, {
+                event: 'order_confirmation_notification',
+                data: notificationData
+              });
+
+              console.log('Đã gửi thông báo xác nhận đơn hàng đến admin');
+
+              // Phát sự kiện để các component khác có thể biết về việc xác nhận đơn hàng
+              const confirmEvent = new CustomEvent('order-confirmed', {
+                detail: {
+                  orderId: id,
+                  orderCode: order.order_code,
+                  userId: order.user_id,
+                  userName: order.user_name,
+                  totalPrice: order.total_price
+                }
+              });
+              window.dispatchEvent(confirmEvent);
+
+            } catch (e) {
+              console.error('Không thể gửi thông báo realtime:', e);
+              // Không ảnh hưởng đến luồng chính nếu gửi thông báo lỗi
+            }
           } else {
             console.log("Đơn hàng tự động xác nhận sau 30 phút.");
             // Có thể thêm thông báo nhẹ nhàng hơn alert
           }
           // Cập nhật lại thông tin đơn hàng cục bộ
-          setOrder(response.data.data); // Sử dụng data trả về từ API confirm
+          setOrder(prevOrder => ({
+            ...prevOrder,
+            ...response.data.data,
+            // Đảm bảo giữ nguyên payment_method nếu API không trả về
+            payment_method: response.data.data.payment_method || prevOrder.payment_method
+          }));
         } else {
           // Xử lý lỗi từ API confirm
           if (!isAutoConfirm) {
-            alert(response.data.message || "Không thể xác nhận đơn hàng.");
+            toast.error(response.data.message || "Không thể xác nhận đơn hàng.");
           } else {
             console.error("Lỗi tự động xác nhận:", response.data.message);
           }
@@ -297,14 +383,14 @@ const OrderDetail = () => {
           error.response?.data || error.message
         );
         if (!isAutoConfirm) {
-          alert("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.");
+          toast.error("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.");
         } // Lỗi tự động thì log
       } finally {
         // setLoading(false);
       }
     },
-    [id]
-  ); // Thêm id vào dependencies
+    [id, order]
+  ); // Thêm order vào dependencies
 
   // --- Tự động xác nhận sau 24 giờ --- START ---
   // useEffect để thiết lập timer tự động xác nhận
@@ -445,8 +531,8 @@ const OrderDetail = () => {
     // Điều kiện kiểm tra để tự động hủy
     const shouldCheckAutoCancel =
       order &&
-      (order.payment_method.name === "MoMo" ||
-        order.payment_method.name === "VNPAY") && // Thanh toán online
+      (order.payment_method?.name === "MoMo" ||
+        order.payment_method?.name === "VNPAY") && // Thanh toán online
       (order.payment_status === 0 || order.payment_status === 2) && // Chưa thanh toán hoặc đang chờ
       order.order_status !== "Hủy Đơn" && // Chưa bị hủy
       order.order_status !== "Đã Nhận"; // Chưa nhận
@@ -1262,7 +1348,7 @@ const OrderDetail = () => {
                         className={`inline-block w-3 h-3 rounded-full mr-2 ${paymentStatusInfo.bgColor}`}
                       ></span>
                       <span>
-                        {order.payment_method.name} - {paymentStatusInfo.text}
+                        {order.payment_method?.name || 'Không xác định'} - {paymentStatusInfo.text}
                       </span>
                     </p>
                   </div>
@@ -1404,8 +1490,8 @@ const OrderDetail = () => {
               </div>
 
               {order.payment_status !== 1 &&
-                (order.payment_method.name === "MoMo" ||
-                  order.payment_method.name === "VNPAY") && (
+                (order.payment_method?.name === "MoMo" ||
+                  order.payment_method?.name === "VNPAY") && (
                   <div className="mt-6">
                     <button
                       className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors flex items-center justify-center"

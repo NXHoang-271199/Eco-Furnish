@@ -45,7 +45,7 @@ use App\Http\Controllers\Admin\AdminForgotPasswordController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('admin.login');
 });
 
 // Đặt route upload image ở ngoài middleware group để tránh lỗi CSRF

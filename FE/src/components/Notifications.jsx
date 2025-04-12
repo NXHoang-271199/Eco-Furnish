@@ -124,7 +124,18 @@ const Notifications = () => {
             // Kiểm tra nếu thông báo đã tồn tại (tránh trùng lặp)
             const exists = prevNotifications.some(item => item.id === notification.id);
             if (exists) return prevNotifications;
-            return [notification, ...prevNotifications];
+
+            // Xử lý thông báo cho phù hợp với cấu trúc notification object
+            const processedNotification = {
+                ...notification,
+                order_code: notification.order_code || (notification.order && notification.order.order_code) || 'Không xác định',
+                order_status: notification.order_status || (notification.order && notification.order.order_status) || 'Không xác định',
+                // Tạo message mặc định nếu chưa có
+                message: notification.message ||
+                    `Đơn hàng #${notification.order_code || (notification.order && notification.order.order_code) || 'Không xác định'} đã chuyển sang trạng thái: ${notification.order_status || (notification.order && notification.order.order_status) || 'Không xác định'}`
+            };
+
+            return [processedNotification, ...prevNotifications];
         });
 
         // Tăng số lượng thông báo chưa đọc
