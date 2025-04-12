@@ -303,7 +303,7 @@ class OrderController extends Controller
                 ];
 
                 // Gửi thông báo đến Socket Server
-                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002').'/broadcast-admin', [
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002') . '/broadcast-admin', [
                     'event' => 'new_order_notification',
                     'data' => $notificationData
                 ]);
@@ -546,7 +546,7 @@ class OrderController extends Controller
                 ];
 
                 // Gửi thông báo đến Socket Server
-                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002').'/broadcast-admin', [
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002') . '/broadcast-admin', [
                     'event' => 'new_order_notification',
                     'data' => $notificationData
                 ]);
@@ -670,15 +670,20 @@ class OrderController extends Controller
             ], 400);
         }
 
-        // Kiểm tra xem có yêu cầu nào đã tạo chưa
+        // Kiểm tra yêu cầu hoàn hàng hoặc giao dịch hoàn tiền đã tồn tại
         $existingRefundRequest = RefundRequest::where('order_id', $orderId)
             ->whereIn('status', ['Chờ Duyệt', 'Đã Duyệt', 'Từ Chối'])
-            ->first();
+            ->exists();
 
-        if ($existingRefundRequest) {
+        $existingWalletTransaction = WalletTransaction::where('order_id', $orderId)
+            ->where('type', 'hoan_tien')
+            ->whereIn('status', ['cho_thanh_toan', 'thanh_cong']) // thêm nếu cần
+            ->exists();
+
+        if ($existingRefundRequest || $existingWalletTransaction) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng không thể gửi lại yêu cầu'
+                'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng hoặc giao dịch hoàn tiền, không thể gửi lại yêu cầu'
             ], 400);
         }
 
