@@ -199,8 +199,8 @@ const WalletDeposit = () => {
                   type="button"
                   onClick={() => setAmount(presetAmount.toString())}
                   className={`px-2 py-2 border ${amount === presetAmount.toString()
-                      ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                      : "border-gray-300 hover:bg-gray-100"
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                    : "border-gray-300 hover:bg-gray-100"
                     } rounded-md text-sm`}
                 >
                   {formatMoney(presetAmount)}
@@ -230,17 +230,19 @@ const WalletDeposit = () => {
                     key={method.id}
                     onClick={() => handlePaymentMethodChange(method.id)}
                     className={`flex items-center p-3 border rounded-lg cursor-pointer ${selectedPaymentMethod === method.id
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-gray-300 hover:bg-gray-50"
+                      ? "border-indigo-500 bg-indigo-50"
+                      : "border-gray-300 hover:bg-gray-50"
                       }`}
                   >
                     <div className="mr-3">
                       {method.image ? (
-                        <img
-                          src={method.image}
-                          alt={method.name}
-                          className="w-8 h-8 object-contain"
-                        />
+                        <div className="w-12 h-12 flex items-center justify-center rounded-lg overflow-hidden bg-white p-1 border border-gray-100 shadow-sm">
+                          <img
+                            src={`http://localhost:8000/storage/${method.image}`}
+                            alt={method.name}
+                            className="h-8 object-contain"
+                          />
+                        </div>
                       ) : (
                         <FaCreditCard className="text-gray-600 text-2xl" />
                       )}
@@ -259,8 +261,8 @@ const WalletDeposit = () => {
             onClick={handleDeposit}
             disabled={loading || !amount || !selectedPaymentMethod}
             className={`w-full py-3 px-4 rounded-lg flex items-center justify-center ${loading || !amount || !selectedPaymentMethod
-                ? "bg-gray-300 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-700 text-white"
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700 text-white"
               }`}
           >
             {loading ? (

@@ -744,8 +744,8 @@ const PaymentBuyNow = () => {
                     <label
                       key={method.id}
                       className={`relative flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${paymentMethod === method.id.toString() && !isDisabled
-                          ? "bg-blue-50 border-2 border-blue-500"
-                          : "border border-gray-200 hover:border-blue-400"
+                        ? "bg-blue-50 border-2 border-blue-500"
+                        : "border border-gray-200 hover:border-blue-400"
                         } ${isDisabled
                           ? "opacity-60 cursor-not-allowed bg-gray-50"
                           : "cursor-pointer"

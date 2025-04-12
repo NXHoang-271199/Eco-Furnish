@@ -36,7 +36,7 @@ export const showOrderStatusToast = (notification) => {
             colorClass = 'bg-blue-600';
             break;
         case 'Đang Giao':
-            colorClass = 'bg-yellow-600';
+            colorClass = 'bg-indigo-600';
             break;
         case 'Đã Giao':
             colorClass = 'bg-indigo-600';

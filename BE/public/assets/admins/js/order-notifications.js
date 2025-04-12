@@ -199,6 +199,34 @@ document.addEventListener('DOMContentLoaded', function () {
         updateNotificationCounter();
     });
 
+    // Lắng nghe sự kiện thông báo hủy đơn hàng
+    socket.on('order_cancel_notification', function (data) {
+        console.log('📣 Nhận thông báo hủy đơn hàng:', data);
+
+        // Phát âm thanh thông báo
+        playOrderNotificationSound();
+
+        // Hiển thị toast thông báo hủy đơn hàng
+        showOrderCancelNotification(data);
+
+        // Cập nhật UI (số lượng thông báo, v.v.)
+        updateNotificationCounter();
+    });
+
+    // Lắng nghe sự kiện thông báo yêu cầu hoàn hàng
+    socket.on('order_refund_notification', function (data) {
+        console.log('📣 Nhận thông báo yêu cầu hoàn hàng:', data);
+
+        // Phát âm thanh thông báo
+        playOrderNotificationSound();
+
+        // Hiển thị toast thông báo yêu cầu hoàn hàng
+        showOrderRefundNotification(data);
+
+        // Cập nhật UI (số lượng thông báo, v.v.)
+        updateNotificationCounter();
+    });
+
     // Lắng nghe sự kiện tin nhắn mới từ client
     socket.on('newClientMessage', function (data) {
         console.log('📣 Nhận tin nhắn mới từ client:', data);
@@ -270,6 +298,115 @@ document.addEventListener('DOMContentLoaded', function () {
         if (Notification && Notification.permission === "granted") {
             const notification = new Notification("Đơn hàng mới!", {
                 body: `#${orderCode} từ ${userName} - ${totalPrice}`,
+                icon: "/assets/admins/images/favicon.ico"
+            });
+
+            notification.onclick = function () {
+                window.location.href = `/admin/orders/${orderId}`;
+                notification.close();
+            };
+        }
+        // Yêu cầu quyền thông báo nếu chưa được cấp
+        else if (Notification && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+    }
+
+    /**
+     * Hàm hiển thị toast thông báo hủy đơn hàng
+     */
+    function showOrderCancelNotification(data) {
+        if (!data || !data.data) return;
+
+        const orderData = data.data;
+        const orderId = orderData.order_id;
+        const orderCode = orderData.order_code;
+        const userName = orderData.user_name;
+        const totalPrice = formatCurrency(orderData.total_price);
+        const message = orderData.message || `Đơn hàng #${orderCode} đã bị hủy bởi khách hàng.`;
+
+        // Tạo thông báo sử dụng Toastify
+        Toastify({
+            text: `🚫 ${message}`,
+            duration: 10000, // Hiển thị lâu hơn (10 giây)
+            close: true,
+            gravity: "top",
+            position: "right",
+            stopOnFocus: true,
+            onClick: function () {
+                // Chuyển đến trang chi tiết đơn hàng khi click
+                window.location.href = `/admin/orders/${orderId}`;
+            },
+            style: {
+                background: "linear-gradient(to right, #dc3545, #fd7e14)",
+                fontWeight: "bold",
+                padding: "12px",
+                fontSize: "14px",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                zIndex: 9999
+            }
+        }).showToast();
+
+        // Nếu người dùng cho phép thông báo trên desktop
+        if (Notification && Notification.permission === "granted") {
+            const notification = new Notification("Đơn hàng đã bị hủy!", {
+                body: `#${orderCode} - ${userName} - ${totalPrice}`,
+                icon: "/assets/admins/images/favicon.ico"
+            });
+
+            notification.onclick = function () {
+                window.location.href = `/admin/orders/${orderId}`;
+                notification.close();
+            };
+        }
+        // Yêu cầu quyền thông báo nếu chưa được cấp
+        else if (Notification && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+    }
+
+    /**
+     * Hàm hiển thị toast thông báo yêu cầu hoàn hàng
+     */
+    function showOrderRefundNotification(data) {
+        if (!data || !data.data) return;
+
+        const orderData = data.data;
+        const orderId = orderData.order_id;
+        const orderCode = orderData.order_code;
+        const userName = orderData.user_name;
+        const totalPrice = formatCurrency(orderData.total_price);
+        const reason = orderData.reason || 'Không có lý do cụ thể';
+        const message = orderData.message || `Đơn hàng #${orderCode} có yêu cầu hoàn hàng từ khách hàng.`;
+
+        // Tạo thông báo sử dụng Toastify
+        Toastify({
+            text: `🔄 ${message}`,
+            duration: 10000, // Hiển thị lâu hơn (10 giây)
+            close: true,
+            gravity: "top",
+            position: "right",
+            stopOnFocus: true,
+            onClick: function () {
+                // Chuyển đến trang chi tiết đơn hàng khi click
+                window.location.href = `/admin/orders/${orderId}`;
+            },
+            style: {
+                background: "linear-gradient(to right, #3498db, #2980b9)",
+                fontWeight: "bold",
+                padding: "12px",
+                fontSize: "14px",
+                borderRadius: "8px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                zIndex: 9999
+            }
+        }).showToast();
+
+        // Nếu người dùng cho phép thông báo trên desktop
+        if (Notification && Notification.permission === "granted") {
+            const notification = new Notification("Yêu cầu hoàn hàng mới!", {
+                body: `#${orderCode} - ${userName} - ${totalPrice}\nLý do: ${reason}`,
                 icon: "/assets/admins/images/favicon.ico"
             });
 

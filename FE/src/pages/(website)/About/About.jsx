@@ -389,7 +389,7 @@ const About = () => {
                   />
                 </div>
                 <h3 className="font-bold text-xl mb-1">Nguyễn Đức Việt</h3>
-                <p className="text-orange-500 mb-3">Giám đốc thiết kế</p>
+                <p className="text-orange-500 mb-3">Giám đốc thiết kế và kĩ thuật</p>
                 <p className="text-gray-600">
                   Chuyên gia thiết kế với nhiều dự án nổi bật trong nước và quốc
                   tế.
