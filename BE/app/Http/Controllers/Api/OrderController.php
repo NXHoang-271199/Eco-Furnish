@@ -908,4 +908,36 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Lấy danh sách đơn hàng chưa thanh toán trực tuyến của người dùng
+     */
+    public function getUnpaidOrders()
+    {
+        try {
+            $user = Auth::user();
+            
+            // Lấy các đơn hàng thanh toán online (VNPAY, MoMo) chưa thanh toán hoặc đang chờ thanh toán
+            $unpaidOrders = Order::with(['paymentMethod'])
+                ->where('user_id', $user->id)
+                ->whereIn('payment_status', [0, 2]) // 0: Chưa thanh toán, 2: Đang chờ thanh toán
+                ->whereHas('paymentMethod', function($query) {
+                    $query->whereIn('name', ['VNPAY', 'MoMo']); // Chỉ lấy phương thức thanh toán online
+                })
+                ->whereNotIn('order_status', ['Hủy Đơn', 'Đã Nhận', 'Hoàn Hàng']) // Không lấy đơn đã hủy, đã nhận hoặc hoàn hàng
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            return response()->json([
+                'status' => 'success',
+                'data' => $unpaidOrders
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Không thể lấy danh sách đơn hàng chưa thanh toán',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

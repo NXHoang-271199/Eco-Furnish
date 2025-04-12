@@ -22,7 +22,7 @@ function OAuthCallback() {
         navigate("/", { replace: true }); // Sử dụng replace để xóa callback khỏi lịch sử
       } catch (error) {
         console.error("Error processing OAuth callback:", error);
-        navigate("/sign-in", { replace: true });
+        navigate("/", { replace: true });
       }
     } else {
       // Nếu không có token, chuyển về trang đăng nhập
