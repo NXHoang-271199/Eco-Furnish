@@ -27,6 +27,9 @@
                                     <option value="thanh_toan_don_hang"
                                         {{ request()->transaction_type == 'thanh_toan_don_hang' ? 'selected' : '' }}>Thanh
                                         toán đơn hàng</option>
+                                    <option value="rut_tien"
+                                        {{ request()->transaction_type == 'rut_tien' ? 'selected' : '' }}>
+                                        Rút tiền</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
@@ -68,21 +71,24 @@
                     <table class="table table-bordered table-striped align-middle mb-0">
                         <thead class="table-light text-center">
                             <tr>
+                                <th></th> {{-- Nút toggle --}}
                                 <th>#</th>
                                 <th>Khách hàng</th>
                                 <th>Mã GD</th>
                                 <th>Loại GD</th>
                                 <th>Số tiền</th>
                                 <th>Trạng thái</th>
-                                <th>Kênh</th>
-                                <th>Người thực hiện</th>
-                                <th>Ghi chú</th>
                                 <th>Thời gian</th>
+                                <th>Hành động</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($transactions as $key => $transaction)
                                 <tr>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-light toggle-detail"
+                                            data-id="{{ $key }}">+</button>
+                                    </td>
                                     <td class="text-center">{{ $key + 1 }}</td>
                                     <td>
                                         <a href="{{ route('wallets.show', $transaction->wallet_id) }}"
@@ -113,14 +119,31 @@
                                             {{ getTransactionStatusLabel($transaction->status) }}
                                         </span>
                                     </td>
-                                    <td>{{ $transaction->paymentMethod->name ?? 'N/A' }}</td>
-                                    <td>{{ $transaction->createdBy?->name ?? ($transaction->updatedBy?->name ?? 'N/A') }}</td>
-                                    <td>{{ $transaction->description ?? '-' }}</td>
                                     <td>{{ $transaction->created_at->format('d/m/Y H:i') }}</td>
+                                    <td>
+                                        @if ($transaction->type === 'rut_tien')
+                                            {{-- Kiểm tra giao dịch có yêu cầu rút tiền --}}
+                                            <a href="#" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+
+                                {{-- Dòng chi tiết toggle --}}
+                                <tr class="transaction-detail-row d-none" id="detail-{{ $key }}">
+                                    <td colspan="9" class="bg-light">
+                                        <strong>Kênh:</strong>
+                                        {{ $transaction->paymentMethod->name ?? 'N/A' }}<br>
+                                        <strong>Người thực hiện:</strong>
+                                        {{ $transaction->createdBy?->name ?? ($transaction->updatedBy?->name ?? 'N/A') }}<br>
+                                        <strong>Ghi chú:</strong> {{ $transaction->description ?? '-' }}
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
+
                     <div class="mt-3">
                         {{ $transactions->links('pagination::bootstrap-5') }}
                     </div>
@@ -128,4 +151,16 @@
             </div>
         </div>
     </div>
+@endsection
+@section('JS')
+    <script>
+        document.querySelectorAll('.toggle-detail').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const detailRow = document.getElementById('detail-' + id);
+                detailRow.classList.toggle('d-none');
+                this.textContent = this.textContent === '+' ? '-' : '+';
+            });
+        });
+    </script>
 @endsection

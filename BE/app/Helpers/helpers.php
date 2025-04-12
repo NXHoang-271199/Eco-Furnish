@@ -111,6 +111,7 @@ if (!function_exists('getTransactionTypeLabel')) {
             'nap_tien'     => 'Nạp Tiền',
             'hoan_tien'    => 'Hoàn Tiền',
             'thanh_toan_don_hang' => 'Thanh Toán Đơn Hàng',
+            'rut_tien' => 'Rút Tiền'
         ][$type] ?? 'Không xác định';
     }
 }
@@ -125,6 +126,8 @@ if (!function_exists('getTransactionTypeColor')) {
                 return 'danger';
             case 'thanh_toan_don_hang':
                 return 'info';
+            case 'rut_tien':
+                return 'warning';
             default:
                 return 'secondary';
         }

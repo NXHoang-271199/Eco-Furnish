@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignIdFor(Order::class)->nullable()->constrained()->onDelete('set null');
             $table->string('wallet_code')->unique()->nullable();
             $table->decimal('amount', 15, 2);
-            $table->enum('type', ['nap_tien', 'hoan_tien', 'thanh_toan_don_hang']);
+            $table->enum('type', ['nap_tien', 'hoan_tien', 'thanh_toan_don_hang', 'rut_tien']);
             $table->foreignIdFor(PaymentMethod::class)->nullable()->constrained()->onDelete('set null');
             $table->text('description')->nullable();
             $table->enum('status', ['cho_thanh_toan', 'thanh_cong', 'that_bai', 'da_huy'])->default('cho_thanh_toan');
