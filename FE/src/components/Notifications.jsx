@@ -155,8 +155,16 @@ const Notifications = () => {
                 toastShownIds.current.delete(notification.id);
             }, 10000);
 
-            // Sử dụng toast tùy chỉnh thay vì toast cũ
-            showOrderStatusToast(notification);
+            // Kiểm tra nếu là thông báo ví tiền
+            if (notification.transaction_type === 'nap_tien') {
+                // Sử dụng showWalletDepositToast cho thông báo ví tiền
+                import('./ui/toast').then(module => {
+                    module.showWalletDepositToast(notification);
+                });
+            } else {
+                // Sử dụng toast đơn hàng thông thường
+                showOrderStatusToast(notification);
+            }
         }
     };
 
@@ -186,8 +194,12 @@ const Notifications = () => {
     const handleNotificationClick = (notification) => {
         markAsRead(notification);
 
-        // Sửa đường dẫn để phù hợp với cấu trúc router
-        if (notification.order_id) {
+        // Kiểm tra nếu là thông báo về ví tiền
+        if (notification.transaction_type === 'nap_tien' || notification.wallet_id) {
+            navigate('/account/wallet');  // Chuyển đến trang ví tiền
+        }
+        // Xử lý đơn hàng nếu có order_id
+        else if (notification.order_id) {
             navigate(`/account/order_detail/${notification.order_id}`);
         }
 

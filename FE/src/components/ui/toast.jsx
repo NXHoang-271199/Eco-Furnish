@@ -1,6 +1,6 @@
 import React from 'react';
 import { toast } from 'react-hot-toast';
-import { Bell, X, CreditCard, AlertTriangle } from 'lucide-react';
+import { Bell, X, CreditCard, AlertTriangle, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 /**
@@ -15,6 +15,7 @@ export const showOrderStatusToast = (notification) => {
     const orderCode = notification.order_code || notification.order?.order_code || 'không xác định';
     const status = notification.order_status || notification.order?.order_status || 'không xác định';
     const message = notification.message || `Đơn hàng #${orderCode} đã chuyển sang trạng thái: ${status}`;
+    const refundStatus = notification.refund_status || null;
 
     // Nếu không có orderId thì không hiển thị thông báo
     if (!orderId) {
@@ -110,7 +111,97 @@ export const showOrderStatusToast = (notification) => {
                 </div>
             </div>
         ),
-        { id: toastId, duration: 3000 }
+        { id: toastId, duration: 5000 }
+    );
+};
+
+/**
+ * Hiển thị thông báo toast khi có cộng tiền vào ví
+ */
+export const showWalletDepositToast = (notification) => {
+    // Đảm bảo notification hợp lệ
+    if (!notification) return;
+
+    // Lấy thông tin từ notification
+    const walletId = notification.wallet_id;
+    const amount = notification.amount || 0;
+    const balanceAfter = notification.balance_after || 0;
+    const message = notification.message || `Tài khoản của bạn vừa được cộng ${amount.toLocaleString('vi-VN')} đ`;
+
+    // Tạo ID duy nhất cho toast để tránh hiển thị trùng lặp
+    const toastId = `wallet-notification-${notification.id || Date.now()}`;
+
+    // Phát âm thanh thông báo
+    playNotificationSound();
+
+    // Màu sắc cho thông báo nạp tiền - xanh lá
+    const colorClass = 'bg-green-500';
+
+    return toast.custom(
+        (t) => (
+            <div
+                className={`
+          ${t.visible ? 'animate-enter' : 'animate-leave'}
+          max-w-md w-full bg-white shadow-lg rounded-lg overflow-hidden pointer-events-auto 
+          flex flex-col ring-1 ring-black ring-opacity-5 border-l-4 ${colorClass}
+        `}
+            >
+                <div className="p-4">
+                    <div className="flex items-start">
+                        <div className="flex-shrink-0 pt-0.5">
+                            <div className={`h-10 w-10 rounded-full ${colorClass.replace('bg-', 'bg-opacity-20 text-')} flex items-center justify-center`}>
+                                <Wallet className="h-6 w-6" />
+                            </div>
+                        </div>
+                        <div className="ml-3 flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                                Thông báo ví tiền
+                            </p>
+                            <p className="mt-1 text-sm text-gray-500">
+                                {message}
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-green-600">
+                                Số dư hiện tại: {balanceAfter.toLocaleString('vi-VN')} đ
+                            </p>
+                            <div className="mt-3 flex space-x-3">
+                                <button
+                                    onClick={() => {
+                                        // Đóng toast trước
+                                        toast.remove(toastId);
+                                        // Chuyển hướng sau
+                                        setTimeout(() => {
+                                            window.location.href = '/account/wallet';
+                                        }, 0);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-medium text-white ${colorClass} hover:${colorClass.replace('bg-', 'bg-opacity-90 ')} focus:outline-none`}
+                                >
+                                    Xem chi tiết
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        // Đóng toast ngay lập tức
+                                        toast.remove(toastId);
+                                    }}
+                                    className="px-3 py-1.5 rounded-md text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none"
+                                >
+                                    Đóng
+                                </button>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                // Đóng toast ngay lập tức
+                                toast.remove(toastId);
+                            }}
+                            className="flex-shrink-0 ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-gray-500 focus:outline-none"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        ),
+        { id: toastId, duration: 5000 } // Hiển thị 5 giây
     );
 };
 
@@ -193,4 +284,17 @@ export const showPaymentReminderToast = (order) => {
         ),
         { id: toastId, duration: 5000 } // Hiển thị lâu hơn (5 giây) so với thông báo thông thường
     );
+};
+
+// Hàm phát âm thanh khi có thông báo
+const playNotificationSound = () => {
+    try {
+        const audio = new Audio('/sounds/moneySound.mp3');
+        audio.volume = 1;
+        audio.play().catch(error => {
+            console.error('Không thể phát âm thanh thông báo:', error);
+        });
+    } catch (error) {
+        console.error('Lỗi khi tạo đối tượng âm thanh:', error);
+    }
 }; 
