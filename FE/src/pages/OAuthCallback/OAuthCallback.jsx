@@ -29,7 +29,7 @@ function OAuthCallback() {
       console.error(
         "OAuth callback missing token, refreshToken, or user data."
       );
-      navigate("/sign-in", { replace: true });
+      navigate("/", { replace: true });
     }
     // Thêm dependency navigate để tránh warning
   }, [navigate]);
