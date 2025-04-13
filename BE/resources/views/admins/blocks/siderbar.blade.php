@@ -39,7 +39,7 @@
                 @if (Auth::user()->hasPermission('view-dashboard'))
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="{{ route('dashboard') }}" data-key="t-dashboard">
-                            <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboard</span>
+                            <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Thống kê</span>
                         </a>
                     </li>
                 @endif
