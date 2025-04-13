@@ -301,7 +301,7 @@ const OrderHistory = () => {
               </div>
               <p className="text-gray-600 text-lg">Bạn chưa có đơn hàng nào</p>
               <Link
-                to="/"
+                to="/products"
                 className="mt-4 inline-block px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
               >
                 Mua sắm ngay

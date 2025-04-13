@@ -78,6 +78,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['permission:view-dashboard'])->group(function () {
             Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard/filter', [DashboardController::class, 'filter'])->name('dashboard.filter');
         });
 
         // Categories Management

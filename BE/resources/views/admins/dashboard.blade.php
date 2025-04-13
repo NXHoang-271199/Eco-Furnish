@@ -20,10 +20,91 @@
             padding-top: 80px !important;
         }
     }
+    /* Container cho date picker */
+    .date-picker-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* Button chọn khoảng ngày */
+    .date-picker-display {
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-right: none;
+        border-radius: 0.25rem 0 0 0.25rem;
+        padding: 0.47rem 0.75rem;
+        font-size: 0.875rem;
+        color: #495057;
+        cursor: pointer;
+        min-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Icon lịch */
+    .date-picker-icon {
+        background-color: #556ee6;
+        color: white;
+        border: 1px solid #556ee6;
+        border-radius: 0 0.25rem 0.25rem 0;
+        padding: 0.47rem 0.75rem;
+        cursor: pointer;
+    }
+    
+    /* Ẩn input gốc mà Flatpickr sử dụng */
+    input#dateRangePicker.flatpickr-input {
+        display: none !important;
+    }
+
+    /* Đảm bảo calendar hiển thị phía trên các phần tử khác */
+    .flatpickr-calendar {
+        z-index: 9999 !important;
+        background-color: white;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        border-radius: 4px;
+        margin-top: 2px;
+        width: 310px !important; /* Tăng chiều rộng một chút */
+        font-size: 13px !important; /* Giảm kích thước font chữ */
+    }
+    .flatpickr-day {
+        height: 32px;
+        line-height: 32px;
+        margin: 0;
+    }
+    .flatpickr-day.selected {
+        background-color: #556ee6 !important;
+        border-color: #556ee6 !important;
+    }
+    .flatpickr-day.selected.startRange, .flatpickr-day.selected.endRange {
+        background-color: #556ee6 !important;
+        border-color: #556ee6 !important;
+    }
+    .flatpickr-day.inRange {
+        background-color: rgba(85, 110, 230, 0.1) !important;
+        border-color: rgba(85, 110, 230, 0.1) !important;
+    }
+    .flatpickr-months .flatpickr-month {
+        background-color: #556ee6 !important;
+        color: white !important;
+    }
+    .flatpickr-current-month {
+        padding-top: 8px !important;
+    }
+    .flatpickr-current-month .flatpickr-monthDropdown-months {
+        background-color: #556ee6 !important;
+        color: white !important;
+    }
+    .flatpickr-weekday {
+        background-color: #f8f9fa;
+        color: #495057;
+    }
 </style>
 <!-- Import ApexCharts -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.35.3/dist/apexcharts.min.css">
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.3/dist/apexcharts.min.js"></script>
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 @endsection
 
 {{-- @section: dùng để chị định phần nội dụng được hiển thị --}}
@@ -42,21 +123,31 @@
                                 <p class="text-muted mb-0">Đây là những gì đang diễn ra với cửa hàng của bạn hôm nay.</p>
                             </div>
                             <div class="mt-3 mt-lg-0">
-                                <form action="javascript:void(0);">
+                                <form action="{{ route('dashboard.filter') }}" method="GET" id="dateFilterForm">
                                     <div class="row g-3 mb-0 align-items-center">
                                         <div class="col-sm-auto">
-                                            <div class="input-group">
+                                            <div class="input-group date-picker-wrapper">
+                                                <!-- Ẩn input chứa giá trị khoảng ngày -->
+                                                <input type="hidden" id="dateRangePicker" name="date_range" value="{{ request('date_range') }}">
                                                 
-                                                <div class="input-group-text bg-primary border-primary text-white">
+                                                <!-- Hiển thị khoảng ngày đã chọn -->
+                                                <span id="dateRangeText" class="date-picker-display">
+                                                    @if(!empty(request('date_range')))
+                                                        {{ request('date_range') }}
+                                                    @else
+                                                        Chọn khoảng ngày
+                                                    @endif
+                                                </span>
+                                                
+                                                <!-- Icon calendar -->
+                                                <button type="button" class="btn btn-primary date-picker-icon" id="datePickerToggle">
                                                     <i class="ri-calendar-2-line"></i>
-                                                </div>
+                                                </button>
+                                                
+                                                <button type="submit" class="btn btn-primary ms-2">Áp dụng</button>
+                                                <button type="button" id="resetDateFilter" class="btn btn-light ms-2">Đặt lại</button>
                                             </div>
                                         </div>
-                                        <!--end col-->
-
-                                        <!-- <div class="col-auto">
-                                            <button type="button" class="btn btn-soft-info btn-icon waves-effect material-shadow-none waves-light layout-rightside-btn"><i class="ri-pulse-line"></i></button>
-                                        </div> -->
                                         <!--end col-->
                                     </div>
                                     <!--end row-->
@@ -67,6 +158,15 @@
                     <!--end col-->
                 </div>
                 <!--end row-->
+
+                @if(isset($isFiltered) && $isFiltered)
+                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                    <i class="ri-filter-2-line me-1 align-middle fs-16"></i>
+                    <strong>Dữ liệu đã được lọc</strong> - Đang hiển thị dữ liệu từ {{ $formattedDateRange }}
+                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-light ms-2">Xem tất cả dữ liệu</a>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                @endif
 
                 <div class="row">
                     <div class="col-xl-4 col-md-6">
@@ -260,13 +360,14 @@
                                             <span class="fw-semibold text-uppercase fs-12">Sắp xếp theo:
                                             </span><span class="text-muted">
                                             @php
-                                                $sortLabels = [
+                                                $sortLabels = isset($sortLabels) ? $sortLabels : [
                                                     'today' => 'Hôm nay',
                                                     'yesterday' => 'Hôm qua',
                                                     'week' => '7 ngày qua',
                                                     'month' => '30 ngày qua',
                                                     'current_month' => 'Tháng này',
-                                                    'last_month' => 'Tháng trước'
+                                                    'last_month' => 'Tháng trước',
+                                                    'custom' => 'Tùy chỉnh'
                                                 ];
                                                 $currentSort = $currentSort ?? 'today';
                                                 echo $sortLabels[$currentSort];
@@ -280,6 +381,9 @@
                                             <a class="dropdown-item {{ ($currentSort ?? '') == 'month' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=month">30 ngày qua</a>
                                             <a class="dropdown-item {{ ($currentSort ?? '') == 'current_month' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=current_month">Tháng này</a>
                                             <a class="dropdown-item {{ ($currentSort ?? '') == 'last_month' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=last_month">Tháng trước</a>
+                                            @if(($currentSort ?? '') == 'custom')
+                                            <a class="dropdown-item active" href="#">Tùy chỉnh</a>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -836,10 +940,94 @@
 @endsection
 
 @section('JS')
+<!-- ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.3/dist/apexcharts.min.js"></script>
+<!-- Flatpickr -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
+<!-- ExcelJS và FileSaver -->
 <script src="https://unpkg.com/exceljs/dist/exceljs.min.js"></script>
 <script src="https://unpkg.com/file-saver/dist/FileSaver.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Khởi tạo date picker
+        const datePickerInput = document.getElementById('dateRangePicker'); // Input ẩn
+        const dateRangeText = document.getElementById('dateRangeText'); // Span hiển thị
+        const datePickerToggle = document.getElementById('datePickerToggle'); // Button icon lịch
+        
+        if (!datePickerInput || !dateRangeText || !datePickerToggle) {
+            console.error('Không tìm thấy các phần tử cần thiết cho date picker');
+        } else {
+            // Khởi tạo flatpickr
+            const fp = flatpickr(datePickerInput, {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                locale: "vn",
+                rangeSeparator: " đến ",
+                maxDate: "today",
+                showMonths: 1, // Chỉ hiển thị 1 tháng
+                static: true,
+                disableMobile: true,
+                position: "auto", 
+                appendTo: document.body, // Đính kèm vào body thay vì element
+                onOpen: function() {
+                    console.log('Date picker đã mở');
+                },
+                onClose: function() {
+                    console.log('Date picker đã đóng');
+                },
+                onChange: function(selectedDates, dateStr, instance) {
+                    console.log('Ngày đã chọn:', dateStr);
+                    
+                    // Cập nhật text hiển thị với định dạng tiếng Việt
+                    if (dateStr && selectedDates.length > 0) {
+                        let formattedText = '';
+                        
+                        if (selectedDates.length === 1) {
+                            // Nếu chỉ chọn 1 ngày
+                            const day = selectedDates[0].getDate().toString().padStart(2, '0');
+                            const month = (selectedDates[0].getMonth() + 1).toString().padStart(2, '0');
+                            const year = selectedDates[0].getFullYear();
+                            formattedText = `${day}/${month}/${year}`;
+                        } else if (selectedDates.length === 2) {
+                            // Nếu chọn khoảng ngày
+                            const startDay = selectedDates[0].getDate().toString().padStart(2, '0');
+                            const startMonth = (selectedDates[0].getMonth() + 1).toString().padStart(2, '0');
+                            const startYear = selectedDates[0].getFullYear();
+                            
+                            const endDay = selectedDates[1].getDate().toString().padStart(2, '0');
+                            const endMonth = (selectedDates[1].getMonth() + 1).toString().padStart(2, '0');
+                            const endYear = selectedDates[1].getFullYear();
+                            
+                            formattedText = `${startDay}/${startMonth}/${startYear} - ${endDay}/${endMonth}/${endYear}`;
+                        }
+                        
+                        dateRangeText.textContent = formattedText;
+                    } else {
+                        dateRangeText.textContent = 'Chọn khoảng ngày';
+                    }
+                }
+            });
+            
+            // Thêm sự kiện click vào button icon để mở date picker
+            datePickerToggle.addEventListener('click', function() {
+                fp.open();
+            });
+            
+            // Thêm sự kiện click vào span text để mở date picker
+            dateRangeText.addEventListener('click', function() {
+                fp.open();
+            });
+            
+            // Xử lý sự kiện nút Reset
+            document.getElementById('resetDateFilter').addEventListener('click', function() {
+                fp.clear();
+                dateRangeText.textContent = 'Chọn khoảng ngày';
+                datePickerInput.value = '';
+                document.getElementById('dateFilterForm').submit();
+            });
+        }
+
         // Khởi tạo biểu đồ doanh thu
         initRevenueChart();
         
