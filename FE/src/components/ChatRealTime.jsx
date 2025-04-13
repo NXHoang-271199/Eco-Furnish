@@ -2,10 +2,90 @@ import { useEffect, useState, useRef } from "react";
 import { BsChatDots, BsXLg } from "react-icons/bs";
 import { IoMdSend } from "react-icons/io";
 import { MdImage } from "react-icons/md";
-import { getSocket, resetSocket } from "../utils/socketConfig";
+import { getSocket, closeSocket, resetSocket } from "../utils/socketConfig";
 import axios from "axios";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
+import { toast } from "react-hot-toast";
+
+// Tạo audio elements toàn cục để khởi tạo sớm
+const messageAudio = new Audio('/sounds/message.mp3');
+messageAudio.preload = 'auto';
+messageAudio.volume = 0.8;
+
+// Biến để theo dõi tương tác người dùng
+let userHasInteracted = false;
+
+// Đăng ký sự kiện tương tác người dùng
+document.addEventListener('click', handleUserInteraction, { once: false });
+document.addEventListener('keydown', handleUserInteraction, { once: false });
+document.addEventListener('touchstart', handleUserInteraction, { once: false });
+
+// Hàm xử lý tương tác người dùng
+function handleUserInteraction() {
+    if (!userHasInteracted) {
+        userHasInteracted = true;
+        console.log("✅ Người dùng đã tương tác với trang, có thể phát âm thanh");
+
+        // Kích hoạt audio trước
+        messageAudio.play()
+            .then(() => {
+                messageAudio.pause();
+                messageAudio.currentTime = 0;
+                console.log("✓ Đã kích hoạt audio");
+            })
+            .catch(err => console.log("⚠️ Không thể kích hoạt audio:", err));
+    }
+}
+
+// Helper function để xử lý việc phát âm thanh thông báo
+const playNotificationSound = (soundPath) => {
+    try {
+        // Sử dụng audio element toàn cục để tránh tạo nhiều instances
+        messageAudio.currentTime = 0;
+
+        // Thử phát âm thanh
+        if (userHasInteracted) {
+            messageAudio.play()
+                .then(() => console.log("✓ Âm thanh thông báo được phát thành công"))
+                .catch(err => {
+                    console.log("⚠️ Không thể phát âm thanh, lỗi:", err);
+
+                    // Thử lại với tương tác người dùng nếu lỗi
+                    const unblockAudio = () => {
+                        messageAudio.play()
+                            .then(() => {
+                                console.log("✓ Đã phát âm thanh sau tương tác");
+                                document.removeEventListener('click', unblockAudio);
+                            })
+                            .catch(e => console.log("⚠️ Vẫn không thể phát âm thanh:", e));
+                    };
+
+                    document.addEventListener('click', unblockAudio, { once: true });
+                });
+        } else {
+            console.log("⚠️ Người dùng chưa tương tác, đang chờ tương tác để phát âm thanh");
+
+            // Đăng ký phát âm thanh sau tương tác đầu tiên
+            const playAfterInteraction = () => {
+                userHasInteracted = true;
+                messageAudio.play()
+                    .then(() => console.log("✓ Đã phát âm thanh sau tương tác đầu tiên"))
+                    .catch(e => console.log("⚠️ Không thể phát âm thanh sau tương tác:", e));
+
+                document.removeEventListener('click', playAfterInteraction);
+                document.removeEventListener('keydown', playAfterInteraction);
+                document.removeEventListener('touchstart', playAfterInteraction);
+            };
+
+            document.addEventListener('click', playAfterInteraction, { once: true });
+            document.addEventListener('keydown', playAfterInteraction, { once: true });
+            document.addEventListener('touchstart', playAfterInteraction, { once: true });
+        }
+    } catch (error) {
+        console.error("❌ Lỗi khi phát âm thanh:", error);
+    }
+};
 
 const ChatRealTime = () => {
     const [message, setMessage] = useState("");
@@ -26,6 +106,9 @@ const ChatRealTime = () => {
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [lightboxImages, setLightboxImages] = useState([]);
+    const [socketStatus, setSocketStatus] = useState("disconnected");
+    // Thêm state để lưu URL socket server
+    const [socketServerUrl] = useState(import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3002");
 
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
@@ -166,22 +249,13 @@ const ChatRealTime = () => {
     const loadChatHistory = async (userId) => {
         if (!userId) return;
 
-        // *** Thêm kiểm tra và log userData ***
-        if (!userData) {
-            console.warn("⚠️ loadChatHistory: userData chưa sẵn sàng, đang đợi...");
-            // Có thể thêm cơ chế đợi hoặc thử lại nếu cần
-            return; 
-        }
-        console.log("👤 loadChatHistory: userData đã sẵn sàng:", userData);
-        // *** Kết thúc kiểm tra và log ***
-        
         try {
             setIsLoading(true);
             const token = localStorage.getItem("authToken");
-            
+
             console.log("🔍 Đang tải lịch sử cho user:", userId);
             console.log("🔑 Token:", token?.substring(0, 15) + "...");
-            
+
             // Gọi API lấy lịch sử tin nhắn
             const response = await axios.get(
                 `http://localhost:8000/api/messages/user/${userId}`,
@@ -193,15 +267,15 @@ const ChatRealTime = () => {
                     }
                 }
             );
-            
+
             console.log("✅ Phản hồi API:", response.status, response.statusText);
-            
+
             if (response.data && Array.isArray(response.data)) {
                 console.log("📜 Lịch sử tin nhắn:", response.data);
 
                 // Đảm bảo tất cả tin nhắn có trạng thái is_read và isCurrentUser
                 const messagesWithStatus = response.data.map(msg => ({
-                            ...msg,
+                    ...msg,
                     is_read: typeof msg.is_read === 'boolean' ? msg.is_read : false,
                     isCurrentUser: userData && msg.sender_id === userData.id,
                     isAdmin: !msg.sender_id || (userData && msg.sender_id !== userData.id) // Thêm logic xác định admin
@@ -211,15 +285,11 @@ const ChatRealTime = () => {
                 const groupedMessages = processMessagesWithImageGroups(messagesWithStatus);
                 setMessages(groupedMessages);
 
-                // *** Thêm Log để kiểm tra dữ liệu trước khi filter ***
-                console.log("📊 Dữ liệu chuẩn bị để đếm unread:", messagesWithStatus);
-                // *** Kết thúc Log ***
-                
                 // Đếm tin nhắn chưa đọc
                 const unread = messagesWithStatus.filter(msg =>
                     !msg.isCurrentUser && !msg.is_read // Chỉ đếm tin nhắn từ người khác và chưa đọc
                 ).length;
-                
+
                 setUnreadCount(unread);
                 console.log("📬 Số tin nhắn chưa đọc:", unread);
 
@@ -249,11 +319,78 @@ const ChatRealTime = () => {
         try {
             console.log("🔌 Đang kiểm tra kết nối socket...");
             const socketConnection = getSocket();
-            
+
             if (socketConnection) {
                 setSocket(socketConnection);
-                setIsConnected(socketConnection.connected);
-                console.log("✅ Đã thiết lập kết nối socket", socketConnection.id);
+
+                // Kiểm tra nếu socket đã kết nối
+                if (socketConnection.connected) {
+                    console.log("✅ Socket đã được kết nối sẵn:", socketConnection.id);
+                    setIsConnected(true);
+                    setLastError("");
+                } else {
+                    console.log("⏳ Socket đã khởi tạo nhưng đang kết nối...");
+                    // Không cập nhật trạng thái kết nối ở đây, để khi connect event được kích hoạt
+                }
+
+                // Thiết lập sự kiện kết nối
+                socketConnection.on("connect", () => {
+                    console.log("✅ Socket kết nối thành công:", socketConnection.id);
+                    setIsConnected(true);
+                    setLastError("");
+
+                    // Thông báo server rằng client đã kết nối
+                    socketConnection.emit("clientConnect");
+                    console.log("📣 Đã gửi sự kiện clientConnect");
+
+                    // Tải lịch sử tin nhắn khi kết nối thành công
+                    if (userData && userData.id) {
+                        loadChatHistory(userData.id);
+                    }
+                });
+
+                // Thiết lập sự kiện ngắt kết nối
+                socketConnection.on("disconnect", (reason) => {
+                    console.log("❌ Socket ngắt kết nối, lý do:", reason);
+                    setIsConnected(false);
+                    setLastError(`Mất kết nối với server: ${reason}`);
+                });
+
+                // Thiết lập sự kiện lỗi kết nối
+                socketConnection.on("connect_error", (error) => {
+                    console.error("❌ Lỗi kết nối socket:", error.message);
+                    setIsConnected(false);
+
+                    // Xử lý lỗi xác thực đặc biệt
+                    if (error.message.includes("Authentication error") || error.message.includes("Invalid token")) {
+                        console.log("🔑 Lỗi xác thực, có thể token đã hết hạn. Thử làm mới token...");
+
+                        // Thử làm mới token
+                        tryRefreshToken();
+                    } else {
+                        setLastError("Lỗi kết nối: " + error.message);
+                    }
+                });
+
+                // Ping server 5 giây một lần để kiểm tra kết nối
+                const pingInterval = setInterval(() => {
+                    if (socketConnection.connected) {
+                        socketConnection.emit("ping", {}, (response) => {
+                            if (response && response.success) {
+                                // Cập nhật trạng thái kết nối
+                                if (!isConnected) {
+                                    console.log("✅ Kết nối đã được khôi phục");
+                                    setIsConnected(true);
+                                    setLastError("");
+                                }
+                            }
+                        });
+                    }
+                }, 5000);
+
+                // Lưu trữ interval để clear khi component unmount
+                socketConnection.pingInterval = pingInterval;
+
                 return socketConnection;
             } else {
                 setLastError("Không thể khởi tạo kết nối socket");
@@ -267,47 +404,90 @@ const ChatRealTime = () => {
         }
     };
 
+    // Hàm thử làm mới token khi xảy ra lỗi xác thực
+    const tryRefreshToken = async () => {
+        try {
+            console.log("🔄 Đang thử làm mới token...");
+            setLastError("Đang làm mới phiên đăng nhập...");
+
+            const refreshToken = localStorage.getItem("refreshToken");
+            if (!refreshToken) {
+                throw new Error("Không tìm thấy refresh token");
+            }
+
+            // Gọi API làm mới token
+            const response = await axios.post("http://localhost:8000/api/users/refresh-token", {
+                refresh_token: refreshToken
+            });
+
+            if (response.data.status === "success") {
+                // Lưu token mới vào localStorage
+                const newToken = response.data.data.access_token;
+                const newRefreshToken = response.data.data.refresh_token;
+
+                localStorage.setItem("authToken", newToken);
+                localStorage.setItem("refreshToken", newRefreshToken);
+
+                console.log("✅ Làm mới token thành công, thử kết nối lại socket...");
+                setLastError("");
+
+                // Kích hoạt sự kiện auth-change để các component khác cập nhật
+                window.dispatchEvent(new Event("auth-change"));
+
+                // Đóng và kết nối lại socket với token mới
+                if (socket) {
+                    socket.disconnect();
+                }
+                // Đợi một chút trước khi kết nối lại
+                setTimeout(() => {
+                    connectSocket();
+                }, 1000);
+            } else {
+                throw new Error("Làm mới token thất bại");
+            }
+        } catch (error) {
+            console.error("❌ Lỗi khi làm mới token:", error);
+            setLastError(`Lỗi kết nối: ${error.message}. Vui lòng đăng nhập lại.`);
+
+            // Xóa thông tin đăng nhập
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("refreshToken");
+            localStorage.removeItem("userData");
+
+            // Kích hoạt sự kiện auth-change để các component khác cập nhật
+            window.dispatchEvent(new Event("auth-change"));
+        }
+    };
+
     useEffect(() => {
         // Kiểm tra đăng nhập
         const authToken = localStorage.getItem("authToken");
         const userDataStr = localStorage.getItem("userData");
-        
+        let socketConnection = null;
+
         if (authToken && userDataStr) {
             try {
                 const parsedUserData = JSON.parse(userDataStr);
                 setUserData(parsedUserData);
                 setIsAuthenticated(true);
-                
+
                 // Khởi tạo kết nối socket
-                const socketConnection = connectSocket();
-                
+                socketConnection = connectSocket();
+
                 if (socketConnection) {
-                    // Kiểm tra kết nối
-                    socketConnection.on("connect", () => {
-                        console.log("✅ Socket kết nối thành công");
-                        setIsConnected(true);
-                        setLastError("");
-                        
-                        // Thông báo server rằng client đã kết nối
-                        socketConnection.emit("clientConnect");
-                        console.log("📣 Đã gửi sự kiện clientConnect");
-                    });
-                    
-                    socketConnection.on("disconnect", () => {
-                        console.log("❌ Socket ngắt kết nối");
-                        setIsConnected(false);
-                        setLastError("Mất kết nối với server");
-                    });
-                    
-                    socketConnection.on("connect_error", (error) => {
-                        console.error("❌ Lỗi kết nối socket:", error.message);
-                        setIsConnected(false);
-                        setLastError("Lỗi kết nối: " + error.message);
-                    });
-                    
+                    // Thêm sự kiện lắng nghe tin nhắn mới
                     socketConnection.on("newClientMessage", (data) => {
                         console.log("📩 Nhận tin nhắn mới từ client:", data);
+
+                        // Xử lý tin nhắn mới
                         setMessages(prev => processMessagesWithImageGroups([...prev, data]));
+
+                        // Cập nhật unreadCount nếu chat đang đóng
+                        if (!isOpen) {
+                            setUnreadCount(prev => prev + 1);
+                            // Phát âm thanh thông báo
+                            playNotificationSound('/sounds/message.mp3');
+                        }
                     });
                 }
             } catch (error) {
@@ -319,30 +499,54 @@ const ChatRealTime = () => {
             console.log("❌ Người dùng chưa đăng nhập");
             setIsAuthenticated(false);
         }
-        
+
         // Cleanup khi unmount
         return () => {
-            if (socket) {
-                socket.off("connect");
-                socket.off("disconnect");
-                socket.off("connect_error");
-                socket.off("newClientMessage");
+            if (socketConnection) {
+                console.log("🧹 Dọn dẹp các sự kiện socket và đóng kết nối");
+                socketConnection.off("connect");
+                socketConnection.off("disconnect");
+                socketConnection.off("connect_error");
+                socketConnection.off("newClientMessage");
+
+                // Xóa interval kiểm tra kết nối
+                if (socketConnection.pingInterval) {
+                    clearInterval(socketConnection.pingInterval);
+                }
+
+                // Đóng kết nối socket
+                socketConnection.disconnect();
             }
         };
-    }, []);
-    
+    }, [isOpen]); // Thêm isOpen vào dependencies để useEffect được gọi lại khi isOpen thay đổi
+
+    // Thêm effect mới để theo dõi trạng thái chat box và cập nhật trạng thái đã đọc tin nhắn
+    useEffect(() => {
+        // Chỉ thực hiện khi chat box mở và có socket kết nối
+        if (isOpen && socket && userData?.id) {
+            // Đánh dấu tin nhắn đã đọc
+            markMessagesAsRead();
+
+            // Xử lý tin nhắn trong chat hiện tại
+            setMessages(prev => prev.map(msg => ({
+                ...msg,
+                is_read: true
+            })));
+        }
+    }, [isOpen, socket, userData]);
+
     // Theo dõi sự thay đổi đăng nhập
     useEffect(() => {
         const handleAuthChange = () => {
             const authToken = localStorage.getItem("authToken");
             const userDataStr = localStorage.getItem("userData");
-            
+
             if (authToken && userDataStr) {
                 try {
                     const parsedUserData = JSON.parse(userDataStr);
                     setUserData(parsedUserData);
                     setIsAuthenticated(true);
-                    
+
                     // Tải lại lịch sử khi đăng nhập
                     loadChatHistory(parsedUserData.id);
                 } catch (error) {
@@ -355,10 +559,10 @@ const ChatRealTime = () => {
                 setMessages([]);
             }
         };
-        
+
         window.addEventListener("auth-change", handleAuthChange);
         window.addEventListener("storage", handleAuthChange);
-        
+
         return () => {
             window.removeEventListener("auth-change", handleAuthChange);
             window.removeEventListener("storage", handleAuthChange);
@@ -372,117 +576,37 @@ const ChatRealTime = () => {
         }
     }, [isOpen, isAuthenticated, userData]);
 
-    // Lắng nghe sự kiện user-logout để đóng chat khi đăng xuất
-    useEffect(() => {
-        const handleUserLogout = () => {
-            console.log("🔒 Nhận sự kiện user-logout, đóng chat và ngắt kết nối socket");
-            // Đóng chat và xóa dữ liệu
-            setIsOpen(false);
-            setMessages([]);
-            setIsAuthenticated(false);
-            setUserData(null);
-            setUnreadCount(0);
-            
-            // Hủy kết nối socket hiện tại nếu có
-            if (socket) {
-                console.log("🔌 Ngắt kết nối socket do đăng xuất");
-                socket.disconnect();
-                setSocket(null);
-                setIsConnected(false);
-            }
-        };
-        
-        // Đăng ký lắng nghe sự kiện đăng xuất
-        window.addEventListener("user-logout", handleUserLogout);
-        
-        return () => {
-            window.removeEventListener("user-logout", handleUserLogout);
-        };
-    }, [socket]);
-
-    // Lắng nghe sự kiện auth-change để kết nối lại socket
+    // Thêm useEffect để lắng nghe sự kiện auth-change để kết nối lại socket
     useEffect(() => {
         const handleAuthChangeForSocket = () => {
             console.log("🔄 Nhận sự kiện auth-change, đang khởi tạo lại socket...");
-            
+
             // Kiểm tra token
             const authToken = localStorage.getItem("authToken");
             const userDataStr = localStorage.getItem("userData");
-            
+
             if (authToken && userDataStr) {
                 try {
                     const parsedUserData = JSON.parse(userDataStr);
                     setUserData(parsedUserData);
                     setIsAuthenticated(true);
-                    
-                    // Reset trạng thái lỗi
-                    setLastError("");
-                    
-                    // Thử kết nối nhiều lần với khoảng thời gian chờ
-                    let attempts = 0;
-                    const maxAttempts = 3;
-                    
-                    const attemptConnection = () => {
-                        console.log(`🔄 Đang thử kết nối lần ${attempts + 1}/${maxAttempts}...`);
-                        
-                        // Dùng resetSocket thay vì connectSocket để đảm bảo đóng socket cũ
-                        // và tạo kết nối mới hoàn toàn
-                        const newSocket = resetSocket();
-                        
-                        if (newSocket) {
-                            setSocket(newSocket);
-                            console.log("🔌 Đã khởi tạo socket sau auth-change:", newSocket.id || "không có id");
-                            
-                            // Lắng nghe sự kiện kết nối thành công
-                            newSocket.on("connect", () => {
-                                console.log("✅ Socket kết nối thành công sau auth-change");
-                                setIsConnected(true);
-                                setLastError("");
-                                
-                                // Tự động mở box chat sau khi đăng nhập
-                                setTimeout(() => {
-                                    setIsOpen(true);
-                                }, 1000);
-                                
-                                // Gửi sự kiện clientConnect
-                                newSocket.emit("clientConnect");
-                            });
-                            
-                            // Lắng nghe các sự kiện lỗi
-                            newSocket.on("connect_error", (error) => {
-                                console.error(`❌ Lỗi kết nối socket sau auth-change (lần ${attempts + 1}):`, error.message);
-                                
-                                if (attempts < maxAttempts - 1) {
-                                    attempts++;
-                                    setTimeout(attemptConnection, 1500); // Thử lại sau 1.5 giây
-                                } else {
-                                    setIsConnected(false);
-                                    setLastError("Không thể kết nối đến máy chủ. Vui lòng tải lại trang.");
-                                }
-                            });
-                        } else {
-                            console.error("❌ Không thể tạo socket mới");
-                            if (attempts < maxAttempts - 1) {
-                                attempts++;
-                                setTimeout(attemptConnection, 1500); // Thử lại sau 1.5 giây
-                            } else {
-                                setLastError("Không thể khởi tạo kết nối. Vui lòng tải lại trang.");
-                            }
-                        }
-                    };
-                    
-                    // Bắt đầu quy trình thử kết nối
-                    attemptConnection();
+
+                    // Khởi tạo kết nối socket mới
+                    const socketConnection = connectSocket();
+
+                    if (socketConnection) {
+                        console.log("🔌 Đã khởi tạo lại socket sau sự kiện auth-change");
+                    }
                 } catch (error) {
                     console.error("❌ Lỗi khi xử lý sự kiện auth-change:", error);
                     setLastError("Lỗi khi xử lý sự kiện auth-change: " + error.message);
                 }
             }
         };
-        
+
         // Đăng ký sự kiện
         window.addEventListener("auth-change", handleAuthChangeForSocket);
-        
+
         return () => {
             window.removeEventListener("auth-change", handleAuthChangeForSocket);
         };
@@ -504,53 +628,47 @@ const ChatRealTime = () => {
                             return msg;
                         })
                     );
-                    setUnreadCount(0); // Reset unread count khi server xác nhận đã đọc
-                    console.log("✅ Đã cập nhật trạng thái tin nhắn thành đã đọc dựa trên sự kiện server");
-                } else {
-                     console.warn("⚠️ Server phản hồi messagesMarkedAsRead không thành công hoặc thiếu userData");
+                    console.log("✅ Đã cập nhật trạng thái tin nhắn thành đã đọc");
                 }
+            });
+
+            // Thêm sự kiện lắng nghe tin nhắn của client đã được admin đọc
+            socket.on("clientMessagesReadByAdmin", () => {
+                console.log("📬 Nhận sự kiện clientMessagesReadByAdmin từ server: Admin đã đọc tin nhắn của bạn");
+
+                // Cập nhật trạng thái đã đọc cho các tin nhắn GỬI ĐI từ client
+                setMessages(prevMessages =>
+                    prevMessages.map(msg => {
+                        // Chỉ cập nhật cho tin nhắn do người dùng hiện tại gửi (isCurrentUser = true)
+                        if (msg.isCurrentUser || (userData && msg.sender_id === userData.id)) {
+                            return { ...msg, is_read: true };
+                        }
+                        return msg;
+                    })
+                );
+
+                console.log("✅ Đã cập nhật trạng thái tin nhắn của client thành đã đọc bởi admin");
             });
         }
 
         return () => {
             if (socket) {
                 socket.off("messagesMarkedAsRead");
+                socket.off("clientMessagesReadByAdmin");
             }
         };
     }, [socket, userData]);
-
-    // Hàm đánh dấu tin nhắn đã đọc
-    const markMessagesAsRead = async () => {
-        if (!isAuthenticated || !userData?.id || !socket?.connected) return; // Thêm kiểm tra socket
-
-        try {
-            // Chỉ gửi sự kiện qua socket để server xử lý
-            socket.emit('markMessagesAsRead', { userId: userData.id }, (response) => {
-                if (response?.success) {
-                    console.log("✅ Đã gửi yêu cầu đánh dấu đã đọc qua socket.");
-                } else {
-                    console.error("❌ Lỗi khi gửi yêu cầu đánh dấu đã đọc qua socket:", response?.error);
-                }
-            });
-        } catch (error) {
-            // Thêm khối catch để xử lý lỗi tiềm ẩn khi emit sự kiện
-            console.error("❌ Lỗi khi gửi sự kiện markMessagesAsRead qua socket:", error);
-        }
-    };
 
     // Thêm sự kiện khi mở chat box
     useEffect(() => {
         if (isOpen && isAuthenticated && userData?.id) {
             // Đánh dấu tin nhắn đã đọc khi mở chatbox
-            if (isConnected) { // Chỉ đánh dấu đã đọc khi đã kết nối
-                markMessagesAsRead();
-                // Reset unreadCount khi mở chat
-                setUnreadCount(0);
-            } else {
-                console.log("⚠️ Chưa thể đánh dấu tin nhắn đã đọc vì chưa kết nối");
-            }
+            markMessagesAsRead();
+            // Reset số lượng tin nhắn chưa đọc ngay khi mở chat
+            setUnreadCount(0);
+            console.log("✅ Đã reset số tin nhắn chưa đọc khi mở chat");
         }
-    }, [isOpen, isConnected]);
+    }, [isOpen]);
 
     // Lắng nghe tin nhắn mới, xử lý đệm ảnh admin
     useEffect(() => {
@@ -590,10 +708,13 @@ const ChatRealTime = () => {
                     // Xử lý unread count và thông báo khi buffer được xử lý
                     if (!isOpen) {
                         setUnreadCount(prev => prev + 1);
-                        const audio = new Audio('/notification.mp3');
-                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                        // Phát âm thanh thông báo
+                        playNotificationSound('/sounds/message.mp3');
                     } else {
-                        markMessagesAsRead(); // Đánh dấu đã đọc nếu chat mở
+                        // Nếu chat đang mở, đánh dấu đã đọc
+                        markMessagesAsRead();
+                        // Reset unreadCount
+                        setUnreadCount(0);
                     }
                 }
                 // Xóa timeout ref sau khi xử lý
@@ -628,22 +749,18 @@ const ChatRealTime = () => {
                     processAdminImageBuffer();
 
                     // Thêm tin nhắn hiện tại vào messages
-                setMessages((prev) => [...prev, data]);
-                
-                    // Xử lý unread count và thông báo cho tin nhắn text từ admin
-                    if (isAdminMessage && !isImageOnly) {
-                    setUnreadCount(prev => prev + 1);
-                        // Phát âm thanh thông báo
-                        const audio = new Audio('/notification.mp3');
-                        audio.play().catch(() => console.log("Không thể phát âm thanh"));
+                    setMessages((prev) => [...prev, data]);
 
-                        // Nếu chat đang mở, gọi API để đánh dấu đã đọc ngay
-                        if (isOpen) {
-                            markMessagesAsRead();
-                        }
-                    } else if (isOpen && !isAdminMessage) {
-                        // Nếu chat đang mở và là tin nhắn từ chính user, cũng đánh dấu đã đọc (để cập nhật trạng thái)
+                    // Xử lý unread count và thông báo cho tin nhắn text từ admin
+                    if (isAdminMessage && !isOpen) {
+                        setUnreadCount(prev => prev + 1);
+                        // Phát âm thanh thông báo
+                        playNotificationSound('/sounds/message.mp3');
+                    } else if (isOpen) {
+                        // Nếu chat đang mở, đánh dấu đã đọc
                         markMessagesAsRead();
+                        // Reset unreadCount
+                        setUnreadCount(0);
                     }
                 }
             };
@@ -672,15 +789,15 @@ const ChatRealTime = () => {
                     setMessages((prev) => [...prev, imageGroupMessage]);
 
                     // Xử lý unread count và thông báo
-                    // Luôn tăng unread count khi nhận tin nhắn/ảnh mới từ admin
-                    setUnreadCount(prev => prev + 1);
-                    const audio = new Audio('/notification.mp3');
-                    audio.play().catch(() => console.log("Không thể phát âm thanh"));
-
-                    // Nếu chat đang mở, gọi API để đánh dấu đã đọc ngay
-                    if (isOpen) {
-                    markMessagesAsRead();
-                }
+                    if (!isOpen) {
+                        setUnreadCount(prev => prev + 1);
+                        // Phát âm thanh thông báo
+                        playNotificationSound('/sounds/message.mp3');
+                    } else {
+                        markMessagesAsRead();
+                        // Reset unreadCount
+                        setUnreadCount(0);
+                    }
                 }
             };
 
@@ -698,48 +815,52 @@ const ChatRealTime = () => {
         };
     }, [socket, isOpen]);
 
-    // *** Thêm: Lắng nghe sự kiện Admin đã xem tin nhắn ***
+    // Thêm useEffect mới để lắng nghe các sự kiện socket từ socketConfig
     useEffect(() => {
-        if (socket && userData) { // Đảm bảo userData tồn tại
-            const handleAdminRead = () => {
-                console.log(`👀 Admin đã xem tin nhắn. UserData ID: ${userData?.id}. Bắt đầu cập nhật trạng thái...`);
-                setMessages(prevMessages => {
-                    // Thêm kiểm tra userData bên trong callback của setMessages
-                    if (!userData) {
-                        console.error("❌ handleAdminRead: userData is null inside setMessages, cannot update.");
-                        return prevMessages; 
-                    }
-                    console.log("🔄 [handleAdminRead] Tin nhắn TRƯỚC:", prevMessages);
-                    let changed = false;
-                    const newMessages = prevMessages.map(msg => {
-                        // Chỉ dựa vào sender_id để xác định tin nhắn của user hiện tại
-                        if (msg.sender_id === userData.id && !msg.is_read) { 
-                            console.log(`   -> [handleAdminRead] Đánh dấu tin nhắn ID ${msg.id || '(không có ID)'} là đã đọc.`);
-                            changed = true;
-                            return { ...msg, is_read: true };
-                        }
-                        return msg;
-                    });
-                    
-                    if (changed) {
-                        console.log("🔄 [handleAdminRead] Tin nhắn SAU (đã thay đổi):", newMessages);
-                        return newMessages; // Chỉ trả về mảng mới nếu có thay đổi
-                    } else {
-                        console.log("🔄 [handleAdminRead] Không có tin nhắn nào cần cập nhật trạng thái.");
-                        return prevMessages; // Trả về state cũ nếu không có gì thay đổi
-                    }
-                });
-            };
+        const handleSocketConnected = (event) => {
+            console.log("✅ Nhận sự kiện socket-connected");
+            setIsConnected(true);
+            setLastError("");
+        };
 
-            socket.on('clientMessagesReadByAdmin', handleAdminRead);
+        const handleSocketDisconnected = (event) => {
+            console.log("❌ Nhận sự kiện socket-disconnected:", event.detail?.reason);
+            setIsConnected(false);
+            setLastError(`Mất kết nối: ${event.detail?.reason || 'Lỗi không xác định'}`);
+        };
 
-            // Cleanup listener
-            return () => {
-                socket.off('clientMessagesReadByAdmin', handleAdminRead);
-            };
+        const handleSocketError = (event) => {
+            console.log("❌ Nhận sự kiện socket-error:", event.detail?.message);
+            setIsConnected(false);
+            setLastError(`Lỗi: ${event.detail?.message || 'Lỗi không xác định'}`);
+        };
+
+        const handleSocketConnecting = () => {
+            console.log("⏳ Nhận sự kiện socket-connecting");
+            // Không đặt isConnected = false ở đây để tránh nhấp nháy UI
+            // setLastError("Đang kết nối...");
+        };
+
+        // Đăng ký các sự kiện
+        window.addEventListener("socket-connected", handleSocketConnected);
+        window.addEventListener("socket-disconnected", handleSocketDisconnected);
+        window.addEventListener("socket-error", handleSocketError);
+        window.addEventListener("socket-connecting", handleSocketConnecting);
+
+        // Kiểm tra trạng thái kết nối hiện tại
+        if (socket && socket.connected) {
+            setIsConnected(true);
+            setLastError("");
         }
-    }, [socket, userData]); // Thêm userData vào dependencies
-    // *** Kết thúc thêm ***
+
+        // Cleanup khi unmount
+        return () => {
+            window.removeEventListener("socket-connected", handleSocketConnected);
+            window.removeEventListener("socket-disconnected", handleSocketDisconnected);
+            window.removeEventListener("socket-error", handleSocketError);
+            window.removeEventListener("socket-connecting", handleSocketConnecting);
+        };
+    }, [socket]);
 
     // Hàm xử lý khi chọn ảnh
     const handleImageSelect = (e) => {
@@ -903,8 +1024,8 @@ const ChatRealTime = () => {
                         reject(new Error("Lỗi kết nối"));
                     };
 
-                    // Gửi request
-                    xhr.open('POST', 'http://localhost:3001/upload', true);
+                    // Gửi request - Sử dụng socketServerUrl thay vì hardcode
+                    xhr.open('POST', `${socketServerUrl}/upload`, true);
                     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
                     xhr.setRequestHeader('Accept', 'application/json');
                     xhr.send(formData);
@@ -995,7 +1116,7 @@ const ChatRealTime = () => {
             uploadAndSendMultipleImages();
             return;
         }
-        
+
         if (message.trim() !== "") {
             const messageData = {
                 text: message
@@ -1029,7 +1150,7 @@ const ChatRealTime = () => {
                 isCurrentUser: true,
                 is_read: false // Tin nhắn mới gửi luôn ở trạng thái chưa đọc
             };
-            
+
             setMessages((prev) => [...prev, displayMessage]);
             setMessage("");
         }
@@ -1058,7 +1179,7 @@ const ChatRealTime = () => {
     // Thêm useEffect để xử lý scroll khi có tin nhắn mới
     useEffect(() => {
         if (!isLoading && messages.length > 0) {
-        scrollToBottom();
+            scrollToBottom();
         }
     }, [messages, isLoading]);
 
@@ -1074,6 +1195,64 @@ const ChatRealTime = () => {
         }
     };
 
+    // Cập nhật hàm đánh dấu tin nhắn đã đọc
+    const markMessagesAsRead = async () => {
+        if (!isAuthenticated || !userData?.id) return;
+
+        try {
+            const token = localStorage.getItem("authToken");
+
+            // Gọi API đánh dấu tất cả tin nhắn là đã đọc
+            await axios.patch(
+                `http://localhost:8000/api/messages/read-all/${userData.id}`,
+                {},
+                {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+
+            // Cập nhật UI
+            setUnreadCount(0); // Đặt rõ số tin nhắn chưa đọc là 0
+            setMessages(prev => prev.map(msg => {
+                // Chỉ đánh dấu tin nhắn nhận được (không phải của người dùng hiện tại) là đã đọc
+                if (msg.sender_id !== userData?.id && !msg.isCurrentUser) {
+                    return { ...msg, is_read: true };
+                }
+                // Giữ nguyên trạng thái is_read cho tin nhắn người dùng đã gửi
+                return msg;
+            }));
+
+            console.log("✅ Đã đánh dấu tin nhắn nhận được là đã đọc và reset unreadCount");
+        } catch (error) {
+            console.error("❌ Lỗi khi đánh dấu tin nhắn đã đọc:", error.message);
+        }
+    };
+
+    // Thêm effect để đánh dấu tin nhắn đã đọc khi tải lần đầu
+    useEffect(() => {
+        if (messages.length > 0 && isAuthenticated && userData?.id) {
+            // Đếm số tin nhắn chưa đọc để hiển thị badge
+            const unreadMessages = messages.filter(msg =>
+                !msg.is_read && (!msg.isCurrentUser && msg.sender_id !== userData.id)
+            );
+
+            // Cập nhật số tin nhắn chưa đọc
+            setUnreadCount(unreadMessages.length);
+
+            // Tự động đánh dấu tin nhắn đã đọc nếu chat box đang mở
+            if (isOpen) {
+                // markMessagesAsRead(); // <---- Loại bỏ dòng này
+                // setUnreadCount(0); // <---- Loại bỏ dòng này
+            }
+
+            console.log(`✅ Đã cập nhật số tin nhắn chưa đọc: ${unreadMessages.length}`);
+        }
+    }, [messages, isAuthenticated, userData, isOpen]);
+
     // Nếu không đăng nhập, không hiển thị box chat
     if (!isAuthenticated) {
         return null;
@@ -1083,9 +1262,16 @@ const ChatRealTime = () => {
         <div className="fixed bottom-5 left-5 z-50">
             {/* Chat Bubble Button */}
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                    setIsOpen(!isOpen);
+                    // Nếu đang mở chat box, gọi markMessagesAsRead và reset số tin nhắn chưa đọc
+                    if (!isOpen && isAuthenticated) {
+                        setUnreadCount(0); // Reset số tin nhắn chưa đọc ngay lập tức
+                        markMessagesAsRead(); // Gọi API đánh dấu đã đọc và update UI
+                    }
+                }}
                 className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
-                }`}
+                    }`}
             >
                 {isOpen ? <BsXLg className="text-2xl" /> : <BsChatDots className="text-2xl" />}
                 {!isOpen && unreadCount > 0 && (
@@ -1415,7 +1601,7 @@ const ChatRealTime = () => {
                                 className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${(message.trim() || selectedImages.length > 0) && isConnected && !isUploading
                                     ? "bg-green-500 hover:bg-green-600"
                                     : "bg-gray-300 cursor-not-allowed"
-                                }`}
+                                    }`}
                             >
                                 <IoMdSend className="text-lg" />
                             </button>
