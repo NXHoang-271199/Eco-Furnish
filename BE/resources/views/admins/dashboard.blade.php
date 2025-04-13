@@ -1,6 +1,6 @@
-{{-- Để kế thừa lại master layout ta sử dụng extends --}}
+{{-- Để kế thừa lại admin layout ta sử dụng extends --}}
 @extends('layouts.admin')
-{{-- Một file chỉ được kế thừa 1 master layout --}}
+{{-- Một file chỉ được kế thừa 1 admin layout --}}
 
 @section('title')
     Quản lý
@@ -46,7 +46,7 @@
                                     <div class="row g-3 mb-0 align-items-center">
                                         <div class="col-sm-auto">
                                             <div class="input-group">
-                                                <input type="text" class="form-control border-0 minimal-border dash-filter-picker shadow" data-provider="flatpickr" data-range-date="true" data-date-format="d M, Y" data-deafult-date="01 Jan 2022 to 31 Jan 2022">
+                                                
                                                 <div class="input-group-text bg-primary border-primary text-white">
                                                     <i class="ri-calendar-2-line"></i>
                                                 </div>
@@ -54,9 +54,9 @@
                                         </div>
                                         <!--end col-->
 
-                                        <div class="col-auto">
+                                        <!-- <div class="col-auto">
                                             <button type="button" class="btn btn-soft-info btn-icon waves-effect material-shadow-none waves-light layout-rightside-btn"><i class="ri-pulse-line"></i></button>
-                                        </div>
+                                        </div> -->
                                         <!--end col-->
                                     </div>
                                     <!--end row-->

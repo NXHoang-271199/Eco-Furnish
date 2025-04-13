@@ -1514,6 +1514,30 @@ const ProductDetail = () => {
                                     </span>
                                   </div>
 
+                                  {/* Hiển thị thông tin biến thể nếu có */}
+                                  {review.has_variant && review.variant_details && (
+                                    <div className="text-xs text-gray-500 mb-2 flex flex-wrap gap-1">
+                                      <span className="font-medium">Phiên bản đã mua:</span>
+                                      {Array.isArray(review.variant_details) ? (
+                                        // Nếu variant_details là mảng
+                                        review.variant_details.map((detail, idx) => (
+                                          <span key={idx}>
+                                            {detail.attribute_name || detail.name}: {detail.attribute_value || detail.value}
+                                            {idx < review.variant_details.length - 1 ? ', ' : ''}
+                                          </span>
+                                        ))
+                                      ) : (
+                                        // Nếu variant_details là object
+                                        Object.entries(review.variant_details).map(([key, value], idx, arr) => (
+                                          <span key={key}>
+                                            {key}: {value}
+                                            {idx < arr.length - 1 ? ', ' : ''}
+                                          </span>
+                                        ))
+                                      )}
+                                    </div>
+                                  )}
+
                                   <p className="text-gray-600 mb-4">
                                     {review.review_text}
                                   </p>

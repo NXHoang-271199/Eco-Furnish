@@ -542,7 +542,7 @@ const Homes = () => {
                   viewport={{ once: true }}
                 >
                   <FaRobot className="mr-2" />
-                  <span>AI RECOMMENDATIONS</span>
+                  <span>RECOMMENDATIONS</span>
                 </motion.div>
                 <motion.h2
                   className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
@@ -552,7 +552,7 @@ const Homes = () => {
                   viewport={{ once: true }}
                 >
                   Sản phẩm được{" "}
-                  <span className="text-blue-500">trợ lý AI</span> gợi ý
+                  <span className="text-blue-500">gợi ý</span>
                 </motion.h2>
                 <motion.p
                   className="text-gray-600"
@@ -561,7 +561,7 @@ const Homes = () => {
                   transition={{ duration: 0.8, delay: 0.2 }}
                   viewport={{ once: true }}
                 >
-                  Dựa trên hoạt động gần đây của bạn, trợ lý AI của chúng tôi đã chọn ra những sản phẩm bạn có thể quan tâm.
+                  Dựa trên hoạt động gần đây của bạn, Trang web của chúng tôi đã chọn ra những sản phẩm bạn có thể quan tâm.
                 </motion.p>
               </div>
               <motion.div
