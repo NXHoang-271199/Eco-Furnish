@@ -88,3 +88,4 @@ Bạn có thể điều chỉnh các tham số của API Gemini như temperature
 
 # Hướng dẫn chạy realtime khi mới pull code về:
 - cd BE
+- cd socket-server
