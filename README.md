@@ -90,4 +90,4 @@ Bạn có thể điều chỉnh các tham số của API Gemini như temperature
 - cd BE
 - cd socket-server
 - npm i
-- nhập vào terminal node server.js
+- node server.js
