@@ -45,6 +45,8 @@
     <script src="{{ asset('assets/admins/js/pages/plugins/lord-icon-2.1.0.js') }}"></script>
     <script src="{{ asset('assets/admins/js/plugins.js') }}"></script>
 
+    <!-- password-addon init -->
+    <script src="{{asset('assets/admins/js/pages/password-addon.init.js') }}"></script>
 </body>
 
 </html>
