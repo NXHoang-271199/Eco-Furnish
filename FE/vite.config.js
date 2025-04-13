@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    hmr: {
+      overlay: false,
+    },
     proxy: {
       '/api': {
         target: "http://localhost:8000",
@@ -15,6 +18,11 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
         secure: false
+      },
+      '/socket.io': {
+        target: 'http://localhost:3001',
+        ws: true,
+        changeOrigin: true
       }
     }
   }

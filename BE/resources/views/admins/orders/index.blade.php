@@ -339,10 +339,10 @@
                     @php $slug = Str::slug($status) @endphp
                     <li class="nav-item" role="presentation">
                             <button class="nav-link rounded-0 border-0 py-3 position-relative {{ $loop->first ? 'active' : '' }}"
-                                id="pills-{{ Str::slug($slug) }}-tab" 
+                                id="pills-{{ Str::slug($slug) }}-tab"
                                 data-bs-toggle="pill"
-                                data-bs-target="#pills-{{ Str::slug($slug) }}" 
-                                type="button" 
+                                data-bs-target="#pills-{{ Str::slug($slug) }}"
+                                type="button"
                                 role="tab"
                             aria-controls="pills-{{ Str::slug($slug) }}"
                             aria-selected="{{ $loop->first ? 'true' : 'false' }}">
@@ -416,7 +416,7 @@
                                                         </div>
                                                     @endif
                                                 </div>
-                                                
+
                                                 <!-- Order Details Column -->
                                                 <div class="col-md-8 p-4">
                                                     <div class="d-flex justify-content-between mb-3">
@@ -432,7 +432,7 @@
                                                                 </p>
                                                             @endif
                                                             <p class="text-muted mb-0">
-                                                                <i class="far fa-calendar-alt me-1"></i> 
+                                                                <i class="far fa-calendar-alt me-1"></i>
                                                                 Ngày đặt: {{ $order->created_at->format('d/m/Y H:i:s') }}
                                                             </p>
                                                         </div>
@@ -440,11 +440,11 @@
                                                             <span role="status">{!! getOrderStatusBadge($order->order_status) !!}</span>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <div class="row mb-3">
                                                         <div class="col-md-6">
                                                             <p class="mb-1">
-                                                                <span class="text-muted"><i class="far fa-user me-1"></i> Người nhận:</span> 
+                                                                <span class="text-muted"><i class="far fa-user me-1"></i> Người nhận:</span>
                                                                 <span class="fw-medium">{{ $order->user_name }}</span>
                                                             </p>
                                                             <p class="mb-1">
@@ -479,7 +479,7 @@
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     @if ($order->refundRequest->isNotEmpty())
                                                         <div class="alert alert-warning p-2 mb-0">
                                                             <div class="d-flex align-items-center">
@@ -488,7 +488,7 @@
                                                                     <p class="fw-bold mb-1">Yêu cầu hoàn hàng:</p>
                                                                     <p class="mb-1">{{ $order->refundRequest->first()->reason ?? 'Chưa có lý do' }}</p>
                                                                 </div>
-                                                                
+
                                                                 @if ($order->refundRequest->first()->status === 'Chờ Duyệt')
                                                                     <div class="ms-auto">
                                                                         <form action="{{ route('order.refund.approve', ['orderId' => $order->id, 'refundRequestId' => $order->refundRequest->first()->id]) }}" method="POST" style="display:inline-block;">
@@ -513,7 +513,7 @@
                                                         </div>
                                                     @endif
                                                 </div>
-                                                
+
                                                 <!-- Action Column -->
                                                 <div class="col-md-2 bg-light p-4 d-flex flex-column justify-content-center">
                                                     <div class="mb-3">
@@ -551,7 +551,7 @@
                                 @endforelse
                             </div>
                         </div>
-                        
+
                         <!-- Pagination with Modern Design -->
                         <div class="d-flex justify-content-between align-items-center my-4">
                             <div class="text-muted small">
@@ -613,14 +613,14 @@
     function initOrderBulkActions() {
         // Thêm hiệu ứng khi chuyển tab
         const tabButtons = document.querySelectorAll('[data-bs-toggle="pill"]');
-        
+
         tabButtons.forEach(button => {
             button.addEventListener('shown.bs.tab', function (event) {
                 // Xóa active indicator cho tất cả các tab
                 tabButtons.forEach(btn => {
                     btn.querySelector('.position-absolute')?.remove();
                 });
-                
+
                 // Thêm active indicator cho tab đang active
                 const activeIndicator = document.createElement('span');
                 activeIndicator.className = 'position-absolute bottom-0 start-0 end-0 bg-primary';
@@ -629,7 +629,7 @@
                 event.target.appendChild(activeIndicator);
             });
         });
-        
+
         // Thêm hiệu ứng hover cho card
         const orderCards = document.querySelectorAll('.order-card');
         orderCards.forEach(card => {
@@ -637,13 +637,13 @@
                 this.style.transform = 'translateY(-5px)';
                 this.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)';
             });
-            
+
             card.addEventListener('mouseleave', function() {
                 this.style.transform = 'translateY(0)';
                 this.style.boxShadow = '0 0.125rem 0.25rem rgba(0,0,0,0.075)';
             });
         });
-        
+
         // Thêm hiệu ứng cho select status
         const statusSelects = document.querySelectorAll('.status-select');
         statusSelects.forEach(select => {

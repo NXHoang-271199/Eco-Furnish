@@ -10,8 +10,10 @@ use Illuminate\Http\Request;
 use App\Models\RefundRequest;
 use App\Models\ProductVariant;
 use App\Mail\RefundRequestMail;
+use App\Models\OrderNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Http;
 
 class OrderController extends Controller
 {
@@ -172,7 +174,7 @@ class OrderController extends Controller
     {
         DB::beginTransaction();
         try {
-            $order = Order::with('orderItems')->findOrFail($id);
+            $order = Order::with(['orderItems', 'user'])->findOrFail($id);
 
             if ($request->input('current_status') !== $order->order_status) {
                 return back()->with('error', 'Trạng thái đơn hàng đã được cập nhật bởi người khác. Vui lòng tải lại trang.');
@@ -204,6 +206,42 @@ class OrderController extends Controller
 
             // Cập nhật trạng thái đơn hàng
             $order->update(['order_status' => $request->order_status]);
+
+            // Tạo thông báo cho đơn hàng
+            $notification = OrderNotification::create([
+                'order_id' => $order->id,
+                'is_read' => false
+            ]);
+
+            // Gửi thông báo realtime cho user
+            try {
+                // Lấy lại đơn hàng với thông tin mới nhất sau khi cập nhật
+                $updatedOrder = Order::where('id', $order->id)->first();
+                
+                // Tạo nội dung thông báo
+                $notificationData = [
+                    'id' => $notification->id,
+                    'order_id' => $updatedOrder->id,
+                    'order_code' => $updatedOrder->order_code,
+                    'user_id' => $updatedOrder->user_id,
+                    'order_status' => $updatedOrder->order_status,
+                    'message' => "Đơn hàng #{$updatedOrder->order_code} đã chuyển sang trạng thái: {$updatedOrder->order_status}",
+                    'created_at' => now()->toIso8601String(),
+                    'is_read' => false
+                ];
+
+                // Gửi thông báo đến Socket Server
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002').'/broadcast-client', [
+                    'event' => 'order_status_notification',
+                    'userId' => $updatedOrder->user_id,
+                    'data' => $notificationData
+                ]);
+                
+                \Log::info('Thông báo đã được gửi đến user ' . $updatedOrder->user_id . ' cho đơn hàng #' . $updatedOrder->order_code);
+            } catch (\Exception $e) {
+                // Ghi log lỗi nhưng không dừng quá trình cập nhật
+                \Log::error('Không thể gửi thông báo realtime: ' . $e->getMessage());
+            }
 
             DB::commit();
             return back()->with('success', 'Cập nhật trạng thái thành công.');
@@ -295,7 +333,7 @@ class OrderController extends Controller
         // Xử lý từng đơn hàng
         foreach ($orderIds as $orderId) {
             try {
-                $order = Order::with('orderItems')->findOrFail($orderId);
+                $order = Order::with(['orderItems', 'user'])->findOrFail($orderId);
                 $currentStatus = $currentStatuses[$orderId] ?? null;
 
                 // Kiểm tra nếu trạng thái hiện tại khác với trạng thái đã lưu (có thể đã bị thay đổi)
@@ -354,6 +392,40 @@ class OrderController extends Controller
 
                 // Cập nhật trạng thái đơn hàng
                 $order->update(['order_status' => $newStatus]);
+                
+                // Tạo thông báo cho đơn hàng
+                $notification = OrderNotification::create([
+                    'order_id' => $order->id,
+                    'is_read' => false
+                ]);
+
+                // Gửi thông báo realtime cho user
+                try {
+                    // Lấy lại đơn hàng với thông tin mới nhất sau khi cập nhật
+                    $updatedOrder = Order::where('id', $order->id)->first();
+                    
+                    // Tạo nội dung thông báo
+                    $notificationData = [
+                        'id' => $notification->id,
+                        'order_id' => $updatedOrder->id,
+                        'order_code' => $updatedOrder->order_code,
+                        'user_id' => $updatedOrder->user_id,
+                        'order_status' => $updatedOrder->order_status,
+                        'message' => "Đơn hàng #{$updatedOrder->order_code} đã chuyển sang trạng thái: {$updatedOrder->order_status}",
+                        'created_at' => now()->toIso8601String(),
+                        'is_read' => false
+                    ];
+
+                    // Gửi thông báo đến Socket Server
+                    Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002').'/broadcast-client', [
+                        'event' => 'order_status_notification',
+                        'userId' => $updatedOrder->user_id,
+                        'data' => $notificationData
+                    ]);
+                } catch (\Exception $e) {
+                    // Ghi log lỗi nhưng không dừng quá trình cập nhật
+                    \Log::error('Không thể gửi thông báo realtime: ' . $e->getMessage());
+                }
                 
                 DB::commit();
                 

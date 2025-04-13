@@ -23,6 +23,7 @@ use App\Http\Requests\QuickOrderRequest;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Api\PaymentMethodController;
+use Illuminate\Support\Facades\Http;
 
 class OrderController extends Controller
 {
@@ -213,10 +214,40 @@ class OrderController extends Controller
             }
 
             // ✅ Gửi thông báo đơn hàng
-            OrderNotification::create([
+            $notification = OrderNotification::create([
                 'order_id' => $order->id,
                 'is_read' => false
             ]);
+
+            // ✅ Gửi thông báo realtime đến admin thông qua socket server
+            try {
+                $user = Auth::user();
+                $notificationData = [
+                    'event' => 'new_order',
+                    'data' => [
+                        'order_id' => $order->id,
+                        'order_code' => $order->order_code,
+                        'user_name' => $order->user_name,
+                        'total_price' => $order->total_price,
+                        'created_at' => $order->created_at,
+                        'notification_id' => $notification->id,
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                        ]
+                    ]
+                ];
+
+                // Gửi thông báo đến Socket Server
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002').'/broadcast-admin', [
+                    'event' => 'new_order_notification',
+                    'data' => $notificationData
+                ]);
+            } catch (\Exception $e) {
+                // Bắt lỗi để không làm ảnh hưởng tới quá trình đặt hàng
+                \Log::error('Không thể gửi thông báo realtime: ' . $e->getMessage());
+            }
 
             if ($request->voucher_id) {
                 VoucherUsage::create(['user_id' => $userId, 'voucher_id' => $request->voucher_id]);
@@ -364,10 +395,40 @@ class OrderController extends Controller
             }
 
             // ✅ Thêm thông báo đơn hàng
-            OrderNotification::create([
+            $notification = OrderNotification::create([
                 'order_id' => $order->id,
                 'is_read' => false
             ]);
+
+            // ✅ Gửi thông báo realtime đến admin thông qua socket server
+            try {
+                $user = Auth::user();
+                $notificationData = [
+                    'event' => 'new_order',
+                    'data' => [
+                        'order_id' => $order->id,
+                        'order_code' => $order->order_code,
+                        'user_name' => $order->user_name,
+                        'total_price' => $order->total_price,
+                        'created_at' => $order->created_at,
+                        'notification_id' => $notification->id,
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                        ]
+                    ]
+                ];
+
+                // Gửi thông báo đến Socket Server
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002').'/broadcast-admin', [
+                    'event' => 'new_order_notification',
+                    'data' => $notificationData
+                ]);
+            } catch (\Exception $e) {
+                // Bắt lỗi để không làm ảnh hưởng tới quá trình đặt hàng
+                \Log::error('Không thể gửi thông báo realtime: ' . $e->getMessage());
+            }
 
             // Lưu thông tin voucher đã sử dụng
             if ($request->voucher_id) {

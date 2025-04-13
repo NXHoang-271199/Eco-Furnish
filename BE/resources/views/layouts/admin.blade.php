@@ -13,6 +13,8 @@
     <meta content="Themesbrand" name="author" />
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <!-- Admin token cho socket connection -->
+    <meta name="admin-token" content="{{ session('admin_token') }}">
 
     <title>@yield('title')</title>
     {{-- Điền các link CSS dùng chung --}}
@@ -119,7 +121,24 @@
     <script src="{{ asset('assets/admins/libs/rater-js/index.js') }}"></script>
     <script src="{{ asset('assets/admins/js/pages/rating.init.js') }}"></script>
 
-
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <!-- Script xử lý thông báo realtime cho đơn hàng -->
+    <script>
+        // Truyền URL Socket Server từ biến môi trường
+        window.socketServerUrl = "{{ env('SOCKET_SERVER_URL', 'http://localhost:3002') }}";
+        
+        // Lưu token vào localStorage và sessionStorage nếu có
+        @if(session('admin_token'))
+            localStorage.setItem('admin_token', "{{ session('admin_token') }}");
+            sessionStorage.setItem('admin_token', "{{ session('admin_token') }}");
+        @elseif(Auth::check())
+            // Nếu không có session token nhưng đã đăng nhập, tạo token từ CSRF
+            localStorage.setItem('admin_token', "{{ csrf_token() }}");
+            sessionStorage.setItem('admin_token', "{{ csrf_token() }}");
+        @endif
+    </script>
+    <script src="{{ asset('assets/admins/js/order-notifications.js') }}"></script>
 
     <!-- CKEditor -->
     <script type="importmap">
