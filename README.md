@@ -87,3 +87,4 @@ Bạn có thể điều chỉnh các tham số của API Gemini như temperature
 - **Lỗi 429 (Too Many Requests)**: API Gemini có giới hạn số lượng yêu cầu, hãy thử lại sau
 
 # Hướng dẫn chạy realtime khi mới pull code về:
+- cd BE
