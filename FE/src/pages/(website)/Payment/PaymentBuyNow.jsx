@@ -66,6 +66,10 @@ const PaymentBuyNow = () => {
   });
   const [editingAddressId, setEditingAddressId] = useState(null); // ID của địa chỉ đang sửa
 
+  // Thêm state để lưu số dư ví và trạng thái loading của ví
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [loadingWallet, setLoadingWallet] = useState(false);
+
   useEffect(() => {
     // Lấy địa chỉ từ localStorage khi component mount
     const savedAddress = JSON.parse(localStorage.getItem("userAddress")) || {};
@@ -88,6 +92,7 @@ const PaymentBuyNow = () => {
 
     getPaymentMethod();
     fetchProvinces();
+    getWalletBalance(); // Thêm gọi hàm lấy số dư ví
   }, [selectedProducts, navigate, state]);
 
   // Lấy danh sách tỉnh/thành phố
@@ -665,6 +670,27 @@ const PaymentBuyNow = () => {
     }
   };
 
+  // Thêm hàm để lấy số dư ví
+  const getWalletBalance = async () => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      try {
+        setLoadingWallet(true);
+        const response = await axiosInstance.get("/wallet/balance", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setWalletBalance(response.data.balance || 0);
+      } catch (error) {
+        console.error("Lỗi khi lấy số dư ví:", error);
+        setWalletBalance(0);
+      } finally {
+        setLoadingWallet(false);
+      }
+    }
+  };
+
   return (
     <div className="my-20">
       <div className="max-w-6xl mx-auto py-10 px-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -696,32 +722,106 @@ const PaymentBuyNow = () => {
             )}
           </div>
 
-          <div className="mt-4">
-            <h3 className="font-semibold">Phương thức thanh toán</h3>
-            <div className="mt-2 space-y-2">
+          <div className="mt-6 bg-white p-5 rounded-lg shadow-sm border">
+            <h3 className="font-semibold text-lg mb-4 text-gray-800 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+              </svg>
+              Phương thức thanh toán
+            </h3>
+            <div className="space-y-3">
               {paymentMethods.length > 0 ? (
-                paymentMethods.map((method) => (
-                  <label
-                    key={method.id}
-                    className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={method.id} // Sử dụng ID từ API
-                      checked={paymentMethod === method.id.toString()} // So sánh với ID
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span>
-                      {method.name === "Tiền mặt"
-                        ? "Thanh toán khi nhận hàng"
-                        : method.name}
-                    </span>{" "}
-                    {/* Giả sử API trả về field "name" */}
-                  </label>
-                ))
+                paymentMethods.map((method) => {
+                  // Kiểm tra xem phương thức thanh toán có phải là Ví không
+                  const isWalletMethod = method.name === "Ví";
+                  // Kiểm tra xem số dư ví có đủ để thanh toán không
+                  const insufficientBalance = isWalletMethod && walletBalance < calculateTotal();
+                  // Quyết định disabled dựa trên điều kiện số dư
+                  const isDisabled = isWalletMethod && insufficientBalance;
+
+                  return (
+                    <label
+                      key={method.id}
+                      className={`relative flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${paymentMethod === method.id.toString() && !isDisabled
+                        ? "bg-blue-50 border-2 border-blue-500"
+                        : "border border-gray-200 hover:border-blue-400"
+                        } ${isDisabled
+                          ? "opacity-60 cursor-not-allowed bg-gray-50"
+                          : "cursor-pointer"
+                        }`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <input
+                          type="radio"
+                          name="payment"
+                          value={method.id}
+                          checked={paymentMethod === method.id.toString()}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          disabled={isDisabled}
+                          className="form-radio h-5 w-5 text-blue-600"
+                        />
+                        {method.image ? (
+                          <div className="w-12 h-12 flex items-center justify-center rounded-lg overflow-hidden bg-white p-1 border border-gray-100 shadow-sm">
+                            <img
+                              src={`http://localhost:8000/storage/${method.image}`}
+                              alt={method.name}
+                              className="h-8 object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                              <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-800">
+                            {method.name === "Tiền mặt"
+                              ? "Thanh toán khi nhận hàng"
+                              : method.name}
+                          </span>
+                          {isWalletMethod && (
+                            <span className={`text-sm ${insufficientBalance ? "text-red-500" : "text-green-600"}`}>
+                              Số dư: {formatPrice(walletBalance)}
+                            </span>
+                          )}
+                          {method.name === "MoMo" && (
+                            <span className="text-sm text-gray-500">Thanh toán qua ví điện tử MoMo</span>
+                          )}
+                          {method.name === "VNPAY" && (
+                            <span className="text-sm text-gray-500">Thanh toán qua cổng VNPAY</span>
+                          )}
+                          {method.name === "Tiền mặt" && (
+                            <span className="text-sm text-gray-500">Thanh toán khi nhận được hàng</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Phù hợp nhất / Không đủ số dư */}
+                      {(paymentMethod === method.id.toString() && !isDisabled) && (
+                        <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+                          Đã chọn
+                        </span>
+                      )}
+                      {isWalletMethod && insufficientBalance && (
+                        <span className="text-xs text-red-500 font-medium bg-red-50 px-2 py-1 rounded-full">
+                          Số dư không đủ
+                        </span>
+                      )}
+                    </label>
+                  );
+                })
               ) : (
-                <p>Đang tải phương thức thanh toán...</p>
+                <div className="flex items-center justify-center p-6 text-gray-500">
+                  <svg className="animate-spin mr-2 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Đang tải phương thức thanh toán...
+                </div>
               )}
             </div>
           </div>

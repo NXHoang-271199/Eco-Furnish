@@ -9,7 +9,7 @@ import "yet-another-react-lightbox/styles.css";
 import { toast } from "react-hot-toast";
 
 // Tạo audio elements toàn cục để khởi tạo sớm
-const messageAudio = new Audio('/sounds/message.mp3');
+const messageAudio = new Audio('/sounds/notification-sound.mp3');
 messageAudio.preload = 'auto';
 messageAudio.volume = 0.8;
 
@@ -486,7 +486,7 @@ const ChatRealTime = () => {
                         if (!isOpen) {
                             setUnreadCount(prev => prev + 1);
                             // Phát âm thanh thông báo
-                            playNotificationSound('/sounds/message.mp3');
+                            playNotificationSound('/sounds/notification-sound.mp3');
                         }
                     });
                 }
@@ -709,7 +709,7 @@ const ChatRealTime = () => {
                     if (!isOpen) {
                         setUnreadCount(prev => prev + 1);
                         // Phát âm thanh thông báo
-                        playNotificationSound('/sounds/message.mp3');
+                        playNotificationSound('/sounds/notification-sound.mp3');
                     } else {
                         // Nếu chat đang mở, đánh dấu đã đọc
                         markMessagesAsRead();
@@ -755,7 +755,7 @@ const ChatRealTime = () => {
                     if (isAdminMessage && !isOpen) {
                         setUnreadCount(prev => prev + 1);
                         // Phát âm thanh thông báo
-                        playNotificationSound('/sounds/message.mp3');
+                        playNotificationSound('/sounds/notification-sound.mp3');
                     } else if (isOpen) {
                         // Nếu chat đang mở, đánh dấu đã đọc
                         markMessagesAsRead();
@@ -792,7 +792,7 @@ const ChatRealTime = () => {
                     if (!isOpen) {
                         setUnreadCount(prev => prev + 1);
                         // Phát âm thanh thông báo
-                        playNotificationSound('/sounds/message.mp3');
+                        playNotificationSound('/sounds/notification-sound.mp3');
                     } else {
                         markMessagesAsRead();
                         // Reset unreadCount

@@ -221,45 +221,68 @@
                     </li>
                 @endif
 
-                @if(Auth::user()->hasPermission('view-orders') || Auth::user()->hasPermission('view-order-notifications'))
-                <li class="nav-item">
-                    <a class="nav-link menu-link" href="#sidebarOrder" data-bs-toggle="collapse" role="button"
-                        aria-expanded="false" aria-controls="sidebarOrder">
-                        <i class="ri-rocket-line"></i> <span data-key="t-advance-ui">Quản Lý Đơn Hàng</span>
-                    </a>
-                    <div class="collapse menu-dropdown" id="sidebarOrder">
-                        <ul class="nav nav-sm flex-column">
-                            @if(Auth::user()->hasPermission('view-orders'))
-                            <li class="nav-item">
-                                <a href="{{ route('orders.index') }}" class="nav-link">
-                                    Đơn hàng
-                                </a>
-                            </li>
-                            @endif
-                            @if(Auth::user()->hasPermission('view-order-notifications'))
-                            <li class="nav-item">
-                                <a href="{{ route('order.notifications') }}" class="nav-link">
-                                    Thông báo
-                                </a>
-                            </li>
-                            @endif
-                        </ul>
-                    </div>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link menu-link" href="{{ route('banners.index') }}">
-                        <i class="ri-image-line"></i> <span data-key="t-advance-ui">Quản lý banner</span>
-                    </a>
-                </li>
-                {{-- @if (Auth::user()->hasPermission('view-messages')) --}}
+                @if (Auth::user()->hasPermission('view-orders') || Auth::user()->hasPermission('view-order-notifications'))
                     <li class="nav-item">
-                        <a class="nav-link menu-link" href="{{ route('messages.index') }}">
-                            <i class="ri-customer-service-2-line"></i> <span data-key="t-advance-ui">Chat trực tuyến</span>
+                        <a class="nav-link menu-link" href="#sidebarOrder" data-bs-toggle="collapse" role="button"
+                            aria-expanded="false" aria-controls="sidebarOrder">
+                            <i class="ri-rocket-line"></i> <span data-key="t-advance-ui">Quản Lý Đơn Hàng</span>
+                        </a>
+                        <div class="collapse menu-dropdown" id="sidebarOrder">
+                            <ul class="nav nav-sm flex-column">
+                                @if (Auth::user()->hasPermission('view-orders'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('orders.index') }}" class="nav-link">
+                                            Đơn hàng
+                                        </a>
+                                    </li>
+                                @endif
+                                @if (Auth::user()->hasPermission('view-order-notifications'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('order.notifications') }}" class="nav-link">
+                                            Thông báo
+                                        </a>
+                                    </li>
+                                @endif
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link menu-link" href="{{ route('banners.index') }}">
+                            <i class="ri-image-line"></i> <span data-key="t-advance-ui">Quản lý banner</span>
                         </a>
                     </li>
-                {{-- @endif --}}
+                    {{-- @if (Auth::user()->hasPermission('view-messages')) --}}
+                    <li class="nav-item">
+                        <a class="nav-link menu-link" href="{{ route('messages.index') }}">
+                            <i class="ri-customer-service-2-line"></i> <span data-key="t-advance-ui">Chat trực
+                                tuyến</span>
+                        </a>
+                    </li>
+                    {{-- @endif --}}
 
-                {{-- <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li> --}}
+                    {{-- <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li> --}}
+                @endif
+                @if (Auth::user()->hasPermission('view-wallets'))
+                    <li class="nav-item">
+                        <a class="nav-link menu-link" href="#sidebarWallet" data-bs-toggle="collapse"
+                            role="button" aria-expanded="false" aria-controls="sidebarWallet">
+                            <i class="ri-wallet-3-line"></i> <span data-key="t-advance-ui">Quản Lý Ví Tiền</span>
+                        </a>
+                        <div class="collapse menu-dropdown" id="sidebarWallet">
+                            <ul class="nav nav-sm flex-column">
+                                    <li class="nav-item">
+                                        <a href="{{ route('wallets.index') }}" class="nav-link">
+                                            Số Dư Khách Hàng
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('wallets.transactions') }}" class="nav-link">
+                                            Lịch Sử Giao Dịch
+                                        </a>
+                                    </li>
+                            </ul>
+                        </div>
+                    </li>
                 @endif
             </ul>
         </div>

@@ -21,6 +21,7 @@ class Order extends Model
         'voucher_id',
         'total_price',
         'discount_amount',
+        'updated_by',
     ];
     public function user()
     {
@@ -47,5 +48,13 @@ class Order extends Model
     public function reviews()
     {
         return $this->hasMany(Review::class);
+    }
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class);
     }
 }
