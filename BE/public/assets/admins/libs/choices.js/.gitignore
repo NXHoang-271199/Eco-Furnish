@@ -1,0 +1,18 @@
+node_modules
+npm-debug.log
+.DS_Store
+.idea
+.rollup.cache
+tsconfig.tsbuildinfo
+.npmrc
+.run
+
+# Test
+tests/reports
+tests/results
+.nyc_output
+coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

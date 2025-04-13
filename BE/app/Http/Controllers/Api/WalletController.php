@@ -33,8 +33,11 @@ class WalletController extends Controller
     public function deposit(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:1000',
+            'amount' => 'required|numeric|min:10000|max:10000000',
             'payment_method_id' => 'required|exists:payment_methods,id',
+        ], [
+            'amount.min' => 'Số tiền nạp tối thiểu là 10.000 VNĐ',
+            'amount.max' => 'Số tiền nạp tối đa là 10.000.000 VNĐ',
         ]);
 
         $userId = Auth::id();
