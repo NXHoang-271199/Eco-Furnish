@@ -114,8 +114,10 @@ Route::prefix('admin')->group(function () {
 
         // Users Management
         Route::middleware(['permission:view-users'])->group(function () {
-            Route::resource('users', UserController::class);
-            Route::put('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])
+            Route::get('/users', [UserController::class, 'userList'])->name('users.index');
+            Route::get('/admins', [UserController::class, 'adminList'])->name('users.admins');
+            Route::resource('users', UserController::class)->except(['index']);
+            Route::post('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])
                 ->name('users.toggle-status');
         });
 

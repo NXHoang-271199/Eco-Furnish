@@ -25,8 +25,8 @@ class DatabaseSeeder extends Seeder
 
         // Tạo tài khoản admin
         User::create([
-            'name' => 'Admin',
-            'email' => '1@gmail.com',
+            'name' => 'Quản trị viên',
+            'email' => 'quantrivien@gmail.com',
             'password' => Hash::make('1'),
             'role_id' => 1, // Role Admin
             'is_active' => 1,
@@ -37,10 +37,10 @@ class DatabaseSeeder extends Seeder
 
          // Tạo tài khoản admin
          User::create([
-            'name' => 'Staff',
-            'email' => 'staff@gmail.com',
+            'name' => 'Nhân viên',
+            'email' => 'nhanvien@gmail.com',
             'password' => Hash::make('1'),
-            'role_id' => 2, // Role Staff
+            'role_id' => 2,
             'is_active' => 1,
             'email_verified_at' => now(),
             'created_at' => now(),

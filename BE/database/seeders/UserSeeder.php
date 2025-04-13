@@ -18,17 +18,15 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {   
-        $faker = Faker::create();
-        $roleIds = Role::pluck('id')->toArray();
         for ($i = 0; $i < 5; $i++) {
             User::insert([
                 'name' => $faker->name,
                 'age' => $faker->numberBetween(18, 60),
                 'email' => $faker->unique()->safeEmail,
-                'password' => Hash::make('password123'), // mật khẩu mặc định
+                'password' => Hash::make('1'),
                 'address' => $faker->address,
-                'role_id' => $faker->randomElement($roleIds),
-                'avatar' => "https://picsum.photos/200/200?random=" . $faker->unique()->randomNumber(),
+                'role_id' => 3,
+                'avatar' => $faker->randomElement($avatars),
                 'email_verified_at' => $faker->dateTimeThisYear(),
                 'is_active' => 1,
                 'access_token' => $faker->uuid,

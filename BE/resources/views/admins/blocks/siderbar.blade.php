@@ -56,7 +56,12 @@
                                 @if (Auth::user()->hasPermission('view-users'))
                                     <li class="nav-item">
                                         <a href="{{ route('users.index') }}" class="nav-link" data-key="t-sweet-alerts">
-                                            <i class="ri-team-line"></i>Khách hàng
+                                            <i class="ri-user-line"></i>Khách hàng
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('users.admins') }}" class="nav-link" data-key="t-sweet-alerts">
+                                            <i class="ri-shield-user-line"></i>Quản trị
                                         </a>
                                     </li>
                                 @endif
