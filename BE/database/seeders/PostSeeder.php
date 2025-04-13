@@ -27,7 +27,15 @@ class PostSeeder extends Seeder
         // Lấy danh sách user có role là admin hoặc staff
         $userIds = User::whereIn('role_id', $adminStaffRoleIds)->pluck('id')->toArray();
         
+        if (empty($userIds)) {
+            throw new \Exception('Không tìm thấy user nào có role admin hoặc staff. Vui lòng chạy UserSeeder trước.');
+        }
+
         $categoryIds = CategoryPost::pluck('id')->toArray();
+        
+        if (empty($categoryIds)) {
+            throw new \Exception('Không tìm thấy category nào. Vui lòng chạy CategoryPostSeeder trước.');
+        }
         
         // Danh sách các ảnh có sẵn
         $availableImages = ['post1.jpg', 'post2.jpg', 'post3.jpg', 'post4.jpg', 'post5.jpg', 'post6.jpg', 'post7.jpg', 'post8.jpg'];

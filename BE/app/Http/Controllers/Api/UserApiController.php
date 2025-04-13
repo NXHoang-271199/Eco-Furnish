@@ -1,20 +1,22 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 use App\Traits\TokenHandler;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Laravel\Socialite\Facades\Socialite;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Validator;
 
 class UserApiController extends Controller
 {
@@ -49,7 +51,7 @@ class UserApiController extends Controller
         try {
             $user = User::findOrFail($id);
             Log::info('User avatar from DB: ' . $user->avatar);
-            
+
             $userData = [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -110,11 +112,10 @@ class UserApiController extends Controller
             'email_verification_token' => $verificationToken,
             'email_verified_at' => null
         ]);
-
         // Gửi email xác thực
         try {
-            $frontendUrl = 'http://localhost:5173'; 
-            $verificationUrl = $frontendUrl.'/auth/verify-email?'.http_build_query([
+            $frontendUrl = 'http://localhost:5173';
+            $verificationUrl = $frontendUrl . '/auth/verify-email?' . http_build_query([
                 'token' => $verificationToken,
                 'email' => urlencode($user->email)
             ]);
@@ -125,7 +126,7 @@ class UserApiController extends Controller
             Mail::send('emails.verify_email', [
                 'user' => $user,
                 'verificationUrl' => $verificationUrl
-            ], function($message) use ($user) {
+            ], function ($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Xác thực tài khoản');
             });
@@ -473,8 +474,8 @@ class UserApiController extends Controller
         }
 
         $user = User::where('email', $request->email)
-                    ->where('email_verification_token', $request->verify_token)
-                    ->first();
+            ->where('email_verification_token', $request->verify_token)
+            ->first();
 
         if (!$user) {
             return response()->json([
@@ -497,6 +498,12 @@ class UserApiController extends Controller
             $user->email_verification_token = null;
             $user->is_active = 1;
             $user->save();
+            // 👉 Tạo ví nếu chưa có
+            if (!$user->wallet) {
+                $user->wallet()->create([
+                    'balance' => 0,
+                ]);
+            }
 
             // Tạo token sau khi xác thực thành công
             $tokens = $this->generateTokens($user);
@@ -561,14 +568,14 @@ class UserApiController extends Controller
             Mail::send('emails.verify_email', [
                 'user' => $user,
                 'verificationUrl' => $verificationUrl
-            ], function($message) use ($user) {
+            ], function ($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Xác thực tài khoản');
             });
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Đã gửi lại email xác thực'    
+                'message' => 'Đã gửi lại email xác thực'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -589,28 +596,28 @@ class UserApiController extends Controller
     {
         try {
             $user = User::findOrFail($id);
-            
+
             // Xác thực yêu cầu
             $request->validate([
                 'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
-            
+
             // Xóa avatar cũ nếu có
             if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
                 Log::info('Xóa avatar cũ: ' . $user->avatar);
                 Storage::disk('public')->delete($user->avatar);
             }
-            
+
             // Lưu avatar mới
             $path = $request->file('avatar')->store('avatars', 'public');
             Log::info('Đường dẫn avatar mới: ' . $path);
-            
+
             // Cập nhật trường avatar của user
             $user->avatar = $path;
             $user->save();
-            
+
             Log::info('Dữ liệu user sau khi lưu: ', $user->toArray());
-            
+
             // Trả về thông tin avatar
             return response()->json([
                 'message' => 'Avatar đã được cập nhật thành công',
@@ -642,14 +649,14 @@ class UserApiController extends Controller
         try {
             // Sử dụng stateless() để không dựa vào session sau khi callback
             $socialUser = Socialite::driver('google')->stateless()->user();
-            
+
             // Kiểm tra xem email này đã tồn tại trong DB chưa
             $user = User::where('email', $socialUser->getEmail())->first();
-            
+
             // Nếu chưa có, tạo user mới
             if (!$user) {
                 $clientRole = Role::where('slug', 'client')->first();
-                
+
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
@@ -660,16 +667,16 @@ class UserApiController extends Controller
                     'email_verified_at' => now() // Đã xác thực email
                 ]);
             }
-            
+
             // Tạo token
             $token = $user->createToken('auth_token')->plainTextToken;
             $refreshToken = Str::random(60);
-            
+
             // Lưu refresh token
             $user->update([
                 'refresh_token' => $refreshToken
             ]);
-            
+
             // Chuyển hướng về FE với token
             $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
                 'token' => $token,
@@ -681,7 +688,7 @@ class UserApiController extends Controller
                     'avatar' => $user->avatar
                 ])
             ]);
-            
+
             return redirect($redirectUrl);
         } catch (\Exception $e) {
             Log::error('Google login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
@@ -702,14 +709,14 @@ class UserApiController extends Controller
         try {
             // Sử dụng stateless() để không dựa vào session sau khi callback
             $socialUser = Socialite::driver('facebook')->stateless()->user();
-            
+
             // Kiểm tra xem email này đã tồn tại trong DB chưa
             $user = User::where('email', $socialUser->getEmail())->first();
-            
+
             // Nếu chưa có, tạo user mới
             if (!$user) {
                 $clientRole = Role::where('slug', 'client')->first();
-                
+
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
@@ -720,16 +727,16 @@ class UserApiController extends Controller
                     'email_verified_at' => now() // Đã xác thực email
                 ]);
             }
-            
+
             // Tạo token
             $token = $user->createToken('auth_token')->plainTextToken;
             $refreshToken = Str::random(60);
-            
+
             // Lưu refresh token
             $user->update([
                 'refresh_token' => $refreshToken
             ]);
-            
+
             // Chuyển hướng về FE với token
             $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
                 'token' => $token,
@@ -741,11 +748,11 @@ class UserApiController extends Controller
                     'avatar' => $user->avatar
                 ])
             ]);
-            
+
             return redirect($redirectUrl);
         } catch (\Exception $e) {
             Log::error('Facebook login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
-             // Redirect về trang sign-in với tham số lỗi cụ thể
+            // Redirect về trang sign-in với tham số lỗi cụ thể
             return redirect('http://localhost:5173/sign-in?error=facebook_callback_failed');
         }
     }

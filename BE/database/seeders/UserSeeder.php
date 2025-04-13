@@ -18,6 +18,8 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {   
+        $faker = Faker::create();
+        $roleIds = Role::pluck('id')->toArray();
         for ($i = 0; $i < 5; $i++) {
             User::insert([
                 'name' => $faker->name,
@@ -25,8 +27,8 @@ class UserSeeder extends Seeder
                 'email' => $faker->unique()->safeEmail,
                 'password' => Hash::make('1'),
                 'address' => $faker->address,
-                'role_id' => 3,
-                'avatar' => $faker->randomElement($avatars),
+                'role_id' => $faker->numberBetween(2, 3),
+                'avatar' => null,
                 'email_verified_at' => $faker->dateTimeThisYear(),
                 'is_active' => 1,
                 'access_token' => $faker->uuid,

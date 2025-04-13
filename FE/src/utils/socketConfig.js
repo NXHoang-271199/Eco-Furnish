@@ -273,10 +273,16 @@ export const subscribeToNotifications = (callback) => {
   const socketInstance = getSocket();
   if (socketInstance) {
     socketInstance.on("order_status_notification", callback);
+    socketInstance.on("refund_approval_notification", callback);
+    socketInstance.on("refund_rejection_notification", callback);
+    socketInstance.on("wallet_deposit_notification", callback);
   }
   return () => {
     if (socketInstance) {
       socketInstance.off("order_status_notification", callback);
+      socketInstance.off("refund_approval_notification", callback);
+      socketInstance.off("refund_rejection_notification", callback);
+      socketInstance.off("wallet_deposit_notification", callback);
     }
   };
 };
