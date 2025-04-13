@@ -85,3 +85,5 @@ Bạn có thể điều chỉnh các tham số của API Gemini như temperature
 - **Lỗi kết nối API**: Kiểm tra API key và kết nối internet
 - **Lỗi CORS**: Đảm bảo rằng cấu hình CORS trong Laravel cho phép yêu cầu từ frontend
 - **Lỗi 429 (Too Many Requests)**: API Gemini có giới hạn số lượng yêu cầu, hãy thử lại sau
+
+# Hướng dẫn chạy realtime khi mới pull code về:
