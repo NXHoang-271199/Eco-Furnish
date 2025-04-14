@@ -39,9 +39,16 @@ import NotificationsPage from "./pages/(website)/UserAccount/Notifications/Notif
 import WalletPage from "./pages/(website)/UserAccount/Wallet/WalletPage";
 import WalletSuccess from "./pages/(website)/UserAccount/Wallet/WalletSuccess";
 import WalletDeposit from "./pages/(website)/UserAccount/Wallet/WalletDeposit";
-function App() {
+import { LoadingProvider, useLoading } from "./context/LoadingContext";
+import LoadingScreen from "./components/LoadingScreen";
+
+// Component bọc để sử dụng hook useLoading
+const AppContent = () => {
+  const { isLoading } = useLoading();
+
   return (
     <>
+      {isLoading && <LoadingScreen />}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -103,6 +110,14 @@ function App() {
       <ModernChatBot />
       <Chat />
     </>
+  );
+};
+
+function App() {
+  return (
+    <LoadingProvider>
+      <AppContent />
+    </LoadingProvider>
   );
 }
 

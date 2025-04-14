@@ -262,6 +262,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
     Route::post('check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
 });
+
+// Thêm route cho lấy đơn hàng chưa thanh toán
+Route::middleware('auth:sanctum')->get('user/orders/unpaid', [OrderController::class, 'getUnpaidOrders']); // Lấy danh sách đơn hàng chưa thanh toán trực tuyến
+
 // review routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm

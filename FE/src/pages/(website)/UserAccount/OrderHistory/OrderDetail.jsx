@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
+// import axios from "axios";
 import axiosInstance from "../../../../utils/axiosConfig";
+import Swal from 'sweetalert2';
 import {
   FiArrowLeft,
   FiInfo,
@@ -19,8 +20,120 @@ import {
   FiRefreshCw,
   FiHome,
   FiUser,
+  FiX,
+  FiLoader,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-hot-toast";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import axios from "axios";
+
+const RefundRequestModal = memo(({
+  showModal,
+  setShowModal,
+  loading,
+  selectedReason,
+  customReason,
+  setCustomReason,
+  showCustomInput,
+  handleReasonSelect,
+  submitRefundRequest,
+}) => {
+  const reasonOptions = [
+    "Hàng lỗi, không hoạt động",
+    "Hàng hết hạn sử dụng",
+    "Khác với mô tả",
+    "Hàng đã qua sử dụng",
+    "Hàng giả, nhái",
+    "Hàng nguyên vẹn nhưng không còn nhu cầu (sẽ trả nguyên seal, tem, hộp sản phẩm)",
+    "Khác",
+  ];
+
+  if (!showModal) return null;
+
+  console.log("Rendering RefundRequestModal");
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+        <div className="bg-orange-500 text-white px-6 py-4 flex justify-between items-center">
+          <h3 className="font-medium text-lg">Yêu cầu hoàn hàng</h3>
+          <button
+            onClick={() => setShowModal(false)}
+            className="text-white hover:text-gray-200"
+          >
+            <FiX className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="mb-4">
+            <label className="block text-gray-700 font-medium mb-2">
+              Lý do*
+            </label>
+            <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-300 rounded-md p-2">
+              {reasonOptions.map((reason, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center p-2 rounded-md cursor-pointer ${selectedReason === reason
+                    ? "bg-orange-100 border border-orange-500"
+                    : "hover:bg-gray-100"
+                    }`}
+                  onClick={() => handleReasonSelect(reason)}
+                >
+                  <div className="h-4 w-4 rounded-full border border-gray-400 flex items-center justify-center mr-2">
+                    {selectedReason === reason && (
+                      <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+                    )}
+                  </div>
+                  <span className="text-sm">{reason}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {showCustomInput && (
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">
+                Nhập lý do khác:
+              </label>
+              <textarea
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                rows="3"
+                placeholder="Vui lòng nhập lý do của bạn..."
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+              ></textarea>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              onClick={() => setShowModal(false)}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={submitRefundRequest}
+              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <FiLoader className="animate-spin mr-2" />
+                  Đang xử lý...
+                </div>
+              ) : (
+                "Gửi yêu cầu"
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 const OrderDetail = () => {
   const { id } = useParams();
@@ -31,6 +144,11 @@ const OrderDetail = () => {
   const autoConfirmTimerIdRef = useRef(null); // Ref để lưu ID của timer
   const [autoCancelTimerSet, setAutoCancelTimerSet] = useState(false);
   const autoCancelTimerIdRef = useRef(null);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [selectedReasonOption, setSelectedReasonOption] = useState(null);
+  const [customReason, setCustomReason] = useState("");
+  const [showCustomReasonInput, setShowCustomReasonInput] = useState(false);
   // --- Logic Polling ---
   const fetchOrderDetailCallback = useCallback(
     async (isPolling = false) => {
@@ -142,7 +260,16 @@ const OrderDetail = () => {
         // Chỉ hỏi nếu là xác nhận thủ công
         if (
           !isAutoConfirm &&
-          !window.confirm("Bạn đã nhận được hàng và muốn xác nhận?")
+          !(await Swal.fire({
+            title: 'Xác nhận đã nhận hàng',
+            text: 'Bạn đã nhận được hàng và muốn xác nhận?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Hủy'
+          })).isConfirmed
         ) {
           // setLoading(false);
           return;
@@ -160,17 +287,92 @@ const OrderDetail = () => {
 
         if (response.data.status === "success") {
           if (!isAutoConfirm) {
-            alert("Đã xác nhận nhận hàng thành công!");
+            // Thay thế alert bằng toast tùy chỉnh
+            toast.custom(
+              (t) => (
+                <div className="bg-white shadow-lg rounded-lg overflow-hidden pointer-events-auto border-l-4 border-green-600">
+                  <div className="p-4">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 pt-0.5">
+                        <div className="h-10 w-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                          <FiCheckCircle className="h-6 w-6" />
+                        </div>
+                      </div>
+                      <div className="ml-3 flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          Xác nhận thành công!
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Đơn hàng #{order.order_code} đã được xác nhận đã nhận hàng.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ),
+              {
+                duration: 5000
+              }
+            );
+
+            // Gửi thông báo realtime đến BE thông qua Socket Server
+            try {
+              const socketServerUrl = import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3002";
+              const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+
+              // Chuẩn bị dữ liệu thông báo
+              const notificationData = {
+                event: 'order_confirmation',
+                data: {
+                  order_id: order.id,
+                  order_code: order.order_code,
+                  user_id: userData.id,
+                  user_name: order.user_name,
+                  total_price: order.total_price,
+                  created_at: new Date().toISOString(),
+                  message: `Đơn hàng #${order.order_code} đã được xác nhận đã nhận hàng.`
+                }
+              };
+
+              // Gửi thông báo đến Socket Server
+              axios.post(`${socketServerUrl}/broadcast-admin`, {
+                event: 'order_confirmation_notification',
+                data: notificationData
+              });
+
+              console.log('Đã gửi thông báo xác nhận đơn hàng đến admin');
+
+              // Phát sự kiện để các component khác có thể biết về việc xác nhận đơn hàng
+              const confirmEvent = new CustomEvent('order-confirmed', {
+                detail: {
+                  orderId: id,
+                  orderCode: order.order_code,
+                  userId: order.user_id,
+                  userName: order.user_name,
+                  totalPrice: order.total_price
+                }
+              });
+              window.dispatchEvent(confirmEvent);
+
+            } catch (e) {
+              console.error('Không thể gửi thông báo realtime:', e);
+              // Không ảnh hưởng đến luồng chính nếu gửi thông báo lỗi
+            }
           } else {
             console.log("Đơn hàng tự động xác nhận sau 30 phút.");
             // Có thể thêm thông báo nhẹ nhàng hơn alert
           }
           // Cập nhật lại thông tin đơn hàng cục bộ
-          setOrder(response.data.data); // Sử dụng data trả về từ API confirm
+          setOrder(prevOrder => ({
+            ...prevOrder,
+            ...response.data.data,
+            // Đảm bảo giữ nguyên payment_method nếu API không trả về
+            payment_method: response.data.data.payment_method || prevOrder.payment_method
+          }));
         } else {
           // Xử lý lỗi từ API confirm
           if (!isAutoConfirm) {
-            alert(response.data.message || "Không thể xác nhận đơn hàng.");
+            toast.error(response.data.message || "Không thể xác nhận đơn hàng.");
           } else {
             console.error("Lỗi tự động xác nhận:", response.data.message);
           }
@@ -181,14 +383,14 @@ const OrderDetail = () => {
           error.response?.data || error.message
         );
         if (!isAutoConfirm) {
-          alert("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.");
+          toast.error("Không thể xác nhận đơn hàng. Vui lòng thử lại sau.");
         } // Lỗi tự động thì log
       } finally {
         // setLoading(false);
       }
     },
-    [id]
-  ); // Thêm id vào dependencies
+    [id, order]
+  ); // Thêm order vào dependencies
 
   // --- Tự động xác nhận sau 24 giờ --- START ---
   // useEffect để thiết lập timer tự động xác nhận
@@ -329,8 +531,8 @@ const OrderDetail = () => {
     // Điều kiện kiểm tra để tự động hủy
     const shouldCheckAutoCancel =
       order &&
-      (order.payment_method.name === "MoMo" ||
-        order.payment_method.name === "VNPAY") && // Thanh toán online
+      (order.payment_method?.name === "MoMo" ||
+        order.payment_method?.name === "VNPAY") && // Thanh toán online
       (order.payment_status === 0 || order.payment_status === 2) && // Chưa thanh toán hoặc đang chờ
       order.order_status !== "Hủy Đơn" && // Chưa bị hủy
       order.order_status !== "Đã Nhận"; // Chưa nhận
@@ -525,14 +727,58 @@ const OrderDetail = () => {
       );
 
       if (response.data.status === "success") {
-        alert("Đơn hàng đã được hủy thành công!");
+        // Thay thế alert bằng toast.custom
+        toast.custom(
+          (t) => (
+            <div className="bg-white shadow-lg rounded-lg overflow-hidden pointer-events-auto border-l-4 border-red-600">
+              <div className="p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 pt-0.5">
+                    <div className="h-10 w-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                      <FiXCircle className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      Hủy đơn hàng thành công!
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Đơn hàng #{order.order_code} đã được hủy.
+                    </p>
+                    {order.payment_status === 1 && (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Số tiền sẽ được hoàn về ví của bạn.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ),
+          {
+            duration: 5000
+          }
+        );
+
         // Cập nhật lại thông tin đơn hàng
         const updatedOrder = { ...order, order_status: "Hủy Đơn" };
         setOrder(updatedOrder);
+
+        // Phát sự kiện để thông báo cho các component khác
+        const cancelEvent = new CustomEvent('order-canceled', {
+          detail: {
+            orderId: id,
+            orderCode: order.order_code,
+            userId: order.user_id,
+            userName: order.user_name,
+            totalPrice: order.total_price
+          }
+        });
+        window.dispatchEvent(cancelEvent);
       }
     } catch (error) {
       console.error("Lỗi khi hủy đơn hàng:", error);
-      alert("Không thể hủy đơn hàng. Vui lòng thử lại sau.");
+      toast.error("Không thể hủy đơn hàng. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -544,16 +790,44 @@ const OrderDetail = () => {
   };
 
   // Xử lý yêu cầu hoàn hàng
-  const handleRequestRefund = async () => {
-    const reason = prompt("Vui lòng nhập lý do hoàn hàng:");
-    if (reason === null) return; // Người dùng nhấn hủy
+  const handleRequestRefund = useCallback(async () => {
+    setShowRefundModal(true);
+    setSelectedReasonOption(null);
+    setCustomReason("");
+    setShowCustomReasonInput(false);
+  }, []);
+
+  const handleReasonSelect = useCallback((reason) => {
+    if (reason === "Khác") {
+      setShowCustomReasonInput(true);
+      setSelectedReasonOption(reason);
+      setRefundReason("");
+    } else {
+      setShowCustomReasonInput(false);
+      setSelectedReasonOption(reason);
+      setRefundReason(reason);
+    }
+  }, []);
+
+  const submitRefundRequest = useCallback(async () => {
+    let finalReason = refundReason;
+    if (selectedReasonOption === "Khác") {
+      if (!customReason.trim()) {
+        toast.error("Vui lòng nhập lý do hoàn hàng");
+        return;
+      }
+      finalReason = customReason;
+    } else if (!finalReason) {
+      toast.error("Vui lòng chọn lý do hoàn hàng");
+      return;
+    }
 
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
       const response = await axiosInstance.post(
         `/orders/${id}/request-refund`,
-        { reason },
+        { reason: finalReason },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -562,29 +836,65 @@ const OrderDetail = () => {
       );
 
       if (response.data.status === "success") {
-        alert("Yêu cầu hoàn hàng đã được gửi!");
-        // Cập nhật state với yêu cầu hoàn hàng (dưới dạng mảng)
-        setOrder({
-          ...order,
+        setShowRefundModal(false);
+        toast.custom(
+          (t) => (
+            <div className="bg-white shadow-lg rounded-lg overflow-hidden pointer-events-auto border-l-4 border-green-600">
+              <div className="p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 pt-0.5">
+                    <div className="h-10 w-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                      <FiCheckCircle className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      Thành công!
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Yêu cầu hoàn hàng của bạn đã được gửi. Vui lòng chờ xét duyệt.
+                    </p>
+                  </div>
+                  <div className="ml-4 flex-shrink-0 flex">
+                    <button
+                      onClick={() => toast.dismiss(t.id)}
+                      className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+                    >
+                      <span className="sr-only">Đóng</span>
+                      <FiX className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ),
+          { duration: 5000 }
+        );
+        setOrder(prevOrder => ({
+          ...prevOrder,
           refund_request: [
             {
-              status: "pending", // Giả sử trạng thái ban đầu là pending
-              reason: reason,
+              status: "pending",
+              reason: finalReason,
               created_at: new Date().toISOString(),
             },
           ],
-        });
+        }));
+        setRefundReason("");
+        setSelectedReasonOption(null);
+        setCustomReason("");
+        setShowCustomReasonInput(false);
       }
     } catch (error) {
       console.error("Lỗi khi yêu cầu hoàn hàng:", error);
-      alert(
+      toast.error(
         error.response?.data?.message ||
-          "Không thể gửi yêu cầu hoàn hàng. Vui lòng thử lại sau."
+        "Không thể gửi yêu cầu hoàn hàng. Vui lòng thử lại sau."
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, refundReason, selectedReasonOption, customReason, setOrder]);
 
   // Xử lý thanh toán lại
   const handleRetryPayment = async () => {
@@ -617,7 +927,7 @@ const OrderDetail = () => {
         // Hiển thị thông báo lỗi cụ thể hơn nếu có
         alert(
           response.data.message ||
-            "Không thể lấy link thanh toán lại. Vui lòng kiểm tra console."
+          "Không thể lấy link thanh toán lại. Vui lòng kiểm tra console."
         );
         console.error(
           "API response không chứa URL thanh toán hợp lệ:",
@@ -694,18 +1004,16 @@ const OrderDetail = () => {
             {refundSteps.map((step, index) => (
               <div
                 key={step.id}
-                className={`flex flex-col items-center ${
-                  currentStep >= step.id ? "text-orange-600" : "text-gray-400"
-                }`}
+                className={`flex flex-col items-center ${currentStep >= step.id ? "text-orange-600" : "text-gray-400"
+                  }`}
               >
                 <div
                   className={`
                   rounded-full h-8 w-8 flex items-center justify-center border-2 mb-1
-                  ${
-                    currentStep >= step.id
+                  ${currentStep >= step.id
                       ? "border-orange-500 bg-orange-100"
                       : "border-gray-300"
-                  }
+                    }
                 `}
                 >
                   {step.icon}
@@ -804,18 +1112,16 @@ const OrderDetail = () => {
               {steps.map((step, index) => (
                 <div
                   key={step.id}
-                  className={`flex flex-col items-center ${
-                    currentStep >= step.id ? "text-amber-600" : "text-gray-400"
-                  }`}
+                  className={`flex flex-col items-center ${currentStep >= step.id ? "text-amber-600" : "text-gray-400"
+                    }`}
                 >
                   <div
                     className={`
                     rounded-full h-8 w-8 flex items-center justify-center border-2 mb-1
-                    ${
-                      currentStep >= step.id
+                    ${currentStep >= step.id
                         ? "border-amber-500 bg-amber-100"
                         : "border-gray-300"
-                    }
+                      }
                   `}
                   >
                     {step.icon}
@@ -1042,7 +1348,7 @@ const OrderDetail = () => {
                         className={`inline-block w-3 h-3 rounded-full mr-2 ${paymentStatusInfo.bgColor}`}
                       ></span>
                       <span>
-                        {order.payment_method.name} - {paymentStatusInfo.text}
+                        {order.payment_method?.name || 'Không xác định'} - {paymentStatusInfo.text}
                       </span>
                     </p>
                   </div>
@@ -1184,8 +1490,8 @@ const OrderDetail = () => {
               </div>
 
               {order.payment_status !== 1 &&
-                (order.payment_method.name === "MoMo" ||
-                  order.payment_method.name === "VNPAY") && (
+                (order.payment_method?.name === "MoMo" ||
+                  order.payment_method?.name === "VNPAY") && (
                   <div className="mt-6">
                     <button
                       className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors flex items-center justify-center"
@@ -1200,6 +1506,19 @@ const OrderDetail = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Modal yêu cầu hoàn hàng */}
+      <RefundRequestModal
+        showModal={showRefundModal}
+        setShowModal={setShowRefundModal}
+        loading={loading}
+        selectedReason={selectedReasonOption}
+        customReason={customReason}
+        setCustomReason={setCustomReason}
+        showCustomInput={showCustomReasonInput}
+        handleReasonSelect={handleReasonSelect}
+        submitRefundRequest={submitRefundRequest}
+      />
     </motion.div>
   );
 };

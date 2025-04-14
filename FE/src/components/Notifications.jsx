@@ -124,7 +124,18 @@ const Notifications = () => {
             // Kiểm tra nếu thông báo đã tồn tại (tránh trùng lặp)
             const exists = prevNotifications.some(item => item.id === notification.id);
             if (exists) return prevNotifications;
-            return [notification, ...prevNotifications];
+
+            // Xử lý thông báo cho phù hợp với cấu trúc notification object
+            const processedNotification = {
+                ...notification,
+                order_code: notification.order_code || (notification.order && notification.order.order_code) || 'Không xác định',
+                order_status: notification.order_status || (notification.order && notification.order.order_status) || 'Không xác định',
+                // Tạo message mặc định nếu chưa có
+                message: notification.message ||
+                    `Đơn hàng #${notification.order_code || (notification.order && notification.order.order_code) || 'Không xác định'} đã chuyển sang trạng thái: ${notification.order_status || (notification.order && notification.order.order_status) || 'Không xác định'}`
+            };
+
+            return [processedNotification, ...prevNotifications];
         });
 
         // Tăng số lượng thông báo chưa đọc
@@ -144,8 +155,16 @@ const Notifications = () => {
                 toastShownIds.current.delete(notification.id);
             }, 10000);
 
-            // Sử dụng toast tùy chỉnh thay vì toast cũ
-            showOrderStatusToast(notification);
+            // Kiểm tra nếu là thông báo ví tiền
+            if (notification.transaction_type === 'nap_tien') {
+                // Sử dụng showWalletDepositToast cho thông báo ví tiền
+                import('./ui/toast').then(module => {
+                    module.showWalletDepositToast(notification);
+                });
+            } else {
+                // Sử dụng toast đơn hàng thông thường
+                showOrderStatusToast(notification);
+            }
         }
     };
 
@@ -175,8 +194,12 @@ const Notifications = () => {
     const handleNotificationClick = (notification) => {
         markAsRead(notification);
 
-        // Sửa đường dẫn để phù hợp với cấu trúc router
-        if (notification.order_id) {
+        // Kiểm tra nếu là thông báo về ví tiền
+        if (notification.transaction_type === 'nap_tien' || notification.wallet_id) {
+            navigate('/account/wallet');  // Chuyển đến trang ví tiền
+        }
+        // Xử lý đơn hàng nếu có order_id
+        else if (notification.order_id) {
             navigate(`/account/order_detail/${notification.order_id}`);
         }
 

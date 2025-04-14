@@ -15,21 +15,24 @@ import Banner from "../../../components/Banner";
 import { IoCartOutline, IoStar } from "react-icons/io5";
 import { HiOutlineArrowNarrowRight } from "react-icons/hi";
 import { FaLeaf, FaTree, FaSeedling, FaRobot, FaFire } from "react-icons/fa";
-
+import Popup from "../../../components/Popup";
 // Helper function để theo dõi hoạt động khi ChatBot chưa tải
 const trackActivity = (type, data) => {
   try {
-    const storedActivities = localStorage.getItem('userActivities') || '[]';
+    const storedActivities = localStorage.getItem("userActivities") || "[]";
     const activities = JSON.parse(storedActivities);
     activities.unshift({ ...data, type, timestamp: new Date().toISOString() });
-    localStorage.setItem('userActivities', JSON.stringify(activities.slice(0, 30)));
+    localStorage.setItem(
+      "userActivities",
+      JSON.stringify(activities.slice(0, 30))
+    );
     // Kích hoạt sự kiện nếu có thể
-    if (typeof CustomEvent === 'function') {
-      const event = new CustomEvent('userActivityUpdate');
+    if (typeof CustomEvent === "function") {
+      const event = new CustomEvent("userActivityUpdate");
       window.dispatchEvent(event);
     }
   } catch (error) {
-    console.error('Error tracking activity:', error);
+    console.error("Error tracking activity:", error);
   }
 };
 
@@ -57,7 +60,7 @@ const Homes = () => {
     // Function để phân tích hoạt động người dùng và tạo gợi ý
     const analyzeUserActivities = () => {
       try {
-        const storedActivities = localStorage.getItem('userActivities');
+        const storedActivities = localStorage.getItem("userActivities");
         if (!storedActivities) {
           setHasActivityData(false);
           return;
@@ -74,20 +77,20 @@ const Homes = () => {
 
         // Phân tích hoạt động người dùng để tạo gợi ý
         const viewedProducts = activities
-          .filter(activity => activity.type === 'view_product')
-          .map(activity => ({
+          .filter((activity) => activity.type === "view_product")
+          .map((activity) => ({
             id: activity.productId,
             name: activity.productName,
             category: activity.category,
           }));
 
         const searchedKeywords = activities
-          .filter(activity => activity.type === 'search_product')
-          .map(activity => activity.keyword);
+          .filter((activity) => activity.type === "search_product")
+          .map((activity) => activity.keyword);
 
         const cartProducts = activities
-          .filter(activity => activity.type === 'add_to_cart')
-          .map(activity => ({
+          .filter((activity) => activity.type === "add_to_cart")
+          .map((activity) => ({
             id: activity.productId,
             name: activity.productName,
             category: activity.category,
@@ -96,7 +99,7 @@ const Homes = () => {
         // Gửi request để nhận gợi ý
         fetchRecommendations(viewedProducts, searchedKeywords, cartProducts);
       } catch (error) {
-        console.error('Error analyzing user activities:', error);
+        console.error("Error analyzing user activities:", error);
       }
     };
 
@@ -106,14 +109,14 @@ const Homes = () => {
     };
 
     // Đăng ký lắng nghe sự kiện
-    window.addEventListener('userActivityUpdate', handleActivityUpdate);
+    window.addEventListener("userActivityUpdate", handleActivityUpdate);
 
     // Phân tích lần đầu khi component mount
     analyzeUserActivities();
 
     // Cleanup listener
     return () => {
-      window.removeEventListener('userActivityUpdate', handleActivityUpdate);
+      window.removeEventListener("userActivityUpdate", handleActivityUpdate);
     };
   }, []);
 
@@ -121,7 +124,7 @@ const Homes = () => {
   useEffect(() => {
     const checkUserActivities = () => {
       try {
-        const storedActivities = localStorage.getItem('userActivities');
+        const storedActivities = localStorage.getItem("userActivities");
         if (storedActivities) {
           const activities = JSON.parse(storedActivities);
           if (activities.length > 0) {
@@ -129,31 +132,35 @@ const Homes = () => {
 
             // Phân tích hoạt động người dùng để tạo gợi ý
             const viewedProducts = activities
-              .filter(activity => activity.type === 'view_product')
-              .map(activity => ({
+              .filter((activity) => activity.type === "view_product")
+              .map((activity) => ({
                 id: activity.productId,
                 name: activity.productName,
                 category: activity.category,
               }));
 
             const searchedKeywords = activities
-              .filter(activity => activity.type === 'search_product')
-              .map(activity => activity.keyword);
+              .filter((activity) => activity.type === "search_product")
+              .map((activity) => activity.keyword);
 
             const cartProducts = activities
-              .filter(activity => activity.type === 'add_to_cart')
-              .map(activity => ({
+              .filter((activity) => activity.type === "add_to_cart")
+              .map((activity) => ({
                 id: activity.productId,
                 name: activity.productName,
                 category: activity.category,
               }));
 
             // Gửi request để nhận gợi ý
-            fetchRecommendations(viewedProducts, searchedKeywords, cartProducts);
+            fetchRecommendations(
+              viewedProducts,
+              searchedKeywords,
+              cartProducts
+            );
           }
         }
       } catch (error) {
-        console.error('Error checking user activities:', error);
+        console.error("Error checking user activities:", error);
       }
     };
 
@@ -162,15 +169,22 @@ const Homes = () => {
   }, []);
 
   // Function gọi API để lấy sản phẩm gợi ý dựa trên hoạt động người dùng
-  const fetchRecommendations = async (viewedProducts, searchedKeywords, cartProducts) => {
+  const fetchRecommendations = async (
+    viewedProducts,
+    searchedKeywords,
+    cartProducts
+  ) => {
     try {
       const response = await api.post("ai-recommendations", {
         viewedProducts,
         searchedKeywords,
-        cartProducts
+        cartProducts,
       });
 
-      if (response.data.status === "success" && Array.isArray(response.data.recommendations)) {
+      if (
+        response.data.status === "success" &&
+        Array.isArray(response.data.recommendations)
+      ) {
         setAiRecommendations(response.data.recommendations);
       }
     } catch (error) {
@@ -179,50 +193,64 @@ const Homes = () => {
       // Fallback: Phân tích nâng cao khi API chưa hoạt động
       if (products.length > 0) {
         // Nếu có hoạt động người dùng, tạo gợi ý dựa trên hoạt động
-        if (viewedProducts.length > 0 || searchedKeywords.length > 0 || cartProducts.length > 0) {
+        if (
+          viewedProducts.length > 0 ||
+          searchedKeywords.length > 0 ||
+          cartProducts.length > 0
+        ) {
           // 1. Thu thập các danh mục đã quan tâm
-          const interestedCategories = [...new Set([
-            ...viewedProducts.map(p => p.category),
-            ...cartProducts.map(p => p.category)
-          ])].filter(Boolean);
+          const interestedCategories = [
+            ...new Set([
+              ...viewedProducts.map((p) => p.category),
+              ...cartProducts.map((p) => p.category),
+            ]),
+          ].filter(Boolean);
 
           // 2. Thu thập các ID sản phẩm đã xem để loại trừ
-          const viewedIds = viewedProducts.map(p => p.id);
+          const viewedIds = viewedProducts.map((p) => p.id);
 
           // 3. Tìm các sản phẩm liên quan đến từ khóa tìm kiếm
           let keywordRelatedProducts = [];
           if (searchedKeywords.length > 0) {
-            const keywords = searchedKeywords.join(' ').toLowerCase().split(' ');
-            keywordRelatedProducts = products.filter(p =>
-              keywords.some(keyword =>
-                p.name.toLowerCase().includes(keyword) ||
-                (p.description && p.description.toLowerCase().includes(keyword))
-              ) && !viewedIds.includes(p.id)
+            const keywords = searchedKeywords
+              .join(" ")
+              .toLowerCase()
+              .split(" ");
+            keywordRelatedProducts = products.filter(
+              (p) =>
+                keywords.some(
+                  (keyword) =>
+                    p.name.toLowerCase().includes(keyword) ||
+                    (p.description &&
+                      p.description.toLowerCase().includes(keyword))
+                ) && !viewedIds.includes(p.id)
             );
           }
 
           // 4. Tìm các sản phẩm cùng danh mục
           let categoryRelatedProducts = [];
           if (interestedCategories.length > 0) {
-            categoryRelatedProducts = products.filter(p =>
-              interestedCategories.includes(p.category) &&
-              !viewedIds.includes(p.id) &&
-              !keywordRelatedProducts.some(kp => kp.id === p.id)
+            categoryRelatedProducts = products.filter(
+              (p) =>
+                interestedCategories.includes(p.category) &&
+                !viewedIds.includes(p.id) &&
+                !keywordRelatedProducts.some((kp) => kp.id === p.id)
             );
           }
 
           // 5. Kết hợp kết quả, ưu tiên sản phẩm theo từ khóa trước
           const combinedResults = [
             ...keywordRelatedProducts,
-            ...categoryRelatedProducts
+            ...categoryRelatedProducts,
           ].slice(0, 4); // Giới hạn kết quả
 
           // 6. Nếu vẫn thiếu sản phẩm, bổ sung thêm sản phẩm ngẫu nhiên
           if (combinedResults.length < 4) {
             const randomProducts = products
-              .filter(p =>
-                !viewedIds.includes(p.id) &&
-                !combinedResults.some(cp => cp.id === p.id)
+              .filter(
+                (p) =>
+                  !viewedIds.includes(p.id) &&
+                  !combinedResults.some((cp) => cp.id === p.id)
               )
               .sort(() => 0.5 - Math.random())
               .slice(0, 4 - combinedResults.length);
@@ -551,8 +579,8 @@ const Homes = () => {
                   transition={{ duration: 0.8 }}
                   viewport={{ once: true }}
                 >
-                  Sản phẩm được{" "}
-                  <span className="text-blue-500">trợ lý AI</span> gợi ý
+                  Sản phẩm được <span className="text-blue-500">trợ lý AI</span>{" "}
+                  gợi ý
                 </motion.h2>
                 <motion.p
                   className="text-gray-600"
@@ -561,7 +589,8 @@ const Homes = () => {
                   transition={{ duration: 0.8, delay: 0.2 }}
                   viewport={{ once: true }}
                 >
-                  Dựa trên hoạt động gần đây của bạn, trợ lý AI của chúng tôi đã chọn ra những sản phẩm bạn có thể quan tâm.
+                  Dựa trên hoạt động gần đây của bạn, trợ lý AI của chúng tôi đã
+                  chọn ra những sản phẩm bạn có thể quan tâm.
                 </motion.p>
               </div>
               <motion.div
@@ -604,12 +633,16 @@ const Homes = () => {
                     onClick={() => {
                       // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
                       if (window.trackProductView) {
-                        window.trackProductView(product.id, product.name, product.category);
+                        window.trackProductView(
+                          product.id,
+                          product.name,
+                          product.category
+                        );
                       } else {
-                        trackActivity('view_product', {
+                        trackActivity("view_product", {
                           productId: product.id,
                           productName: product.name,
-                          category: product.category
+                          category: product.category,
                         });
                       }
                     }}
@@ -625,7 +658,8 @@ const Homes = () => {
                           transition={{ duration: 0.8, delay: index * 0.1 }}
                           onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = 'https://via.placeholder.com/300x300?text=Image+Not+Found';
+                            e.target.src =
+                              "https://via.placeholder.com/300x300?text=Image+Not+Found";
                           }}
                         />
                       </div>
@@ -655,12 +689,16 @@ const Homes = () => {
                             e.stopPropagation();
                             // Sử dụng window.trackAddToCart nếu có, nếu không thì dùng helper function
                             if (window.trackAddToCart) {
-                              window.trackAddToCart(product.id, product.name, product.category);
+                              window.trackAddToCart(
+                                product.id,
+                                product.name,
+                                product.category
+                              );
                             } else {
-                              trackActivity('add_to_cart', {
+                              trackActivity("add_to_cart", {
                                 productId: product.id,
                                 productName: product.name,
-                                category: product.category
+                                category: product.category,
                               });
                             }
                             window.location.href = `/cart/add/${product.id}`;
@@ -677,8 +715,9 @@ const Homes = () => {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <IoStar
                             key={star}
-                            className={`${star <= 4 ? "text-blue-400" : "text-gray-300"
-                              } w-4 h-4`}
+                            className={`${
+                              star <= 4 ? "text-blue-400" : "text-gray-300"
+                            } w-4 h-4`}
                           />
                         ))}
                         <span className="text-gray-500 text-sm ml-2">
@@ -705,12 +744,13 @@ const Homes = () => {
                                   style: "currency",
                                   currency: "VND",
                                 }).format(product.price_range.min_discount)}
-                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                {product.price_range.max_discount &&
+                                  product.price_range.max_discount !==
+                                    product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
-                                  }).format(product.price_range.max_discount)}`
-                                }
+                                  }).format(product.price_range.max_discount)}`}
                               </span>
                               <span className="text-gray-400 line-through text-sm">
                                 {new Intl.NumberFormat("vi-VN", {
@@ -726,12 +766,13 @@ const Homes = () => {
                                 style: "currency",
                                 currency: "VND",
                               }).format(product.price_range?.min || 0)}
-                              {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                              {product.price_range?.max &&
+                                product.price_range.max !==
+                                  product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
-                                }).format(product.price_range.max)}`
-                              }
+                                }).format(product.price_range.max)}`}
                             </span>
                           )}
                         </div>
@@ -810,7 +851,8 @@ const Homes = () => {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 viewport={{ once: true }}
               >
-                Những sản phẩm được khách hàng yêu thích và chọn mua nhiều nhất tại Eco-Furnish.
+                Những sản phẩm được khách hàng yêu thích và chọn mua nhiều nhất
+                tại Eco-Furnish.
               </motion.p>
             </div>
             <motion.div
@@ -848,18 +890,26 @@ const Homes = () => {
                   }}
                   className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
                 >
-                  <Link to={`product-detail/${product.id}`} className="block" onClick={() => {
-                    // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
-                    if (window.trackProductView) {
-                      window.trackProductView(product.id, product.name, product.category);
-                    } else {
-                      trackActivity('view_product', {
-                        productId: product.id,
-                        productName: product.name,
-                        category: product.category
-                      });
-                    }
-                  }}>
+                  <Link
+                    to={`product-detail/${product.id}`}
+                    className="block"
+                    onClick={() => {
+                      // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
+                      if (window.trackProductView) {
+                        window.trackProductView(
+                          product.id,
+                          product.name,
+                          product.category
+                        );
+                      } else {
+                        trackActivity("view_product", {
+                          productId: product.id,
+                          productName: product.name,
+                          category: product.category,
+                        });
+                      }
+                    }}
+                  >
                     <div className="relative overflow-hidden">
                       <div className="aspect-square overflow-hidden">
                         <motion.img
@@ -871,7 +921,8 @@ const Homes = () => {
                           transition={{ duration: 0.8, delay: index * 0.1 }}
                           onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = 'https://via.placeholder.com/300x300?text=Image+Not+Found';
+                            e.target.src =
+                              "https://via.placeholder.com/300x300?text=Image+Not+Found";
                           }}
                         />
                       </div>
@@ -915,12 +966,16 @@ const Homes = () => {
                             e.stopPropagation();
                             // Sử dụng window.trackAddToCart nếu có, nếu không thì dùng helper function
                             if (window.trackAddToCart) {
-                              window.trackAddToCart(product.id, product.name, product.category);
+                              window.trackAddToCart(
+                                product.id,
+                                product.name,
+                                product.category
+                              );
                             } else {
-                              trackActivity('add_to_cart', {
+                              trackActivity("add_to_cart", {
                                 productId: product.id,
                                 productName: product.name,
-                                category: product.category
+                                category: product.category,
                               });
                             }
                             window.location.href = `/cart/add/${product.id}`;
@@ -937,8 +992,9 @@ const Homes = () => {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <IoStar
                             key={star}
-                            className={`${star <= 4 ? "text-rose-400" : "text-gray-300"
-                              } w-4 h-4`}
+                            className={`${
+                              star <= 4 ? "text-rose-400" : "text-gray-300"
+                            } w-4 h-4`}
                           />
                         ))}
                         <span className="text-gray-500 text-sm ml-2">
@@ -965,12 +1021,13 @@ const Homes = () => {
                                   style: "currency",
                                   currency: "VND",
                                 }).format(product.price_range.min_discount)}
-                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                {product.price_range.max_discount &&
+                                  product.price_range.max_discount !==
+                                    product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
-                                  }).format(product.price_range.max_discount)}`
-                                }
+                                  }).format(product.price_range.max_discount)}`}
                               </span>
                               <span className="text-gray-400 line-through text-sm">
                                 {new Intl.NumberFormat("vi-VN", {
@@ -986,12 +1043,13 @@ const Homes = () => {
                                 style: "currency",
                                 currency: "VND",
                               }).format(product.price_range?.min || 0)}
-                              {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                              {product.price_range?.max &&
+                                product.price_range.max !==
+                                  product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
-                                }).format(product.price_range.max)}`
-                              }
+                                }).format(product.price_range.max)}`}
                             </span>
                           )}
                         </div>
@@ -1129,18 +1187,26 @@ const Homes = () => {
                   }}
                   className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
                 >
-                  <Link to={`product-detail/${product.id}`} className="block" onClick={() => {
-                    // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function 
-                    if (window.trackProductView) {
-                      window.trackProductView(product.id, product.name, product.category);
-                    } else {
-                      trackActivity('view_product', {
-                        productId: product.id,
-                        productName: product.name,
-                        category: product.category
-                      });
-                    }
-                  }}>
+                  <Link
+                    to={`product-detail/${product.id}`}
+                    className="block"
+                    onClick={() => {
+                      // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
+                      if (window.trackProductView) {
+                        window.trackProductView(
+                          product.id,
+                          product.name,
+                          product.category
+                        );
+                      } else {
+                        trackActivity("view_product", {
+                          productId: product.id,
+                          productName: product.name,
+                          category: product.category,
+                        });
+                      }
+                    }}
+                  >
                     <div className="relative overflow-hidden">
                       <div className="aspect-square overflow-hidden">
                         <motion.img
@@ -1178,12 +1244,16 @@ const Homes = () => {
                             e.stopPropagation();
                             // Sử dụng window.trackAddToCart nếu có, nếu không thì dùng helper function
                             if (window.trackAddToCart) {
-                              window.trackAddToCart(product.id, product.name, product.category);
+                              window.trackAddToCart(
+                                product.id,
+                                product.name,
+                                product.category
+                              );
                             } else {
-                              trackActivity('add_to_cart', {
+                              trackActivity("add_to_cart", {
                                 productId: product.id,
                                 productName: product.name,
-                                category: product.category
+                                category: product.category,
                               });
                             }
                             window.location.href = `/cart/add/${product.id}`;
@@ -1200,8 +1270,9 @@ const Homes = () => {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <IoStar
                             key={star}
-                            className={`${star <= 4 ? "text-amber-400" : "text-gray-300"
-                              } w-4 h-4`}
+                            className={`${
+                              star <= 4 ? "text-amber-400" : "text-gray-300"
+                            } w-4 h-4`}
                           />
                         ))}
                         <span className="text-gray-500 text-sm ml-2">
@@ -1228,12 +1299,13 @@ const Homes = () => {
                                   style: "currency",
                                   currency: "VND",
                                 }).format(product.price_range.min_discount)}
-                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                {product.price_range.max_discount &&
+                                  product.price_range.max_discount !==
+                                    product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
-                                  }).format(product.price_range.max_discount)}`
-                                }
+                                  }).format(product.price_range.max_discount)}`}
                               </span>
                               <span className="text-gray-400 line-through text-sm">
                                 {new Intl.NumberFormat("vi-VN", {
@@ -1249,12 +1321,13 @@ const Homes = () => {
                                 style: "currency",
                                 currency: "VND",
                               }).format(product.price_range?.min || 0)}
-                              {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                              {product.price_range?.max &&
+                                product.price_range.max !==
+                                  product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
-                                }).format(product.price_range.max)}`
-                              }
+                                }).format(product.price_range.max)}`}
                             </span>
                           )}
                         </div>
@@ -1496,8 +1569,6 @@ const Homes = () => {
           transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
         />
 
-
-
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <motion.div className="mb-16 text-center" variants={fadeInUp}>
             <motion.span
@@ -1579,8 +1650,8 @@ const Homes = () => {
                               ? post.thumbnail.startsWith("http")
                                 ? post.thumbnail
                                 : post.thumbnail.startsWith("/")
-                                  ? `http://localhost:8000${post.thumbnail}`
-                                  : `http://localhost:8000/${post.thumbnail}`
+                                ? `http://localhost:8000${post.thumbnail}`
+                                : `http://localhost:8000/${post.thumbnail}`
                               : "http://localhost:5173/src/assets/img/blog/blog-1.jpg"
                           }
                           alt={post.title}
@@ -1842,6 +1913,7 @@ const Homes = () => {
           </motion.div>
         </div>
       </motion.section>
+      <Popup />
     </>
   );
 };

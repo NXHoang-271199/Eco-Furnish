@@ -33,6 +33,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import axios from "axios";
 import Notifications from "./Notifications";
+import PaymentReminder from "./PaymentReminder";
 import { closeSocket } from "../utils/socketConfig";
 
 const Header = () => {
@@ -188,6 +189,7 @@ const Header = () => {
 
   return (
     <>
+      {isLoggedIn && <PaymentReminder />}
       <header className="bg-white/95 fixed top-0 left-0 w-full z-50 shadow-md border-b backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-8 h-20">
           <div className="text-2xl font-bold text-black transition-transform hover:scale-105 duration-300">
