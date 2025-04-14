@@ -27,12 +27,14 @@ class BankAccountRequest extends FormRequest
             'bank_logo_url' => 'nullable|string|max:255',
             'account_holder_name' => 'required|string|max:100',
             'bank_account_number' => 'required|string|max:50',
-            'is_default' => 'boolean'
+            'is_default' => 'boolean',
+            'acq_id' => 'required',
         ];
     }
     public function messages()
     {
         return [
+            'acq_id.required' => 'Mã định danh ngân hàng là bắt buộc',
             'bank_code.required' => 'Mã ngân hàng là bắt buộc.',
             'bank_name.required' => 'Tên ngân hàng là bắt buộc.',
             'account_holder_name.required' => 'Tên chủ tài khoản là bắt buộc.',

@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('amount', 15, 2);
             $table->foreignIdFor(BankAccount::class)->constrained()->onDelete('cascade');
             $table->enum('status', ['dang_xu_ly', 'da_duyet', 'tu_choi', 'da_huy'])->default('dang_xu_ly');
-            $table->string('qr_code')->nullable();
+            $table->longText('qr_code')->nullable();
             $table->timestamps();
         });
     }
