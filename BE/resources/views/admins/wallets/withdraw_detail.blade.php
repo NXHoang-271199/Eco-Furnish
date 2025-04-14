@@ -46,8 +46,7 @@
                     <div class="border-bottom pb-2">
                         <strong>QR Code:</strong>
                         <div class="mt-2">
-                            <img src="{{ $withdraw->qr_code }}" alt="QR Code" class="img-fluid rounded"
-                                style="max-width: 150px;">
+                            <img src="{{ $withdraw->qr_code }}" alt="QR Code" class="img-fluid rounded" style="max-width: 150px;">
                         </div>
                     </div>
                 </div>

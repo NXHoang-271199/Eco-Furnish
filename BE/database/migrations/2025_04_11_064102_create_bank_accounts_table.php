@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignIdFor(User::class)->constrained()->onDelete('cascade');
             $table->string('bank_code');
             $table->string('bank_name');
+            $table->string('acq_id');
             $table->string('bank_logo_url')->nullable();
             $table->string('account_holder_name');
             $table->string('bank_account_number');
