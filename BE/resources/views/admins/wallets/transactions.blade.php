@@ -121,15 +121,14 @@
                                     </td>
                                     <td>{{ $transaction->created_at->format('d/m/Y H:i') }}</td>
                                     <td>
-                                        @if ($transaction->type === 'rut_tien')
-                                            {{-- Kiểm tra giao dịch có yêu cầu rút tiền --}}
-                                            <a href="#" class="btn btn-sm btn-outline-primary">
+                                        @if ($transaction->type === 'rut_tien' && $transaction->withdrawRequest)
+                                            <a class="btn btn-sm btn-outline-primary" href="#"
+                                                onclick="openWithdrawModal('{{ route('wallets.withdraws.detail', $transaction->withdrawRequest->id) }}')">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         @endif
                                     </td>
                                 </tr>
-
                                 {{-- Dòng chi tiết toggle --}}
                                 <tr class="transaction-detail-row d-none" id="detail-{{ $key }}">
                                     <td colspan="9" class="bg-light">
@@ -151,6 +150,47 @@
             </div>
         </div>
     </div>
+    <!-- Modal yêu cầu rút -->
+    <div class="modal fade" id="withdrawModal" tabindex="-1" aria-labelledby="withdrawModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg"> <!-- Thêm modal-lg để tăng chiều rộng của modal -->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-1" id="withdrawModalBody">
+                    <!-- Nội dung form sẽ được load bằng Ajax -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- model từ chối --}}
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="rejectForm">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="rejectModalLabel">Từ chối yêu cầu rút tiền</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="withdraw_id" id="withdrawId">
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Lý do từ chối</label>
+                            <input type="text" class="form-control" name="description" id="description"
+                                placeholder="Ví dụ: Tài khoản không hợp lệ" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-danger">Xác nhận</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 @endsection
 @section('JS')
     <script>
@@ -161,6 +201,142 @@
                 detailRow.classList.toggle('d-none');
                 this.textContent = this.textContent === '+' ? '-' : '+';
             });
+        });
+
+        // Mở modal withdraw_detail
+        function openWithdrawModal(url) {
+            console.log('Opening withdraw modal:', url); // Debug
+            fetch(url, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.html) {
+                        document.getElementById('withdrawModalBody').innerHTML = data.html;
+                        var withdrawModal = new bootstrap.Modal(document.getElementById('withdrawModal'));
+                        withdrawModal.show();
+                    } else {
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: 'Không thể tải thông tin rút tiền',
+                            icon: 'error',
+                            confirmButtonText: 'Đóng',
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi:', error);
+                    Swal.fire({
+                        title: 'Lỗi kết nối!',
+                        text: 'Không thể tải thông tin rút tiền: ' + error.message,
+                        icon: 'error',
+                        confirmButtonText: 'Đóng',
+                        confirmButtonColor: '#dc3545'
+                    });
+                });
+        }
+
+        // Mở modal từ chối
+        function openRejectModal(withdrawId) {
+            console.log('Opening reject modal, ID:', withdrawId); // Debug
+
+            // Đóng modal cha
+            var withdrawModal = bootstrap.Modal.getInstance(document.getElementById('withdrawModal'));
+            if (withdrawModal) {
+                withdrawModal.hide();
+                console.log('Closed withdrawModal');
+            }
+
+            // Cập nhật withdrawId vào form
+            document.getElementById('withdrawId').value = withdrawId;
+            document.getElementById('description').value = '';
+
+            // Mở modal con
+            let modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+            modal.show();
+            console.log('Opened rejectModal');
+        }
+
+        // Tạo URL động cho reject
+        const rejectRouteTemplate = "{{ route('wallets.withdraws.reject', ['id' => 'WITHDRAW_ID']) }}";
+
+        // Xử lý submit form từ chối
+        document.getElementById('rejectForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Submitting reject form'); // Debug
+
+            const withdrawId = document.getElementById('withdrawId').value;
+            const description = document.getElementById('description').value;
+            const token = document.querySelector('input[name=_token]').value;
+            const url = rejectRouteTemplate.replace('WITHDRAW_ID', withdrawId);
+
+            fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        description: description
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
+                        Swal.fire({
+                            title: 'Thành công!',
+                            text: data.success,
+                            icon: 'success',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true,
+                            customClass: {
+                                popup: 'animate__animated animate__fadeInDown'
+                            },
+                            showClass: {
+                                popup: 'animate__animated animate__fadeInDown'
+                            },
+                            hideClass: {
+                                popup: 'animate__animated animate__fadeOutUp'
+                            }
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: data.error || 'Đã có lỗi xảy ra!',
+                            icon: 'error',
+                            confirmButtonText: 'Đóng',
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi:', error);
+                    Swal.fire({
+                        title: 'Lỗi kết nối!',
+                        text: 'Không thể gửi yêu cầu: ' + error.message,
+                        icon: 'error',
+                        confirmButtonText: 'Đóng',
+                        confirmButtonColor: '#dc3545'
+                    });
+                });
         });
     </script>
 @endsection

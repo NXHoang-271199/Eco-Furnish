@@ -6,7 +6,9 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Variant;
+use App\Models\Voucher;
 use App\Models\VariantValue;
+use App\Models\VoucherUsage;
 use Illuminate\Http\Request;
 use App\Models\RefundRequest;
 use App\Models\ProductVariant;
@@ -95,26 +97,6 @@ class OrderController extends Controller
         return view('admins.orders.index', compact('orders', 'search', 'groupedOrders'));
     }
 
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         $order = Order::with([
@@ -146,29 +128,6 @@ class OrderController extends Controller
         return view('admins.orders.detail', compact('order'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
     public function updateStatus(Request $request, $id)
     {
         DB::beginTransaction();
@@ -202,7 +161,7 @@ class OrderController extends Controller
             // Danh sách trạng thái cho phép chuyển đổi
             $validTransitions = [
                 'Chưa Xác Nhận' => ['Đã Xác Nhận', 'Hủy Đơn'],
-                'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng', 'Hủy Đơn'],
+                'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng'],
                 'Đang Chuẩn Bị Hàng' => ['Đang Giao'],
                 'Đang Giao' => ['Đã Giao']
             ];
@@ -211,7 +170,7 @@ class OrderController extends Controller
                 return back()->with('error', 'Không thể chuyển sang trạng thái này.');
             }
 
-            // Nếu là Hủy Đơn → hoàn số lượng
+            // Nếu là Hủy Đơn → hoàn số lượng -> hoàn lại voucher
             if (in_array($request->order_status, ['Hủy Đơn'])) {
                 foreach ($order->orderItems as $item) {
                     if ($item->product_variant_id) {
@@ -220,6 +179,21 @@ class OrderController extends Controller
                         Product::where('id', $item->product_id)->increment('quantity', $item->quantity);
                     }
                 }
+                // Hoàn lại lượt sử dụng voucher
+                if ($order->voucher_id) {
+                    // Xóa lượt sử dụng voucher của người dùng
+                    VoucherUsage::where('user_id', $order->user_id)
+                        ->where('voucher_id', $order->voucher_id)
+                        ->delete();
+
+                    // Tăng lại số lượt sử dụng của voucher
+                    Voucher::where('id', $order->voucher_id)
+                        ->increment('usage_limit');
+                }
+            }
+            // ** Cập nhật payment_status khi đơn hàng chuyển sang "Đã Giao" **
+            if ($request->order_status === 'Đã Giao') {
+                $order->payment_status = 1; // Đánh dấu là đã thanh toán
             }
 
             // Cập nhật trạng thái đơn hàng
@@ -270,8 +244,6 @@ class OrderController extends Controller
         }
     }
 
-
-
     public function approveRefundRequest($orderId, $refundRequestId, Request $request)
     {
         DB::beginTransaction();
@@ -304,8 +276,9 @@ class OrderController extends Controller
                 }
             }
 
-            // ✅ Hoàn tiền nếu đơn đã thanh toán
+            // ✅ Kiểm tra payment_status và chỉ hoàn tiền nếu payment_status == 1 (đã thanh toán)
             if ($order->payment_status == 1) {
+                // ✅ Hoàn tiền nếu đơn đã thanh toán
                 $user = User::with('wallet')->find($order->user_id);
                 if (!$user || !$user->wallet) {
                     throw new \Exception('Không tìm thấy ví của người dùng');
@@ -352,6 +325,7 @@ class OrderController extends Controller
         }
     }
 
+
     public function rejectRefundRequest($orderId, $refundRequestId)
     {
         DB::beginTransaction();
@@ -363,17 +337,19 @@ class OrderController extends Controller
             $refundRequest->update(['status' => 'Từ Chối']);
 
             // ❌ Không hoàn tiền, chỉ cập nhật giao dịch ví nếu có
-            $walletTransaction = WalletTransaction::where('order_id', $order->id)
-                ->where('type', 'hoan_tien')
-                ->where('status', 'cho_thanh_toan')
-                ->first();
+            if ($order->payment_status == 1) { // Chỉ cập nhật nếu payment_status == 1 (đã thanh toán)
+                $walletTransaction = WalletTransaction::where('order_id', $order->id)
+                    ->where('type', 'hoan_tien')
+                    ->where('status', 'cho_thanh_toan')
+                    ->first();
 
-            if ($walletTransaction) {
-                $walletTransaction->update([
-                    'status' => 'that_bai',
-                    'description' => 'Hoàn tiền đơn hàng #' . $order->order_code . ' thất bại do yêu cầu hoàn hàng bị từ chối',
-                    'updated_by' => auth()->id()
-                ]);
+                if ($walletTransaction) {
+                    $walletTransaction->update([
+                        'status' => 'that_bai',
+                        'description' => 'Hoàn tiền đơn hàng #' . $order->order_code . ' thất bại do yêu cầu hoàn hàng bị từ chối',
+                        'updated_by' => auth()->id()
+                    ]);
+                }
             }
 
             DB::commit();
@@ -411,7 +387,7 @@ class OrderController extends Controller
 
         $validTransitions = [
             'Chưa Xác Nhận' => ['Đã Xác Nhận', 'Hủy Đơn'],
-            'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng', 'Hủy Đơn'],
+            'Đã Xác Nhận' => ['Đang Chuẩn Bị Hàng'],
             'Đang Chuẩn Bị Hàng' => ['Đang Giao'],
             'Đang Giao' => ['Đã Giao'],
         ];
@@ -530,7 +506,23 @@ class OrderController extends Controller
                                 ->increment('quantity', $item->quantity);
                         }
                     }
+                    // Hoàn lại lượt sử dụng voucher
+                    if ($order->voucher_id) {
+                        // Xóa lượt sử dụng voucher của người dùng
+                        VoucherUsage::where('user_id', $order->user_id)
+                            ->where('voucher_id', $order->voucher_id)
+                            ->delete();
+
+                        // Tăng lại số lượt sử dụng của voucher
+                        Voucher::where('id', $order->voucher_id)
+                            ->increment('usage_limit');
+                    }
                 }
+                // Nếu trạng thái mới là "Đã Giao", cập nhật payment_status = 1
+                if ($newStatus === 'Đã Giao') {
+                    $order->update(['payment_status' => 1]);
+                }
+
 
                 // Cập nhật trạng thái đơn hàng
                 $order->update(['order_status' => $newStatus]);

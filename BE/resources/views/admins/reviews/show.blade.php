@@ -31,10 +31,21 @@
                                         <p>{{ $review->user->name }}</p>
                                     </a>
                                 </div>
-                                <div class="form-group">
-                                    <label>Email:</label>
-                                    <p>{{ $review->user->email }}</p>
-                                </div>
+                                @if (!empty($review->variant_info))
+                                    <div class="form-group">
+                                        <label>Phân loại:</label>
+                                        <p class="variant-info mb-2">
+                                            <span class="badge bg-light text-dark fs-6">
+                                                {{ implode(' - ', $review->variant_info) }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                @else
+                                    <div class="form-group">
+                                        <label>Phân loại:</label>
+                                        <p class="variant-info mb-2">Không có phân loại</p>
+                                    </div>
+                                @endif
                                 <div class="form-group">
                                     <label>Sản phẩm:</label>
                                     <p>{{ $review->product->name }}</p>
@@ -61,11 +72,11 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Ngày tạo:</label>
-                                    <p>{{ $review->created_at->format('d/m/Y H:i:s') }}</p>
+                                    <p>{{ $review->created_at ? $review->created_at->format('d/m/Y H:i:s') : '' }}</p>
                                 </div>
                                 <div class="form-group">
                                     <label>Ngày cập nhật:</label>
-                                    <p>{{ $review->updated_at->format('d/m/Y H:i:s') }}</p>
+                                    <p>{{ $review->updated_at ? $review->updated_at->format('d/m/Y H:i:s') : '' }}</p>
                                 </div>
                                 <div class="form-group">
                                     <label>Mã đơn hàng:</label>

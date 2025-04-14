@@ -87,14 +87,32 @@ class ReviewController extends Controller
      */
     public function getProductReviews($productId)
     {
-        // Lấy đánh giá cho sản phẩm, chỉ lấy những đánh giá không bị ẩn
-        $reviews = Review::with('user')
+        $reviews = Review::with([
+            'user',
+            'order.orderItems.productVariant' => function ($query) {
+                $query->withTrashed();
+            }
+        ])
             ->where('product_id', $productId)
-            ->where('is_hidden', false)  // Điều kiện để chỉ lấy đánh giá không bị ẩn
+            ->where('is_hidden', false)
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($review) {
-                $review->images = json_decode($review->images, true); // Giải mã JSON
+                $review->images = json_decode($review->images, true);
+                $orderItem = $review->order?->orderItems
+                    ->firstWhere('product_id', $review->product_id);
+                $variantInfo = [];
+                if (
+                    $orderItem &&
+                    $orderItem->productVariant &&
+                    is_array($orderItem->productVariant->variant_details)
+                ) {
+                    $variantInfo = collect($orderItem->productVariant->variant_details)
+                        ->map(fn($detail) => "{$detail['name']}: {$detail['value']}")
+                        ->toArray();
+                }
+                $review->variant_info = $variantInfo;
+                unset($review->order);
                 return $review;
             });
 
@@ -104,16 +122,18 @@ class ReviewController extends Controller
         ]);
     }
 
+
+
     /**
      * Kiểm tra xem người dùng có thể đánh giá sản phẩm hay không
-     * 
+     *
      * @param int $productId
      * @return \Illuminate\Http\JsonResponse
      */
     public function canReview($productId)
     {
         $userId = Auth::id();
-        
+
         if (!$userId) {
             return response()->json([
                 'success' => false,
