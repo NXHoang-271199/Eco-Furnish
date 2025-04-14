@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaWallet,
@@ -16,6 +16,7 @@ import {
 } from "react-icons/fa";
 import axios from "axios";
 import axiosInstance from "../../../../utils/axiosConfig";
+import { showWalletDepositToast } from "../../../../components/ui/toast";
 
 const WalletPage = () => {
   const [balance, setBalance] = useState(0);
@@ -27,7 +28,9 @@ const WalletPage = () => {
   const [copySuccess, setCopySuccess] = useState("");
   const [balanceBeforeTransaction, setBalanceBeforeTransaction] = useState(0);
   const [balanceAfterTransaction, setBalanceAfterTransaction] = useState(0);
+  const [previousBalance, setPreviousBalance] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Fetch dữ liệu ví và lịch sử giao dịch
   const fetchWalletData = async () => {
@@ -41,6 +44,13 @@ const WalletPage = () => {
         },
       });
 
+      // Lưu giá trị số dư cũ nếu đang từ trang nạp tiền thành công quay về
+      if (location.state && location.state.fromDepositSuccess) {
+        setPreviousBalance(parseFloat(localStorage.getItem("previousBalance") || 0));
+      } else {
+        setPreviousBalance(parseFloat(balanceResponse.data.balance));
+      }
+
       // Lấy lịch sử giao dịch
       const transactionsResponse = await axiosInstance.get(
         "/wallet/transactions",
@@ -51,8 +61,33 @@ const WalletPage = () => {
         }
       );
 
-      setBalance(parseFloat(balanceResponse.data.balance));
+      const currentBalance = parseFloat(balanceResponse.data.balance);
+      setBalance(currentBalance);
       setTransactions(transactionsResponse.data.transactions);
+
+      // Kiểm tra và hiển thị thông báo toast nếu từ trang nạp tiền thành công quay về
+      if (location.state && location.state.fromDepositSuccess) {
+        // Tìm giao dịch nạp tiền thành công gần nhất
+        const recentSuccessfulDeposit = transactionsResponse.data.transactions.find(
+          tx => tx.type === "nap_tien" && tx.status === "thanh_cong"
+        );
+
+        if (recentSuccessfulDeposit) {
+          const depositAmount = parseFloat(recentSuccessfulDeposit.amount);
+          const prevBalance = currentBalance - depositAmount;
+
+          showWalletDepositToast({
+            amount: depositAmount,
+            balance_after: currentBalance,
+            message: `Tài khoản của bạn vừa được cộng ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(depositAmount)}`,
+            id: recentSuccessfulDeposit.id
+          });
+
+          // Xóa trạng thái sau khi đã hiển thị thông báo
+          localStorage.removeItem("previousBalance");
+          navigate(location.pathname, { replace: true, state: {} });
+        }
+      }
 
       // Kiểm tra và tự động hủy các giao dịch quá hạn (30 phút)
       const pendingTransactions = transactionsResponse.data.transactions.filter(
@@ -77,8 +112,13 @@ const WalletPage = () => {
   };
 
   useEffect(() => {
+    // Trước khi nạp tiền, lưu số dư hiện tại để so sánh sau khi nạp thành công
+    if (location.pathname === "/account/wallet" && location.state?.from?.pathname === "/account/wallet/deposit") {
+      localStorage.setItem("previousBalance", balance.toString());
+    }
+
     fetchWalletData();
-  }, []);
+  }, [location.pathname]);
 
   // Hủy giao dịch
   const cancelTransaction = async (id) => {

@@ -840,73 +840,50 @@ const ProductDetail = () => {
       return (
         <div className="space-y-4">
           <h3 className="font-medium text-gray-800">Chọn phiên bản</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             {product.variants.map((variant) => {
-              // Tạo chuỗi hiển thị cho biến thể
+              // Tạo chuỗi hiển thị cho biến thể (ví dụ: "Màu: Trắng, Kích thước: Nhỏ")
               let variantLabel = formatVariantDetails(variant.variant_details);
               const isSelected = selectedVariantId === variant.id;
               const isOutOfStock = variant.quantity <= 0;
-              // const hasDiscount = variant.discount_price && variant.discount_price < variant.price;
 
               return (
                 <button
                   key={variant.id}
                   onClick={() => handleVariantChange(variant.id)}
                   disabled={isOutOfStock}
-                  className={`
-                    relative flex flex-col h-full p-4 rounded-lg text-left transition-all 
-                    ${isSelected
-                      ? "border-2 border-amber-500 bg-amber-50/50 shadow-md"
-                      : "border border-gray-200 hover:border-amber-300 hover:shadow-sm"} 
-                    ${isOutOfStock
-                      ? "opacity-60 cursor-not-allowed bg-gray-100"
+                  className={`px-4 py-3 rounded-lg text-sm text-left transition-all ${isSelected
+                    ? "border-2 border-amber-500 bg-amber-50"
+                    : "border border-gray-200 hover:border-amber-300"
+                  className={`px-4 py-3 rounded-lg text-sm text-left transition-all ${isSelected
+                    ? "border-2 border-amber-500 bg-amber-50"
+                    : "border border-gray-200 hover:border-amber-300"
+                    } ${isOutOfStock
+                      ? "opacity-50 cursor-not-allowed bg-gray-100"
                       : "cursor-pointer"
-                    }
-                  `}
+                    }`}
                 >
-                  {/* Biến thể đang được chọn */}
-                  {isSelected && (
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center shadow-md">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
-
-                  {/* Label biến thể */}
-                  <div className="flex-1">
-                    <div className="font-medium mb-1 text-gray-800">{variantLabel}</div>
-
-                    {/* Giá */}
-                    {/* <div className="flex items-baseline mt-1">
-                      <span className={`font-semibold ${hasDiscount ? 'text-red-600' : 'text-amber-600'}`}>
-                        {formatPrice(variant.discount_price || variant.price)}
-                      </span>
-
-                      {hasDiscount && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{variantLabel}</span>
+                    <span className={`ml-2 ${isOutOfStock ? "text-red-500" : "text-green-600"}`}>
+                      {isOutOfStock ? "Hết hàng" : `${variant.quantity} sản phẩm`}
+                    </span>
+                  </div>
+                  <div className="mt-1">
+                    {variant.discount_price ? (
+                      <div className="flex items-center">
+                        <span className="font-semibold text-amber-600">
+                          {formatPrice(variant.discount_price)}
+                        </span>
                         <span className="ml-2 text-xs text-gray-400 line-through">
                           {formatPrice(variant.price)}
                         </span>
-                      )}
-                    </div> */}
-                  </div>
-
-                  {/* Badge trạng thái tồn kho */}
-                  <div className={`
-                    mt-2 px-2 py-1 text-xs font-medium rounded-full w-fit ml-auto 
-                    ${isOutOfStock
-                      ? "bg-red-100 text-red-700"
-                      : variant.quantity <= 10
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-green-100 text-green-700"
-                    }
-                  `}>
-                    {isOutOfStock
-                      ? "Hết hàng"
-                      : variant.quantity <= 10
-                        ? `Còn ${variant.quantity}`
-                        : "Còn hàng"
-                    }
+                      </div>
+                    ) : (
+                      <span className="font-semibold text-amber-600">
+                        {formatPrice(variant.price)}
+                      </span>
+                    )}
                   </div>
                 </button>
               );
