@@ -19,14 +19,21 @@ class ReviewController extends Controller
     {
         $userId = Auth::id();
         $productId = $request->product_id;
+        $variantId = $request->product_variant_id;
+        $orderId = $request->order_id;
 
-        // Kiểm tra xem người dùng có đơn hàng chứa sản phẩm không
+        // Kiểm tra xem người dùng có đơn hàng chứa sản phẩm và biến thể không
         $order = Order::where('user_id', $userId)
-            ->whereHas('orderItems', function ($query) use ($productId) {
-                $query->where('product_id', $productId);
-            })
+            ->where('id', $orderId)
             ->whereNotIn('order_status', ['Hoàn Hàng', 'Hủy Đơn'])
-            ->orderBy('created_at', 'desc') // Lấy đơn mới nhất
+            ->whereHas('orderItems', function ($query) use ($productId, $variantId) {
+                $query->where('product_id', $productId);
+                if ($variantId) {
+                    $query->where('product_variant_id', $variantId);
+                } else {
+                    $query->whereNull('product_variant_id');
+                }
+            })
             ->first();
 
         if (!$order) {
@@ -47,7 +54,12 @@ class ReviewController extends Controller
         // Kiểm tra xem người dùng đã đánh giá sản phẩm này chưa
         $existingReview = Review::where('user_id', $userId)
             ->where('product_id', $productId)
-            ->where('order_id', $order->id)
+            ->where('order_id', $orderId)
+            ->when($variantId, function ($query) use ($variantId) {
+                $query->where('product_variant_id', $variantId);
+            }, function ($query) {
+                $query->whereNull('product_variant_id');
+            })
             ->exists();
 
         if ($existingReview) {
@@ -70,7 +82,8 @@ class ReviewController extends Controller
         $review = Review::create([
             'user_id' => $userId,
             'product_id' => $productId,
-            'order_id' => $order->id,
+            'product_variant_id' => $variantId,  // Lưu product_variant_id nếu có
+            'order_id' => $orderId,
             'rating' => $request->rating,
             'review_text' => $request->review_text,
             'images' => json_encode($imagePaths),
@@ -82,37 +95,44 @@ class ReviewController extends Controller
             'data' => $review
         ]);
     }
+
     /**
      * Lấy danh sách đánh giá của sản phẩm
      */
     public function getProductReviews($productId)
     {
-        $reviews = Review::with([
-            'user',
-            'order.orderItems.productVariant' => function ($query) {
-                $query->withTrashed();
-            }
-        ])
+        $reviews = Review::with(['user', 'productVariant' => fn($q) => $q->withTrashed()])
             ->where('product_id', $productId)
             ->where('is_hidden', false)
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($review) {
                 $review->images = json_decode($review->images, true);
-                $orderItem = $review->order?->orderItems
-                    ->firstWhere('product_id', $review->product_id);
-                $variantInfo = [];
-                if (
-                    $orderItem &&
-                    $orderItem->productVariant &&
-                    is_array($orderItem->productVariant->variant_details)
-                ) {
-                    $variantInfo = collect($orderItem->productVariant->variant_details)
-                        ->map(fn($detail) => "{$detail['name']}: {$detail['value']}")
-                        ->toArray();
+
+                // Gán thông tin biến thể đơn giản hơn
+                $review->variant_info = $review->productVariant->variant_details ?? [];
+
+                // Ẩn những thông tin không cần thiết
+                unset(
+                    $review->order_id,
+                    $review->updated_at,
+                    $review->productVariant,
+                    $review->order
+                );
+
+                // Ẩn các thông tin nhạy cảm của user
+                if ($review->user) {
+                    unset(
+                        $review->user->email_verified_at,
+                        $review->user->email_verification_token,
+                        $review->user->remember_token,
+                        $review->user->remember_me,
+                        $review->user->remember_me_expires_at,
+                        $review->user->created_at,
+                        $review->user->updated_at
+                    );
                 }
-                $review->variant_info = $variantInfo;
-                unset($review->order);
+
                 return $review;
             });
 
@@ -121,7 +141,6 @@ class ReviewController extends Controller
             'data' => $reviews
         ]);
     }
-
 
 
     /**

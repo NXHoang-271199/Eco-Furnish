@@ -66,23 +66,23 @@ class ProductVariant extends Model
     {
         try {
             \Log::info("Đang xử lý variant_details cho variant ID: " . $this->id);
-            
+
             $details = json_decode($this->attributes['variant_details'] ?? '{}', true);
             \Log::info("Dữ liệu variant_details gốc:", ['details' => $details]);
-            
+
             if (!$details || !is_array($details)) {
                 \Log::warning("variant_details không hợp lệ hoặc rỗng");
                 return [];
             }
 
             $formattedDetails = [];
-            
+
             // Kiểm tra nếu đã là mảng các đối tượng có name và value
             if (isset($details[0]) && isset($details[0]['name']) && isset($details[0]['value'])) {
                 \Log::info("variant_details đã ở định dạng name-value");
                 return $details;
             }
-            
+
             // Nếu là đối tượng với cặp khóa-giá trị {variantId: variantValueId}
             foreach ($details as $variantId => $variantValueId) {
                 $variant = Variant::find($variantId);
@@ -110,5 +110,9 @@ class ProductVariant extends Model
             ]);
             return [];
         }
+    }
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
     }
 }

@@ -19,7 +19,7 @@ class WalletController extends Controller
         $wallets = Wallet::with('user')
             ->leftJoin('withdraw_requests', function ($join) {
                 $join->on('wallets.user_id', '=', 'withdraw_requests.user_id')
-                     ->where('withdraw_requests.status', 'dang_xu_ly');
+                    ->where('withdraw_requests.status', 'dang_xu_ly');
             })
             ->when($search, function ($query) use ($search) {
                 $query->whereHas('user', function ($q) use ($search) {
@@ -55,8 +55,6 @@ class WalletController extends Controller
 
         return view('admins.wallets.index', compact('wallets', 'withdrawRequests'));
     }
-
-
     // Chi tiết ví + giao dịch
     public function show($id, Request $request)
     {
@@ -233,7 +231,6 @@ class WalletController extends Controller
             return back()->with('error', 'Lỗi: ' . $e->getMessage());
         }
     }
-
     // từ chối rút
     public function rejectWithdraw($id, Request $request)
     {
