@@ -127,9 +127,39 @@ if (!function_exists('getTransactionTypeColor')) {
             case 'thanh_toan_don_hang':
                 return 'info';
             case 'rut_tien':
-                return 'warning';
+                return 'danger';
             default:
                 return 'secondary';
         }
     }
 }
+
+if (!function_exists('getWithdrawStatusLabel')) {
+    function getWithdrawStatusLabel($status)
+    {
+        return [
+            'dang_xu_ly' => 'Đang xử lý',
+            'da_duyet'   => 'Đã duyệt',
+            'tu_choi'    => 'Đã từ chối',
+            'da_huy'     => 'Đã hủy',
+        ][$status] ?? 'Không xác định';
+    }
+}
+if (!function_exists('getWithdrawStatusColor')) {
+    function getWithdrawStatusColor($status)
+    {
+        switch ($status) {
+            case 'dang_xu_ly':
+                return 'warning';  // Màu vàng cho trạng thái "Đang xử lý"
+            case 'da_duyet':
+                return 'success';  // Màu xanh cho trạng thái "Đã duyệt"
+            case 'tu_choi':
+                return 'danger';   // Màu đỏ cho trạng thái "Đã từ chối"
+            case 'da_huy':
+                return 'danger';   // Màu đỏ cho trạng thái "Đã hủy"
+            default:
+                return 'dark';     // Màu xám cho trạng thái không xác định
+        }
+    }
+}
+

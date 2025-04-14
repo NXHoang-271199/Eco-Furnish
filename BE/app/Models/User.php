@@ -151,7 +151,8 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(VoucherUsage::class);
     }
-    public function reviews() {
+    public function reviews()
+    {
         return $this->hasMany(Review::class);
     }
     public function refundRequest()
@@ -166,7 +167,17 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(UserAddress::class);
     }
-    public function wallet() {
+    public function wallet()
+    {
         return $this->hasOne(Wallet::class);
+    }
+    // Mối quan hệ: Mỗi người dùng có thể có nhiều yêu cầu rút tiền
+    public function withdrawRequests()
+    {
+        return $this->hasMany(WithdrawRequest::class);
+    }
+    public function bankAccounts()
+    {
+        return $this->hasMany(BankAccount::class);
     }
 }

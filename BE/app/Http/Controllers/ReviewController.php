@@ -48,15 +48,33 @@ class ReviewController extends Controller
 
     public function show($id)
     {
-        $review = Review::with('user', 'product')->findOrFail($id);
+        $review = Review::with(['user', 'product', 'order.orderItems.productVariant' => function ($query) {
+            $query->withTrashed(); // Lấy cả product variant đã bị soft delete
+        }])->findOrFail($id);
 
-        // Giải mã images nếu cần
+        // Giải mã hình ảnh nếu cần
         if (is_string($review->images)) {
             $review->images = json_decode($review->images, true);
         }
 
+        // Tìm orderItem có cùng product_id với review
+        $matchingItem = $review->order?->orderItems
+            ->firstWhere('product_id', $review->product_id);
+
+        $variantInfo = [];
+
+        if ($matchingItem && $matchingItem->productVariant && !empty($matchingItem->productVariant->variant_details)) {
+            foreach ($matchingItem->productVariant->variant_details as $detail) {
+                $variantInfo[] = "{$detail['name']}: {$detail['value']}";
+            }
+        }
+
+        // Gắn vào review để dùng trong view
+        $review->setAttribute('variant_info', $variantInfo);
+
         return view('admins.reviews.show', compact('review'));
     }
+
 
     public function toggleReviewVisibility($reviewId)
     {

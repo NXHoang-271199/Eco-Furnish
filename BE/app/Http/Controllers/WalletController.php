@@ -4,16 +4,56 @@ namespace App\Http\Controllers;
 
 use App\Models\Wallet;
 use Illuminate\Http\Request;
+use App\Models\WithdrawRequest;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 
 class WalletController extends Controller
 {
     // Danh sách ví người dùng
-    public function index()
+    public function index(Request $request)
     {
-        $wallets = Wallet::with('user')->orderBy('balance', 'desc')->paginate(10);
-        return view('admins.wallets.index', compact('wallets'));
+        $search = $request->search;
+        $withdrawFilter = $request->withdraw_filter;
+
+        $wallets = Wallet::with('user')
+            ->leftJoin('withdraw_requests', function ($join) {
+                $join->on('wallets.user_id', '=', 'withdraw_requests.user_id')
+                     ->where('withdraw_requests.status', 'dang_xu_ly');
+            })
+            ->when($search, function ($query) use ($search) {
+                $query->whereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                        ->orWhere('email', 'like', "%$search%")
+                        ->orWhere('phone', 'like', "%$search%");
+                });
+            })
+            // Lọc theo yêu cầu rút tiền nếu có
+            ->when($withdrawFilter, function ($query) use ($withdrawFilter) {
+                if ($withdrawFilter == '1') {
+                    // Chỉ lấy ví có yêu cầu rút tiền đang chờ xử lý
+                    $query->whereHas('user.withdrawRequests', function ($q) {
+                        $q->where('status', 'dang_xu_ly');
+                    });
+                } elseif ($withdrawFilter == '2') {
+                    // Lấy ví không có yêu cầu rút tiền đang chờ xử lý
+                    $query->whereDoesntHave('user.withdrawRequests', function ($q) {
+                        $q->where('status', 'dang_xu_ly');
+                    });
+                }
+            })
+            ->groupBy('wallets.id', 'wallets.user_id', 'wallets.balance', 'wallets.created_at', 'wallets.updated_at')
+            ->select('wallets.*', DB::raw('COUNT(withdraw_requests.id) as withdraw_count'))
+            ->orderBy('withdraw_count', 'desc')
+            ->orderBy('balance', 'desc')
+            ->paginate(10);
+
+        $withdrawRequests = WithdrawRequest::where('status', 'dang_xu_ly')
+            ->select('user_id', DB::raw('count(*) as total'))
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
+
+        return view('admins.wallets.index', compact('wallets', 'withdrawRequests'));
     }
 
 
@@ -59,8 +99,6 @@ class WalletController extends Controller
 
         return view('admins.wallets.detail', compact('wallet', 'transactions'));
     }
-
-
     // Xử lý cộng tiền
     public function updateBalance(Request $request, $id)
     {
@@ -174,5 +212,102 @@ class WalletController extends Controller
         $transactions = $query->paginate(15);
 
         return view('admins.wallets.transactions', compact('transactions'));
+    }
+
+    public function getWithdrawDetail($id)
+    {
+        try {
+            // Lấy yêu cầu rút tiền cùng với thông tin giao dịch và người dùng liên quan
+            $withdraw = WithdrawRequest::with('walletTransaction', 'user', 'bankAccount')->findOrFail($id);
+
+            // Trả về HTML view chi tiết yêu cầu rút tiền
+            return response()->json([
+                'html' => view('admins.wallets.withdraw_detail', compact('withdraw'))->render()
+            ]);
+        } catch (\Exception $e) {
+            // Nếu không tìm thấy yêu cầu rút tiền, quay lại và hiển thị thông báo lỗi
+            return response()->json([
+                'error' => 'Không tìm thấy yêu cầu rút tiền.'
+            ]);
+        }
+    }
+    // duyệt rút
+    public function approveWithdraw($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $withdraw = WithdrawRequest::with('walletTransaction', 'user')->findOrFail($id);
+
+            if ($withdraw->status !== 'dang_xu_ly') {
+                return back()->with('error', 'Yêu cầu này đã được xử lý trước đó.');
+            }
+
+            $transaction = $withdraw->walletTransaction;
+
+            if (!$transaction || $transaction->status !== 'cho_thanh_toan') {
+                return back()->with('error', 'Không thể duyệt vì trạng thái giao dịch không hợp lệ.');
+            }
+
+            // Cập nhật trạng thái
+            $withdraw->status = 'da_duyet';
+            $withdraw->save();
+
+            $transaction->status = 'thanh_cong';
+            $transaction->updated_by = auth()->id();
+            $transaction->description = "Đã duyệt yêu cầu rút tiền";
+            $transaction->save();
+
+            DB::commit();
+
+            return back()->with('success', 'Duyệt yêu cầu rút tiền thành công.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Lỗi: ' . $e->getMessage());
+        }
+    }
+
+    // từ chối rút
+    public function rejectWithdraw($id, Request $request)
+    {
+        DB::beginTransaction();
+
+        try {
+            $withdraw = WithdrawRequest::with('walletTransaction', 'user')->findOrFail($id);
+
+            if ($withdraw->status !== 'dang_xu_ly') {
+                return response()->json(['error' => 'Yêu cầu này đã được xử lý trước đó.'], 400);
+            }
+
+            $transaction = $withdraw->walletTransaction;
+
+            if (!$transaction || $transaction->status !== 'cho_thanh_toan') {
+                return response()->json(['error' => 'Không thể từ chối vì trạng thái giao dịch không hợp lệ.'], 400);
+            }
+
+            $wallet = $transaction->wallet;
+
+            $request->validate([
+                'description' => 'required|string|max:255',
+            ]);
+
+            $wallet->balance += $transaction->amount;
+            $wallet->save();
+
+            $withdraw->status = 'tu_choi';
+            $withdraw->save();
+
+            $transaction->status = 'that_bai';
+            $transaction->updated_by = auth()->id();
+            $transaction->description = $request->input('description');
+            $transaction->save();
+
+            DB::commit();
+
+            return response()->json(['success' => 'Từ chối yêu cầu và hoàn tiền thành công.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Lỗi: ' . $e->getMessage()], 500);
+        }
     }
 }

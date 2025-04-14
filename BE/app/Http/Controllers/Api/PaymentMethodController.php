@@ -393,8 +393,7 @@ class PaymentMethodController extends Controller
                 $order = Order::where('order_code', $orderId)->first();
                 if ($order) {
                     $order->update([
-                        'payment_status' => 1,
-                        'order_status' => 'Đã Xác Nhận',
+                        'payment_status' => 1
                     ]);
 
                     // ✅ Cập nhật status cho WalletTransaction liên quan đơn hàng
@@ -450,8 +449,7 @@ class PaymentMethodController extends Controller
                 $order = Order::where('order_code', $txnRef)->first();
                 if ($order) {
                     $order->update([
-                        'payment_status' => 1,
-                        'order_status' => 'Đã Xác Nhận',
+                        'payment_status' => 1
                     ]);
 
                     // ✅ Cập nhật status cho WalletTransaction liên quan đơn hàng
