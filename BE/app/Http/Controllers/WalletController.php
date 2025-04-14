@@ -261,10 +261,16 @@ class WalletController extends Controller
             $withdraw->status = 'tu_choi';
             $withdraw->save();
 
-            $transaction->status = 'that_bai';
-            $transaction->updated_by = auth()->id();
-            $transaction->description = $request->input('description');
-            $transaction->save();
+             // Cập nhật lại giao dịch ví
+             $balanceBefore = $wallet->balance;
+             $balanceAfter = $wallet->balance;
+
+             $transaction->status = 'that_bai';
+             $transaction->updated_by = auth()->id();
+             $transaction->description = $request->input('description');
+             $transaction->balance_before = $balanceBefore;
+             $transaction->balance_after = $balanceAfter;
+             $transaction->save();
 
             DB::commit();
 
