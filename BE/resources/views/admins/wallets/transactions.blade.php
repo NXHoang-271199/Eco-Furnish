@@ -14,7 +14,7 @@
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <input type="text" class="form-control" name="search"
-                                    placeholder="Tìm kiếm theo tên/email/số điện thoại" value="{{ request()->search }}">
+                                    placeholder="Tên / Email / Số điện thoại" value="{{ request()->search }}">
                             </div>
                             <div class="col-md-4">
                                 <select name="transaction_type" class="form-control">

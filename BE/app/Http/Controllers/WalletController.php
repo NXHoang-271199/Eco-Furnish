@@ -11,11 +11,52 @@ use Illuminate\Support\Facades\DB;
 class WalletController extends Controller
 {
     // Danh sách ví người dùng
-    public function index()
+    public function index(Request $request)
     {
-        $wallets = Wallet::with('user')->orderBy('balance', 'desc')->paginate(10);
-        return view('admins.wallets.index', compact('wallets'));
+        $search = $request->search;
+        $withdrawFilter = $request->withdraw_filter;
+
+        $wallets = Wallet::with('user')
+            ->leftJoin('withdraw_requests', function ($join) {
+                $join->on('wallets.user_id', '=', 'withdraw_requests.user_id')
+                     ->where('withdraw_requests.status', 'dang_xu_ly');
+            })
+            ->when($search, function ($query) use ($search) {
+                $query->whereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                        ->orWhere('email', 'like', "%$search%")
+                        ->orWhere('phone', 'like', "%$search%");
+                });
+            })
+            // Lọc theo yêu cầu rút tiền nếu có
+            ->when($withdrawFilter, function ($query) use ($withdrawFilter) {
+                if ($withdrawFilter == '1') {
+                    // Chỉ lấy ví có yêu cầu rút tiền đang chờ xử lý
+                    $query->whereHas('user.withdrawRequests', function ($q) {
+                        $q->where('status', 'dang_xu_ly');
+                    });
+                } elseif ($withdrawFilter == '2') {
+                    // Lấy ví không có yêu cầu rút tiền đang chờ xử lý
+                    $query->whereDoesntHave('user.withdrawRequests', function ($q) {
+                        $q->where('status', 'dang_xu_ly');
+                    });
+                }
+            })
+            ->groupBy('wallets.id', 'wallets.user_id', 'wallets.balance', 'wallets.created_at', 'wallets.updated_at')
+            ->select('wallets.*', DB::raw('COUNT(withdraw_requests.id) as withdraw_count'))
+            ->orderBy('withdraw_count', 'desc')
+            ->orderBy('balance', 'desc')
+            ->paginate(10);
+
+        $withdrawRequests = WithdrawRequest::where('status', 'dang_xu_ly')
+            ->select('user_id', DB::raw('count(*) as total'))
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
+
+        return view('admins.wallets.index', compact('wallets', 'withdrawRequests'));
     }
+
+
     // Chi tiết ví + giao dịch
     public function show($id, Request $request)
     {
