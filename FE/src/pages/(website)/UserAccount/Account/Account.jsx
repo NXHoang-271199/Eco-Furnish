@@ -18,6 +18,7 @@ import {
   Eye,
   EyeOff,
   Wallet,
+  Landmark,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 
@@ -57,6 +58,8 @@ import { Switch } from "../../../../components/ui/switch";
 import OrderHistory from "../OrderHistory/OrderHistory";
 import axiosInstance from "../../../../utils/axiosConfig";
 import WalletPage from "../Wallet/WalletPage";
+import BankInfo from "../Bank/BankInfo";
+
 const Account = () => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
@@ -255,7 +258,7 @@ const Account = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid grid-cols-4 md:w-[500px] mb-8">
+            <TabsList className="grid grid-cols-5 md:w-[600px] mb-8">
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User size={16} />
                 <span className="hidden sm:inline">Hồ sơ</span>
@@ -271,6 +274,10 @@ const Account = () => {
               <TabsTrigger value="wallet" className="flex items-center gap-2">
                 <Wallet size={16} />
                 <span className="hidden sm:inline">Ví tiền</span>
+              </TabsTrigger>
+              <TabsTrigger value="landmark" className="flex items-center gap-2">
+                <Landmark size={16} />
+                <span className="hidden sm:inline">Ngân hàng</span>
               </TabsTrigger>
             </TabsList>
 
@@ -292,6 +299,10 @@ const Account = () => {
 
             <TabsContent value="wallet" className="space-y-6">
               <WalletSection />
+            </TabsContent>
+
+            <TabsContent value="landmark" className="space-y-6">
+              <BankSection />
             </TabsContent>
           </Tabs>
         </motion.div>
@@ -885,6 +896,18 @@ const WalletSection = () => {
       transition={{ duration: 0.4 }}
     >
       <WalletPage />
+    </motion.div>
+  );
+};
+
+const BankSection = () => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <BankInfo />
     </motion.div>
   );
 };

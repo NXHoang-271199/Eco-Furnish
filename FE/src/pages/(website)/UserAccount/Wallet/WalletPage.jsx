@@ -131,6 +131,11 @@ const WalletPage = () => {
     navigate("/account/wallet/deposit");
   };
 
+  //   // Xử lý click nút rút tiền
+  //   const handleWithdrawClick = () => {
+  //     navigate("/account/wallet/withdraw-requests");
+  //   };
+
   // Lấy icon phù hợp với loại giao dịch
   const getTransactionIcon = (type, amount) => {
     if (type === "nap_tien" || type === "hoan_tien") {
