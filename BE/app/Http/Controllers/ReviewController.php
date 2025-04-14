@@ -46,9 +46,9 @@ class ReviewController extends Controller
         return view('admins.reviews.product_reviews', compact('product', 'reviews'));
     }
 
-    public function show($id)
+    public function show(string $id)
     {
-        $review = Review::with(['user', 'product', 'order.orderItems.productVariant' => function ($query) {
+        $review = Review::with(['user', 'product', 'productVariant' => function ($query) {
             $query->withTrashed(); // Lấy cả product variant đã bị soft delete
         }])->findOrFail($id);
 
@@ -57,14 +57,12 @@ class ReviewController extends Controller
             $review->images = json_decode($review->images, true);
         }
 
-        // Tìm orderItem có cùng product_id với review
-        $matchingItem = $review->order?->orderItems
-            ->firstWhere('product_id', $review->product_id);
-
+        // Lấy thông tin variant_info từ productVariant đã được load ở trên
         $variantInfo = [];
 
-        if ($matchingItem && $matchingItem->productVariant && !empty($matchingItem->productVariant->variant_details)) {
-            foreach ($matchingItem->productVariant->variant_details as $detail) {
+        if ($review->productVariant && !empty($review->productVariant->variant_details)) {
+            foreach ($review->productVariant->variant_details as $detail) {
+                // Dùng định dạng "name: value"
                 $variantInfo[] = "{$detail['name']}: {$detail['value']}";
             }
         }
@@ -74,14 +72,28 @@ class ReviewController extends Controller
 
         return view('admins.reviews.show', compact('review'));
     }
-
-
-    public function toggleReviewVisibility($reviewId)
+    public function toggleReviewVisibility(Request $request, $reviewId)
     {
         $review = Review::findOrFail($reviewId);
-        $review->update(['is_hidden' => !$review->is_hidden]);
 
-        return back()->with('success', $review->is_hidden ? 'Đánh giá đã bị ẩn' : 'Đánh giá đã hiển thị lại');
+        if ($request->isMethod('post')) {
+            if (!$review->is_hidden && !$request->has('note')) {
+                return response()->json(['error' => 'Vui lòng nhập lý do ẩn đánh giá'], 422);
+            }
+
+            $review->is_hidden = !$review->is_hidden;
+            $review->note = $review->is_hidden ? $request->note : 'Đánh giá đã được hiển thị lại';
+            $review->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => $review->is_hidden ? 'Đánh giá đã bị ẩn' : 'Đánh giá đã hiển thị lại',
+                'is_hidden' => $review->is_hidden,
+                'note' => $review->note
+            ]);
+        }
+
+        return response()->json(['error' => 'Phương thức không được hỗ trợ'], 405);
     }
     public function userInfo(User $user)
     {

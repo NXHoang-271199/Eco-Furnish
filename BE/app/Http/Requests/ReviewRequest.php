@@ -23,7 +23,8 @@ class ReviewRequest extends FormRequest
     {
         return [
             'product_id' => 'required|exists:products,id',
-            'order_id' => 'nullable|exists:orders,id',
+            'product_variant_id' => 'nullable|exists:product_variants,id',
+            'order_id' => 'required|exists:orders,id',
             'rating' => 'required|integer|min:1|max:5',
             'review_text' => 'nullable|string|max:1000',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -32,6 +33,7 @@ class ReviewRequest extends FormRequest
     public function messages()
     {
         return [
+            'order_id.required' => 'Đơn hàng không thể để trống.',
             'product_id.required' => 'Sản phẩm không thể để trống.',
             'rating.required' => 'Đánh giá sao không thể để trống.',
             'rating.integer' => 'Đánh giá phải là một số nguyên.',
