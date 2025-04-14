@@ -70,6 +70,62 @@ class UserController extends Controller
 
         // Chỉ cho phép thay đổi trạng thái của client
         if ($user->role->slug === 'client') {
+            // Nếu đang cố gắng hủy kích hoạt tài khoản (chuyển từ active sang inactive)
+            if ($user->is_active) {
+                // Kiểm tra các đơn hàng đang trong quá trình xử lý
+                $hasActiveOrders = $user->orders()
+                    ->whereIn('order_status', [
+                        'Chưa Xác Nhận',
+                        'Đã Xác Nhận',
+                        'Đang Chuẩn Bị Hàng',
+                        'Đang Giao'
+                    ])
+                    ->exists();
+
+                if ($hasActiveOrders) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tài khoản có đơn hàng đang trong quá trình xử lý, không thể hủy kích hoạt!'
+                    ], 403);
+                }
+
+                // Kiểm tra các đơn hàng chờ thanh toán
+                $hasPendingPayments = $user->orders()
+                    ->where('payment_status', 2)
+                    ->exists();
+
+                if ($hasPendingPayments) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tài khoản có đơn hàng đang chờ thanh toán, không thể hủy kích hoạt!'
+                    ], 403);
+                }
+
+                // Kiểm tra số dư ví
+                $wallet = $user->wallet;
+                if ($wallet && $wallet->balance > 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tài khoản có số dư trong ví, không thể hủy kích hoạt! Vui lòng rút hết tiền trong ví trước khi hủy kích hoạt.'
+                    ], 403);
+                }
+
+                // Kiểm tra giao dịch ví đang chờ xử lý
+                $hasPendingTransactions = $wallet ? $wallet->transactions()
+                    ->where('status', 'cho_thanh_toan')
+                    ->exists() : false;
+
+                if ($hasPendingTransactions) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tài khoản có giao dịch ví đang chờ xử lý, không thể hủy kích hoạt!'
+                    ], 403);
+                }
+            } else {
+                // Nếu tài khoản đang bị vô hiệu hóa và cố gắng kích hoạt lại
+                // Không cần kiểm tra điều kiện gì, cho phép kích hoạt lại
+            }
+
             // Đảo ngược trạng thái
             $user->is_active = !$user->is_active;
             $user->save();
@@ -79,6 +135,8 @@ class UserController extends Controller
 
             if ($user->is_active) {
                 $message .= " Tài khoản đã được khôi phục.";
+            } else {
+                $message .= " Tài khoản sẽ bị xóa sau 30 ngày nếu không được kích hoạt lại.";
             }
 
             return response()->json([
@@ -184,6 +242,30 @@ class UserController extends Controller
     public function destroy(string $id, Request $request)
     {
         $user = User::findOrFail($id);
+
+        // Kiểm tra xem tài khoản có đang bị vô hiệu hóa không
+        if ($user->is_active) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Không thể xóa tài khoản đang hoạt động!'
+                ], 403);
+            }
+            return redirect()->route('users.index')->with('error', 'Không thể xóa tài khoản đang hoạt động!');
+        }
+
+        // Kiểm tra thời gian vô hiệu hóa (30 ngày)
+        $deactivatedDays = now()->diffInDays($user->updated_at);
+        if ($deactivatedDays < 30) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tài khoản chỉ có thể bị xóa sau 30 ngày kể từ ngày vô hiệu hóa. Còn ' . (30 - $deactivatedDays) . ' ngày nữa.'
+                ], 403);
+            }
+            return redirect()->route('users.index')->with('error', 'Tài khoản chỉ có thể bị xóa sau 30 ngày kể từ ngày vô hiệu hóa. Còn ' . (30 - $deactivatedDays) . ' ngày nữa.');
+        }
+
         $deleteUser = User::where('id', $id)->delete();
 
         if ($deleteUser) {
