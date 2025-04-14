@@ -22,6 +22,7 @@ class Order extends Model
         'total_price',
         'discount_amount',
         'updated_by',
+        'reason',
     ];
     public function user()
     {

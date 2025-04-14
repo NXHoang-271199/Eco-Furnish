@@ -640,7 +640,11 @@ class OrderController extends Controller
     public function requestRefund($orderId, Request $request)
     {
         $userId = Auth::id();
-
+        $request->validate([
+            'reason' => 'required',
+        ], [
+            'reason.required' => 'Vui lòng nhập lý do hoàn hàng',
+        ]);
         // Tìm đơn hàng của người dùng
         $order = Order::where('id', $orderId)
             ->where('user_id', $userId)
@@ -738,10 +742,19 @@ class OrderController extends Controller
     /**
      * 📌 7. Hủy đơn hàng
      */
-    public function cancelOrder($orderId)
+    public function cancelOrder(Request $request, $orderId)
     {
         DB::beginTransaction();
         try {
+            // Kiểm tra lý do hủy đơn
+            $validated = $request->validate([
+                'reason' => 'required', // Yêu cầu lý do hủy đơn
+            ], [
+                'reason.required' => 'Lý do hủy đơn là bắt buộc.'
+            ]);
+
+            $reason = $validated['reason'];
+
             $order = Order::with('orderItems')->find($orderId);
 
             if (!$order) {
@@ -765,6 +778,9 @@ class OrderController extends Controller
                 ], 400);
             }
 
+            // Lưu lý do hủy đơn vào trường reason
+            $order->update(['order_status' => 'Hủy Đơn', 'reason' => $reason]);
+
             // ✅ Hoàn lại số lượng sản phẩm
             foreach ($order->orderItems as $item) {
                 if ($item->product_variant_id) {
@@ -773,9 +789,6 @@ class OrderController extends Controller
                     Product::where('id', $item->product_id)->increment('quantity', $item->quantity);
                 }
             }
-
-            // ✅ Cập nhật trạng thái đơn hàng
-            $order->update(['order_status' => 'Hủy Đơn']);
 
             // ✅ Xoá lượt sử dụng voucher và hoàn lại lượt sử dụng
             if ($order->voucher_id) {
