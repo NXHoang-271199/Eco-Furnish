@@ -16,6 +16,7 @@ class BankAccount extends Model
         'account_holder_name',
         'bank_account_number',
         'is_default',
+        'acq_id',
     ];
     protected $casts = [
         'is_default' => 'boolean',
