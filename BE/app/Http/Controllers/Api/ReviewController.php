@@ -127,7 +127,7 @@ class ReviewController extends Controller
      */
     public function getProductReviews($productId)
     {
-        $reviews = Review::with(['user', 'productVariant' => fn($q) => $q->withTrashed()])
+        $reviews = Review::with(['user', 'productVariant'])
             ->where('product_id', $productId)
             ->where('is_hidden', false)
             ->orderBy('created_at', 'desc')
