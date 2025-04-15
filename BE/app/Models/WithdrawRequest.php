@@ -12,11 +12,15 @@ class WithdrawRequest extends Model
         'user_id',
         'wallet_transaction_id',
         'amount',
-        'bank_account_id',
         'status',
         'note',
         'updated_by',
-        'qr_code'
+        'qr_code',
+        'bank_name',
+        'bank_code',
+        'bank_account_number',
+        'account_holder_name',
+        'bank_logo_url',
     ];
     // Mối quan hệ: Mỗi yêu cầu rút tiền thuộc về một người dùng (User)
     public function user()
@@ -30,8 +34,7 @@ class WithdrawRequest extends Model
         return $this->belongsTo(WalletTransaction::class);
     }
     public function bankAccount()
-{
-    return $this->belongsTo(BankAccount::class);
-}
-
+    {
+        return $this->belongsTo(BankAccount::class);
+    }
 }
