@@ -46,7 +46,8 @@ const BankInfo = () => {
         setBankAccounts(accounts);
       } catch (err) {
         setError(
-          err.response?.data?.message || "Không thể lấy thông tin tài khoản ngân hàng"
+          err.response?.data?.message ||
+            "Không thể lấy thông tin tài khoản ngân hàng"
         );
         toast.error("Không thể lấy thông tin tài khoản ngân hàng");
       } finally {
@@ -138,7 +139,9 @@ const BankInfo = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setBankAccounts((prev) => prev.filter((account) => account.id !== accountId));
+      setBankAccounts((prev) =>
+        prev.filter((account) => account.id !== accountId)
+      );
       toast.success("Xóa tài khoản ngân hàng thành công!");
     } catch (err) {
       toast.error("Không thể xóa tài khoản ngân hàng");
@@ -150,13 +153,9 @@ const BankInfo = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("authToken");
-      const response = await axiosInstance.post(
-        "/bank-accounts",
-        formData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await axiosInstance.post("/bank-accounts", formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setBankAccounts((prev) => [...prev, response.data.data]);
       setFormData({
@@ -179,7 +178,9 @@ const BankInfo = () => {
       animate="visible"
     >
       <div className="bg-white shadow-lg rounded-lg p-6">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Tài khoản ngân hàng</h2>
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+          Tài khoản ngân hàng
+        </h2>
 
         {/* Loading spinner */}
         {loading && (
@@ -250,10 +251,12 @@ const BankInfo = () => {
                         )}
                       </p>
                       <p className="text-gray-600">
-                        <strong>Số tài khoản:</strong> {account.bank_account_number}
+                        <strong>Số tài khoản:</strong>{" "}
+                        {account.bank_account_number}
                       </p>
                       <p className="text-gray-600">
-                        <strong>Chủ tài khoản:</strong> {account.account_holder_name}
+                        <strong>Chủ tài khoản:</strong>{" "}
+                        {account.account_holder_name}
                       </p>
                     </div>
                     <div className="flex space-x-2">
@@ -288,12 +291,17 @@ const BankInfo = () => {
         {/* Form thêm/chỉnh sửa tài khoản ngân hàng */}
         <div className="bg-gray-100 p-6 rounded-lg">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">
-            {editingAccount ? "Chỉnh sửa tài khoản ngân hàng" : "Thêm tài khoản ngân hàng"}
+            {editingAccount
+              ? "Chỉnh sửa tài khoản ngân hàng"
+              : "Thêm tài khoản ngân hàng"}
           </h3>
           <form onSubmit={editingAccount ? handleSaveEdit : handleAddAccount}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor="bank_name" className="block text-gray-700 font-medium mb-2">
+                <label
+                  htmlFor="bank_name"
+                  className="block text-gray-700 font-medium mb-2"
+                >
                   Tên ngân hàng
                 </label>
                 <input
