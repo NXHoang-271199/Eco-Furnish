@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Wallet;
+use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
+use App\Models\WithdrawRequest;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -106,58 +108,86 @@ class WalletController extends Controller
             return response()->json(['message' => 'Không tìm thấy ví người dùng'], 404);
         }
 
-        $transactions = WalletTransaction::with(['paymentMethod', 'order', 'createdBy', 'updatedBy'])
+        $transactions = WalletTransaction::with([
+            'paymentMethod',
+            'order',
+            'createdBy',
+            'updatedBy',
+            'withdrawRequest'
+        ])
             ->where('wallet_id', $wallet->id)
             ->orderByDesc('created_at')
             ->get()
             ->map(function ($trx) {
                 $actor = $trx->createdBy ?? $trx->updatedBy;
-                return [
+
+                $data = [
                     'id' => $trx->id,
-                    'wallet_code' => $trx->wallet_code, // Mã GD
-                    'order_code' => optional($trx->order)->order_code, // Mã đơn hàng (nếu có)
-                    'type' => $trx->type,               // Loại GD
-                    'amount' => $trx->amount,           // Số tiền
+                    'wallet_code' => $trx->wallet_code,
+                    'order_code' => optional($trx->order)->order_code,
+                    'type' => $trx->type,
+                    'amount' => $trx->amount,
                     'balance_before' => $trx->balance_before,
                     'balance_after' => $trx->balance_after,
-                    'status' => $trx->status,           // Trạng thái
-                    'payment_method' => optional($trx->paymentMethod)->name, // Kênh
-                    'actor_name' => optional($actor)->name,      // Người thực hiện
-                    'description' => $trx->description,  // Mô tả
-                    'created_at' =>   $trx->created_at->format('d-m-Y H:i:s'), // Thời gian
+                    'status' => $trx->status,
+                    'payment_method' => optional($trx->paymentMethod)->name,
+                    'actor_name' => optional($actor)->name,
+                    'description' => $trx->description,
+                    'created_at' => $trx->created_at->format('d-m-Y H:i:s'),
                     'updated_at' => $trx->updated_at->format('d-m-Y H:i:s'),
                 ];
-            });
 
+                if ($trx->type === 'rut_tien' && $trx->withdrawRequest) {
+                    $data['withdraw_request'] = [
+                        'bank_name' => $trx->withdrawRequest->bank_name,
+                        'bank_account_number' => $trx->withdrawRequest->bank_account_number,
+                        'account_holder_name' => $trx->withdrawRequest->account_holder_name,
+                        'bank_logo_url' => $trx->withdrawRequest->bank_logo_url,
+                        'status' => $trx->withdrawRequest->status,
+                        'note' => $trx->withdrawRequest->note,
+                    ];
+                }
+
+                return $data;
+            });
 
         return response()->json([
             'transactions' => $transactions
         ]);
     }
 
-    // hủy giao dịch
+    // Hủy giao dịch
     public function cancelTransaction($id)
     {
         $userId = Auth::id();
 
-        $transaction = WalletTransaction::whereHas('wallet', function ($q) use ($userId) {
-            $q->where('user_id', $userId);
-        })
+        $transaction = WalletTransaction::with('withdrawRequest')
+            ->whereHas('wallet', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
             ->where('id', $id)
-            ->where('type', 'nap_tien') // Chỉ áp dụng với giao dịch nạp tiền
+            ->whereIn('type', ['nap_tien', 'rut_tien']) // Áp dụng cho cả nạp và rút
             ->where('status', 'cho_thanh_toan') // Chỉ khi đang chờ thanh toán
             ->first();
 
         if (!$transaction) {
             return response()->json([
-                'message' => 'Không tìm thấy giao dịch nạp tiền đang chờ hoặc bạn không có quyền hủy'
+                'message' => 'Không tìm thấy giao dịch phù hợp hoặc bạn không có quyền hủy'
             ], 404);
         }
 
         try {
+            // Cập nhật trạng thái giao dịch
             $transaction->status = 'da_huy';
             $transaction->description .= ' (Giao dịch đã bị hủy)';
             $transaction->save();
+
+            // Nếu là giao dịch rút tiền, cập nhật luôn yêu cầu rút
+            if ($transaction->type === 'rut_tien' && $transaction->withdrawRequest) {
+                $transaction->withdrawRequest->status = 'da_huy';
+                $transaction->withdrawRequest->note = 'Yêu cầu rút tiền đã bị hủy';
+                $transaction->withdrawRequest->save();
+            }
 
             return response()->json([
                 'message' => 'Hủy giao dịch thành công'
@@ -166,6 +196,125 @@ class WalletController extends Controller
             return response()->json([
                 'message' => 'Lỗi khi hủy giao dịch',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // render mã qr
+    public function generateQrPreview(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:100000|max:10000000',
+            'bank_account_id' => 'required|exists:bank_accounts,id',
+        ], [
+            'amount.min' => 'Số tiền rút tối thiểu là 100.000 VNĐ',
+            'amount.max' => 'Số tiền rút tối đa là 10.000.000 VNĐ',
+        ]);
+
+        $userId = Auth::id();
+        $bankAccount = BankAccount::find($request->bank_account_id);
+
+        try {
+            $qrCodePath = createVietQrCode($bankAccount, $request->amount, $userId);
+            return response()->json([
+                'qr_code' => $qrCodePath,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi tạo mã QR',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // yêu cầu rút tiền
+
+    public function storeWithdrawRequest(Request $request)
+    {
+        // Kiểm tra dữ liệu đầu vào
+        $request->validate([
+            'amount' => 'required|numeric|min:100000|max:10000000',
+            'bank_account_id' => 'required|exists:bank_accounts,id',
+            'qr_code' => 'nullable|string',
+        ], [
+            'amount.min' => 'Số tiền rút tối thiểu là 100.000 VNĐ',
+            'amount.max' => 'Số tiền rút tối đa là 10.000.000 VNĐ',
+        ]);
+
+        $userId = Auth::id();
+        $wallet = Wallet::where('user_id', $userId)->first();
+
+        if (!$wallet) {
+            return response()->json(['message' => 'Không tìm thấy ví người dùng'], 404);
+        }
+
+        // Kiểm tra số dư ví
+        if ($wallet->balance < $request->amount) {
+            return response()->json(['message' => 'Số dư ví không đủ để rút tiền'], 400);
+        }
+
+        // Kiểm tra số tiền đã rút trong ngày
+        $totalWithdrawToday = WithdrawRequest::where('user_id', $userId)
+            ->whereDate('created_at', today())
+            ->whereIn('status', ['da_duyet', 'dang_xu_ly'])
+            ->sum('amount');
+
+        if ($totalWithdrawToday + $request->amount > 50000000) {
+            return response()->json(['message' => 'Bạn không thể rút quá 50 triệu VNĐ trong ngày'], 400);
+        }
+
+        // Kiểm tra số lần rút tiền thành công trong ngày
+        $totalWithdrawCountToday = WithdrawRequest::where('user_id', $userId)
+            ->whereDate('created_at', today())
+            ->whereIn('status', ['da_duyet', 'dang_xu_ly'])
+            ->count();
+
+        if ($totalWithdrawCountToday >= 5) {
+            return response()->json(['message' => 'Bạn chỉ được rút tối đa 5 lần trong ngày'], 400);
+        }
+
+        // Tạo yêu cầu rút tiền
+        DB::beginTransaction();
+        try {
+            // Tạo bản ghi yêu cầu rút tiền và lưu mã QR
+            $withdrawRequest = WithdrawRequest::create([
+                'user_id' => $userId,
+                'amount' => $request->amount,
+                'bank_account_id' => $request->bank_account_id,
+                'status' => 'dang_xu_ly',
+                'qr_code' => $request->qr_code,
+            ]);
+
+            // Cập nhật số dư ví, tạm giữ số tiền rút
+            $wallet->balance -= $request->amount;
+            $wallet->save();
+
+            // Tạo giao dịch ví (tạm giữ số tiền)
+            $walletTransaction = WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'amount' => $request->amount,
+                'type' => 'rut_tien',
+                'status' => 'cho_thanh_toan',
+                'description' => 'Yêu cầu rút tiền',
+                'balance_before' => $wallet->balance + $request->amount,
+                'balance_after' => $wallet->balance,
+            ]);
+
+            // Cập nhật yêu cầu rút tiền với wallet_transaction_id
+            $withdrawRequest->wallet_transaction_id = $walletTransaction->id;
+            $withdrawRequest->save();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Yêu cầu rút tiền đã được tạo thành công',
+                'withdraw_request_id' => $withdrawRequest->id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Lỗi khi tạo yêu cầu rút tiền',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

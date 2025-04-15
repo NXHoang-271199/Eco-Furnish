@@ -86,8 +86,8 @@ Route::prefix('admin')->group(function () {
             Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
             Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
             Route::get('categories/{category}/data', [CategoryController::class, 'getCategoryData'])
-                 ->name('categories.data')
-                 ->middleware('permission:update-categories');
+                ->name('categories.data')
+                ->middleware('permission:update-categories');
             Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
             Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
         });
@@ -153,7 +153,6 @@ Route::prefix('admin')->group(function () {
                 Route::get('{id}/edit-connection', [PaymentMethodController::class, 'editConnection'])->name('edit_connection.form');
                 Route::post('{id}/update-connection', [PaymentMethodController::class, 'updateConnection'])->name('update_connection');
             });
-
         });
 
         // Orders Management
@@ -225,15 +224,14 @@ Route::prefix('admin')->group(function () {
     Route::post('/messages/send', [MessageController::class, 'send'])->name('messages.send');
     Route::post('/admin/messages/send', [MessageController::class, 'sendByAdmin'])->name('messages.send');
 
-    //Wallet Route
+    // Wallet Route
     Route::middleware(['permission:view-wallets'])->prefix('wallets')->name('wallets.')->group(function () {
         Route::get('transactions', [WalletController::class, 'allTransactions'])->name('transactions');
-
         Route::get('/', [WalletController::class, 'index'])->name('index');
         Route::get('{id}', [WalletController::class, 'show'])->name('show');
         Route::post('{id}/update-balance', [WalletController::class, 'updateBalance'])->name('update_balance');
-
+        Route::post('withdraws/approve/{id}', [WalletController::class, 'approveWithdraw'])->name('withdraws.approve');
+        Route::post('withdraws/reject/{id}', [WalletController::class, 'rejectWithdraw'])->name('withdraws.reject');
+        Route::get('withdraws/detail/{id}', [WalletController::class, 'getWithdrawDetail'])->name('withdraws.detail');
     });
-
-
 });

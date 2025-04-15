@@ -9,15 +9,12 @@ class CategorySeeder extends Seeder
 {
     public function run()
     {
-        // Xóa dữ liệu cũ trước khi seed để đảm bảo ID đúng thứ tự
-        Category::truncate();
-        
         $categories = [
             ['name' => 'Bàn'],
             ['name' => 'Ghế'],
-            ['name' => 'Sofa'],
-            ['name' => 'Giường'],
             ['name' => 'Tủ'],
+            ['name' => 'Giường'],
+            ['name' => 'Kệ sách'],
             ['name' => 'Đèn trang trí'],
             ['name' => 'Gương'],
             ['name' => 'Thảm'],
@@ -27,4 +24,4 @@ class CategorySeeder extends Seeder
             Category::create($category);
         }
     }
-}
+} 

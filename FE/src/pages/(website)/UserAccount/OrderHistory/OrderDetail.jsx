@@ -222,6 +222,11 @@ const ReviewModal = memo(({
       formData.append("order_id", orderId);
       formData.append("rating", rating);
       formData.append("review_text", reviewText);
+      
+      // Thêm product_variant_id nếu có biến thể
+      if (productVariant && productVariant.id) {
+        formData.append("product_variant_id", productVariant.id);
+      }
 
       // Thêm các ảnh vào form data nếu có
       if (reviewImages.length > 0) {
@@ -232,7 +237,6 @@ const ReviewModal = memo(({
 
       const response = await axiosInstance.post("/reviews", formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
@@ -433,9 +437,8 @@ const ReviewsList = ({ orderId }) => {
         // Sử dụng axiosInstance thay vì axios để có sẵn xử lý token
         const response = await axiosInstance.get(`/orders/${orderId}/reviews`);
 
-        // Kiểm tra cả status và success cho tính tương thích
-        if (response.data.status === 'success' || response.data.success) {
-          setReviews(response.data.data || []);
+        if (response.data.status === "success") {
+          setReviews(response.data.data);
         } else {
           console.error("API trả về lỗi:", response.data);
           toast.error(response.data.message || "Không thể tải đánh giá");
@@ -726,9 +729,18 @@ const OrderDetail = () => {
                         </div>
                       </div>
                       <div className="ml-3 flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          Xác nhận thành công!
-                        </p>
+                        <div className="flex justify-between items-start">
+                          <p className="text-sm font-medium text-gray-900">
+                            Xác nhận thành công!
+                          </p>
+                          <button
+                            onClick={() => toast.dismiss(t.id)}
+                            className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+                          >
+                            <span className="sr-only">Đóng</span>
+                            <FiX className="h-5 w-5" />
+                          </button>
+                        </div>
                         <p className="mt-1 text-sm text-gray-500">
                           Đơn hàng #{order.order_code} đã được xác nhận đã nhận hàng.
                         </p>
@@ -833,7 +845,7 @@ const OrderDetail = () => {
 
     if (order && order.order_status === "Đã Giao" && !autoConfirmTimerSet) {
       // console.log("Order is 'Đã Giao'. Checking for auto-confirmation.");
-      // Giả định updated_at là thời điểm chuyển sang "Đã Giao"
+      // Giả định updated_at là thởi điểm chuyển sang "Đã Giao"
       const deliveredTime = new Date(order.updated_at).getTime();
       const currentTime = new Date().getTime();
       const timeSinceDelivered = currentTime - deliveredTime;
@@ -1275,21 +1287,21 @@ const OrderDetail = () => {
                     </div>
                   </div>
                   <div className="ml-3 flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      Thành công!
-                    </p>
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm font-medium text-gray-900">
+                        Thành công!
+                      </p>
+                      <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+                      >
+                        <span className="sr-only">Đóng</span>
+                        <FiX className="h-5 w-5" />
+                      </button>
+                    </div>
                     <p className="mt-1 text-sm text-gray-500">
                       Yêu cầu hoàn hàng của bạn đã được gửi. Vui lòng chờ xét duyệt.
                     </p>
-                  </div>
-                  <div className="ml-4 flex-shrink-0 flex">
-                    <button
-                      onClick={() => toast.dismiss(t.id)}
-                      className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
-                    >
-                      <span className="sr-only">Đóng</span>
-                      <FiX className="h-5 w-5" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -1400,7 +1412,8 @@ const OrderDetail = () => {
         currentStep = 1;
         break;
       case "đã duyệt":
-        currentStep = 2;
+        // Nếu đã duyệt và đã hoàn tiền (payment_status = 1), chuyển bước cuối
+        currentStep = (order.payment_status === 1) ? 3 : 2;
         break;
       case "completed":
       case "refunded":
@@ -1445,9 +1458,7 @@ const OrderDetail = () => {
                 >
                   {step.icon}
                 </div>
-                <span className="text-xs font-medium text-center">
-                  {step.name}
-                </span>
+                <span className="text-xs font-medium">{step.name}</span>
               </div>
             ))}
           </div>
@@ -1587,38 +1598,45 @@ const OrderDetail = () => {
       const token = localStorage.getItem("authToken");
       if (!token) return;
 
-      // Giả sử có endpoint để kiểm tra sản phẩm đã đánh giá
-      // Nếu không có, chúng ta có thể xây dựng danh sách từ các API khác
-      const promises = order.order_items.map(item =>
-        axiosInstance.get(`/products/${item.product_id}/can-review`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(error => {
-          // Nếu API trả về lỗi 'đã đánh giá rồi', thêm vào danh sách đã đánh giá
-          if (error.response?.data?.message === 'Bạn đã đánh giá sản phẩm này rồi.') {
-            return { data: { alreadyReviewed: true, productId: item.product_id } };
-          }
-          return { data: { success: true } }; // Default is can review
-        })
-      );
+      // Lấy danh sách đánh giá của đơn hàng này
+      const reviewsResponse = await axiosInstance.get(`/orders/${id}/reviews`);
+      
+      if (reviewsResponse.data.status === 'success' && reviewsResponse.data.data) {
+        // Tạo danh sách sản phẩm đã đánh giá từ response
+        const reviewedIds = reviewsResponse.data.data.map(review => review.product_id);
+        setReviewedProducts(reviewedIds);
+      } else {
+        // Phương pháp dự phòng: kiểm tra từng sản phẩm
+        const promises = order.order_items.map(item =>
+          axiosInstance.get(`/products/${item.product_id}/can-review`).catch(error => {
+            // Nếu API trả về lỗi 'đã đánh giá rồi', thêm vào danh sách đã đánh giá
+            if (error.response?.data?.message === 'Bạn đã đánh giá sản phẩm này rồi.') {
+              return { data: { alreadyReviewed: true, productId: item.product_id } };
+            }
+            return { data: { success: true } }; // Default is can review
+          })
+        );
 
-      const results = await Promise.all(promises);
-      const reviewed = results
-        .filter(response => response.data?.alreadyReviewed)
-        .map(response => response.data.productId);
+        const results = await Promise.all(promises);
+        const reviewed = results
+          .filter(response => response.data?.alreadyReviewed)
+          .map(response => response.data.productId);
 
-      setReviewedProducts(reviewed);
+        setReviewedProducts(reviewed);
+      }
     } catch (error) {
       console.error("Lỗi khi lấy thông tin đánh giá:", error);
     }
   };
 
   // Hàm xử lý hiển thị modal đánh giá
-  const handleOpenReviewModal = (product) => {
+  const handleOpenReviewModal = (item) => {
     setSelectedProduct({
-      ...product,
+      ...item,
       // Thêm thông tin biến thể nếu có
-      product_variant: product.product_variant ? {
-        variant_details: product.product_variant.variant_details || []
+      product_variant: item.product_variant_id ? {
+        id: item.product_variant_id, // Lấy id từ product_variant_id
+        variant_details: item.product_variant?.variant_details || []
       } : null
     });
     setShowReviewModal(true);

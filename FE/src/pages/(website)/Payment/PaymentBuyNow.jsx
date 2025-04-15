@@ -264,11 +264,13 @@ const PaymentBuyNow = () => {
   // Hàm mở modal thêm địa chỉ
   const openAddAddressModal = () => {
     setEditingAddressId(null);
+    // Lấy email mặc định từ localStorage
+    const userData = JSON.parse(localStorage.getItem("userData")) || {};
     setAddressFormData({
       first_name: "",
       last_name: "",
       phone: "",
-      email: "",
+      email: userData.email || "",
       address_name: "",
       country: "Việt Nam",
       province: "",
@@ -1087,7 +1089,7 @@ const PaymentBuyNow = () => {
                       <input type="tel" name="phone" value={addressFormData.phone} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Email (Tùy chọn)</label>
+                      <label className="block text-sm font-medium mb-1">Email *</label>
                       <input type="email" name="email" value={addressFormData.email} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
                     </div>
                     {/* Nút đặt làm mặc định */}

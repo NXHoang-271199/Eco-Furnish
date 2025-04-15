@@ -17,10 +17,11 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\VoucherApiController;
+use App\Http\Controllers\Api\BankAccountController;
 use App\Http\Controllers\Api\CategoryApiController;
+use App\Http\Controllers\Api\UserAddressController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
-use App\Http\Controllers\Api\UserAddressController;
 use App\Http\Controllers\Api\UserNotificationController;
 
 /*
@@ -274,9 +275,20 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::get('products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
 
+//wallet
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('wallet/balance', [WalletController::class, 'getBalance']); // số dư ví
     Route::post('wallet/deposit', [WalletController::class, 'deposit']); // nạp tiền
     Route::get('wallet/transactions', [WalletController::class, 'transactions']); // lịch sử giao dịch
-    Route::delete('/wallet/transactions/{id}/cancel', [WalletController::class, 'cancelTransaction']); // hủy giao dịch
+    Route::delete('wallet/transactions/{id}/cancel', [WalletController::class, 'cancelTransaction']); // hủy giao dịch
+    Route::post('wallet/withdraw-requests', [WalletController::class, 'storeWithdrawRequest']); // tạo yêu cầu rút tiền
+    Route::post('wallet/generate-qr-preview', [WalletController::class, 'generateQrPreview']); // api tạo mã qr cho FE
+});
+
+// bank account
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('bank-accounts', [BankAccountController::class, 'getUserBankAccounts']); // Lấy danh sách tài khoản ngân hàng của người dùng hiện tại
+    Route::post('bank-accounts', [BankAccountController::class, 'storeUserBankAccount']); // Tạo mới tài khoản ngân hàng cho người dùng hiện tại
+    Route::put('bank-accounts/{accountId}', [BankAccountController::class, 'updateUserBankAccount']); // Cập nhật tài khoản ngân hàng của người dùng hiện tại
+    Route::delete('bank-accounts/{accountId}', [BankAccountController::class, 'deleteUserBankAccount']); // Xóa tài khoản ngân hàng của người dùng hiện tại
 });
