@@ -26,6 +26,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'age',
         'email',
         'password',
+        'level2_password',
+        'has_level2_password',
         'address',
         'phone',
         'role_id',
@@ -100,6 +102,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $hidden = [
         'password',
+        'level2_password',
         'access_token',
         'refresh_token'
     ];
@@ -112,6 +115,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'level2_password' => 'hashed',
+        'has_level2_password' => 'boolean',
         'is_active' => 'boolean'
     ];
 
