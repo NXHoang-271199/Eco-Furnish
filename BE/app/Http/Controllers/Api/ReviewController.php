@@ -261,36 +261,47 @@ class ReviewController extends Controller
             ->get()
             ->map(function ($review) {
                 $review->images = json_decode($review->images, true); // Giải mã JSON
-                
+
                 // Lấy thông tin về orderItem để lấy tên sản phẩm và thông tin biến thể
-                $orderItem = \App\Models\OrderItem::where('order_id', $review->order_id)
-                    ->where('product_id', $review->product_id)
-                    ->first();
-                
+                $orderItemQuery = \App\Models\OrderItem::where('order_id', $review->order_id)
+                    ->where('product_id', $review->product_id);
+
+                if ($review->product_variant_id) {
+                    $orderItemQuery->where('product_variant_id', $review->product_variant_id);
+                } else {
+                    $orderItemQuery->whereNull('product_variant_id');
+                }
+
+                $orderItem = $orderItemQuery->first();
+
                 if ($orderItem) {
                     $review->product_name = $orderItem->product_name;
                     $review->product_image = $orderItem->image_url;
-                    
+
                     // Thêm thông tin biến thể nếu có
                     if ($orderItem->product_variant_id) {
                         $review->has_variant = true;
-                        
-                        // Lấy thông tin biến thể
+                        $review->product_variant_id = $orderItem->product_variant_id; // Đảm bảo gán lại ID biến thể từ OrderItem chính xác
+
+                        // Lấy thông tin biến thể dựa trên ID biến thể từ OrderItem đã lọc đúng
                         $productVariant = \App\Models\ProductVariant::withTrashed()
-                            ->where('id', $orderItem->product_variant_id)
-                            ->first();
-                            
+                            ->find($orderItem->product_variant_id); // Sử dụng find cho khóa chính
+
                         if ($productVariant && !empty($productVariant->variant_details)) {
                             $review->variant_details = $productVariant->variant_details;
+                        } else {
+                            $review->variant_details = null; // Set null nếu không tìm thấy biến thể hoặc không có chi tiết
                         }
                     } else {
                         $review->has_variant = false;
+                        $review->variant_details = null;
                     }
                 } else {
-                    // Fallback nếu không tìm thấy orderItem
+                    // Fallback nếu không tìm thấy orderItem (ít xảy ra nhưng nên có)
                     $review->product_name = $review->product ? $review->product->name : 'Sản phẩm không xác định';
-                    $review->product_image = $review->product ? $review->product->image_thumnail : null;
+                    $review->product_image = $review->product ? $review->product->image_thumbnail : null;
                     $review->has_variant = false;
+                    $review->variant_details = null;
                 }
                 
                 // Loại bỏ các dữ liệu lớn không cần thiết

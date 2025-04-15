@@ -222,7 +222,7 @@ const ReviewModal = memo(({
       formData.append("order_id", orderId);
       formData.append("rating", rating);
       formData.append("review_text", reviewText);
-      
+
       // Thêm product_variant_id nếu có biến thể
       if (productVariant && productVariant.id) {
         formData.append("product_variant_id", productVariant.id);
@@ -250,7 +250,7 @@ const ReviewModal = memo(({
 
         // Gọi callback để cập nhật UI sau khi đánh giá thành công
         if (onReviewSubmitSuccess) {
-          onReviewSubmitSuccess(productId);
+          onReviewSubmitSuccess(productId, productVariant ? productVariant.id : null);
         }
       }
     } catch (error) {
@@ -545,7 +545,12 @@ const ReviewsList = ({ orderId }) => {
         const response = await axiosInstance.get(`/orders/${orderId}/reviews`);
 
         if (response.data.status === "success") {
-          setReviews(response.data.data);
+          // Đảm bảo mỗi đánh giá có ID duy nhất
+          const uniqueReviews = response.data.data.map(review => ({
+            ...review,
+            uniqueKey: `${review.id}-${review.product_id}-${review.product_variant_id || 'no-variant'}-${new Date(review.created_at).getTime()}`
+          }));
+          setReviews(uniqueReviews);
         } else {
           console.error("API trả về lỗi:", response.data);
           toast.error(response.data.message || "Không thể tải đánh giá");
@@ -569,6 +574,9 @@ const ReviewsList = ({ orderId }) => {
   // Hàm hiển thị thông tin biến thể
   const renderVariantDetails = (variantDetails) => {
     if (!variantDetails || Object.keys(variantDetails).length === 0) return null;
+
+    // Kiểm tra nếu không phải array hoặc object, trả về null
+    if (!Array.isArray(variantDetails) && typeof variantDetails !== 'object') return null;
 
     // Xử lý trường hợp variant_details là mảng object
     if (Array.isArray(variantDetails)) {
@@ -597,6 +605,18 @@ const ReviewsList = ({ orderId }) => {
     );
   };
 
+  // Format thời gian hiển thị
+  const formatReviewTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   if (loading) {
     return <div className="text-center py-4">Đang tải đánh giá...</div>;
   }
@@ -610,7 +630,7 @@ const ReviewsList = ({ orderId }) => {
       <h3 className="text-lg font-semibold mb-4">Đánh giá của bạn</h3>
       <div className="space-y-4">
         {reviews.map((review) => (
-          <div key={review.id} className="border rounded-lg p-4 bg-white shadow-sm">
+          <div key={review.uniqueKey || review.id} className="border rounded-lg p-4 bg-white shadow-sm">
             <div className="flex items-start">
               {review.product_image && (
                 <img
@@ -624,7 +644,20 @@ const ReviewsList = ({ orderId }) => {
               )}
               <div className="flex-1">
                 <h4 className="font-medium">{review.product_name}</h4>
-                {review.has_variant && renderVariantDetails(review.variant_details)}
+                {/* Hiển thị biến thể với định dạng rõ ràng hơn */}
+                {review.has_variant && review.variant_details && (
+                  <div className="bg-gray-50 px-2 py-1 rounded-md text-sm my-1 inline-block border border-gray-200">
+                    {Array.isArray(review.variant_details) ?
+                      review.variant_details.map((detail, idx) => (
+                        <span key={idx} className="text-gray-700">
+                          {detail.name || detail.attribute_name}: <strong>{detail.value || detail.attribute_value}</strong>
+                          {idx < review.variant_details.length - 1 ? ', ' : ''}
+                        </span>
+                      )) :
+                      renderVariantDetails(review.variant_details)
+                    }
+                  </div>
+                )}
                 <div className="flex items-center mt-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span key={star}>
@@ -652,8 +685,9 @@ const ReviewsList = ({ orderId }) => {
                     ))}
                   </div>
                 )}
-                <div className="text-sm text-gray-500 mt-2">
-                  {new Date(review.created_at).toLocaleDateString('vi-VN')}
+                <div className="text-sm text-gray-500 mt-2 flex items-center">
+                  <FiCalendar className="mr-1" />
+                  {formatReviewTime(review.created_at)}
                 </div>
               </div>
             </div>
@@ -1262,7 +1296,7 @@ const OrderDetail = () => {
   // Xử lý chọn lý do hủy đơn hàng
   const handleCancelReasonSelect = (reason) => {
     setSelectedCancelReason(reason);
-    
+
     // Hiển thị ô input nếu chọn "Khác"
     if (reason === "Khác") {
       setShowCancelCustomInput(true);
@@ -1293,16 +1327,16 @@ const OrderDetail = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
-      
+
       // Xác định lý do gửi lên server
-      const reasonToSubmit = selectedCancelReason === "Khác" 
-        ? cancelCustomReason 
+      const reasonToSubmit = selectedCancelReason === "Khác"
+        ? cancelCustomReason
         : selectedCancelReason;
-      
+
       // Tạo FormData để gửi dữ liệu
       const formData = new FormData();
-      formData.append('reason', reasonToSubmit); 
-      
+      formData.append('reason', reasonToSubmit);
+
       const response = await axiosInstance.post(
         `/orders/${id}/cancel`,
         formData,
@@ -1317,7 +1351,7 @@ const OrderDetail = () => {
       if (response.data.status === "success") {
         // Đóng modal
         setShowCancelModal(false);
-        
+
         // Thay thế alert bằng toast.custom
         toast.custom(
           (t) => (
@@ -1746,18 +1780,27 @@ const OrderDetail = () => {
 
       // Lấy danh sách đánh giá của đơn hàng này
       const reviewsResponse = await axiosInstance.get(`/orders/${id}/reviews`);
-      
+
       if (reviewsResponse.data.status === 'success' && reviewsResponse.data.data) {
-        // Tạo danh sách sản phẩm đã đánh giá từ response
-        const reviewedIds = reviewsResponse.data.data.map(review => review.product_id);
-        setReviewedProducts(reviewedIds);
+        // Tạo danh sách sản phẩm đã đánh giá từ response, lưu thêm cả variant_id nếu có
+        const reviewedProductsData = reviewsResponse.data.data.map(review => ({
+          product_id: review.product_id,
+          variant_id: review.product_variant_id || null
+        }));
+        setReviewedProducts(reviewedProductsData);
       } else {
         // Phương pháp dự phòng: kiểm tra từng sản phẩm
         const promises = order.order_items.map(item =>
           axiosInstance.get(`/products/${item.product_id}/can-review`).catch(error => {
             // Nếu API trả về lỗi 'đã đánh giá rồi', thêm vào danh sách đã đánh giá
             if (error.response?.data?.message === 'Bạn đã đánh giá sản phẩm này rồi.') {
-              return { data: { alreadyReviewed: true, productId: item.product_id } };
+              return {
+                data: {
+                  alreadyReviewed: true,
+                  productId: item.product_id,
+                  variantId: item.product_variant_id || null
+                }
+              };
             }
             return { data: { success: true } }; // Default is can review
           })
@@ -1766,7 +1809,10 @@ const OrderDetail = () => {
         const results = await Promise.all(promises);
         const reviewed = results
           .filter(response => response.data?.alreadyReviewed)
-          .map(response => response.data.productId);
+          .map(response => ({
+            product_id: response.data.productId,
+            variant_id: response.data.variantId
+          }));
 
         setReviewedProducts(reviewed);
       }
@@ -1789,8 +1835,8 @@ const OrderDetail = () => {
   };
 
   // Hàm xử lý sau khi đánh giá thành công
-  const handleReviewSuccess = (productId) => {
-    setReviewedProducts(prev => [...prev, productId]);
+  const handleReviewSuccess = (productId, variantId = null) => {
+    setReviewedProducts(prev => [...prev, { product_id: productId, variant_id: variantId }]);
   };
 
   if (loading) {
@@ -2092,7 +2138,11 @@ const OrderDetail = () => {
                       {/* Thêm phần đánh giá sản phẩm */}
                       {order.order_status === "Đã Nhận" && (
                         <div className="mt-3">
-                          {reviewedProducts.includes(item.product_id) ? (
+                          {reviewedProducts.some(p =>
+                            p.product_id === item.product_id &&
+                            (p.variant_id === item.product_variant_id ||
+                              (p.variant_id === null && item.product_variant_id === null))
+                          ) ? (
                             <div className="text-green-600 text-sm flex items-center">
                               <FiCheckCircle className="mr-1" />
                               Đã đánh giá
