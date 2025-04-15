@@ -281,6 +281,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('wallet/transactions', [WalletController::class, 'transactions']); // lịch sử giao dịch
     Route::delete('wallet/transactions/{id}/cancel', [WalletController::class, 'cancelTransaction']); // hủy giao dịch
     Route::post('wallet/withdraw-requests', [WalletController::class, 'storeWithdrawRequest']); // tạo yêu cầu rút tiền
+    Route::post('wallet/generate-qr-preview', [WalletController::class, 'generateQrPreview']); // api tạo mã qr cho FE
 });
 
 // bank account
@@ -289,4 +290,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('bank-accounts', [BankAccountController::class, 'storeUserBankAccount']); // Tạo mới tài khoản ngân hàng cho người dùng hiện tại
     Route::put('bank-accounts/{accountId}', [BankAccountController::class, 'updateUserBankAccount']); // Cập nhật tài khoản ngân hàng của người dùng hiện tại
     Route::delete('bank-accounts/{accountId}', [BankAccountController::class, 'deleteUserBankAccount']); // Xóa tài khoản ngân hàng của người dùng hiện tại
+    Route::get('banks', [BankAccountController::class, 'getBanks']); // Lấy danh sách ngân hàng
+    Route::post('bank-accounts/lookup', [BankAccountController::class, 'lookupBankAccount']); // Tra cứu tên tài khoản
 });

@@ -200,6 +200,33 @@ class WalletController extends Controller
         }
     }
 
+    // render mã qr
+    public function generateQrPreview(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:100000|max:10000000',
+            'bank_account_id' => 'required|exists:bank_accounts,id',
+        ], [
+            'amount.min' => 'Số tiền rút tối thiểu là 100.000 VNĐ',
+            'amount.max' => 'Số tiền rút tối đa là 10.000.000 VNĐ',
+        ]);
+
+        $userId = Auth::id();
+        $bankAccount = BankAccount::find($request->bank_account_id);
+
+        try {
+            $qrCodePath = createVietQrCode($bankAccount, $request->amount, $userId);
+            return response()->json([
+                'qr_code' => $qrCodePath,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Lỗi khi tạo mã QR',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // yêu cầu rút tiền
 
     public function storeWithdrawRequest(Request $request)
@@ -246,27 +273,26 @@ class WalletController extends Controller
             return response()->json(['message' => 'Bạn chỉ được rút tối đa 5 lần trong ngày'], 400);
         }
 
-        // Lấy thông tin tài khoản ngân hàng
         $bankAccount = BankAccount::find($request->bank_account_id);
 
-        // Tạo mã QR cho yêu cầu rút tiền
-        try {
-            $qrCodePath = createVietQrCode($bankAccount, $request->amount, $userId);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Lỗi khi tạo mã QR từ API VietQR', 'error' => $e->getMessage()], 500);
+        if (!$bankAccount) {
+            return response()->json(['message' => 'Không tìm thấy tài khoản ngân hàng'], 404);
         }
-
 
         // Tạo yêu cầu rút tiền
         DB::beginTransaction();
         try {
-            // Tạo bản ghi yêu cầu rút tiền và lưu mã QR
+            // Tạo yêu cầu rút tiền với thông tin ngân hàng snapshot
             $withdrawRequest = WithdrawRequest::create([
                 'user_id' => $userId,
                 'amount' => $request->amount,
-                'bank_account_id' => $request->bank_account_id,
-                'status' => 'dang_xu_ly', // Ban đầu là 'đang xử lý'
-                'qr_code' => $qrCodePath, // Lưu mã QR vào cơ sở dữ liệu
+                'status' => 'dang_xu_ly',
+                'qr_code' => $request->qr_code,
+                'bank_name' => $bankAccount->bank_name,
+                'bank_code' => $bankAccount->bank_code,
+                'bank_account_number' => $bankAccount->bank_account_number,
+                'account_holder_name' => $bankAccount->account_holder_name,
+                'bank_logo_url' => $bankAccount->bank_logo_url,
             ]);
 
             // Cập nhật số dư ví, tạm giữ số tiền rút
@@ -293,7 +319,6 @@ class WalletController extends Controller
             return response()->json([
                 'message' => 'Yêu cầu rút tiền đã được tạo thành công',
                 'withdraw_request_id' => $withdrawRequest->id,
-                'qr_code' => $qrCodePath, // Trả về mã QR đã tạo
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

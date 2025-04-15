@@ -9,31 +9,31 @@
         <div class="card-body p-3">
             <div class="row g-3">
                 <div class="col-12 text-center">
-                    <img src="{{ $withdraw->bankAccount->bank_logo_url }}" alt="Bank Logo" class="img-fluid rounded"
+                    <img src="{{ $withdraw->bank_logo_url }}" alt="Bank Logo" class="img-fluid rounded"
                         style="max-width: 100px;">
                 </div>
                 <div class="col-12">
                     <div class="d-flex justify-content-between border-bottom pb-2">
                         <strong>Tên ngân hàng:</strong>
-                        <span>{{ $withdraw->bankAccount->bank_name }}</span>
+                        <span>{{ $withdraw->bank_name }}</span>
                     </div>
                 </div>
                 <div class="col-12">
                     <div class="d-flex justify-content-between border-bottom pb-2">
                         <strong>Mã ngân hàng:</strong>
-                        <span>{{ $withdraw->bankAccount->bank_code }}</span>
+                        <span>{{ $withdraw->bank_code }}</span>
                     </div>
                 </div>
                 <div class="col-12">
                     <div class="d-flex justify-content-between border-bottom pb-2">
                         <strong>Số tài khoản:</strong>
-                        <span>{{ $withdraw->bankAccount->bank_account_number }}</span>
+                        <span>{{ $withdraw->bank_account_number }}</span>
                     </div>
                 </div>
                 <div class="col-12">
                     <div class="d-flex justify-content-between border-bottom pb-2">
                         <strong>Tên tài khoản:</strong>
-                        <span>{{ $withdraw->bankAccount->account_holder_name }}</span>
+                        <span>{{ $withdraw->account_holder_name }}</span>
                     </div>
                 </div>
                 <div class="col-12">
