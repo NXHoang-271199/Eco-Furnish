@@ -428,29 +428,38 @@ const ProductDetail = () => {
     setSelectedVariantId(variantId);
     const selectedVariant = product.variants.find((v) => v.id === variantId);
 
-    if (selectedVariant) {
-      // Cập nhật selectedVariantAttributes dựa trên variant đã chọn
-      if (selectedVariant.variant_details) {
-        if (Array.isArray(selectedVariant.variant_details)) {
-          // Nếu variant_details là mảng các đối tượng {name, value}
-          const attributes = {};
-          selectedVariant.variant_details.forEach((attr) => {
-            if (attr && attr.name && attr.value) {
-              attributes[attr.name] = attr.value;
-            }
-          });
-          setSelectedVariantAttributes(attributes);
-        } else if (typeof selectedVariant.variant_details === 'object') {
-          // Nếu variant_details là đối tượng {key: value}
-          setSelectedVariantAttributes(selectedVariant.variant_details);
+    if (selectedVariant && selectedVariant.variant_details) {
+      const attributes = {};
+      selectedVariant.variant_details.forEach((attr) => {
+        if (attr && attr.name && attr.value) {
+          attributes[attr.name] = attr.value;
         }
-      } else {
-        setSelectedVariantAttributes({});
-      }
+      });
+      setSelectedVariantAttributes(attributes);
     }
 
     // Reset số lượng
     setQuantity(1);
+  };
+
+  // Hàm xử lý khi chọn thuộc tính biến thể (color, size, ...)
+  const handleVariantAttributeChange = (variantName, value) => {
+    // Cập nhật thuộc tính đã chọn
+    const newAttributes = { ...selectedVariantAttributes, [variantName]: value };
+    setSelectedVariantAttributes(newAttributes);
+
+    // Tìm biến thể phù hợp với tất cả thuộc tính đã chọn
+    if (product && product.variants && Array.isArray(product.variants)) {
+      const matchingVariant = product.variants.find((variant) => {
+        if (!variant.variant_details || !Array.isArray(variant.variant_details)) return false;
+        return variant.variant_details.every((detail) => {
+          return newAttributes[detail.name] === detail.value;
+        });
+      });
+      if (matchingVariant) {
+        setSelectedVariantId(matchingVariant.id);
+      }
+    }
   };
 
   const getCurrentPrice = () => {
@@ -835,83 +844,46 @@ const ProductDetail = () => {
     }
 
     try {
-      console.log("Rendering variants for product:", product);
+      // Lấy danh sách unique các giá trị biến thể
+      const uniqueVariantDetails = product.variants.reduce((acc, variant) => {
+        if (variant.variant_details && Array.isArray(variant.variant_details)) {
+          variant.variant_details.forEach((detail, index) => {
+            if (!acc[index]) acc[index] = { name: detail.name, values: new Set() };
+            if (detail && detail.value) {
+              acc[index].values.add(detail.value);
+            }
+          });
+        }
+        return acc;
+      }, []);
 
       return (
         <div className="space-y-4">
-          <h3 className="font-medium text-gray-800">Chọn phiên bản</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {product.variants.map((variant) => {
-              // Tạo chuỗi hiển thị cho biến thể
-              let variantLabel = formatVariantDetails(variant.variant_details);
-              const isSelected = selectedVariantId === variant.id;
-              const isOutOfStock = variant.quantity <= 0;
-              // const hasDiscount = variant.discount_price && variant.discount_price < variant.price;
-
-              return (
-                <button
-                  key={variant.id}
-                  onClick={() => handleVariantChange(variant.id)}
-                  disabled={isOutOfStock}
-                  className={`
-                    relative flex flex-col h-full p-4 rounded-lg text-left transition-all 
-                    ${isSelected
-                      ? "border-2 border-amber-500 bg-amber-50/50 shadow-md"
-                      : "border border-gray-200 hover:border-amber-300 hover:shadow-sm"} 
-                    ${isOutOfStock
-                      ? "opacity-60 cursor-not-allowed bg-gray-100"
-                      : "cursor-pointer"
-                    }
-                  `}
-                >
-                  {/* Biến thể đang được chọn */}
-                  {isSelected && (
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center shadow-md">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
-
-                  {/* Label biến thể */}
-                  <div className="flex-1">
-                    <div className="font-medium mb-1 text-gray-800">{variantLabel}</div>
-
-                    {/* Giá */}
-                    {/* <div className="flex items-baseline mt-1">
-                      <span className={`font-semibold ${hasDiscount ? 'text-red-600' : 'text-amber-600'}`}>
-                        {formatPrice(variant.discount_price || variant.price)}
-                      </span>
-
-                      {hasDiscount && (
-                        <span className="ml-2 text-xs text-gray-400 line-through">
-                          {formatPrice(variant.price)}
-                        </span>
-                      )}
-                    </div> */}
-                  </div>
-
-                  {/* Badge trạng thái tồn kho */}
-                  <div className={`
-                    mt-2 px-2 py-1 text-xs font-medium rounded-full w-fit ml-auto 
-                    ${isOutOfStock
-                      ? "bg-red-100 text-red-700"
-                      : variant.quantity <= 10
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-green-100 text-green-700"
-                    }
-                  `}>
-                    {isOutOfStock
-                      ? "Hết hàng"
-                      : variant.quantity <= 10
-                        ? `Còn ${variant.quantity}`
-                        : "Còn hàng"
-                    }
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          {uniqueVariantDetails.map((item, index) => {
+            if (!item) return null;
+            const variantName = item.name;
+            return (
+              <div key={index} className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  {variantName}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(item.values).map((value) => (
+                    <button
+                      key={value}
+                      onClick={() => handleVariantAttributeChange(variantName, value)}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${selectedVariantAttributes[variantName] === value
+                        ? "bg-amber-500 text-white"
+                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                        }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       );
     } catch (error) {
@@ -1025,30 +997,6 @@ const ProductDetail = () => {
     } catch (error) {
       console.error("Error rendering gallery:", error);
       return null;
-    }
-  };
-
-  // Hàm format biến thể để hiển thị
-  const formatVariantDetails = (variantDetails) => {
-    if (!variantDetails) return "";
-
-    try {
-      if (Array.isArray(variantDetails)) {
-        // Nếu là mảng các đối tượng {name, value}
-        return variantDetails
-          .map(detail => `${detail.name || detail.attribute_name}: ${detail.value || detail.attribute_value}`)
-          .join(" - ");
-      } else if (typeof variantDetails === 'object') {
-        // Nếu là đối tượng {key: value}
-        return Object.entries(variantDetails)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join(" - ");
-      }
-
-      return "";
-    } catch (error) {
-      console.error("Lỗi khi format variant details:", error);
-      return "";
     }
   };
 
@@ -1564,9 +1512,25 @@ const ProductDetail = () => {
 
                                   {/* Hiển thị thông tin biến thể nếu có */}
                                   {review.has_variant && review.variant_details && (
-                                    <div className="text-xs text-gray-500 mb-2">
-                                      <span className="font-medium">Phiên bản đã mua: </span>
-                                      {formatVariantDetails(review.variant_details)}
+                                    <div className="text-xs text-gray-500 mb-2 flex flex-wrap gap-1">
+                                      <span className="font-medium">Phiên bản đã mua:</span>
+                                      {Array.isArray(review.variant_details) ? (
+                                        // Nếu variant_details là mảng
+                                        review.variant_details.map((detail, idx) => (
+                                          <span key={idx}>
+                                            {detail.attribute_name || detail.name}: {detail.attribute_value || detail.value}
+                                            {idx < review.variant_details.length - 1 ? ', ' : ''}
+                                          </span>
+                                        ))
+                                      ) : (
+                                        // Nếu variant_details là object
+                                        Object.entries(review.variant_details).map(([key, value], idx, arr) => (
+                                          <span key={key}>
+                                            {key}: {value}
+                                            {idx < arr.length - 1 ? ', ' : ''}
+                                          </span>
+                                        ))
+                                      )}
                                     </div>
                                   )}
 
