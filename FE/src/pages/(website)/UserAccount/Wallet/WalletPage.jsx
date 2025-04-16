@@ -131,10 +131,10 @@ const WalletPage = () => {
     navigate("/account/wallet/deposit");
   };
 
-  //   // Xử lý click nút rút tiền
-  //   const handleWithdrawClick = () => {
-  //     navigate("/account/wallet/withdraw-requests");
-  //   };
+  // Xử lý click nút rút tiền
+  const handleWithdrawClick = () => {
+    navigate("/account/wallet/withdraw");
+  };
 
   // Lấy icon phù hợp với loại giao dịch
   const getTransactionIcon = (type, amount) => {
@@ -201,7 +201,10 @@ const WalletPage = () => {
               <FaMoneyBillWave />
               Nạp tiền
             </button>
-            <button className="bg-gray-200 text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-300 transition flex items-center gap-2">
+            <button
+              onClick={handleWithdrawClick}
+              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-300 transition flex items-center gap-2"
+            >
               <FaArrowDown />
               Rút tiền
             </button>

@@ -1,20 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axiosInstance from "../../../../utils/axiosConfig";
 import { toast } from "react-hot-toast";
 
-// BankInfo Component
 const BankInfo = () => {
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(false);
   const [error, setError] = useState("");
   const [editingAccount, setEditingAccount] = useState(null);
   const [formData, setFormData] = useState({
+    bank_code: "",
     bank_name: "",
     bank_account_number: "",
     account_holder_name: "",
     is_default: false,
+    acq_id: "",
   });
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   // Animation variants
   const cardVariants = {
@@ -32,36 +37,96 @@ const BankInfo = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
   };
 
-  // Fetch bank accounts
+  // Fetch bank accounts and banks list
   useEffect(() => {
-    const fetchBankAccounts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         const token = localStorage.getItem("authToken");
-        const response = await axiosInstance.get("/bank-accounts", {
+
+        // Fetch bank accounts
+        const accountsResponse = await axiosInstance.get("/bank-accounts", {
           headers: { Authorization: `Bearer ${token}` },
         });
+        setBankAccounts(accountsResponse.data.data || []);
 
-        const accounts = response.data.data || [];
-        setBankAccounts(accounts);
+        // Fetch banks list
+        const banksResponse = await axiosInstance.get("/banks", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log("Banks data:", banksResponse.data); // Debug dữ liệu banks
+        setBanks(banksResponse.data || []);
       } catch (err) {
         setError(
           err.response?.data?.message ||
-            "Không thể lấy thông tin tài khoản ngân hàng"
+            "Không thể lấy thông tin tài khoản ngân hàng hoặc danh sách ngân hàng"
         );
-        toast.error("Không thể lấy thông tin tài khoản ngân hàng");
+        toast.error("Không thể lấy thông tin");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBankAccounts();
+    fetchData();
   }, []);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Handle bank selection
+  const handleBankSelect = (bank) => {
+    setFormData((prev) => ({
+      ...prev,
+      bank_code: bank.code,
+      bank_name: bank.name,
+      acq_id: bank.bin,
+    }));
+    setIsDropdownOpen(false);
+    lookupAccountHolder();
+  };
 
   // Handle form input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Lookup account holder name
+  const lookupAccountHolder = async () => {
+    if (!formData.bank_code || !formData.bank_account_number) return;
+
+    try {
+      setLookupLoading(true);
+      const token = localStorage.getItem("authToken");
+      const response = await axiosInstance.post(
+        "/bank-accounts/lookup",
+        {
+          bank_code: formData.bank_code,
+          bank_account_number: formData.bank_account_number,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setFormData((prev) => ({
+        ...prev,
+        account_holder_name: response.data.accountName || "",
+      }));
+    } catch (err) {
+      toast.error("Không thể tra cứu tên chủ tài khoản");
+      setFormData((prev) => ({ ...prev, account_holder_name: "" }));
+    } finally {
+      setLookupLoading(false);
+    }
   };
 
   // Handle set default
@@ -93,10 +158,12 @@ const BankInfo = () => {
   const handleEdit = (account) => {
     setEditingAccount(account);
     setFormData({
+      bank_code: account.bank_code,
       bank_name: account.bank_name,
       bank_account_number: account.bank_account_number,
       account_holder_name: account.account_holder_name,
       is_default: account.is_default,
+      acq_id: account.acq_id,
     });
   };
 
@@ -120,14 +187,19 @@ const BankInfo = () => {
       );
       setEditingAccount(null);
       setFormData({
+        bank_code: "",
         bank_name: "",
         bank_account_number: "",
         account_holder_name: "",
         is_default: false,
+        acq_id: "",
       });
       toast.success("Cập nhật tài khoản ngân hàng thành công!");
     } catch (err) {
-      toast.error("Không thể cập nhật tài khoản ngân hàng");
+      const errorMessage =
+        err.response?.data?.message || "Không thể cập nhật tài khoản ngân hàng";
+      toast.error(errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -144,7 +216,10 @@ const BankInfo = () => {
       );
       toast.success("Xóa tài khoản ngân hàng thành công!");
     } catch (err) {
-      toast.error("Không thể xóa tài khoản ngân hàng");
+      const errorMessage =
+        err.response?.data?.message || "Không thể xóa tài khoản ngân hàng";
+      toast.error(errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -152,22 +227,48 @@ const BankInfo = () => {
   const handleAddAccount = async (e) => {
     e.preventDefault();
     try {
+      // Kiểm tra dữ liệu trước khi gửi
+      if (
+        !formData.bank_code ||
+        !formData.bank_name ||
+        !formData.bank_account_number ||
+        !formData.account_holder_name ||
+        !formData.acq_id
+      ) {
+        toast.error("Vui lòng điền đầy đủ thông tin");
+        return;
+      }
+
       const token = localStorage.getItem("authToken");
       const response = await axiosInstance.post("/bank-accounts", formData, {
         headers: { Authorization: `Bearer ${token}` },
+        timeout: 5000,
       });
 
       setBankAccounts((prev) => [...prev, response.data.data]);
       setFormData({
+        bank_code: "",
         bank_name: "",
         bank_account_number: "",
         account_holder_name: "",
         is_default: false,
+        acq_id: "",
       });
       toast.success("Thêm tài khoản ngân hàng thành công!");
     } catch (err) {
-      toast.error("Không thể thêm tài khoản ngân hàng");
+      const errorMessage =
+        err.response?.data?.message || "Không thể thêm tài khoản ngân hàng";
+      toast.error(errorMessage);
+      setError(errorMessage);
     }
+  };
+
+  // Get bank logo by bank_code
+  const getBankLogo = (bankCode) => {
+    const bank = banks.find((b) => b.code === bankCode);
+    const logo = bank?.logo || "";
+    console.log(`Logo for bank ${bankCode}:`, logo); // Debug URL logo
+    return logo;
   };
 
   return (
@@ -241,23 +342,31 @@ const BankInfo = () => {
                     exit="hidden"
                     className="p-4 border rounded-lg shadow-sm bg-gray-50 flex justify-between items-center"
                   >
-                    <div>
-                      <p className="text-gray-800 font-semibold">
-                        {account.bank_name}{" "}
-                        {account.is_default && (
-                          <span className="ml-2 inline-block px-2 py-1 text-xs font-medium text-white bg-green-500 rounded">
-                            Mặc định
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-gray-600">
-                        <strong>Số tài khoản:</strong>{" "}
-                        {account.bank_account_number}
-                      </p>
-                      <p className="text-gray-600">
-                        <strong>Chủ tài khoản:</strong>{" "}
-                        {account.account_holder_name}
-                      </p>
+                    <div className="flex items-center">
+                      <img
+                        src={getBankLogo(account.bank_code)}
+                        alt={`${account.bank_name} logo`}
+                        className="w-20 h-18 mr-2" // Kích thước logo ban đầu
+                        onError={(e) => (e.target.style.display = "none")} // Ẩn nếu logo không tải được
+                      />
+                      <div>
+                        <p className="text-gray-800 font-semibold">
+                          {account.bank_name}{" "}
+                          {account.is_default && (
+                            <span className="ml-2 inline-block px-2 py-1 text-xs font-medium text-white bg-green-500 rounded">
+                              Mặc định
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-gray-600">
+                          <strong>Số tài khoản:</strong>{" "}
+                          {account.bank_account_number}
+                        </p>
+                        <p className="text-gray-600">
+                          <strong>Chủ tài khoản:</strong>{" "}
+                          {account.account_holder_name}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex space-x-2">
                       {!account.is_default && (
@@ -297,23 +406,76 @@ const BankInfo = () => {
           </h3>
           <form onSubmit={editingAccount ? handleSaveEdit : handleAddAccount}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
+              <div ref={dropdownRef}>
                 <label
-                  htmlFor="bank_name"
+                  htmlFor="bank_code"
                   className="block text-gray-700 font-medium mb-2"
                 >
                   Tên ngân hàng
                 </label>
-                <input
-                  type="text"
-                  id="bank_name"
-                  name="bank_name"
-                  value={formData.bank_name}
-                  onChange={handleInputChange}
-                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập tên ngân hàng"
-                  required
-                />
+                <div className="relative">
+                  <div
+                    className="w-full p-3 border rounded-lg bg-white cursor-pointer flex items-center justify-between"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  >
+                    {formData.bank_code ? (
+                      <div className="flex items-center">
+                        <img
+                          src={
+                            banks.find(
+                              (bank) => bank.code === formData.bank_code
+                            )?.logo
+                          }
+                          alt="Bank logo"
+                          className="w-20 h-18 mr-2" // Kích thước logo ban đầu
+                          onError={(e) => (e.target.style.display = "none")} // Ẩn nếu logo không tải được
+                        />
+                        <span>
+                          {formData.bank_name} ({formData.bank_code})
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">Chọn ngân hàng</span>
+                    )}
+                    <svg
+                      className={`w-5 h-5 transform transition-transform ${
+                        isDropdownOpen ? "rotate-180" : ""
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                  {isDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                      {banks.map((bank) => (
+                        <div
+                          key={bank.code}
+                          className="flex items-center p-3 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleBankSelect(bank)}
+                        >
+                          <img
+                            src={bank.logo}
+                            alt={`${bank.name} logo`}
+                            className="w-18 h-8 mr-2" // Kích thước logo ban đầu
+                            onError={(e) => (e.target.style.display = "none")} // Ẩn nếu logo không tải được
+                          />
+                          <span>
+                            {bank.name} ({bank.code})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label
@@ -328,6 +490,7 @@ const BankInfo = () => {
                   name="bank_account_number"
                   value={formData.bank_account_number}
                   onChange={handleInputChange}
+                  onBlur={lookupAccountHolder}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nhập số tài khoản"
                   required
@@ -347,9 +510,13 @@ const BankInfo = () => {
                   value={formData.account_holder_name}
                   onChange={handleInputChange}
                   className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập tên chủ tài khoản"
+                  placeholder="Tên chủ tài khoản (tự động điền)"
+                  disabled
                   required
                 />
+                {lookupLoading && (
+                  <span className="text-sm text-gray-500">Đang tra cứu...</span>
+                )}
               </div>
             </div>
             <div className="flex space-x-4">
@@ -369,10 +536,12 @@ const BankInfo = () => {
                   onClick={() => {
                     setEditingAccount(null);
                     setFormData({
+                      bank_code: "",
                       bank_name: "",
                       bank_account_number: "",
                       account_holder_name: "",
                       is_default: false,
+                      acq_id: "",
                     });
                   }}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
