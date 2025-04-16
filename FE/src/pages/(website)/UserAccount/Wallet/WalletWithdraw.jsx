@@ -7,11 +7,14 @@ import { toast } from "react-hot-toast";
 const WalletWithdraw = () => {
   const [balance, setBalance] = useState(0);
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [allBanks, setAllBanks] = useState([]);
   const [formData, setFormData] = useState({
     amount: "",
     bank_account_id: "",
     qr_code: "",
   });
+  const [selectedBankAccount, setSelectedBankAccount] = useState(null);
+  const [selectedBankLogoUrl, setSelectedBankLogoUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [amountError, setAmountError] = useState("");
@@ -49,6 +52,12 @@ const WalletWithdraw = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBankAccounts(accountsResponse.data.data || []);
+
+        // Fetch all banks list (for logos)
+        const allBanksResponse = await axiosInstance.get("/banks", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAllBanks(allBanksResponse.data || []);
       } catch (err) {
         setError("Không thể tải dữ liệu ví hoặc tài khoản ngân hàng");
         toast.error("Không thể tải dữ liệu");
@@ -64,6 +73,24 @@ const WalletWithdraw = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Cập nhật thông tin tài khoản đã chọn
+    if (name === "bank_account_id") {
+      const selectedAccount = bankAccounts.find(
+        (account) => account.id === parseInt(value, 10)
+      );
+      setSelectedBankAccount(selectedAccount || null);
+
+      // Tìm logo tương ứng từ danh sách allBanks
+      if (selectedAccount && allBanks.length > 0) {
+        const matchingBank = allBanks.find(
+          (bank) => bank.code === selectedAccount.bank_code
+        );
+        setSelectedBankLogoUrl(matchingBank ? matchingBank.logo : "");
+      } else {
+        setSelectedBankLogoUrl("");
+      }
+    }
 
     // Kiểm tra lỗi số tiền khi người dùng nhập
     if (name === "amount") {
@@ -200,7 +227,7 @@ const WalletWithdraw = () => {
 
   return (
     <motion.div
-      className="max-w-6xl mx-auto"
+      className="max-w-6xl mx-auto p-6"
       variants={cardVariants}
       initial="hidden"
       animate="visible"
@@ -260,6 +287,47 @@ const WalletWithdraw = () => {
                     </option>
                   ))}
                 </select>
+
+                {/* Hiển thị thông tin tài khoản đã chọn */}
+                {selectedBankAccount && (
+                  <div className="mt-4 p-4 bg-white border border-blue-100 rounded-lg flex items-center space-x-4">
+                    {/* Logo ngân hàng */}
+                    <div className="flex-shrink-0">
+                      <img
+                        src={
+                          selectedBankLogoUrl ||
+                          selectedBankAccount.bank_logo_url ||
+                          "https://via.placeholder.com/40"
+                        }
+                        alt={`${selectedBankAccount.bank_name} Logo`}
+                        className="w-10 h-10 object-contain"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://via.placeholder.com/40";
+                        }}
+                      />
+                    </div>
+                    {/* Thông tin tài khoản */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <p className="text-gray-800 font-medium">
+                          {selectedBankAccount.bank_name}
+                        </p>
+                        {selectedBankAccount.is_default && (
+                          <span className="px-2 py-1 bg-green-500 text-white text-xs rounded">
+                            Mặc định
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-600">
+                        Số tài khoản: {selectedBankAccount.bank_account_number}
+                      </p>
+                      <p className="text-gray-600">
+                        Chủ tài khoản: {selectedBankAccount.account_holder_name}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -363,7 +431,6 @@ const WalletWithdraw = () => {
             <div className="p-4 bg-gray-100 rounded-lg h-full flex flex-col items-center justify-center">
               {showQrCode ? (
                 <>
-                  <p className="text-gray-600 mb-2">Mã QR</p>
                   {qrCode ? (
                     <img src={qrCode} alt="QR Code" className="w-48 h-48" />
                   ) : (
