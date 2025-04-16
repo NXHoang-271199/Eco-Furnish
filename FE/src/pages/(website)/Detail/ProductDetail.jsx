@@ -1516,13 +1516,13 @@ const ProductDetail = () => {
                                     (typeof review.variant_info === 'object' && Object.keys(review.variant_info).length > 0)
                                   ) && (
                                       <div className="bg-gray-50 px-2 py-1 rounded-md text-xs my-2 inline-block border border-gray-200">
-                                        <span className="font-medium text-gray-600 mr-1">Phiên bản:</span>
+                                        {/* <span className="font-medium text-gray-600 mr-1">Phiên bản:</span> */}
                                         {Array.isArray(review.variant_info) ? (
                                           // Nếu variant_info là mảng
                                           review.variant_info.map((detail, idx) => (
                                             <span key={idx} className="text-gray-700">
                                               {detail.attribute_name || detail.name}: <strong>{detail.attribute_value || detail.value}</strong>
-                                              {idx < review.variant_info.length - 1 ? ', ' : ''}
+                                              {idx < review.variant_info.length - 1 ? ' - ' : ''}
                                             </span>
                                           ))
                                         ) : (
@@ -1530,7 +1530,7 @@ const ProductDetail = () => {
                                           Object.entries(review.variant_info).map(([key, value], idx, arr) => (
                                             <span key={key} className="text-gray-700">
                                               {key}: <strong>{value}</strong>
-                                              {idx < arr.length - 1 ? ', ' : ''}
+                                              {idx < arr.length - 1 ? ' - ' : ''}
                                             </span>
                                           ))
                                         )}

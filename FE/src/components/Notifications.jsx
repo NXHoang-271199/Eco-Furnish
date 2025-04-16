@@ -155,11 +155,16 @@ const Notifications = () => {
                 toastShownIds.current.delete(notification.id);
             }, 10000);
 
-            // Kiểm tra nếu là thông báo ví tiền
+            // Kiểm tra loại thông báo và hiển thị toast tương ứng
             if (notification.transaction_type === 'nap_tien') {
                 // Sử dụng showWalletDepositToast cho thông báo ví tiền
                 import('./ui/toast').then(module => {
                     module.showWalletDepositToast(notification);
+                });
+            } else if (notification.review_id) {
+                // Sử dụng showReviewHiddenToast cho thông báo đánh giá bị ẩn
+                import('./ui/toast').then(module => {
+                    module.showReviewHiddenToast(notification);
                 });
             } else {
                 // Sử dụng toast đơn hàng thông thường
