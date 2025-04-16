@@ -10,7 +10,7 @@ import {
   useAnimation,
 } from "framer-motion";
 import { BsStarFill, BsStarHalf, BsStar } from "react-icons/bs";
-import api from "../../../service/api";
+import axiosInstance from "../../../utils/axiosConfig";
 import Banner from "../../../components/Banner";
 import LoadingScreen from "../../../components/LoadingScreen";
 import { IoCartOutline, IoStar, IoSparkles } from "react-icons/io5";
@@ -41,9 +41,8 @@ const Homes = () => {
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [hasActivityData, setHasActivityData] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [loadedImagesCount, setLoadedImagesCount] = useState(0);
+  const dataFetchedRef = useRef(false);
+
   const bannerRef = useRef(null);
   const bannerInView = useInView(bannerRef, { once: false, amount: 0.5 });
   const bannerControls = useAnimation();
@@ -169,7 +168,7 @@ const Homes = () => {
   // Function gọi API để lấy sản phẩm gợi ý dựa trên hoạt động người dùng
   const fetchRecommendations = async (viewedProducts, searchedKeywords, cartProducts) => {
     try {
-      const response = await api.post("ai-recommendations", {
+      const response = await axiosInstance.post("ai-recommendations", {
         viewedProducts,
         searchedKeywords,
         cartProducts
@@ -274,179 +273,233 @@ const Homes = () => {
   };
 
   useEffect(() => {
+    if (dataFetchedRef.current) return;
+
     const fetchAllData = async () => {
-      // Đặt tất cả trạng thái về ban đầu trước khi tải dữ liệu mới
-      setIsLoading(true);
-      setDataLoaded(false);
-      setImagesLoaded(false);
-      setLoadedImagesCount(0);
-      
+      setIsLoading(true); // Bắt đầu loading
       try {
-        // Sử dụng Promise.all để tải dữ liệu song song
+        dataFetchedRef.current = true;
         const [productsResponse, bestSellersResponse, postsResponse] = await Promise.all([
-          api.get("products"),
-          api.get("best-sellers"),
-          api.get("posts")
+          axiosInstance.get('/products'),
+          axiosInstance.get('/best-sellers'),
+          axiosInstance.get('/posts')
         ]);
-        
-        // Xử lý dữ liệu sản phẩm
+
+        // Xử lý products
+        let processedProducts = [];
         if (productsResponse.data.status === "success" && Array.isArray(productsResponse.data.data.data)) {
-          // Đảm bảo rằng mỗi sản phẩm có đầy đủ thông tin cần thiết
-          const processedProducts = productsResponse.data.data.data.map(product => {
-            // Tạo bản sao của sản phẩm để tránh thay đổi trực tiếp
-            const processedProduct = {...product};
-            
-            // Đảm bảo rằng sản phẩm có biến thể có đầy đủ thông tin price_range
-            if (processedProduct.has_variants === 1 || processedProduct.has_variants === true) {
-              console.log("Xử lý sản phẩm có biến thể:", processedProduct.id, processedProduct.name);
-              
-              // Đảm bảo trường has_variants là boolean
-              processedProduct.has_variants = true;
-              
-              // Tạo price_range mặc định nếu không có
-              if (!processedProduct.price_range) {
-                processedProduct.price_range = {
-                  min: processedProduct.price || 0,
-                  max: processedProduct.price || 0,
-                  min_discount: processedProduct.discount_price || 0,
-                  max_discount: processedProduct.discount_price || 0
+          processedProducts = productsResponse.data.data.data.map(product => {
+            // Tạo bản sao sâu của sản phẩm để tránh tham chiếu
+            const newProduct = JSON.parse(JSON.stringify(product));
+
+            // Chuẩn hóa has_variants thành boolean
+            newProduct.has_variants = Boolean(
+              newProduct.has_variants === 1 ||
+              newProduct.has_variants === true ||
+              newProduct.has_variants === "1" ||
+              newProduct.has_variants === "true"
+            );
+
+            // Đảm bảo variants là một mảng
+            if (!Array.isArray(newProduct.variants)) {
+              newProduct.variants = [];
+            }
+
+            // Tính price_range
+            if (newProduct.has_variants && newProduct.variants.length > 0) {
+              // Lọc ra các giá trị hợp lệ
+              const validVariants = newProduct.variants.filter(v => v && typeof v === 'object');
+
+              if (validVariants.length > 0) {
+                const prices = validVariants
+                  .map(v => parseFloat(v.price) || 0)
+                  .filter(p => p > 0);
+
+                const discountPrices = validVariants
+                  .map(v => {
+                    const discount = parseFloat(v.discount_price) || 0;
+                    return discount > 0 ? discount : 0;
+                  })
+                  .filter(p => p > 0);
+
+                // Chỉ tính nếu có ít nhất một giá hợp lệ
+                if (prices.length > 0) {
+                  newProduct.price_range = {
+                    min: Math.min(...prices),
+                    max: Math.max(...prices),
+                    min_discount: discountPrices.length > 0 ? Math.min(...discountPrices) : 0,
+                    max_discount: discountPrices.length > 0 ? Math.max(...discountPrices) : 0
+                  };
+                } else {
+                  // Fallback nếu không có giá hợp lệ
+                  newProduct.price_range = {
+                    min: parseFloat(newProduct.price) || 0,
+                    max: parseFloat(newProduct.price) || 0,
+                    min_discount: parseFloat(newProduct.discount_price) || 0,
+                    max_discount: parseFloat(newProduct.discount_price) || 0
+                  };
+                }
+              } else {
+                // Không có variants hợp lệ
+                newProduct.price_range = {
+                  min: parseFloat(newProduct.price) || 0,
+                  max: parseFloat(newProduct.price) || 0,
+                  min_discount: parseFloat(newProduct.discount_price) || 0,
+                  max_discount: parseFloat(newProduct.discount_price) || 0
                 };
               }
-              
-              // Đảm bảo có mảng variants
-              if (!processedProduct.variants || !Array.isArray(processedProduct.variants)) {
-                processedProduct.variants = [];
-              }
             } else {
-              // Đảm bảo sản phẩm thường có has_variants = false
-              processedProduct.has_variants = false;
+              // Sản phẩm không có variants, nhưng vẫn tạo price_range để đồng nhất
+              newProduct.price_range = {
+                min: parseFloat(newProduct.price) || 0,
+                max: parseFloat(newProduct.price) || 0,
+                min_discount: parseFloat(newProduct.discount_price) || 0,
+                max_discount: parseFloat(newProduct.discount_price) || 0
+              };
             }
-            
-            return processedProduct;
+
+            // Đảm bảo thuộc tính price_range luôn tồn tại
+            if (!newProduct.price_range) {
+              newProduct.price_range = {
+                min: parseFloat(newProduct.price) || 0,
+                max: parseFloat(newProduct.price) || 0,
+                min_discount: parseFloat(newProduct.discount_price) || 0,
+                max_discount: parseFloat(newProduct.discount_price) || 0
+              };
+            }
+
+            return newProduct;
           });
-          
-          console.log("Sản phẩm đã xử lý:", processedProducts);
+          console.log("Processed Products:", processedProducts);
           setProducts(processedProducts);
         } else {
-          console.log("Dữ liệu không phải là mảng hoặc API trả về lỗi");
-          setProducts([]);
+          console.log("Lỗi tải products hoặc dữ liệu không hợp lệ");
+          setProducts([]); // Reset nếu lỗi
         }
-        
-        // Xử lý dữ liệu sản phẩm bán chạy
+
+        // Xử lý bestSellers
+        let processedBestSellers = [];
         if (bestSellersResponse.data.status === "success" && Array.isArray(bestSellersResponse.data.data)) {
-          // Đảm bảo rằng mỗi sản phẩm có đầy đủ thông tin cần thiết
-          const processedBestSellers = bestSellersResponse.data.data.map(product => {
-            // Tạo bản sao của sản phẩm để tránh thay đổi trực tiếp
-            const processedProduct = {...product};
-            
-            // Đảm bảo rằng sản phẩm có biến thể có đầy đủ thông tin price_range
-            if (processedProduct.has_variants === 1 || processedProduct.has_variants === true) {
-              console.log("Xử lý sản phẩm bán chạy có biến thể:", processedProduct.id, processedProduct.name);
-              
-              // Đảm bảo trường has_variants là boolean
-              processedProduct.has_variants = true;
-              
-              // Tạo price_range mặc định nếu không có
-              if (!processedProduct.price_range) {
-                processedProduct.price_range = {
-                  min: processedProduct.price || 0,
-                  max: processedProduct.price || 0,
-                  min_discount: processedProduct.discount_price || 0,
-                  max_discount: processedProduct.discount_price || 0
+          processedBestSellers = bestSellersResponse.data.data.map(product => {
+            // Tạo bản sao sâu của sản phẩm để tránh tham chiếu
+            const newProduct = JSON.parse(JSON.stringify(product));
+
+            // Chuẩn hóa has_variants thành boolean
+            newProduct.has_variants = Boolean(
+              newProduct.has_variants === 1 ||
+              newProduct.has_variants === true ||
+              newProduct.has_variants === "1" ||
+              newProduct.has_variants === "true"
+            );
+
+            // Đảm bảo variants là một mảng
+            if (!Array.isArray(newProduct.variants)) {
+              newProduct.variants = [];
+            }
+
+            // Tính price_range
+            if (newProduct.has_variants && newProduct.variants.length > 0) {
+              // Lọc ra các giá trị hợp lệ
+              const validVariants = newProduct.variants.filter(v => v && typeof v === 'object');
+
+              if (validVariants.length > 0) {
+                const prices = validVariants
+                  .map(v => parseFloat(v.price) || 0)
+                  .filter(p => p > 0);
+
+                const discountPrices = validVariants
+                  .map(v => {
+                    const discount = parseFloat(v.discount_price) || 0;
+                    return discount > 0 ? discount : 0;
+                  })
+                  .filter(p => p > 0);
+
+                // Chỉ tính nếu có ít nhất một giá hợp lệ
+                if (prices.length > 0) {
+                  newProduct.price_range = {
+                    min: Math.min(...prices),
+                    max: Math.max(...prices),
+                    min_discount: discountPrices.length > 0 ? Math.min(...discountPrices) : 0,
+                    max_discount: discountPrices.length > 0 ? Math.max(...discountPrices) : 0
+                  };
+                } else {
+                  // Fallback nếu không có giá hợp lệ
+                  newProduct.price_range = {
+                    min: parseFloat(newProduct.price) || 0,
+                    max: parseFloat(newProduct.price) || 0,
+                    min_discount: parseFloat(newProduct.discount_price) || 0,
+                    max_discount: parseFloat(newProduct.discount_price) || 0
+                  };
+                }
+              } else {
+                // Không có variants hợp lệ
+                newProduct.price_range = {
+                  min: parseFloat(newProduct.price) || 0,
+                  max: parseFloat(newProduct.price) || 0,
+                  min_discount: parseFloat(newProduct.discount_price) || 0,
+                  max_discount: parseFloat(newProduct.discount_price) || 0
                 };
               }
-              
-              // Đảm bảo có mảng variants
-              if (!processedProduct.variants || !Array.isArray(processedProduct.variants)) {
-                processedProduct.variants = [];
-              }
             } else {
-              // Đảm bảo sản phẩm thường có has_variants = false
-              processedProduct.has_variants = false;
+              // Sản phẩm không có variants, nhưng vẫn tạo price_range để đồng nhất
+              newProduct.price_range = {
+                min: parseFloat(newProduct.price) || 0,
+                max: parseFloat(newProduct.price) || 0,
+                min_discount: parseFloat(newProduct.discount_price) || 0,
+                max_discount: parseFloat(newProduct.discount_price) || 0
+              };
             }
-            
-            return processedProduct;
+
+            // Đảm bảo thuộc tính price_range luôn tồn tại
+            if (!newProduct.price_range) {
+              newProduct.price_range = {
+                min: parseFloat(newProduct.price) || 0,
+                max: parseFloat(newProduct.price) || 0,
+                min_discount: parseFloat(newProduct.discount_price) || 0,
+                max_discount: parseFloat(newProduct.discount_price) || 0
+              };
+            }
+
+            return newProduct;
           });
-          
-          console.log("Sản phẩm bán chạy đã xử lý:", processedBestSellers);
+          console.log("Processed Best Sellers:", processedBestSellers);
           setBestSellers(processedBestSellers);
         } else {
-          console.log("Dữ liệu không phải là mảng hoặc API trả về lỗi");
-          setBestSellers([]);
+          console.log("Lỗi tải best sellers hoặc dữ liệu không hợp lệ");
+          setBestSellers([]); // Reset nếu lỗi
         }
-        
-        // Xử lý dữ liệu bài viết
+
+        // Xử lý posts
         if (postsResponse.data.status === "success" && Array.isArray(postsResponse.data.data)) {
           setPosts(postsResponse.data.data);
         } else {
-          console.log("Dữ liệu bài viết không phải là mảng hoặc API trả về lỗi");
+          console.log("Lỗi tải posts hoặc dữ liệu không hợp lệ");
           setPosts([]);
         }
-        
-        // Đánh dấu dữ liệu đã được tải xong
-        setDataLoaded(true);
+
       } catch (error) {
-        console.log("Lỗi khi tải dữ liệu:", error);
+        dataFetchedRef.current = false; // Đặt lại trạng thái khi có lỗi để có thể thử lại
+        console.error("Lỗi nghiêm trọng khi tải dữ liệu trang chủ:", error);
         setProducts([]);
         setBestSellers([]);
         setPosts([]);
-        // Đánh dấu dữ liệu đã được tải xong ngay cả khi có lỗi
-        setDataLoaded(true);
+      } finally {
+        setIsLoading(false); // Kết thúc loading bất kể thành công hay lỗi
       }
     };
-    
+
     fetchAllData();
-  }, []);
+  }, []); // Dependency rỗng đảm bảo chỉ chạy 1 lần khi mount
 
-  // Theo dõi trạng thái tải dữ liệu và hình ảnh
-  useEffect(() => {
-    if (dataLoaded) {
-      // Tính tổng số sản phẩm cần hiển thị
-      const totalProductsToTrack = products.length + bestSellers.length + aiRecommendations.length;
-      
-      // Nếu không có sản phẩm, đánh dấu hình ảnh đã tải xong ngay lập tức
-      if (totalProductsToTrack === 0) {
-        setImagesLoaded(true);
-        return;
-      }
-      
-      // Nếu đã tải đủ số lượng hình ảnh, đánh dấu là đã tải xong
-      if (loadedImagesCount >= totalProductsToTrack) {
-        setImagesLoaded(true);
-        return;
-      }
-      
-      // Đặt thời gian chờ để đảm bảo hình ảnh có thời gian tải
-      // Đây là biện pháp dự phòng trong trường hợp không theo dõi được tất cả sự kiện tải hình ảnh
-      const timer = setTimeout(() => {
-        console.log(`Timeout: Đã tải ${loadedImagesCount}/${totalProductsToTrack} hình ảnh`);
-        setImagesLoaded(true);
-      }, 5000); // Tăng thời gian chờ lên 5 giây
-      
-      return () => clearTimeout(timer);
-    }
-  }, [dataLoaded, products.length, bestSellers.length, aiRecommendations.length, loadedImagesCount]);
-
-  // Theo dõi trạng thái tải dữ liệu và hình ảnh để cập nhật isLoading
-  useEffect(() => {
-    if (dataLoaded && imagesLoaded) {
-      setIsLoading(false);
-    } else {
-      setIsLoading(true);
-    }
-  }, [dataLoaded, imagesLoaded]);
-  
   // Tạo gợi ý mặc định khi có sản phẩm
   useEffect(() => {
-    // Nếu có sản phẩm nhưng chưa có gợi ý AI, tạo gợi ý mặc định
-    if (products.length > 0 && aiRecommendations.length === 0) {
-      // Lấy một số sản phẩm ngẫu nhiên để hiển thị như gợi ý mặc định
+    if (products.length > 0 && aiRecommendations.length === 0 && hasActivityData === false) { // Chỉ tạo gợi ý mặc định nếu chưa có hoạt động
       const randomRecommendations = [...products]
         .sort(() => 0.5 - Math.random())
         .slice(0, 4);
       setAiRecommendations(randomRecommendations);
     }
-  }, [products, aiRecommendations]);
+  }, [products, aiRecommendations, hasActivityData]); // Thêm dependency hasActivityData
 
   // Animation variants
   const fadeInUp = {
@@ -484,17 +537,6 @@ const Homes = () => {
     },
   };
 
-  // Hàm xử lý khi hình ảnh tải xong
-  const handleImageLoad = () => {
-    setLoadedImagesCount(prev => prev + 1);
-    // Tính tổng số hình ảnh cần tải (sản phẩm mới + sản phẩm bán chạy + sản phẩm gợi ý)
-    const totalProductsToTrack = products.length + bestSellers.length + aiRecommendations.length;
-    // Nếu đã tải đủ số lượng hình ảnh, đánh dấu là đã tải xong
-    if (totalProductsToTrack > 0 && loadedImagesCount + 1 >= totalProductsToTrack) {
-      setImagesLoaded(true);
-    }
-  };
-  
   // Banner text variants
   const bannerTextVariants = {
     hidden: {
@@ -751,9 +793,7 @@ const Homes = () => {
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700 bg-gray-100"
                           loading="lazy"
-                          onLoad={handleImageLoad}
                           onError={(e) => {
-                            handleImageLoad();
                             e.target.onerror = null;
                             e.target.src = '/images/no-image.png';
                           }}
@@ -826,20 +866,20 @@ const Homes = () => {
                       <p className="text-gray-500 text-sm mb-3 line-clamp-2">
                         Phù hợp với sở thích của bạn
                       </p>
-                      
 
-                      {(product.has_variants === true || product.has_variants === 1) ? (
+
+                      {Boolean(product.has_variants) ? (
                         // Sản phẩm có biến thể
                         <div className="relative">
-                          {product.price_range && product.price_range.min_discount ? (
+                          {product.price_range && (product.price_range.min_discount > 0) ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
-                              <span className="font-semibold text-blue-600 text-lg">
+                              <span className="font-semibold text-amber-600 text-lg">
                                 {new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
                                 }).format(product.price_range.min_discount)}
-                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                {product.price_range.max_discount > 0 && product.price_range.max_discount !== product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
@@ -855,7 +895,7 @@ const Homes = () => {
                             </div>
                           ) : (
                             // Không có khuyến mãi
-                            <span className="font-semibold text-blue-600 text-lg">
+                            <span className="font-semibold text-amber-600 text-lg">
                               {new Intl.NumberFormat("vi-VN", {
                                 style: "currency",
                                 currency: "VND",
@@ -982,9 +1022,9 @@ const Homes = () => {
                   }}
                   className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group relative z-0"
                 >
-                  <Link 
-                    to={`product-detail/${product.id}`} 
-                    className="block absolute inset-0 z-10" 
+                  <Link
+                    to={`product-detail/${product.id}`}
+                    className="block absolute inset-0 z-10"
                     onClick={() => {
                       // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
                       if (window.trackProductView) {
@@ -1014,9 +1054,7 @@ const Homes = () => {
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700 bg-gray-100"
                           loading="lazy"
-                          onLoad={handleImageLoad}
                           onError={(e) => {
-                            handleImageLoad();
                             e.target.onerror = null;
                             e.target.src = '/images/no-image.png';
                           }}
@@ -1104,10 +1142,10 @@ const Homes = () => {
                         Sản phẩm bán chạy hàng đầu
                       </p>
 
-                      {(product.has_variants === true || product.has_variants === 1) ? (
+                      {Boolean(product.has_variants) ? (
                         // Sản phẩm có biến thể
                         <div className="relative">
-                          {product.price_range && product.price_range.min_discount ? (
+                          {product.price_range && (product.price_range.min_discount > 0) ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-rose-600 text-lg">
@@ -1115,7 +1153,7 @@ const Homes = () => {
                                   style: "currency",
                                   currency: "VND",
                                 }).format(product.price_range.min_discount)}
-                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                {product.price_range.max_discount > 0 && product.price_range.max_discount !== product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
@@ -1307,9 +1345,7 @@ const Homes = () => {
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700 bg-gray-100"
                           loading="lazy"
-                          onLoad={handleImageLoad}
                           onError={(e) => {
-                            handleImageLoad();
                             e.target.onerror = null;
                             e.target.src = '/images/no-image.png';
                           }}
@@ -1383,10 +1419,10 @@ const Homes = () => {
                         Sản phẩm nội thất cao cấp, bền đẹp
                       </p>
 
-                      {(product.has_variants === true || product.has_variants === 1) ? (
+                      {Boolean(product.has_variants) ? (
                         // Sản phẩm có biến thể
                         <div className="relative">
-                          {product.price_range && product.price_range.min_discount ? (
+                          {product.price_range && (product.price_range.min_discount > 0) ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-amber-600 text-lg">
@@ -1394,7 +1430,7 @@ const Homes = () => {
                                   style: "currency",
                                   currency: "VND",
                                 }).format(product.price_range.min_discount)}
-                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                {product.price_range.max_discount > 0 && product.price_range.max_discount !== product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",

@@ -26,13 +26,13 @@ class DashboardController extends Controller
         // Tổng doanh thu hiện tại - Sử dụng join thay vì subquery để cải thiện hiệu suất
         $totalEarnings = DB::table('orders')
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-            ->where('orders.payment_status', 'paid')
+            ->where('orders.payment_status', 1)
             ->sum(DB::raw('order_items.price * order_items.quantity'));
         
         // Doanh thu tháng trước
         $lastMonthEarnings = DB::table('orders')
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-            ->where('orders.payment_status', 'paid')
+            ->where('orders.payment_status', 1)
             ->whereBetween('orders.created_at', [$lastMonthStart, $lastMonthEnd])
             ->sum(DB::raw('order_items.price * order_items.quantity'));
         
@@ -83,7 +83,7 @@ class DashboardController extends Controller
                 DB::raw('SUM(order_items.quantity) as total_sold'),
                 DB::raw('SUM(order_items.price * order_items.quantity) as total_amount')
             )
-            ->where('orders.payment_status', 'paid');
+            ->where('orders.payment_status', 1);
             
         // Thêm điều kiện ngày nếu có
         if ($dateRange) {
@@ -128,7 +128,7 @@ class DashboardController extends Controller
                 DB::raw('COUNT(DISTINCT orders.id) as orders_count'), 
                 DB::raw('SUM(order_items.price * order_items.quantity) as total_spent')
             )
-            ->where('orders.payment_status', 'paid')
+            ->where('orders.payment_status', 1)
             ->groupBy('users.id', 'users.name', 'users.email', 'users.avatar')
             ->orderByDesc('orders_count');
             
@@ -136,7 +136,7 @@ class DashboardController extends Controller
         $totalTopBuyers = count(DB::select(
             "SELECT users.id FROM users 
             JOIN orders ON users.id = orders.user_id 
-            WHERE orders.payment_status = 'paid' 
+            WHERE orders.payment_status = 1 
             GROUP BY users.id"
         ));
             
@@ -316,48 +316,31 @@ class DashboardController extends Controller
         $currentYear = Carbon::now()->year;
         $monthlyData = [];
         
-        // Tên tháng bằng tiếng Việt
-        $vietnameseMonths = [
-            1 => 'Th1', 2 => 'Th2', 3 => 'Th3', 4 => 'Th4', 5 => 'Th5', 6 => 'Th6',
-            7 => 'Th7', 8 => 'Th8', 9 => 'Th9', 10 => 'Th10', 11 => 'Th11', 12 => 'Th12'
-        ];
-        
-        // Tạo mảng chứa dữ liệu các tháng
+        // Lấy dữ liệu từ tháng 1 đến tháng 12 của năm hiện tại
         for ($month = 1; $month <= 12; $month++) {
-            $startDate = Carbon::createFromDate($currentYear, $month, 1)->startOfMonth();
-            $endDate = Carbon::createFromDate($currentYear, $month, 1)->endOfMonth();
+            $startOfMonth = Carbon::createFromDate($currentYear, $month, 1)->startOfMonth();
+            $endOfMonth = Carbon::createFromDate($currentYear, $month, 1)->endOfMonth();
             
-            // Tính tổng doanh thu trong tháng bằng join
+            // Tổng doanh thu trong tháng
             $revenue = DB::table('orders')
                 ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-                ->where('orders.payment_status', 'paid')
-                ->whereBetween('orders.created_at', [$startDate, $endDate])
+                ->where('orders.payment_status', 1)
+                ->whereBetween('orders.created_at', [$startOfMonth, $endOfMonth])
                 ->sum(DB::raw('order_items.price * order_items.quantity'));
             
-            // Đếm số đơn hàng trong tháng
-            $orders = Order::whereBetween('created_at', [$startDate, $endDate])->count();
+            // Tổng số đơn hàng trong tháng
+            $orderCount = Order::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count();
             
-            // Tính số lượng hoàn tiền từ bảng refund_requests thay vì orders
-            $refundCount = DB::table('refund_requests')
-                ->where('status', 'Đã Duyệt')
-                ->whereBetween('created_at', [$startDate, $endDate])
+            // Số đơn hoàn tiền trong tháng
+            $refundCount = Order::where('order_status', 'Hoàn Hàng')
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->count();
             
-            // Tính tổng tiền hoàn lại trong tháng - Sử dụng join để lấy tổng tiền cho các đơn hoàn tiền đã duyệt
-            $refundAmount = DB::table('refund_requests')
-                ->join('orders', 'refund_requests.order_id', '=', 'orders.id')
-                ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-                ->where('refund_requests.status', 'Đã Duyệt')
-                ->whereBetween('refund_requests.created_at', [$startDate, $endDate])
-                ->sum(DB::raw('order_items.price * order_items.quantity'));
-            
-            // Sử dụng tên tháng tiếng Việt thay vì tiếng Anh
             $monthlyData[] = [
-                'month' => $vietnameseMonths[$month],
-                'revenue' => $revenue ?: 0,
-                'orders' => $orders ?: 0,
-                'refunds' => $refundCount ?: 0,
-                'refundAmount' => $refundAmount ?: 0
+                'month' => $month . '/' . $currentYear,
+                'revenue' => $revenue,
+                'orders' => $orderCount,
+                'refunds' => $refundCount
             ];
         }
         
@@ -370,40 +353,64 @@ class DashboardController extends Controller
      */
     private function prepareChartData()
     {
-        // Lấy dữ liệu doanh thu theo tháng
-        $monthlyData = $this->getMonthlyRevenueData();
-        
-        // Tạo mảng tên tháng và dữ liệu cho các series
-        $months = array_column($monthlyData, 'month');
-        $revenueData = array_column($monthlyData, 'revenue');
-        $ordersData = array_column($monthlyData, 'orders');
-        $refundsData = array_column($monthlyData, 'refunds');
-        $refundAmountData = array_column($monthlyData, 'refundAmount');
-        
-        // Mô phỏng dữ liệu lượt truy cập (visits) - sẽ được thay thế bằng dữ liệu thực từ bảng thống kê truy cập
-        // trong phiên bản sau nếu có theo dõi lượt truy cập
+        // Mảng chứa tên các tháng
+        $months = [];
+        $revenueData = [];
+        $ordersData = [];
+        $refundsData = [];
+        $refundAmountData = [];
         $visitsData = [];
-        foreach ($ordersData as $orderCount) {
-            // Mô phỏng số lượt truy cập khoảng 5-10 lần số đơn hàng
-            $visits = $orderCount * rand(5, 10);
-            $visitsData[] = $visits > 0 ? $visits : rand(50, 100);
-        }
-        
-        // Tính tỷ lệ chuyển đổi (đơn hàng / lượt truy cập)
         $conversionRateData = [];
-        foreach ($ordersData as $key => $orderCount) {
-            $visits = $visitsData[$key];
-            // Tránh chia cho 0
-            if ($visits > 0) {
-                $conversionRateData[] = round(($orderCount / $visits) * 100, 2);
-            } else {
-                $conversionRateData[] = 0;
-            }
+        
+        $currentYear = Carbon::now()->year;
+        
+        // Lấy dữ liệu từ tháng 1 đến tháng 12 của năm hiện tại
+        for ($month = 1; $month <= 12; $month++) {
+            $startOfMonth = Carbon::createFromDate($currentYear, $month, 1)->startOfMonth();
+            $endOfMonth = Carbon::createFromDate($currentYear, $month, 1)->endOfMonth();
+            
+            // Thêm tên tháng vào mảng
+            $months[] = 'Th' . $month;
+            
+            // Doanh thu trong tháng
+            $revenue = DB::table('orders')
+                ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+                ->where('orders.payment_status', 1)
+                ->whereBetween('orders.created_at', [$startOfMonth, $endOfMonth])
+                ->sum(DB::raw('order_items.price * order_items.quantity'));
+            $revenueData[] = $revenue;
+            
+            // Số đơn hàng trong tháng
+            $orderCount = Order::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count();
+            $ordersData[] = $orderCount;
+            
+            // Số đơn hoàn tiền trong tháng
+            $refundCount = Order::where('order_status', 'Hoàn Hàng')
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->count();
+            $refundsData[] = $refundCount;
+            
+            // Số tiền hoàn trả trong tháng
+            $refundAmount = DB::table('orders')
+                ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+                ->where('orders.order_status', 'Hoàn Hàng')
+                ->whereBetween('orders.created_at', [$startOfMonth, $endOfMonth])
+                ->sum(DB::raw('order_items.price * order_items.quantity'));
+            $refundAmountData[] = $refundAmount;
+            
+            // Giả lập số lượt truy cập (có thể thay thế bằng dữ liệu thực sau này)
+            $visits = $orderCount * rand(10, 20);
+            $visitsData[] = $visits;
+            
+            // Tỷ lệ chuyển đổi (đơn hàng / lượt truy cập)
+            $conversionRate = $visits > 0 ? ($orderCount / $visits) * 100 : 0;
+            $conversionRateData[] = round($conversionRate, 2);
         }
         
         // Tính tỷ lệ chuyển đổi trung bình
-        $averageConversionRate = !empty($conversionRateData) ? array_sum($conversionRateData) / count($conversionRateData) : 0;
-        $averageConversionRate = round($averageConversionRate, 2);
+        $totalOrders = array_sum($ordersData);
+        $totalVisits = array_sum($visitsData);
+        $averageConversionRate = $totalVisits > 0 ? ($totalOrders / $totalVisits) * 100 : 0;
         
         // Chuẩn bị dữ liệu cho biểu đồ kết hợp (cột + đường)
         $chartData = [
@@ -481,14 +488,14 @@ class DashboardController extends Controller
         // Tổng doanh thu trong khoảng ngày đã chọn
         $totalEarnings = DB::table('orders')
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-            ->where('orders.payment_status', 'paid')
+            ->where('orders.payment_status', 1)
             ->whereBetween('orders.created_at', [$startDate, $endDate])
             ->sum(DB::raw('order_items.price * order_items.quantity'));
         
         // Doanh thu tháng trước (vẫn giữ để hiển thị % tăng/giảm)
         $lastMonthEarnings = DB::table('orders')
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-            ->where('orders.payment_status', 'paid')
+            ->where('orders.payment_status', 1)
             ->whereBetween('orders.created_at', [$lastMonthStart, $lastMonthEnd])
             ->sum(DB::raw('order_items.price * order_items.quantity'));
         
@@ -551,7 +558,7 @@ class DashboardController extends Controller
                 DB::raw('SUM(order_items.quantity) as total_sold'),
                 DB::raw('SUM(order_items.price * order_items.quantity) as total_amount')
             )
-            ->where('orders.payment_status', 'paid')
+            ->where('orders.payment_status', 1)
             ->whereBetween('orders.created_at', [$startDate, $endDate])
             ->groupBy('products.id', 'products.name', 'products.price', 'products.image_thumnail', 'products.quantity', 'products.created_at')
             ->orderByDesc('total_sold');
@@ -561,7 +568,7 @@ class DashboardController extends Controller
             "SELECT products.id FROM order_items 
             JOIN products ON order_items.product_id = products.id 
             JOIN orders ON order_items.order_id = orders.id 
-            WHERE orders.payment_status = 'paid' 
+            WHERE orders.payment_status = 1 
             AND orders.created_at BETWEEN ? AND ?
             GROUP BY products.id",
             [$startDate, $endDate]
@@ -591,7 +598,7 @@ class DashboardController extends Controller
                 DB::raw('COUNT(DISTINCT orders.id) as orders_count'), 
                 DB::raw('SUM(order_items.price * order_items.quantity) as total_spent')
             )
-            ->where('orders.payment_status', 'paid')
+            ->where('orders.payment_status', 1)
             ->whereBetween('orders.created_at', [$startDate, $endDate])
             ->groupBy('users.id', 'users.name', 'users.email', 'users.avatar')
             ->orderByDesc('orders_count');
@@ -600,7 +607,7 @@ class DashboardController extends Controller
         $totalTopBuyers = count(DB::select(
             "SELECT users.id FROM users 
             JOIN orders ON users.id = orders.user_id 
-            WHERE orders.payment_status = 'paid' 
+            WHERE orders.payment_status = 1 
             AND orders.created_at BETWEEN ? AND ?
             GROUP BY users.id",
             [$startDate, $endDate]
@@ -650,34 +657,24 @@ class DashboardController extends Controller
                 return $order;
             });
         
-        // Thống kê doanh thu theo tỉnh/thành từ bảng user_addresses thay vì users.province
+        // Thống kê các đơn hàng theo khu vực (dựa vào địa chỉ của khách)
         $salesByLocations = DB::table('orders')
-            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-            ->join('users', 'orders.user_id', '=', 'users.id')
-            ->join('user_addresses', 'users.id', '=', 'user_addresses.user_id')
             ->select(
-                'user_addresses.province as region', 
-                DB::raw('COUNT(DISTINCT orders.id) as order_count'),
-                DB::raw('SUM(order_items.price * order_items.quantity) as total_revenue')
+                DB::raw('
+                    CASE 
+                        WHEN user_address LIKE "%Hà Nội%" OR user_address LIKE "%Ha Noi%" THEN "Miền Bắc"
+                        WHEN user_address LIKE "%Hồ Chí Minh%" OR user_address LIKE "%Ho Chi Minh%" THEN "Miền Nam"
+                        WHEN user_address LIKE "%Đà Nẵng%" OR user_address LIKE "%Da Nang%" THEN "Miền Trung"
+                        ELSE "Khu vực khác"
+                    END as region
+                '),
+                DB::raw('COUNT(id) as order_count'),
+                DB::raw('SUM(total_price) as total_revenue')
             )
-            ->where('orders.payment_status', 'paid')
-            ->whereBetween('orders.created_at', [$startDate, $endDate])
-            ->whereNotNull('user_addresses.province')
-            ->where('user_addresses.is_default', 1) // Chỉ sử dụng địa chỉ mặc định
-            ->groupBy('user_addresses.province')
-            ->orderByDesc('total_revenue')
-            ->limit(5)
-            ->get()
-            ->map(function ($item) use ($totalEarnings) {
-                // Tính phần trăm doanh thu so với tổng doanh thu
-                $percentage = $totalEarnings > 0 ? round(($item->total_revenue / $totalEarnings) * 100) : 0;
-                return [
-                    'region' => $item->region,
-                    'percentage' => $percentage,
-                    'revenue' => $item->total_revenue,
-                    'order_count' => $item->order_count
-                ];
-            });
+            ->where('payment_status', 1)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('region')
+            ->get();
         
         // Nếu không có dữ liệu khu vực, tạo dữ liệu trống
         if ($salesByLocations->isEmpty()) {
@@ -688,7 +685,8 @@ class DashboardController extends Controller
         $topCategories = Category::withCount(['products' => function($query) use ($startDate, $endDate) {
                 $query->whereHas('orderItems', function($q) use ($startDate, $endDate) {
                     $q->whereHas('order', function($o) use ($startDate, $endDate) {
-                        $o->whereBetween('created_at', [$startDate, $endDate]);
+                        $o->where('payment_status', 1)
+                          ->whereBetween('created_at', [$startDate, $endDate]);
                     });
                 });
             }])
