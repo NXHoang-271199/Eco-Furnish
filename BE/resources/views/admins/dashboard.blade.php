@@ -292,20 +292,7 @@
                                     <button type="button" class="btn btn-soft-info btn-sm material-shadow-none" id="exportRevenueReport" data-report-type="revenue" data-report-title="Báo cáo doanh thu">
                                         <i class="ri-file-excel-2-line align-middle"></i> Xuất báo cáo
                                     </button>
-                                    <div>
-                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm filter-revenue" data-period="all">
-                                            TẤT CẢ
-                                        </button>
-                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm filter-revenue" data-period="1month">
-                                            1 THÁNG
-                                        </button>
-                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm filter-revenue" data-period="6month">
-                                            6 THÁNG
-                                        </button>
-                                        <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm filter-revenue" data-period="1year">
-                                            1 NĂM
-                                        </button>
-                                    </div>
+                                    <!-- Xóa phần div chứa các nút lọc 1 tháng, 6 tháng, 1 năm -->
                                 </div>
                             </div><!-- end card header -->
 
@@ -419,7 +406,10 @@
                                                         
                                                         try {
                                                             // Lưu ý rằng dòng này sẽ ghi đè biến $product gốc
-                                                            $productDetails = App\Models\Product::with('variants')->find($product->id);
+                                                            $productDetails = App\Models\Product::withTrashed()->with(['variants' => function($query) {
+                                                                $query->withTrashed();
+                                                            }])->find($product->id);
+                                                            
                                                             if ($productDetails) {
                                                                 $variants = $productDetails->variants;
                                                                 $hasVariants = $variants->count() > 0;
@@ -439,10 +429,12 @@
                                                                     $productStock = $productDetails->quantity;
                                                                 }
                                                             } else {
+                                                                // Nếu không tìm thấy sản phẩm, sử dụng giá từ dữ liệu gốc
                                                                 $priceRange = number_format($product->price, 0, ',', '.');
                                                                 $productStock = $product->stock ?? 0;
                                                             }
                                                         } catch (\Exception $e) {
+                                                            // Nếu có lỗi, hiển thị giá từ dữ liệu gốc
                                                             $priceRange = number_format($product->price, 0, ',', '.');
                                                             $productStock = $product->stock ?? 0;
                                                         }
@@ -1126,7 +1118,7 @@
                         const startDate = new Date(rangeParts[0]);
                         const endDate = rangeParts.length > 1 ? new Date(rangeParts[1]) : new Date(rangeParts[0]);
                         
-                        // Lọc dữ liệu theo khoảng ngày
+                        // Lấy dữ liệu gốc từ biểu đồ
                         const chartData = @json($chartData ?? null);
                         if (!chartData || !chartData.rawData) return { months: [], series: [] };
                         
@@ -1150,37 +1142,105 @@
                             };
                         });
                         
-                        // Lọc dữ liệu trong khoảng ngày
-                        const filteredMonths = monthData.filter(item => {
-                            return item.date >= startDate && item.date <= endDate;
-                        });
+                        // Khi lọc theo khoảng ngày cụ thể, trả về tất cả dữ liệu của tháng có trong khoảng ngày
+                        // Ví dụ: nếu lọc từ 15/04 đến 20/04, trả về dữ liệu tháng 4
+                        const startMonth = startDate.getMonth() + 1; // getMonth() trả về 0-11
+                        const endMonth = endDate.getMonth() + 1;
                         
-                        // Tạo dữ liệu đã lọc
-                        filteredData.months = filteredMonths.map(item => item.month);
-                        filteredData.series = [
-                            {
-                                name: 'Đơn hàng',
-                                type: 'line',
-                                data: filteredMonths.map(item => item.orders),
-                                color: '#3b76e1'
-                            },
-                            {
-                                name: 'Doanh thu',
-                                type: 'column',
-                                data: filteredMonths.map(item => item.revenue),
-                                color: '#63ad6f'
-                            },
-                            {
-                                name: 'Hoàn tiền',
-                                type: 'line',
-                                data: filteredMonths.map(item => item.refunds),
-                                color: '#f34e4e',
-                                dashArray: 4
+                        for (let month = startMonth; month <= endMonth; month++) {
+                            const monthLabel = 'Th' + month;
+                            const monthIndex = chartData.months.findIndex(m => m === monthLabel);
+                            
+                            if (monthIndex !== -1) {
+                                filteredData.months.push(monthLabel);
+                                let orderData = chartData.rawData.orders[monthIndex];
+                                let revenueData = chartData.rawData.revenue[monthIndex];
+                                let refundData = chartData.rawData.refunds[monthIndex];
+                                
+                                // Nếu khoảng ngày chỉ là một phần của tháng, có thể tính tỷ lệ ngày/tổng số ngày trong tháng
+                                // và chia dữ liệu theo tỷ lệ đó. Nhưng để đơn giản, ta sử dụng toàn bộ dữ liệu tháng
+                                
+                                filteredData.series.push({
+                                    name: 'Đơn hàng',
+                                    type: 'line',
+                                    data: [orderData],
+                                    color: '#3b76e1'
+                                });
+                                
+                                filteredData.series.push({
+                                    name: 'Doanh thu',
+                                    type: 'column',
+                                    data: [revenueData],
+                                    color: '#63ad6f'
+                                });
+                                
+                                filteredData.series.push({
+                                    name: 'Hoàn tiền',
+                                    type: 'line',
+                                    data: [refundData],
+                                    color: '#f34e4e',
+                                    dashArray: 4
+                                });
                             }
-                        ];
+                        }
                         
-                                return filteredData;
-                            }
+                        // Nếu không tìm thấy dữ liệu nào, hiển thị biểu đồ trống với tháng đã chọn
+                        if (filteredData.months.length === 0) {
+                            const startMonthLabel = 'Th' + startMonth;
+                            const endMonthLabel = 'Th' + endMonth;
+                            
+                            filteredData.months = [startMonth === endMonth ? startMonthLabel : (startMonthLabel + ' - ' + endMonthLabel)];
+                            
+                            // Hiển thị dữ liệu từ trang filter nếu có
+                            @if(isset($totalEarnings) && isset($totalOrders))
+                                filteredData.series = [
+                                    {
+                                        name: 'Đơn hàng',
+                                        type: 'line',
+                                        data: [{{ $totalOrders ?? 0 }}],
+                                        color: '#3b76e1'
+                                    },
+                                    {
+                                        name: 'Doanh thu',
+                                        type: 'column',
+                                        data: [{{ $totalEarnings ?? 0 }}],
+                                        color: '#63ad6f'
+                                    },
+                                    {
+                                        name: 'Hoàn tiền',
+                                        type: 'line',
+                                        data: [0], // Không có dữ liệu hoàn tiền
+                                        color: '#f34e4e',
+                                        dashArray: 4
+                                    }
+                                ];
+                            @else
+                                filteredData.series = [
+                                    {
+                                        name: 'Đơn hàng',
+                                        type: 'line',
+                                        data: [0],
+                                        color: '#3b76e1'
+                                    },
+                                    {
+                                        name: 'Doanh thu',
+                                        type: 'column',
+                                        data: [0],
+                                        color: '#63ad6f'
+                                    },
+                                    {
+                                        name: 'Hoàn tiền',
+                                        type: 'line',
+                                        data: [0],
+                                        color: '#f34e4e',
+                                        dashArray: 4
+                                    }
+                                ];
+                            @endif
+                        }
+                        
+                        return filteredData;
+                    }
                     
                     // Nếu không có khoảng ngày, trả về dữ liệu gốc
                     const chartData = @json($chartData ?? null);
@@ -1366,6 +1426,8 @@
                 chart.render();
                 
                 // Bắt sự kiện khi người dùng click vào nút lọc
+                // Xóa đoạn code này
+                /*
                 document.querySelectorAll('.filter-revenue').forEach(button => {
                     button.addEventListener('click', function() {
                         const period = this.getAttribute('data-period');
@@ -1403,6 +1465,7 @@
                     // Gọi sự kiện click trên nút mặc định
                     defaultFilterButton.click();
                 }
+                */
                 
                 // Hàm cập nhật thống kê tổng hợp khi lọc
                 function updateStatistics(period) {
@@ -1416,76 +1479,58 @@
                     
                     // Lọc theo khoảng ngày nếu có
                     if (dateRange) {
-                        const rangeParts = dateRange.split(' đến ');
-                        const startDate = new Date(rangeParts[0]);
-                        const endDate = rangeParts.length > 1 ? new Date(rangeParts[1]) : new Date(rangeParts[0]);
-                        
-                        // Lấy dữ liệu gốc từ biểu đồ
-                        const chartData = @json($chartData ?? null);
-                        
-                        if (chartData && chartData.rawData) {
-                            // Chuyển đổi dữ liệu tháng thành định dạng ngày để so sánh
-                            const monthData = chartData.months.map((month, index) => {
-                                // Giả sử tháng có định dạng "Th1", "Th2", etc.
-                                const monthNumber = parseInt(month.replace('Th', ''));
-                                const year = new Date().getFullYear();
-                                return {
-                                    date: new Date(year, monthNumber - 1, 1),
-                                    index: index,
-                                    orders: chartData.rawData.orders[index],
-                                    revenue: chartData.rawData.revenue[index],
-                                    refunds: chartData.rawData.refunds[index]
-                                };
-                            });
+                        // Sử dụng giá trị từ backend đã lọc thay vì tính toán lại bằng JavaScript
+                        @if(isset($totalOrders) && isset($totalEarnings))
+                            totalOrders = {{ $totalOrders }};
+                            totalRevenue = {{ $totalEarnings }};
+                            totalRefunds = {{ isset($chartData) && isset($chartData['rawData']) && isset($chartData['rawData']['refunds']) ? array_sum($chartData['rawData']['refunds']) : 0 }};
+                        @else
+                            const rangeParts = dateRange.split(' đến ');
+                            const startDate = new Date(rangeParts[0]);
+                            const endDate = rangeParts.length > 1 ? new Date(rangeParts[1]) : new Date(rangeParts[0]);
                             
-                            // Lọc dữ liệu trong khoảng ngày
-                            const filteredMonths = monthData.filter(item => {
-                                return item.date >= startDate && item.date <= endDate;
-                            });
+                            // Lấy dữ liệu gốc từ biểu đồ
+                            const chartData = @json($chartData ?? null);
                             
-                            // Tính tổng đơn hàng, doanh thu, hoàn tiền từ dữ liệu đã lọc
-                            totalOrders = filteredMonths.reduce((sum, item) => sum + item.orders, 0);
-                            totalRevenue = filteredMonths.reduce((sum, item) => sum + item.revenue, 0);
-                            totalRefunds = filteredMonths.reduce((sum, item) => sum + item.refunds, 0);
-                        }
+                            if (chartData && chartData.rawData) {
+                                // Chuyển đổi dữ liệu tháng thành định dạng ngày để so sánh
+                                const monthData = chartData.months.map((month, index) => {
+                                    // Giả sử tháng có định dạng "Th1", "Th2", etc.
+                                    const monthNumber = parseInt(month.replace('Th', ''));
+                                    const year = new Date().getFullYear();
+                                    return {
+                                        date: new Date(year, monthNumber - 1, 1),
+                                        index: index,
+                                        orders: chartData.rawData.orders[index],
+                                        revenue: chartData.rawData.revenue[index],
+                                        refunds: chartData.rawData.refunds[index]
+                                    };
+                                });
+                                
+                                // Lọc dữ liệu trong khoảng ngày (tương tự phần trên, tính toán theo tháng)
+                                const startMonth = startDate.getMonth() + 1;
+                                const endMonth = endDate.getMonth() + 1;
+                                
+                                for (let month = startMonth; month <= endMonth; month++) {
+                                    const monthLabel = 'Th' + month;
+                                    const monthIndex = chartData.months.findIndex(m => m === monthLabel);
+                                    
+                                    if (monthIndex !== -1) {
+                                        totalOrders += chartData.rawData.orders[monthIndex];
+                                        totalRevenue += chartData.rawData.revenue[monthIndex];
+                                        totalRefunds += chartData.rawData.refunds[monthIndex];
+                                    }
+                                }
+                            }
+                        @endif
                     } else {
-                        // Nếu có period (TẤT CẢ, 1 THÁNG, 6 THÁNG, 1 NĂM), sử dụng như cũ
-                        // Lấy tháng hiện tại
-                        const currentDate = new Date();
-                        const currentMonth = currentDate.getMonth(); // 0-11 (tháng hiện tại - 1)
-                        
-                        let filteredOrders = [];
-                        let filteredRevenue = [];
-                        let filteredRefunds = [];
-                        
+                        // Nếu không có khoảng ngày được chọn, sử dụng tất cả dữ liệu
                         const chartData = @json($chartData ?? null);
-                        if (!chartData || !chartData.rawData) return;
-                        
-                        // Tính toán dựa trên giai đoạn đã chọn
-                        if (period === 'all' || period === '1year') {
-                            // Sử dụng tất cả dữ liệu
-                            filteredOrders = chartData.rawData.orders;
-                            filteredRevenue = chartData.rawData.revenue;
-                            filteredRefunds = chartData.rawData.refunds;
-                        } else if (period === '1month') {
-                            // Chỉ lấy dữ liệu của tháng hiện tại
-                            filteredOrders = [chartData.rawData.orders[currentMonth]];
-                            filteredRevenue = [chartData.rawData.revenue[currentMonth]];
-                            filteredRefunds = [chartData.rawData.refunds[currentMonth]];
-                        } else if (period === '6month') {
-                            // Lấy dữ liệu của 6 tháng gần nhất
-                            const startIndex = Math.max(0, currentMonth - 5);
-                            const endIndex = Math.min(startIndex + 6, chartData.months.length);
-                            
-                            filteredOrders = chartData.rawData.orders.slice(startIndex, endIndex);
-                            filteredRevenue = chartData.rawData.revenue.slice(startIndex, endIndex);
-                            filteredRefunds = chartData.rawData.refunds.slice(startIndex, endIndex);
+                        if (chartData && chartData.rawData) {
+                            totalOrders = chartData.rawData.orders.reduce((sum, val) => sum + val, 0);
+                            totalRevenue = chartData.rawData.revenue.reduce((sum, val) => sum + val, 0);
+                            totalRefunds = chartData.rawData.refunds.reduce((sum, val) => sum + val, 0);
                         }
-                        
-                        // Tính tổng
-                        totalOrders = filteredOrders.reduce((sum, val) => sum + val, 0);
-                        totalRevenue = filteredRevenue.reduce((sum, val) => sum + val, 0);
-                        totalRefunds = filteredRefunds.reduce((sum, val) => sum + val, 0);
                     }
                     
                     // Cập nhật giá trị hiển thị trên giao diện
