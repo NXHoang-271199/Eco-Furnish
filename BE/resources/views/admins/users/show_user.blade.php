@@ -12,7 +12,7 @@
             width: 100%;
             margin: 0;
         }
-        
+
         .search-box .form-control {
             padding: 0.4rem 0.8rem;
             font-size: 13px;
@@ -21,7 +21,7 @@
             border: 1px solid #e2e5e8;
             width: 200px;
         }
-        
+
         .search-box .btn-search {
             padding: 0.4rem 1rem;
             background-color: #405189;
@@ -35,7 +35,7 @@
             background-color: #364574;
             border-color: #364574;
         }
-        
+
         .search-form-wrapper {
             display: flex;
             gap: 8px;
@@ -46,22 +46,23 @@
             .search-box .form-control {
                 width: 100%;
             }
+
             .search-form-wrapper {
                 flex-direction: column;
             }
         }
-        
+
         .table thead tr {
             background-color: #f3f6f9;
         }
-        
+
         .table thead th {
             font-weight: 500;
             border: 0;
             color: #878a99;
             font-size: 13px;
         }
-        
+
         .table tbody td {
             vertical-align: middle;
             font-size: 13px;
@@ -69,43 +70,43 @@
             border-top: 1px solid #e9ebec;
             padding: 1rem 0.6rem;
         }
-        
+
         .avatar-xs {
             width: 32px;
             height: 32px;
         }
-        
+
         .badge {
             padding: 4px 10px;
             font-size: 11px;
             font-weight: 500;
             border-radius: 3px;
         }
-        
+
         .badge.bg-success-subtle {
             background-color: #daf4e8 !important;
             color: #0ab39c !important;
         }
-        
+
         .badge.bg-danger-subtle {
             background-color: #fbdbde !important;
             color: #f06548 !important;
         }
 
         .btn-soft-primary {
-            background-color: rgba(64,81,137,.1);
+            background-color: rgba(64, 81, 137, .1);
             color: #405189;
             border: 1px solid transparent;
         }
 
         .btn-soft-danger {
-            background-color: rgba(240,101,72,.1);
+            background-color: rgba(240, 101, 72, .1);
             color: #f06548;
             border: 1px solid transparent;
         }
 
         .btn-soft-success {
-            background-color: rgba(10,179,156,.1);
+            background-color: rgba(10, 179, 156, .1);
             color: #0ab39c;
             border: 1px solid transparent;
         }
@@ -141,26 +142,26 @@
 
         .card {
             margin-bottom: 1.5rem;
-            box-shadow: 0 1px 2px rgba(56,65,74,.15);
+            box-shadow: 0 1px 2px rgba(56, 65, 74, .15);
         }
 
         .card-header {
             border-bottom: 1px solid #e9ebec;
             background-color: #fff;
         }
-        
+
         .nav-tabs .nav-link {
             color: #495057;
             font-weight: 500;
             font-size: 14px;
             padding: 0.5rem 1rem;
         }
-        
+
         .nav-tabs .nav-link.active {
             color: #405189;
             border-bottom: 2px solid #405189;
         }
-        
+
         .tab-content {
             padding-top: 1.5rem;
         }
@@ -180,8 +181,8 @@
                             <div class="col-md-6">
                                 <div class="search-box">
                                     <form id="searchForm" class="search-form-wrapper">
-                                        <input type="search" class="form-control" placeholder="Tìm theo tên"
-                                            name="name" value="{{ request('name') }}" id="searchName">
+                                        <input type="search" class="form-control" placeholder="Tìm theo tên" name="name"
+                                            value="{{ request('name') }}" id="searchName">
                                         <input type="search" class="form-control" placeholder="Tìm theo email"
                                             name="email" value="{{ request('email') }}" id="searchEmail">
                                         <input type="hidden" name="status" id="statusFilter" value="active">
@@ -196,12 +197,14 @@
                     <div class="card-body">
                         <ul class="nav nav-tabs" role="tablist">
                             <li class="nav-item">
-                                <a class="nav-link active" data-bs-toggle="tab" href="#active-users" role="tab" onclick="changeTab('active')">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#active-users" role="tab"
+                                    onclick="changeTab('active')">
                                     Tài khoản hoạt động
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#inactive-users" role="tab" onclick="changeTab('inactive')">
+                                <a class="nav-link" data-bs-toggle="tab" href="#inactive-users" role="tab"
+                                    onclick="changeTab('inactive')">
                                     Tài khoản bị vô hiệu hóa
                                 </a>
                             </li>
@@ -219,56 +222,63 @@
                                                 <th scope="col">Địa chỉ</th>
                                                 <th scope="col">Ngày tham gia</th>
                                                 <th scope="col">Trạng thái</th>
-                                                <th scope="col" class="text-end">Thao tác</th>
+                                                @if(Auth::user()->hasPermission('delete-users'))
+                                                    <th scope="col" class="text-end">Thao tác</th>
+                                                @endif
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach ($listUsers as $user)
-                                                @if($user->role->slug === 'client')
-                                                <tr data-user-id="{{ $user->id }}">
-                                                    <td>{{ $loop->iteration }}</td>
-                                                    <td>
-                                                        @if($user->avatar && Storage::exists($user->avatar))
-                                                            <img src="{{ Storage::url($user->avatar) }}" 
-                                                                alt="ảnh {{ $user->name }}"
-                                                                class="rounded-circle avatar-md">
-                                                        @else
-                                                            <img src="{{ asset('assets/admins/images/users/avatarUser.png') }}"
-                                                                alt="ảnh mặc định"
-                                                                class="rounded-circle avatar-md">
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        <div class="d-flex gap-2 align-items-center">
-                                                            <div class="flex-grow-1">
-                                                                <h5 class="fs-14 mb-0">{{ $user->name }}</h5>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>{{ $user->email }}</td>
-                                                    <td>{{ $user->address }}</td>
-                                                    <td>{{ $user->created_at->format('d/m/Y') }}</td>
-                                                    <td>
-                                                        @if($user->is_active)
-                                                            <span class="badge bg-success-subtle">Hoạt động</span>
-                                                        @else
-                                                            <span class="badge bg-danger-subtle">Đã khóa</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <div class="d-flex gap-2 justify-content-end">
-                                                            @if($user->is_active)
-                                                                <button class="btn btn-sm btn-soft-danger" onclick="toggleStatus({{ $user->id }})">
-                                                                    <i class="ri-lock-line"></i>
-                                                                </button>
+                                                @if ($user->role->slug === 'client')
+                                                    <tr data-user-id="{{ $user->id }}">
+                                                        <td>{{ $loop->iteration }}</td>
+                                                        <td>
+                                                            @if ($user->avatar && Storage::exists($user->avatar))
+                                                                <img src="{{ Storage::url($user->avatar) }}"
+                                                                    alt="ảnh {{ $user->name }}"
+                                                                    class="rounded-circle avatar-md">
                                                             @else
-                                                                <button class="btn btn-sm btn-soft-success" onclick="toggleStatus({{ $user->id }})">
-                                                                    <i class="ri-lock-unlock-line"></i>
-                                                                </button>
+                                                                <img src="{{ asset('assets/admins/images/users/avatarUser.png') }}"
+                                                                    alt="ảnh mặc định" class="rounded-circle avatar-md">
                                                             @endif
-                                                        </div>
-                                                    </td>
-                                                </tr>
+                                                        </td>
+                                                        <td>
+                                                            <div class="d-flex gap-2 align-items-center">
+                                                                <div class="flex-grow-1">
+                                                                    <h5 class="fs-14 mb-0">{{ $user->name }}</h5>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>{{ $user->email }}</td>
+                                                        <td>{{ $user->address }}</td>
+                                                        <td>{{ $user->created_at->format('d/m/Y') }}</td>
+                                                        <td>
+                                                            @if ($user->is_active)
+                                                                <span class="badge bg-success-subtle">Hoạt động</span>
+                                                            @else
+                                                                <span class="badge bg-danger-subtle">Đã khóa</span>
+                                                            @endif
+                                                        </td>
+                                                        @if (Auth::user()->hasPermission('delete-users'))
+                                                            <td class="text-end">
+                                                                <div class="d-flex gap-2 justify-content-end">
+                                                                    @if (Auth::user()->isAdmin() || auth()->id() === $user->id)
+                                                                        @if ($user->is_active)
+                                                                            <button class="btn btn-sm btn-soft-danger"
+                                                                                onclick="toggleStatus({{ $user->id }})">
+                                                                                <i class="ri-lock-line"></i>
+                                                                            </button>
+                                                                        @else
+                                                                            <button class="btn btn-sm btn-soft-success"
+                                                                                onclick="toggleStatus({{ $user->id }})">
+                                                                                <i class="ri-lock-unlock-line"></i>
+                                                                            </button>
+                                                                        @endif
+                                                                    @endif
+                                                                </div>
+                                                            </td>
+                                                        @endif
+                                                    </tr>
                                                 @endif
                                             @endforeach
                                         </tbody>
@@ -329,7 +339,7 @@
             });
 
             // Load inactive users when tab is clicked
-            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
                 const status = $(e.target).attr('href') === '#inactive-users' ? 'inactive' : 'active';
                 $('#statusFilter').val(status);
                 performSearch();
@@ -342,7 +352,7 @@
         }
 
         function performSearch() {
-            let url = '{{ route("users.index") }}?' + $('#searchForm').serialize();
+            let url = '{{ route('users.index') }}?' + $('#searchForm').serialize();
             loadUsers(url);
             window.history.pushState({}, '', url);
         }
@@ -358,14 +368,19 @@
                 url: url,
                 type: 'GET',
                 beforeSend: function() {
-                    let container = status === 'inactive' ? '#inactiveUserTableContainer' : '#userTableContainer';
-                    $(container).html('<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>');
+                    let container = status === 'inactive' ? '#inactiveUserTableContainer' :
+                        '#userTableContainer';
+                    $(container).html(
+                        '<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>'
+                        );
                 },
                 success: function(response) {
                     if (response.success) {
-                        let container = status === 'inactive' ? '#inactiveUserTableContainer' : '#userTableContainer';
-                        let paginationContainer = status === 'inactive' ? '#inactivePaginationContainer' : '#paginationContainer';
-                        
+                        let container = status === 'inactive' ? '#inactiveUserTableContainer' :
+                            '#userTableContainer';
+                        let paginationContainer = status === 'inactive' ? '#inactivePaginationContainer' :
+                            '#paginationContainer';
+
                         $(container).html(response.html);
                         $(paginationContainer).html(response.pagination);
                     } else {
@@ -444,14 +459,17 @@
                                         $(`tr[data-user-id="${userId}"]`).fadeOut(300, function() {
                                             $(this).remove();
                                             // Nếu không còn dòng nào trong bảng
-                                            if ($('#inactiveUserTableContainer table tbody tr').length === 0) {
-                                                $('#inactiveUserTableContainer').html('<div class="text-center p-4">Không có tài khoản bị vô hiệu hóa</div>');
+                                            if ($('#inactiveUserTableContainer table tbody tr')
+                                                .length === 0) {
+                                                $('#inactiveUserTableContainer').html(
+                                                    '<div class="text-center p-4">Không có tài khoản bị vô hiệu hóa</div>'
+                                                    );
                                             }
                                         });
                                     }
                                     // Load lại tab active để hiển thị tài khoản mới được kích hoạt
                                     if ($('#statusFilter').val() === 'active') {
-                                        loadUsers('{{ route("users.index") }}?status=active');
+                                        loadUsers('{{ route('users.index') }}?status=active');
                                     }
                                 } else {
                                     // Nếu tài khoản bị vô hiệu hóa
@@ -460,14 +478,17 @@
                                         $(`tr[data-user-id="${userId}"]`).fadeOut(300, function() {
                                             $(this).remove();
                                             // Nếu không còn dòng nào trong bảng
-                                            if ($('#userTableContainer table tbody tr').length === 0) {
-                                                $('#userTableContainer').html('<div class="text-center p-4">Không có tài khoản hoạt động</div>');
+                                            if ($('#userTableContainer table tbody tr')
+                                                .length === 0) {
+                                                $('#userTableContainer').html(
+                                                    '<div class="text-center p-4">Không có tài khoản hoạt động</div>'
+                                                    );
                                             }
                                         });
                                     }
                                     // Load lại tab inactive để hiển thị tài khoản mới bị vô hiệu hóa
                                     if ($('#statusFilter').val() === 'inactive') {
-                                        loadUsers('{{ route("users.index") }}?status=inactive');
+                                        loadUsers('{{ route('users.index') }}?status=inactive');
                                     }
                                 }
                             } else {
@@ -494,4 +515,4 @@
             });
         }
     </script>
-@endsection 
+@endsection

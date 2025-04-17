@@ -44,7 +44,7 @@
                     </li>
                 @endif
 
-                @if (Auth::user()->hasPermission('view-users') || Auth::user()->hasPermission('view-roles') || auth()->user()->isAdmin())
+                @if (Auth::user()->hasPermission('view-users'))
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="#sidebarUser" data-bs-toggle="collapse" role="button"
                             aria-expanded="false" aria-controls="sidebarUser">
@@ -65,7 +65,7 @@
                                         </a>
                                     </li>
                                 @endif
-                                @if (Auth::user()->hasPermission('view-roles'))
+                                @if (Auth::user()->hasPermission('view-roles') || Auth::user()->isAdmin())
                                     <li class="nav-item">
                                         <a href="{{ route('roles.index') }}" class="nav-link"
                                             data-key="t-nestable-list">
@@ -251,22 +251,24 @@
                             </ul>
                         </div>
                     </li>
+                @endif
+
+                @if (Auth::user()->hasPermission('view-banners'))
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="{{ route('banners.index') }}">
                             <i class="ri-image-line"></i> <span data-key="t-advance-ui">Quản lý banner</span>
                         </a>
                     </li>
-                    {{-- @if (Auth::user()->hasPermission('view-messages')) --}}
+                @endif
+
+                @if (Auth::user()->hasPermission('view-messages'))
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="{{ route('messages.index') }}">
-                            <i class="ri-customer-service-2-line"></i> <span data-key="t-advance-ui">Chat trực
-                                tuyến</span>
+                            <i class="ri-customer-service-2-line"></i> <span data-key="t-advance-ui">Chat trực tuyến</span>
                         </a>
                     </li>
-                    {{-- @endif --}}
-
-                    {{-- <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-pages">Bán hàng</span></li> --}}
                 @endif
+
                 @if (Auth::user()->hasPermission('view-wallets'))
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="#sidebarWallet" data-bs-toggle="collapse"
@@ -275,16 +277,20 @@
                         </a>
                         <div class="collapse menu-dropdown" id="sidebarWallet">
                             <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="{{ route('wallets.index') }}" class="nav-link">
-                                            Số Dư Khách Hàng
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('wallets.transactions') }}" class="nav-link">
-                                            Lịch Sử Giao Dịch
-                                        </a>
-                                    </li>
+                                @if (Auth::user()->hasPermission('view-wallets'))
+                                <li class="nav-item">
+                                    <a href="{{ route('wallets.index') }}" class="nav-link">
+                                        Số Dư Khách Hàng
+                                    </a>
+                                </li>
+                                @endif
+                                @if (Auth::user()->hasPermission('view-wallets-transactions'))
+                                <li class="nav-item">
+                                    <a href="{{ route('wallets.transactions') }}" class="nav-link">
+                                        Lịch Sử Giao Dịch
+                                    </a>
+                                </li>
+                                @endif
                             </ul>
                         </div>
                     </li>

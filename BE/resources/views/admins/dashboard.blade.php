@@ -110,10 +110,8 @@
 {{-- @section: dùng để chị định phần nội dụng được hiển thị --}}
 @section('content')
 <div class="container-fluid p-0 px-4 dashboard-container">
-
     <div class="row g-0">
         <div class="col-xl-12">
-
             <div class="h-100">
                 <div class="row mb-3 pb-1">
                     <div class="col-12">

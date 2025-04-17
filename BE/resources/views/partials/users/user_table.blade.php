@@ -8,7 +8,9 @@
             <th scope="col">Địa chỉ</th>
             <th scope="col">Ngày tham gia</th>
             <th scope="col">Trạng thái</th>
-            <th scope="col" class="text-end">Thao tác</th>
+            @if(Auth::user()->hasPermission('delete-users'))
+                <th scope="col" class="text-end">Thao tác</th>
+            @endif
         </tr>
     </thead>
     <tbody>
@@ -44,19 +46,25 @@
                         <span class="badge bg-danger-subtle">Đã khóa</span>
                     @endif
                 </td>
-                <td class="text-end">
-                    <div class="d-flex gap-2 justify-content-end">
-                        @if($user->is_active)
-                            <button class="btn btn-sm btn-soft-danger" onclick="toggleStatus({{ $user->id }})">
-                                <i class="ri-lock-line"></i>
-                            </button>
-                        @else
-                            <button class="btn btn-sm btn-soft-success" onclick="toggleStatus({{ $user->id }})">
-                                <i class="ri-lock-unlock-line"></i>
-                            </button>
-                        @endif
-                    </div>
-                </td>
+                @if (Auth::user()->isAdmin() || auth()->id() === $user->id)
+                    @if ($user->is_active)
+                        <td class="text-end">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <button class="btn btn-sm btn-soft-danger" onclick="toggleStatus({{ $user->id }})">
+                                    <i class="ri-lock-line"></i>
+                                </button>
+                            </div>
+                        </td>
+                    @else
+                        <td class="text-end">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <button class="btn btn-sm btn-soft-success" onclick="toggleStatus({{ $user->id }})">
+                                    <i class="ri-lock-unlock-line"></i>
+                                </button>
+                            </div>
+                        </td>
+                    @endif
+                @endif
             </tr>
             @endif
         @endforeach
