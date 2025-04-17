@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             VoucherSeeder::class,
         ]);
 
-        // Tạo tài khoản admin
+        // Tạo tài khoản quản trị viên
         User::create([
             'name' => 'Quản trị viên',
             'email' => 'quantrivien@gmail.com',
@@ -35,12 +35,24 @@ class DatabaseSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-         // Tạo tài khoản admin
-         User::create([
+        // Tạo tài khoản nhân viên
+        User::create([
             'name' => 'Nhân viên',
             'email' => 'nhanvien@gmail.com',
             'password' => Hash::make('1'),
             'role_id' => 2,
+            'is_active' => 1,
+            'email_verified_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Tạo tài khoản khách hàng
+        User::create([
+            'name' => 'Khách hàng',
+            'email' => 'khachhang@gmail.com',
+            'password' => Hash::make('1'),
+            'role_id' => 3,
             'is_active' => 1,
             'email_verified_at' => now(),
             'created_at' => now(),
