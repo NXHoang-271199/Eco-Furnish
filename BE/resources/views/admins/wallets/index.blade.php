@@ -15,6 +15,33 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
+                    <form method="GET" action="{{ route('wallets.index') }}" class="mb-3">
+                        <div class="row align-items-end">
+                            <div class="col-md-4">
+                                <input type="text" name="search" class="form-control"
+                                    placeholder="Tên khách hàng / Email / Số điện thoại" value="{{ request('search') }}">
+                            </div>
+                            <div class="col-md-3">
+                                <select name="withdraw_filter" class="form-select">
+                                    <option value="">Tất cả</option>
+                                    <option value="1" {{ request('withdraw_filter') == '1' ? 'selected' : '' }}>Có yêu cầu rút tiền</option>
+                                    <option value="2" {{ request('withdraw_filter') == '2' ? 'selected' : '' }}>Không có yêu cầu rút tiền</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex">
+                                    <button type="submit" class="btn btn-primary me-2">
+                                        <i class="bx bx-search"></i>
+                                    </button>
+                                    <a href="{{ route('wallets.index') }}" class="btn btn-danger">
+                                        <i class="bx bx-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+
                     <table class="table table-bordered table-striped align-middle mb-0">
                         <thead class="table-light text-center">
                             <tr>
@@ -23,6 +50,7 @@
                                 <th scope="col">Email</th>
                                 <th scope="col">Số điện thoại</th>
                                 <th scope="col">Số dư</th>
+                                <th scope="col">Yêu cầu rút tiền (Chờ xử lý)</th>
                                 <th scope="col">Ngày tạo ví</th>
                                 <th scope="col">Hành động</th>
                             </tr>
@@ -40,6 +68,15 @@
                                     <td>{{ $wallet->user->email }}</td>
                                     <td>{{ $wallet->user->phone ?? 'Chưa có' }}</td>
                                     <td>{{ number_format($wallet->balance, 0, ',', '.') }} đ</td>
+                                    <td class="text-center">
+                                        @php $count = $withdrawRequests[$wallet->user->id] ?? 0; @endphp
+                                        <span
+                                            class="d-inline-block px-2 py-1 rounded fw-semibold
+                                            {{ $count > 0 ? 'bg-danger text-white' : 'bg-success-subtle text-success' }}">
+                                            {{ $count }}
+                                        </span>
+                                    </td>
+
                                     <td>{{ $wallet->created_at->format('d/m/Y H:i') }}</td>
                                     <td class="text-nowrap">
                                         <a href="{{ route('wallets.show', $wallet->id) }}" class="btn btn-info btn-sm">

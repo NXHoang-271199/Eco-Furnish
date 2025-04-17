@@ -1,6 +1,6 @@
-{{-- Để kế thừa lại master layout ta sử dụng extends --}}
+{{-- Để kế thừa lại admin layout ta sử dụng extends --}}
 @extends('layouts.admin')
-{{-- Một file chỉ được kế thừa 1 master layout --}}
+{{-- Một file chỉ được kế thừa 1 admin layout --}}
 
 @section('title')
     Quản lý
@@ -20,10 +20,91 @@
             padding-top: 80px !important;
         }
     }
+    /* Container cho date picker */
+    .date-picker-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* Button chọn khoảng ngày */
+    .date-picker-display {
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-right: none;
+        border-radius: 0.25rem 0 0 0.25rem;
+        padding: 0.47rem 0.75rem;
+        font-size: 0.875rem;
+        color: #495057;
+        cursor: pointer;
+        min-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Icon lịch */
+    .date-picker-icon {
+        background-color: #556ee6;
+        color: white;
+        border: 1px solid #556ee6;
+        border-radius: 0 0.25rem 0.25rem 0;
+        padding: 0.47rem 0.75rem;
+        cursor: pointer;
+    }
+    
+    /* Ẩn input gốc mà Flatpickr sử dụng */
+    input#dateRangePicker.flatpickr-input {
+        display: none !important;
+    }
+
+    /* Đảm bảo calendar hiển thị phía trên các phần tử khác */
+    .flatpickr-calendar {
+        z-index: 9999 !important;
+        background-color: white;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        border-radius: 4px;
+        margin-top: 2px;
+        width: 310px !important; /* Tăng chiều rộng một chút */
+        font-size: 13px !important; /* Giảm kích thước font chữ */
+    }
+    .flatpickr-day {
+        height: 32px;
+        line-height: 32px;
+        margin: 0;
+    }
+    .flatpickr-day.selected {
+        background-color: #556ee6 !important;
+        border-color: #556ee6 !important;
+    }
+    .flatpickr-day.selected.startRange, .flatpickr-day.selected.endRange {
+        background-color: #556ee6 !important;
+        border-color: #556ee6 !important;
+    }
+    .flatpickr-day.inRange {
+        background-color: rgba(85, 110, 230, 0.1) !important;
+        border-color: rgba(85, 110, 230, 0.1) !important;
+    }
+    .flatpickr-months .flatpickr-month {
+        background-color: #556ee6 !important;
+        color: white !important;
+    }
+    .flatpickr-current-month {
+        padding-top: 8px !important;
+    }
+    .flatpickr-current-month .flatpickr-monthDropdown-months {
+        background-color: #556ee6 !important;
+        color: white !important;
+    }
+    .flatpickr-weekday {
+        background-color: #f8f9fa;
+        color: #495057;
+    }
 </style>
 <!-- Import ApexCharts -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.35.3/dist/apexcharts.min.css">
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.3/dist/apexcharts.min.js"></script>
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 @endsection
 
 {{-- @section: dùng để chị định phần nội dụng được hiển thị --}}
@@ -42,20 +123,30 @@
                                 <p class="text-muted mb-0">Đây là những gì đang diễn ra với cửa hàng của bạn hôm nay.</p>
                             </div>
                             <div class="mt-3 mt-lg-0">
-                                <form action="javascript:void(0);">
+                                <form action="{{ route('dashboard.filter') }}" method="GET" id="dateFilterForm">
                                     <div class="row g-3 mb-0 align-items-center">
                                         <div class="col-sm-auto">
-                                            <div class="input-group">
-                                                <input type="text" class="form-control border-0 minimal-border dash-filter-picker shadow" data-provider="flatpickr" data-range-date="true" data-date-format="d M, Y" data-deafult-date="01 Jan 2022 to 31 Jan 2022">
-                                                <div class="input-group-text bg-primary border-primary text-white">
+                                            <div class="input-group date-picker-wrapper">
+                                                <!-- Ẩn input chứa giá trị khoảng ngày -->
+                                                <input type="hidden" id="dateRangePicker" name="date_range" value="{{ request('date_range') }}">
+                                                
+                                                <!-- Hiển thị khoảng ngày đã chọn -->
+                                                <span id="dateRangeText" class="date-picker-display">
+                                                    @if(!empty(request('date_range')))
+                                                        {{ request('date_range') }}
+                                                    @else
+                                                        Chọn khoảng ngày
+                                                    @endif
+                                                </span>
+                                                
+                                                <!-- Icon calendar -->
+                                                <button type="button" class="btn btn-primary date-picker-icon" id="datePickerToggle">
                                                     <i class="ri-calendar-2-line"></i>
-                                                </div>
+                                                </button>
+                                                
+                                                <button type="submit" class="btn btn-primary ms-2">Áp dụng</button>
+                                                <button type="button" id="resetDateFilter" class="btn btn-light ms-2">Đặt lại</button>
                                             </div>
-                                        </div>
-                                        <!--end col-->
-
-                                        <div class="col-auto">
-                                            <button type="button" class="btn btn-soft-info btn-icon waves-effect material-shadow-none waves-light layout-rightside-btn"><i class="ri-pulse-line"></i></button>
                                         </div>
                                         <!--end col-->
                                     </div>
@@ -67,6 +158,15 @@
                     <!--end col-->
                 </div>
                 <!--end row-->
+
+                @if(isset($isFiltered) && $isFiltered)
+                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                    <i class="ri-filter-2-line me-1 align-middle fs-16"></i>
+                    <strong>Dữ liệu đã được lọc</strong> - Đang hiển thị dữ liệu từ {{ $formattedDateRange }}
+                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-light ms-2">Xem tất cả dữ liệu</a>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                @endif
 
                 <div class="row">
                     <div class="col-xl-4 col-md-6">
@@ -192,20 +292,7 @@
                                     <button type="button" class="btn btn-soft-info btn-sm material-shadow-none" id="exportRevenueReport" data-report-type="revenue" data-report-title="Báo cáo doanh thu">
                                         <i class="ri-file-excel-2-line align-middle"></i> Xuất báo cáo
                                     </button>
-                                    <div>
-                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm filter-revenue" data-period="all">
-                                            TẤT CẢ
-                                        </button>
-                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm filter-revenue" data-period="1month">
-                                            1 THÁNG
-                                        </button>
-                                        <button type="button" class="btn btn-soft-secondary material-shadow-none btn-sm filter-revenue" data-period="6month">
-                                            6 THÁNG
-                                        </button>
-                                        <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm filter-revenue" data-period="1year">
-                                            1 NĂM
-                                        </button>
-                                    </div>
+                                    <!-- Xóa phần div chứa các nút lọc 1 tháng, 6 tháng, 1 năm -->
                                 </div>
                             </div><!-- end card header -->
 
@@ -213,21 +300,21 @@
                                 <div class="row g-0 text-center">
                                     <div class="col-6 col-sm-4">
                                         <div class="p-3 border border-dashed border-start-0">
-                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'orders')) : 0 }}">0</span></h5>
+                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'orders')) : 0 }}" id="chart-orders-counter">0</span></h5>
                                             <p class="text-muted mb-0">Đơn hàng</p>
                                         </div>
                                     </div>
                                     <!--end col-->
                                     <div class="col-6 col-sm-4">
                                         <div class="p-3 border border-dashed border-start-0">
-                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'revenue')) : 0 }}">0</span> ₫</h5>
+                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'revenue')) : 0 }}" id="chart-revenue-counter">0</span> ₫</h5>
                                             <p class="text-muted mb-0">Doanh thu</p>
                                         </div>
                                     </div>
                                     <!--end col-->
                                     <div class="col-12 col-sm-4">
                                         <div class="p-3 border border-dashed border-start-0 border-end-0">
-                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'refunds')) : 0 }}">0</span></h5>
+                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'refunds')) : 0 }}" id="chart-refunds-counter">0</span></h5>
                                             <p class="text-muted mb-0">Hoàn tiền</p>
                                         </div>
                                     </div>
@@ -260,13 +347,14 @@
                                             <span class="fw-semibold text-uppercase fs-12">Sắp xếp theo:
                                             </span><span class="text-muted">
                                             @php
-                                                $sortLabels = [
+                                                $sortLabels = isset($sortLabels) ? $sortLabels : [
                                                     'today' => 'Hôm nay',
                                                     'yesterday' => 'Hôm qua',
                                                     'week' => '7 ngày qua',
                                                     'month' => '30 ngày qua',
                                                     'current_month' => 'Tháng này',
-                                                    'last_month' => 'Tháng trước'
+                                                    'last_month' => 'Tháng trước',
+                                                    'custom' => 'Tùy chỉnh'
                                                 ];
                                                 $currentSort = $currentSort ?? 'today';
                                                 echo $sortLabels[$currentSort];
@@ -280,6 +368,9 @@
                                             <a class="dropdown-item {{ ($currentSort ?? '') == 'month' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=month">30 ngày qua</a>
                                             <a class="dropdown-item {{ ($currentSort ?? '') == 'current_month' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=current_month">Tháng này</a>
                                             <a class="dropdown-item {{ ($currentSort ?? '') == 'last_month' ? 'active' : '' }}" href="{{ route('dashboard') }}?sort=last_month">Tháng trước</a>
+                                            @if(($currentSort ?? '') == 'custom')
+                                            <a class="dropdown-item active" href="#">Tùy chỉnh</a>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -315,7 +406,10 @@
                                                         
                                                         try {
                                                             // Lưu ý rằng dòng này sẽ ghi đè biến $product gốc
-                                                            $productDetails = App\Models\Product::with('variants')->find($product->id);
+                                                            $productDetails = App\Models\Product::withTrashed()->with(['variants' => function($query) {
+                                                                $query->withTrashed();
+                                                            }])->find($product->id);
+                                                            
                                                             if ($productDetails) {
                                                                 $variants = $productDetails->variants;
                                                                 $hasVariants = $variants->count() > 0;
@@ -335,10 +429,12 @@
                                                                     $productStock = $productDetails->quantity;
                                                                 }
                                                             } else {
+                                                                // Nếu không tìm thấy sản phẩm, sử dụng giá từ dữ liệu gốc
                                                                 $priceRange = number_format($product->price, 0, ',', '.');
                                                                 $productStock = $product->stock ?? 0;
                                                             }
                                                         } catch (\Exception $e) {
+                                                            // Nếu có lỗi, hiển thị giá từ dữ liệu gốc
                                                             $priceRange = number_format($product->price, 0, ',', '.');
                                                             $productStock = $product->stock ?? 0;
                                                         }
@@ -836,10 +932,94 @@
 @endsection
 
 @section('JS')
+<!-- ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.3/dist/apexcharts.min.js"></script>
+<!-- Flatpickr -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
+<!-- ExcelJS và FileSaver -->
 <script src="https://unpkg.com/exceljs/dist/exceljs.min.js"></script>
 <script src="https://unpkg.com/file-saver/dist/FileSaver.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Khởi tạo date picker
+        const datePickerInput = document.getElementById('dateRangePicker'); // Input ẩn
+        const dateRangeText = document.getElementById('dateRangeText'); // Span hiển thị
+        const datePickerToggle = document.getElementById('datePickerToggle'); // Button icon lịch
+        
+        if (!datePickerInput || !dateRangeText || !datePickerToggle) {
+            console.error('Không tìm thấy các phần tử cần thiết cho date picker');
+        } else {
+            // Khởi tạo flatpickr
+            const fp = flatpickr(datePickerInput, {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                locale: "vn",
+                rangeSeparator: " đến ",
+                maxDate: "today",
+                showMonths: 1, // Chỉ hiển thị 1 tháng
+                static: true,
+                disableMobile: true,
+                position: "auto", 
+                appendTo: document.body, // Đính kèm vào body thay vì element
+                onOpen: function() {
+                    console.log('Date picker đã mở');
+                },
+                onClose: function() {
+                    console.log('Date picker đã đóng');
+                },
+                onChange: function(selectedDates, dateStr, instance) {
+                    console.log('Ngày đã chọn:', dateStr);
+                    
+                    // Cập nhật text hiển thị với định dạng tiếng Việt
+                    if (dateStr && selectedDates.length > 0) {
+                        let formattedText = '';
+                        
+                        if (selectedDates.length === 1) {
+                            // Nếu chỉ chọn 1 ngày
+                            const day = selectedDates[0].getDate().toString().padStart(2, '0');
+                            const month = (selectedDates[0].getMonth() + 1).toString().padStart(2, '0');
+                            const year = selectedDates[0].getFullYear();
+                            formattedText = `${day}/${month}/${year}`;
+                        } else if (selectedDates.length === 2) {
+                            // Nếu chọn khoảng ngày
+                            const startDay = selectedDates[0].getDate().toString().padStart(2, '0');
+                            const startMonth = (selectedDates[0].getMonth() + 1).toString().padStart(2, '0');
+                            const startYear = selectedDates[0].getFullYear();
+                            
+                            const endDay = selectedDates[1].getDate().toString().padStart(2, '0');
+                            const endMonth = (selectedDates[1].getMonth() + 1).toString().padStart(2, '0');
+                            const endYear = selectedDates[1].getFullYear();
+                            
+                            formattedText = `${startDay}/${startMonth}/${startYear} - ${endDay}/${endMonth}/${endYear}`;
+                        }
+                        
+                        dateRangeText.textContent = formattedText;
+                    } else {
+                        dateRangeText.textContent = 'Chọn khoảng ngày';
+                    }
+                }
+            });
+            
+            // Thêm sự kiện click vào button icon để mở date picker
+            datePickerToggle.addEventListener('click', function() {
+                fp.open();
+            });
+            
+            // Thêm sự kiện click vào span text để mở date picker
+            dateRangeText.addEventListener('click', function() {
+                fp.open();
+            });
+            
+            // Xử lý sự kiện nút Reset
+            document.getElementById('resetDateFilter').addEventListener('click', function() {
+                fp.clear();
+                dateRangeText.textContent = 'Chọn khoảng ngày';
+                datePickerInput.value = '';
+                document.getElementById('dateFilterForm').submit();
+            });
+        }
+
         // Khởi tạo biểu đồ doanh thu
         initRevenueChart();
         
@@ -929,62 +1109,145 @@
                 
                 // Hàm lọc dữ liệu theo thời gian
                 function filterChartData(period) {
-                    // Reset về dữ liệu gốc trước khi lọc
-                    filteredData.months = [...chartData.months];
-                    filteredData.series = JSON.parse(JSON.stringify(chartData.series));
+                    const dateRangeInput = document.getElementById('dateRangePicker');
+                    const dateRange = dateRangeInput ? dateRangeInput.value : '';
                     
-                    // Tùy thuộc vào period, lọc dữ liệu phù hợp
-                    let startIndex = 0;
-                    const currentDate = new Date();
-                    const currentMonth = currentDate.getMonth(); // 0-11 (tháng hiện tại - 1)
-                    
-                    // Kiểm tra xem dữ liệu các tháng có đúng thứ tự từ tháng 1 đến tháng 12 không
-                    // Nếu là mảng từ Th1 đến Th12 theo thứ tự thì chúng ta cần điều chỉnh chỉ số
-                    
-                    switch(period) {
-                        case 'all':
-                            // Không cần lọc, sử dụng tất cả dữ liệu
-                            return filteredData;
-                        case '1month':
-                            // Lấy dữ liệu của tháng hiện tại
-                            if (chartData.months[currentMonth] === 'Th' + (currentMonth + 1)) {
-                                // Nếu tên tháng trong mảng khớp với tháng hiện tại (ví dụ: tháng 4 = Th4)
-                                // Trường hợp đặc biệt cho 1 tháng: chỉ lấy tháng hiện tại
-                                filteredData.months = [chartData.months[currentMonth]];
+                    // Nếu có khoảng ngày được chọn, sử dụng khoảng ngày đó
+                    if (dateRange) {
+                        const rangeParts = dateRange.split(' đến ');
+                        const startDate = new Date(rangeParts[0]);
+                        const endDate = rangeParts.length > 1 ? new Date(rangeParts[1]) : new Date(rangeParts[0]);
+                        
+                        // Lấy dữ liệu gốc từ biểu đồ
+                        const chartData = @json($chartData ?? null);
+                        if (!chartData || !chartData.rawData) return { months: [], series: [] };
+                        
+                        const filteredData = {
+                            months: [],
+                            series: []
+                        };
+                        
+                        // Chuyển đổi dữ liệu gốc thành định dạng ngày
+                        const monthData = chartData.months.map((month, index) => {
+                            // Giả sử tháng có định dạng "Th1", "Th2", etc.
+                            const monthNumber = parseInt(month.replace('Th', ''));
+                            const year = new Date().getFullYear(); // Hoặc lấy năm từ dữ liệu nếu có
+                            return {
+                                date: new Date(year, monthNumber - 1, 1),
+                                index: index,
+                                month: month,
+                                orders: chartData.rawData.orders[index],
+                                revenue: chartData.rawData.revenue[index],
+                                refunds: chartData.rawData.refunds[index]
+                            };
+                        });
+                        
+                        // Khi lọc theo khoảng ngày cụ thể, trả về tất cả dữ liệu của tháng có trong khoảng ngày
+                        // Ví dụ: nếu lọc từ 15/04 đến 20/04, trả về dữ liệu tháng 4
+                        const startMonth = startDate.getMonth() + 1; // getMonth() trả về 0-11
+                        const endMonth = endDate.getMonth() + 1;
+                        
+                        for (let month = startMonth; month <= endMonth; month++) {
+                            const monthLabel = 'Th' + month;
+                            const monthIndex = chartData.months.findIndex(m => m === monthLabel);
+                            
+                            if (monthIndex !== -1) {
+                                filteredData.months.push(monthLabel);
+                                let orderData = chartData.rawData.orders[monthIndex];
+                                let revenueData = chartData.rawData.revenue[monthIndex];
+                                let refundData = chartData.rawData.refunds[monthIndex];
                                 
-                                // Lọc dữ liệu series
-                                filteredData.series.forEach((serie, index) => {
-                                    serie.data = [chartData.series[index].data[currentMonth]];
+                                // Nếu khoảng ngày chỉ là một phần của tháng, có thể tính tỷ lệ ngày/tổng số ngày trong tháng
+                                // và chia dữ liệu theo tỷ lệ đó. Nhưng để đơn giản, ta sử dụng toàn bộ dữ liệu tháng
+                                
+                                filteredData.series.push({
+                                    name: 'Đơn hàng',
+                                    type: 'line',
+                                    data: [orderData],
+                                    color: '#3b76e1'
                                 });
-                                return filteredData;
-                            } else {
-                                // Nếu không khớp, tìm tháng hiện tại trong mảng
-                                const currentMonthName = 'Th' + (currentMonth + 1);
-                                const monthIndex = chartData.months.findIndex(month => month === currentMonthName);
                                 
-                                if (monthIndex !== -1) {
-                                    filteredData.months = [chartData.months[monthIndex]];
-                                    
-                                    // Lọc dữ liệu series
-                                    filteredData.series.forEach((serie, index) => {
-                                        serie.data = [chartData.series[index].data[monthIndex]];
-                                    });
-                                }
-                                return filteredData;
+                                filteredData.series.push({
+                                    name: 'Doanh thu',
+                                    type: 'column',
+                                    data: [revenueData],
+                                    color: '#63ad6f'
+                                });
+                                
+                                filteredData.series.push({
+                                    name: 'Hoàn tiền',
+                                    type: 'line',
+                                    data: [refundData],
+                                    color: '#f34e4e',
+                                    dashArray: 4
+                                });
                             }
-                        case '6month':
-                            // Lấy 6 tháng đầu tiên của năm
-                            filteredData.months = chartData.months.slice(0, 6);
-                            filteredData.series.forEach((serie) => {
-                                serie.data = serie.data.slice(0, 6);
-                            });
-                            return filteredData;
-                        case '1year':
-                            // Mặc định đã là 12 tháng (1 năm)
-                            return filteredData;
-                        default:
-                            return filteredData;
+                        }
+                        
+                        // Nếu không tìm thấy dữ liệu nào, hiển thị biểu đồ trống với tháng đã chọn
+                        if (filteredData.months.length === 0) {
+                            const startMonthLabel = 'Th' + startMonth;
+                            const endMonthLabel = 'Th' + endMonth;
+                            
+                            filteredData.months = [startMonth === endMonth ? startMonthLabel : (startMonthLabel + ' - ' + endMonthLabel)];
+                            
+                            // Hiển thị dữ liệu từ trang filter nếu có
+                            @if(isset($totalEarnings) && isset($totalOrders))
+                                filteredData.series = [
+                                    {
+                                        name: 'Đơn hàng',
+                                        type: 'line',
+                                        data: [{{ $totalOrders ?? 0 }}],
+                                        color: '#3b76e1'
+                                    },
+                                    {
+                                        name: 'Doanh thu',
+                                        type: 'column',
+                                        data: [{{ $totalEarnings ?? 0 }}],
+                                        color: '#63ad6f'
+                                    },
+                                    {
+                                        name: 'Hoàn tiền',
+                                        type: 'line',
+                                        data: [0], // Không có dữ liệu hoàn tiền
+                                        color: '#f34e4e',
+                                        dashArray: 4
+                                    }
+                                ];
+                            @else
+                                filteredData.series = [
+                                    {
+                                        name: 'Đơn hàng',
+                                        type: 'line',
+                                        data: [0],
+                                        color: '#3b76e1'
+                                    },
+                                    {
+                                        name: 'Doanh thu',
+                                        type: 'column',
+                                        data: [0],
+                                        color: '#63ad6f'
+                                    },
+                                    {
+                                        name: 'Hoàn tiền',
+                                        type: 'line',
+                                        data: [0],
+                                        color: '#f34e4e',
+                                        dashArray: 4
+                                    }
+                                ];
+                            @endif
+                        }
+                        
+                        return filteredData;
                     }
+                    
+                    // Nếu không có khoảng ngày, trả về dữ liệu gốc
+                    const chartData = @json($chartData ?? null);
+                    return chartData ? {
+                        months: chartData.months,
+                        series: chartData.series
+                    } : { months: [], series: [] };
                 }
                 
                 // Tạo biểu đồ với dữ liệu ban đầu
@@ -1163,6 +1426,8 @@
                 chart.render();
                 
                 // Bắt sự kiện khi người dùng click vào nút lọc
+                // Xóa đoạn code này
+                /*
                 document.querySelectorAll('.filter-revenue').forEach(button => {
                     button.addEventListener('click', function() {
                         const period = this.getAttribute('data-period');
@@ -1200,59 +1465,90 @@
                     // Gọi sự kiện click trên nút mặc định
                     defaultFilterButton.click();
                 }
+                */
                 
                 // Hàm cập nhật thống kê tổng hợp khi lọc
                 function updateStatistics(period) {
-                    // Lấy tháng hiện tại
-                    const currentDate = new Date();
-                    const currentMonth = currentDate.getMonth(); // 0-11 (tháng hiện tại - 1)
+                    // Lấy khoảng ngày từ input date picker
+                    const dateRangeInput = document.getElementById('dateRangePicker');
+                    const dateRange = dateRangeInput ? dateRangeInput.value : '';
                     
-                    let filteredOrders = [];
-                    let filteredRevenue = [];
-                    let filteredRefunds = [];
+                    let totalOrders = 0;
+                    let totalRevenue = 0;
+                    let totalRefunds = 0;
                     
-                    // Tính toán dựa trên giai đoạn đã chọn
-                    if (period === 'all' || period === '1year') {
-                        // Sử dụng tất cả dữ liệu
-                        filteredOrders = chartData.rawData.orders;
-                        filteredRevenue = chartData.rawData.revenue;
-                        filteredRefunds = chartData.rawData.refunds;
-                    } else if (period === '1month') {
-                        // Chỉ lấy dữ liệu của tháng hiện tại
-                        filteredOrders = [chartData.rawData.orders[currentMonth]];
-                        filteredRevenue = [chartData.rawData.revenue[currentMonth]];
-                        filteredRefunds = [chartData.rawData.refunds[currentMonth]];
-                    } else if (period === '6month') {
-                        // Lấy dữ liệu của 6 tháng gần nhất
-                        const startIndex = Math.max(0, currentMonth - 5);
-                        const endIndex = Math.min(startIndex + 6, chartData.months.length);
-                        
-                        filteredOrders = chartData.rawData.orders.slice(startIndex, endIndex);
-                        filteredRevenue = chartData.rawData.revenue.slice(startIndex, endIndex);
-                        filteredRefunds = chartData.rawData.refunds.slice(startIndex, endIndex);
+                    // Lọc theo khoảng ngày nếu có
+                    if (dateRange) {
+                        // Sử dụng giá trị từ backend đã lọc thay vì tính toán lại bằng JavaScript
+                        @if(isset($totalOrders) && isset($totalEarnings))
+                            totalOrders = {{ $totalOrders }};
+                            totalRevenue = {{ $totalEarnings }};
+                            totalRefunds = {{ isset($chartData) && isset($chartData['rawData']) && isset($chartData['rawData']['refunds']) ? array_sum($chartData['rawData']['refunds']) : 0 }};
+                        @else
+                            const rangeParts = dateRange.split(' đến ');
+                            const startDate = new Date(rangeParts[0]);
+                            const endDate = rangeParts.length > 1 ? new Date(rangeParts[1]) : new Date(rangeParts[0]);
+                            
+                            // Lấy dữ liệu gốc từ biểu đồ
+                            const chartData = @json($chartData ?? null);
+                            
+                            if (chartData && chartData.rawData) {
+                                // Chuyển đổi dữ liệu tháng thành định dạng ngày để so sánh
+                                const monthData = chartData.months.map((month, index) => {
+                                    // Giả sử tháng có định dạng "Th1", "Th2", etc.
+                                    const monthNumber = parseInt(month.replace('Th', ''));
+                                    const year = new Date().getFullYear();
+                                    return {
+                                        date: new Date(year, monthNumber - 1, 1),
+                                        index: index,
+                                        orders: chartData.rawData.orders[index],
+                                        revenue: chartData.rawData.revenue[index],
+                                        refunds: chartData.rawData.refunds[index]
+                                    };
+                                });
+                                
+                                // Lọc dữ liệu trong khoảng ngày (tương tự phần trên, tính toán theo tháng)
+                                const startMonth = startDate.getMonth() + 1;
+                                const endMonth = endDate.getMonth() + 1;
+                                
+                                for (let month = startMonth; month <= endMonth; month++) {
+                                    const monthLabel = 'Th' + month;
+                                    const monthIndex = chartData.months.findIndex(m => m === monthLabel);
+                                    
+                                    if (monthIndex !== -1) {
+                                        totalOrders += chartData.rawData.orders[monthIndex];
+                                        totalRevenue += chartData.rawData.revenue[monthIndex];
+                                        totalRefunds += chartData.rawData.refunds[monthIndex];
+                                    }
+                                }
+                            }
+                        @endif
+                    } else {
+                        // Nếu không có khoảng ngày được chọn, sử dụng tất cả dữ liệu
+                        const chartData = @json($chartData ?? null);
+                        if (chartData && chartData.rawData) {
+                            totalOrders = chartData.rawData.orders.reduce((sum, val) => sum + val, 0);
+                            totalRevenue = chartData.rawData.revenue.reduce((sum, val) => sum + val, 0);
+                            totalRefunds = chartData.rawData.refunds.reduce((sum, val) => sum + val, 0);
+                        }
                     }
                     
-                    // Tính tổng
-                    const totalOrders = filteredOrders.reduce((sum, val) => sum + val, 0);
-                    const totalRevenue = filteredRevenue.reduce((sum, val) => sum + val, 0);
-                    const totalRefunds = filteredRefunds.reduce((sum, val) => sum + val, 0);
-                    
                     // Cập nhật giá trị hiển thị trên giao diện
-                    const orderCounter = document.querySelector('.card-header.bg-light-subtle .counter-value[data-target]');
+                    const orderCounter = document.getElementById('chart-orders-counter');
                     if (orderCounter) {
                         orderCounter.setAttribute('data-target', totalOrders);
                         orderCounter.textContent = '0';
                     }
                     
                     // Cập nhật doanh thu
-                    const revenueCounter = document.querySelectorAll('.card-header.bg-light-subtle .counter-value[data-target]')[1];
+                    const revenueCounter = document.getElementById('chart-revenue-counter');
                     if (revenueCounter) {
                         revenueCounter.setAttribute('data-target', totalRevenue);
                         revenueCounter.textContent = '0';
                     }
                     
                     // Cập nhật hoàn tiền
-                    const refundCounter = document.querySelectorAll('.card-header.bg-light-subtle .counter-value[data-target]')[2];
+                    const refundCounter = document.getElementById('chart-refunds-counter');
                     if (refundCounter) {
                         refundCounter.setAttribute('data-target', totalRefunds);
                         refundCounter.textContent = '0';
@@ -1276,37 +1572,52 @@
 
         // Hàm xuất dữ liệu sang Excel với định dạng đẹp sử dụng ExcelJS
         async function exportToExcel(reportType, reportTitle) {
-            let data = [];
+            // Tạo mảng dữ liệu và định nghĩa tiêu đề cho các cột
             let headers = [];
-
-            console.log('Đang xuất báo cáo:', reportType);
-
-            if (reportType === 'orders') {
-                // Thu thập dữ liệu từ bảng đơn hàng
-                const orderTable = document.querySelector('.card-body .table-responsive.table-card table.table-borderless');
-                if (orderTable) {
-                    headers = Array.from(orderTable.querySelectorAll('thead th')).map(th => th.textContent.trim());
-                    const rows = orderTable.querySelectorAll('tbody tr');
-
-                    rows.forEach(row => {
-                        const rowData = Array.from(row.querySelectorAll('td')).map(td => {
-                            // Xử lý đặc biệt cho trường hợp td có chứa các thẻ con
-                            const text = td.textContent.trim().replace(/\s+/g, ' ');
-                            return text;
-                        });
-                        data.push(rowData);
-                    });
+            let data = [];
+            
+            // Lấy giá trị khoảng ngày từ date picker
+            const dateRangeInput = document.getElementById('dateRangePicker');
+            const dateRange = dateRangeInput ? dateRangeInput.value : '';
+            console.log('Khoảng ngày đã chọn:', dateRange);
+            
+            // Tạo text thông báo khoảng ngày đã lọc
+            let dateRangeInfo = '';
+            if (dateRange) {
+                const rangeParts = dateRange.split(' đến ');
+                if (rangeParts.length === 2) {
+                    const startDate = new Date(rangeParts[0]);
+                    const endDate = new Date(rangeParts[1]);
+                    const formatDate = (date) => {
+                        return date.getDate().toString().padStart(2, '0') + '/' + 
+                               (date.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                               date.getFullYear();
+                    };
+                    dateRangeInfo = `Khoảng ngày: ${formatDate(startDate)} - ${formatDate(endDate)}`;
+                } else if (rangeParts.length === 1) {
+                    const singleDate = new Date(rangeParts[0]);
+                    const formatDate = (date) => {
+                        return date.getDate().toString().padStart(2, '0') + '/' + 
+                               (date.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                               date.getFullYear();
+                    };
+                    dateRangeInfo = `Ngày: ${formatDate(singleDate)}`;
                 }
-            } else if (reportType === 'topbuyers') {
-                // Thu thập dữ liệu từ bảng khách hàng mua nhiều nhất
-                headers = ['Khách hàng', 'Email', 'Loại khách', 'Số đơn hàng', 'Tổng chi tiêu', 'Tỷ lệ hoàn thành'];
-
-                // Tìm tất cả các card-title
+            } else {
+                dateRangeInfo = 'Tất cả dữ liệu';
+            }
+            
+            // Thu thập dữ liệu dựa vào loại báo cáo
+            if (reportType === 'buyers') {
+                // Thu thập dữ liệu từ bảng người mua hàng nhiều nhất
+                headers = ['Khách hàng', 'Email', 'Loại', 'Đơn hàng', 'Chi tiêu', 'Tỷ lệ'];
+                
+                // Tìm bảng người mua hàng
                 const titles = document.querySelectorAll('.card-title');
                 let buyerTable = null;
 
                 for (let i = 0; i < titles.length; i++) {
-                    if (titles[i].textContent.includes('Xếp hạng người mua')) {
+                    if (titles[i].textContent.includes('Người mua hàng nhiều nhất')) {
                         const buyerCard = titles[i].closest('.card');
                         if (buyerCard) {
                             buyerTable = buyerCard.querySelector('table');
@@ -1359,7 +1670,7 @@
                 let productTable = null;
                 
                 for (let i = 0; i < titles.length; i++) {
-                    if (titles[i].textContent.includes('Sản phẩm bán chạy')) {
+                    if (titles[i].textContent.includes('Sản phẩm bán chạy nhất')) {
                         const productCard = titles[i].closest('.card');
                         if (productCard) {
                             productTable = productCard.querySelector('table');
@@ -1441,7 +1752,65 @@
             console.log('Tiêu đề:', headers);
             console.log('Dữ liệu:', data);
 
-            if (data.length > 0 && headers.length > 0) {
+            // Thu thập dữ liệu sản phẩm bán chạy riêng cho báo cáo doanh thu
+            let productHeaders = ['Sản phẩm', 'Giá', 'Đơn hàng', 'Tồn kho', 'Tổng tiền', 'Ngày tạo'];
+            let productData = [];
+            
+            if (reportType === 'revenue') {
+                // Tìm bảng sản phẩm bán chạy
+                const titles = document.querySelectorAll('.card-title');
+                let productTable = null;
+                
+                for (let i = 0; i < titles.length; i++) {
+                    if (titles[i].textContent.includes('Sản phẩm bán chạy nhất')) {
+                        const productCard = titles[i].closest('.card');
+                        if (productCard) {
+                            productTable = productCard.querySelector('table');
+                            break;
+                        }
+                    }
+                }
+                
+                if (productTable) {
+                    const rows = productTable.querySelectorAll('tbody tr');
+                    
+                    rows.forEach(row => {
+                        const nameElement = row.querySelector('.fs-14.my-1 a');
+                        const dateElement = row.querySelector('.text-muted');
+                        
+                        // Lấy dữ liệu từ các ô
+                        const cells = row.querySelectorAll('td');
+                        const productName = nameElement ? nameElement.textContent.trim() : '';
+                        const createdDate = dateElement ? dateElement.textContent.trim() : '';
+                        
+                        let price = '', orders = '', stock = '', totalAmount = '';
+                        
+                        if (cells.length >= 2) {
+                            const priceElement = cells[1].querySelector('.fs-14.my-1.fw-normal');
+                            price = priceElement ? priceElement.textContent.trim() : '';
+                        }
+                        
+                        if (cells.length >= 3) {
+                            const ordersElement = cells[2].querySelector('.fs-14.my-1.fw-normal');
+                            orders = ordersElement ? ordersElement.textContent.trim() : '';
+                        }
+                        
+                        if (cells.length >= 4) {
+                            const stockElement = cells[3].querySelector('.fs-14.my-1.fw-normal');
+                            stock = stockElement ? stockElement.textContent.trim() : '';
+                        }
+                        
+                        if (cells.length >= 5) {
+                            const amountElement = cells[4].querySelector('.fs-14.my-1.fw-normal');
+                            totalAmount = amountElement ? amountElement.textContent.trim() : '';
+                        }
+                        
+                        productData.push([productName, price, orders, stock, totalAmount, createdDate]);
+                    });
+                }
+            }
+
+            if ((data.length > 0 && headers.length > 0) || (reportType === 'revenue' && productData.length > 0)) {
                 try {
                     // Tạo workbook mới
                     const workbook = new ExcelJS.Workbook();
@@ -1480,6 +1849,11 @@
                     infoSheet.mergeCells('A4:D4');
                     infoSheet.getCell('A4').value = 'Người xuất báo cáo: {{ Auth::user()->name }}';
                     infoSheet.getCell('A4').font = { size: 11 };
+                    
+                    // Thêm thông tin về khoảng ngày đã lọc
+                    infoSheet.mergeCells('A5:D5');
+                    infoSheet.getCell('A5').value = dateRangeInfo;
+                    infoSheet.getCell('A5').font = { size: 11, color: { argb: '4472C4' } };
 
                     infoSheet.mergeCells('A7:G7');
                     infoSheet.getCell('A7').value = 'Báo cáo được tạo tự động từ hệ thống Eco-Furnish';
@@ -1489,11 +1863,9 @@
                     // Tạo sheet dữ liệu
                     const dataSheet = workbook.addWorksheet('Dữ liệu');
 
-                    // Thêm headers
-                    const headerRow = dataSheet.addRow(headers);
-
-                    // Định dạng header - Style cho hàng đầu tiên
-                    headerRow.eachCell((cell) => {
+                    // Hàm tạo style header
+                    const createHeaderStyle = (row) => {
+                        row.eachCell((cell) => {
                         cell.fill = {
                             type: 'pattern',
                             pattern: 'solid',
@@ -1515,12 +1887,10 @@
                             right: { style: 'medium', color: { argb: 'FFFFFF' } }
                         };
                     });
-
-                    // Thêm dữ liệu
-                    data.forEach((rowData, index) => {
-                        const row = dataSheet.addRow(rowData);
-
-                        // Màu nền xen kẽ cho các hàng
+                    };
+                    
+                    // Hàm tạo style dữ liệu
+                    const createDataStyle = (row, index) => {
                         const isAlternateRow = index % 2 === 1;
                         const rowColor = isAlternateRow ? 'F2F9FF' : 'FFFFFF';
 
@@ -1537,21 +1907,68 @@
                                 right: { style: 'thin', color: { argb: 'D0D7E5' } }
                             };
                         });
-                    });
+                    };
 
-                    // Thiết lập độ rộng cột
+                    // Hàm thiết lập độ rộng cột
+                    const setColumnWidth = (sheet, headers) => {
                     headers.forEach((header, i) => {
-                        const column = dataSheet.getColumn(i + 1);
+                            const column = sheet.getColumn(i + 1);
                         column.width = Math.max(header.length * 1.5, 15);
                     });
+                    };
 
-                    // Thiết lập chiều cao hàng tiêu đề
+                    // Thêm headers cho sheet dữ liệu
+                    const headerRow = dataSheet.addRow(headers);
+                    createHeaderStyle(headerRow);
                     headerRow.height = 30;
+
+                    // Thêm dữ liệu cho sheet dữ liệu
+                    data.forEach((rowData, index) => {
+                        const row = dataSheet.addRow(rowData);
+                        createDataStyle(row, index);
+                    });
+                    
+                    // Thiết lập độ rộng cột cho sheet dữ liệu
+                    setColumnWidth(dataSheet, headers);
+                    
+                    // Nếu báo cáo là báo cáo doanh thu, thêm sheet sản phẩm
+                    if (reportType === 'revenue' && productData.length > 0) {
+                        // Tạo sheet sản phẩm
+                        const productSheet = workbook.addWorksheet('Sản phẩm');
+                        
+                        // Thêm headers cho sheet sản phẩm
+                        const productHeaderRow = productSheet.addRow(productHeaders);
+                        createHeaderStyle(productHeaderRow);
+                        productHeaderRow.height = 30;
+                        
+                        // Thêm dữ liệu cho sheet sản phẩm
+                        productData.forEach((rowData, index) => {
+                            const row = productSheet.addRow(rowData);
+                            createDataStyle(row, index);
+                        });
+                        
+                        // Thiết lập độ rộng cột cho sheet sản phẩm
+                        setColumnWidth(productSheet, productHeaders);
+                    }
 
                     // Xuất file Excel
                     const buffer = await workbook.xlsx.writeBuffer();
                     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                    saveAs(blob, `${reportTitle}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                    
+                    // Thêm khoảng ngày vào tên file nếu có
+                    let fileName = `${reportTitle}_`;
+                    if (dateRange) {
+                        const rangeParts = dateRange.split(' đến ');
+                        if (rangeParts.length > 0) {
+                            fileName += rangeParts[0].replace(/-/g, '') + '_';
+                            if (rangeParts.length > 1) {
+                                fileName += rangeParts[1].replace(/-/g, '') + '_';
+                            }
+                        }
+                    }
+                    fileName += `${new Date().toISOString().slice(0, 10)}.xlsx`;
+                    
+                    saveAs(blob, fileName);
 
                     // Hiển thị thông báo
                     Toastify({
@@ -1660,6 +2077,33 @@
                 }).showToast();
             }
         }
+
+        // Cập nhật biểu đồ khi form được submit
+        document.getElementById('dateFilterForm').addEventListener('submit', function(e) {
+            // Không cần ngăn form submit vì ta muốn trang tải lại với dữ liệu mới
+            const newData = filterChartData();
+            if (chart) {
+                chart.updateOptions({
+                    labels: newData.months,
+                    xaxis: {
+                        categories: newData.months
+                    }
+                });
+                chart.updateSeries(newData.series);
+            }
+            
+            // Cập nhật thống kê tổng hợp theo khoảng ngày đã chọn
+            updateStatistics();
+        });
+        
+        // Chạy updateStatistics khi trang được tải
+        document.addEventListener('DOMContentLoaded', function() {
+            // Nếu có khoảng ngày trong url, áp dụng cho thống kê ngay khi tải trang
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('date_range')) {
+                updateStatistics();
+            }
+        });
     });
 </script>
 @endsection

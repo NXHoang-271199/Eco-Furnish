@@ -162,7 +162,7 @@ const AddAddressModal = ({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">Email (Tùy chọn)</label>
+            <label className="block text-sm font-medium mb-1 text-gray-700">Email *</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -445,7 +445,7 @@ const EditAddressModal = ({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">Email (Tùy chọn)</label>
+            <label className="block text-sm font-medium mb-1 text-gray-700">Email *</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -860,18 +860,19 @@ const Address = () => {
 
   const handleAddAddress = () => {
     setEditingAddressId(null);
+    const userData = JSON.parse(localStorage.getItem("userData")) || {};
     setFormData({
       first_name: "",
       last_name: "",
       phone: "",
-      email: "",
+      email: userData.email || "",
       address_name: "",
       country: "Việt Nam",
       province: "",
       district: "",
       ward: "",
       street_address: "",
-      is_default: false
+      is_default: false,
     });
     setDistricts([]);
     setWards([]);

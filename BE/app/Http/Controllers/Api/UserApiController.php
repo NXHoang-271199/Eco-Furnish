@@ -756,4 +756,167 @@ class UserApiController extends Controller
             return redirect('http://localhost:5173/sign-in?error=facebook_callback_failed');
         }
     }
+
+    /**
+     * Thiết lập mật khẩu cấp 2 cho người dùng
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function setLevel2Password(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string',
+            'level2_password' => 'required|string|min:5',
+            'confirm_level2_password' => 'required|string|same:level2_password'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Kiểm tra mật khẩu hiện tại
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu hiện tại không đúng'
+            ], 400);
+        }
+
+        // Kiểm tra xem người dùng đã có mật khẩu cấp 2 chưa
+        if ($user->has_level2_password) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bạn đã thiết lập mật khẩu cấp 2 trước đó. Vui lòng sử dụng chức năng cập nhật mật khẩu cấp 2.'
+            ], 400);
+        }
+
+        // Thiết lập mật khẩu cấp 2
+        $user->level2_password = Hash::make($request->level2_password);
+        $user->has_level2_password = true;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Thiết lập mật khẩu cấp 2 thành công',
+            'data' => [
+                'has_level2_password' => true
+            ]
+        ]);
+    }
+
+    /**
+     * Xác thực mật khẩu cấp 2
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function verifyLevel2Password(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'level2_password' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Kiểm tra xem người dùng đã thiết lập mật khẩu cấp 2 chưa
+        if (!$user->has_level2_password) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bạn chưa thiết lập mật khẩu cấp 2'
+            ], 400);
+        }
+
+        // Xác thực mật khẩu cấp 2
+        if (!Hash::check($request->level2_password, $user->level2_password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu cấp 2 không đúng'
+            ], 400);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Xác thực mật khẩu cấp 2 thành công'
+        ]);
+    }
+
+    /**
+     * Cập nhật mật khẩu cấp 2
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateLevel2Password(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_level2_password' => 'required|string',
+            'new_level2_password' => 'required|string|min:5',
+            'confirm_level2_password' => 'required|string|same:new_level2_password'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Kiểm tra xem người dùng đã thiết lập mật khẩu cấp 2 chưa
+        if (!$user->has_level2_password) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bạn chưa thiết lập mật khẩu cấp 2'
+            ], 400);
+        }
+
+        // Kiểm tra mật khẩu cấp 2 hiện tại
+        if (!Hash::check($request->current_level2_password, $user->level2_password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu cấp 2 hiện tại không đúng'
+            ], 400);
+        }
+
+        // Cập nhật mật khẩu cấp 2
+        $user->level2_password = Hash::make($request->new_level2_password);
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Cập nhật mật khẩu cấp 2 thành công'
+        ]);
+    }
+
+    /**
+     * Kiểm tra trạng thái mật khẩu cấp 2
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkLevel2PasswordStatus(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'has_level2_password' => (bool) $user->has_level2_password
+            ]
+        ]);
+    }
 }

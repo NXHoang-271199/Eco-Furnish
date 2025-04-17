@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from "react";
-import { useParams, Link } from "react-router-dom";
-// import axios from "axios";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import axiosInstance from "../../../../utils/axiosConfig";
 import Swal from 'sweetalert2';
 import {
@@ -22,12 +22,16 @@ import {
   FiUser,
   FiX,
   FiLoader,
+  FiStar,
+  FiCamera,
+  FiUpload,
+  FiMessageSquare,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import axios from "axios";
+import { RiStarFill, RiStarLine } from "react-icons/ri";
 
 const RefundRequestModal = memo(({
   showModal,
@@ -135,8 +139,568 @@ const RefundRequestModal = memo(({
   );
 });
 
+// Thêm component Modal đánh giá sản phẩm
+const ReviewModal = memo(({
+  showModal,
+  setShowModal,
+  loading,
+  productId,
+  productName,
+  productImage,
+  orderId,
+  productVariant,
+  onReviewSubmitSuccess,
+}) => {
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewImages, setReviewImages] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Xử lý chọn số sao
+  const handleRatingChange = (newRating) => {
+    setRating(newRating);
+  };
+
+  // Hàm render các sao tương tác
+  const renderStars = () => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <button
+          key={i}
+          type="button"
+          onClick={() => handleRatingChange(i)}
+          className={`text-2xl focus:outline-none ${i <= rating ? "text-amber-400" : "text-gray-300"
+            }`}
+        >
+          <FiStar
+            className={i <= rating ? "fill-amber-400" : ""}
+          />
+        </button>
+      );
+    }
+    return stars;
+  };
+
+  // Xử lý chọn ảnh
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + reviewImages.length > 5) {
+      toast.error("Bạn chỉ được tải lên tối đa 5 ảnh");
+      return;
+    }
+    setReviewImages([...reviewImages, ...files]);
+  };
+
+  // Xóa ảnh đã chọn
+  const removeImage = (index) => {
+    setReviewImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  };
+
+  // Xử lý gửi đánh giá
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+
+    if (!reviewText.trim()) {
+      toast.error("Vui lòng nhập nội dung đánh giá");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        toast.error("Vui lòng đăng nhập để đánh giá");
+        setShowModal(false);
+        return;
+      }
+
+      // Tạo form data để gửi cả ảnh và thông tin đánh giá
+      const formData = new FormData();
+      formData.append("product_id", productId);
+      formData.append("order_id", orderId);
+      formData.append("rating", rating);
+      formData.append("review_text", reviewText);
+
+      // Thêm product_variant_id nếu có biến thể
+      if (productVariant && productVariant.id) {
+        formData.append("product_variant_id", productVariant.id);
+      }
+
+      // Thêm các ảnh vào form data nếu có
+      if (reviewImages.length > 0) {
+        reviewImages.forEach((image) => {
+          formData.append("images[]", image);
+        });
+      }
+
+      const response = await axiosInstance.post("/reviews", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data && response.data.success) {
+        toast.success("Đánh giá của bạn đã được gửi thành công");
+        setShowModal(false);
+        setRating(5);
+        setReviewText("");
+        setReviewImages([]);
+
+        // Gọi callback để cập nhật UI sau khi đánh giá thành công
+        if (onReviewSubmitSuccess) {
+          onReviewSubmitSuccess(productId, productVariant ? productVariant.id : null);
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi gửi đánh giá:", error);
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Có lỗi xảy ra khi gửi đánh giá");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Hiển thị chi tiết biến thể
+  const renderVariantDetails = () => {
+    if (!productVariant || !productVariant.variant_details) return null;
+
+    return (
+      <div className="mt-1 text-gray-500 text-sm">
+        {productVariant.variant_details.map((detail, index) => (
+          <span key={index}>
+            {detail.name}: <span className="font-medium">{detail.value}</span>
+            {index < productVariant.variant_details.length - 1 ? ', ' : ''}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  if (!showModal) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+        <div className="bg-amber-500 text-white px-6 py-4 flex justify-between items-center">
+          <h3 className="font-medium text-lg">Đánh giá sản phẩm</h3>
+          <button
+            onClick={() => setShowModal(false)}
+            className="text-white hover:text-gray-200"
+          >
+            <FiX className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="flex items-center mb-6">
+            <div className="w-16 h-16 flex-shrink-0 rounded-md overflow-hidden border border-gray-200">
+              <img
+                src={productImage ? `http://localhost:8000/storage/${productImage}` : "https://via.placeholder.com/80"}
+                alt={productName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://via.placeholder.com/80";
+                }}
+              />
+            </div>
+            <div className="ml-4">
+              <h4 className="font-medium text-gray-800">{productName}</h4>
+              {renderVariantDetails()}
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmitReview}>
+            <div className="space-y-4">
+              {/* Rating */}
+              <div>
+                <label className="block text-gray-700 mb-2 font-medium">
+                  Đánh giá của bạn
+                </label>
+                <div className="flex items-center">
+                  {renderStars()}
+                  <span className="ml-2 text-amber-500 font-medium">
+                    {rating}/5
+                  </span>
+                </div>
+              </div>
+
+              {/* Review Text */}
+              <div>
+                <label className="block text-gray-700 mb-2 font-medium">
+                  Chia sẻ trải nghiệm của bạn
+                </label>
+                <textarea
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+                  className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                  rows={4}
+                ></textarea>
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <label className="block text-gray-700 mb-2 font-medium">
+                  Hình ảnh (Tối đa 5 ảnh)
+                </label>
+                <div className="mb-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="review-images"
+                  />
+                  <label
+                    htmlFor="review-images"
+                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  >
+                    <FiCamera className="mr-2" />
+                    Chọn ảnh
+                  </label>
+                  <span className="ml-2 text-gray-500 text-sm">
+                    {reviewImages.length}/5 ảnh đã chọn
+                  </span>
+                </div>
+
+                {/* Image Previews */}
+                {reviewImages.length > 0 && (
+                  <div className="flex flex-wrap gap-3 mt-3">
+                    {reviewImages.map((file, index) => (
+                      <div key={index} className="relative group">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-300">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview ${index}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 shadow-md transition-colors"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-50"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <FiLoader className="animate-spin mr-2" />
+                      Đang gửi...
+                    </div>
+                  ) : (
+                    "Gửi đánh giá"
+                  )}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// Thêm component Modal hủy đơn hàng
+const CancelOrderModal = memo(({
+  showModal,
+  setShowModal,
+  loading,
+  selectedReason,
+  customReason,
+  setCustomReason,
+  showCustomInput,
+  handleReasonSelect,
+  submitCancelOrder,
+}) => {
+  const reasonOptions = [
+    "Tôi muốn thay đổi địa chỉ giao hàng",
+    "Tôi muốn nhập/thay đổi mã Voucher",
+    "Tôi muốn thay đổi sản phẩm trong đơn hàng (size, màu sắc, số lượng,...)",
+    "Thủ tục thanh toán quá rắc rối",
+    "Tìm thấy chỗ mua khác (rẻ hơn, uy tín hơn, giao nhanh hơn,...)",
+    "Tôi không có nhu cầu mua nữa",
+    "Tôi không tìm thấy lý do hủy phù hợp",
+    "Khác",
+  ];
+
+  if (!showModal) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+        <div className="bg-orange-500 text-white px-6 py-4 flex justify-between items-center">
+          <h3 className="font-medium text-lg">Chọn Lý Do Hủy</h3>
+          <button
+            onClick={() => setShowModal(false)}
+            className="text-white hover:text-gray-200"
+          >
+            <FiX className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="mb-4">
+            <div className="flex items-center text-amber-500 bg-amber-50 p-3 rounded-md mb-4">
+              <FiInfo className="mr-2 flex-shrink-0" />
+              <p className="text-sm">Vui lòng chọn lý do hủy. Với lý do này, bạn sẽ hủy tất cả sản phẩm trong đơn hàng và không thể thay đổi sau đó.</p>
+            </div>
+            <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-300 rounded-md p-2">
+              {reasonOptions.map((reason, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center p-2 rounded-md cursor-pointer ${selectedReason === reason
+                    ? "bg-orange-100 border border-orange-500"
+                    : "hover:bg-gray-100"
+                    }`}
+                  onClick={() => handleReasonSelect(reason)}
+                >
+                  <div className="h-4 w-4 rounded-full border border-gray-400 flex items-center justify-center mr-2">
+                    {selectedReason === reason && (
+                      <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+                    )}
+                  </div>
+                  <span className="text-sm">{reason}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {showCustomInput && (
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2">
+                Nhập lý do khác:
+              </label>
+              <textarea
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                rows="3"
+                placeholder="Vui lòng nhập lý do của bạn..."
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+              ></textarea>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3 mt-4">
+            <button
+              onClick={() => setShowModal(false)}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={submitCancelOrder}
+              className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50"
+              disabled={loading || !selectedReason || (showCustomInput && !customReason)}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <FiLoader className="animate-spin mr-2" />
+                  Đang xử lý...
+                </div>
+              ) : (
+                "Đồng ý"
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// Component hiển thị đánh giá
+const ReviewsList = ({ orderId }) => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+        // Sử dụng axiosInstance thay vì axios để có sẵn xử lý token
+        const response = await axiosInstance.get(`/orders/${orderId}/reviews`);
+
+        if (response.data.status === "success") {
+          // Đảm bảo mỗi đánh giá có ID duy nhất
+          const uniqueReviews = response.data.data.map(review => ({
+            ...review,
+            uniqueKey: `${review.id}-${review.product_id}-${review.product_variant_id || 'no-variant'}-${new Date(review.created_at).getTime()}`
+          }));
+          setReviews(uniqueReviews);
+        } else {
+          console.error("API trả về lỗi:", response.data);
+          toast.error(response.data.message || "Không thể tải đánh giá");
+        }
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+        // Hiển thị lỗi cho người dùng
+        if (error.response?.status === 401) {
+          toast.error("Vui lòng đăng nhập lại để xem đánh giá");
+        } else {
+          toast.error("Không thể tải đánh giá. Vui lòng thử lại sau.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, [orderId]);
+
+  // Hàm hiển thị thông tin biến thể
+  const renderVariantDetails = (variantDetails) => {
+    if (!variantDetails || Object.keys(variantDetails).length === 0) return null;
+
+    // Kiểm tra nếu không phải array hoặc object, trả về null
+    if (!Array.isArray(variantDetails) && typeof variantDetails !== 'object') return null;
+
+    // Xử lý trường hợp variant_details là mảng object
+    if (Array.isArray(variantDetails)) {
+      return (
+        <div className="text-sm text-gray-600 mt-1">
+          {variantDetails.map((variant, index) => (
+            <span key={index}>
+              {variant.attribute_name || variant.name}: {variant.attribute_value || variant.value}
+              {index < variantDetails.length - 1 ? ', ' : ''}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    // Xử lý trường hợp variant_details là object
+    return (
+      <div className="text-sm text-gray-600 mt-1">
+        {Object.entries(variantDetails).map(([key, value], index, arr) => (
+          <span key={key}>
+            {key}: {value}
+            {index < arr.length - 1 ? ', ' : ''}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  // Format thời gian hiển thị
+  const formatReviewTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return <div className="text-center py-4">Đang tải đánh giá...</div>;
+  }
+
+  if (!reviews || reviews.length === 0) {
+    return <div className="text-center py-4">Bạn chưa đánh giá sản phẩm nào cho đơn hàng này.</div>;
+  }
+
+  return (
+    <div className="mt-6">
+      <h3 className="text-lg font-semibold mb-4">Đánh giá của bạn</h3>
+      <div className="space-y-4">
+        {reviews.map((review) => (
+          <div key={review.uniqueKey || review.id} className="border rounded-lg p-4 bg-white shadow-sm">
+            <div className="flex items-start">
+              {review.product_image && (
+                <img
+                  src={`${import.meta.env.VITE_API_BASE_URL}/storage/${review.product_image}`}
+                  alt={review.product_name}
+                  className="w-16 h-16 object-cover rounded mr-4"
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/64x64?text=No+Image";
+                  }}
+                />
+              )}
+              <div className="flex-1">
+                <h4 className="font-medium">{review.product_name}</h4>
+                {/* Hiển thị biến thể với định dạng rõ ràng hơn */}
+                {review.has_variant && review.variant_details && (
+                  <div className="bg-gray-50 px-2 py-1 rounded-md text-sm my-1 inline-block border border-gray-200">
+                    {Array.isArray(review.variant_details) ?
+                      review.variant_details.map((detail, idx) => (
+                        <span key={idx} className="text-gray-700">
+                          {detail.name || detail.attribute_name}: <strong>{detail.value || detail.attribute_value}</strong>
+                          {idx < review.variant_details.length - 1 ? ', ' : ''}
+                        </span>
+                      )) :
+                      renderVariantDetails(review.variant_details)
+                    }
+                  </div>
+                )}
+                <div className="flex items-center mt-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star}>
+                      {star <= review.rating ? (
+                        <RiStarFill className="text-yellow-400" />
+                      ) : (
+                        <RiStarLine className="text-gray-400" />
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-2">{review.review_text}</p>
+                {review.images && review.images.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {review.images.map((image, index) => (
+                      <img
+                        key={index}
+                        src={`${import.meta.env.VITE_API_BASE_URL}/storage/${image}`}
+                        alt={`Review image ${index + 1}`}
+                        className="w-16 h-16 object-cover rounded"
+                        onError={(e) => {
+                          e.target.src = "https://via.placeholder.com/64x64?text=No+Image";
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+                <div className="text-sm text-gray-500 mt-2 flex items-center">
+                  <FiCalendar className="mr-1" />
+                  {formatReviewTime(review.created_at)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const OrderDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -149,6 +713,19 @@ const OrderDetail = () => {
   const [selectedReasonOption, setSelectedReasonOption] = useState(null);
   const [customReason, setCustomReason] = useState("");
   const [showCustomReasonInput, setShowCustomReasonInput] = useState(false);
+
+  // Thêm state để quản lý modal đánh giá
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [reviewedProducts, setReviewedProducts] = useState([]);
+  const [showReviewsSection, setShowReviewsSection] = useState(false);
+
+  // Thêm state cho modal hủy đơn hàng
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedCancelReason, setSelectedCancelReason] = useState(null);
+  const [cancelCustomReason, setCancelCustomReason] = useState("");
+  const [showCancelCustomInput, setShowCancelCustomInput] = useState(false);
+
   // --- Logic Polling ---
   const fetchOrderDetailCallback = useCallback(
     async (isPolling = false) => {
@@ -299,9 +876,18 @@ const OrderDetail = () => {
                         </div>
                       </div>
                       <div className="ml-3 flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          Xác nhận thành công!
-                        </p>
+                        <div className="flex justify-between items-start">
+                          <p className="text-sm font-medium text-gray-900">
+                            Xác nhận thành công!
+                          </p>
+                          <button
+                            onClick={() => toast.dismiss(t.id)}
+                            className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+                          >
+                            <span className="sr-only">Đóng</span>
+                            <FiX className="h-5 w-5" />
+                          </button>
+                        </div>
                         <p className="mt-1 text-sm text-gray-500">
                           Đơn hàng #{order.order_code} đã được xác nhận đã nhận hàng.
                         </p>
@@ -406,7 +992,7 @@ const OrderDetail = () => {
 
     if (order && order.order_status === "Đã Giao" && !autoConfirmTimerSet) {
       // console.log("Order is 'Đã Giao'. Checking for auto-confirmation.");
-      // Giả định updated_at là thời điểm chuyển sang "Đã Giao"
+      // Giả định updated_at là thởi điểm chuyển sang "Đã Giao"
       const deliveredTime = new Date(order.updated_at).getTime();
       const currentTime = new Date().getTime();
       const timeSinceDelivered = currentTime - deliveredTime;
@@ -707,26 +1293,65 @@ const OrderDetail = () => {
     ));
   };
 
+  // Xử lý chọn lý do hủy đơn hàng
+  const handleCancelReasonSelect = (reason) => {
+    setSelectedCancelReason(reason);
+
+    // Hiển thị ô input nếu chọn "Khác"
+    if (reason === "Khác") {
+      setShowCancelCustomInput(true);
+    } else {
+      setShowCancelCustomInput(false);
+      setCancelCustomReason("");
+    }
+  };
+
   // Xử lý hủy đơn hàng
-  const handleCancelOrder = async () => {
-    if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) {
+  const handleCancelOrder = () => {
+    setShowCancelModal(true);
+  };
+
+  // Xử lý gửi yêu cầu hủy đơn hàng
+  const submitCancelOrder = async () => {
+    if (!selectedCancelReason) {
+      toast.error("Vui lòng chọn lý do hủy đơn hàng");
+      return;
+    }
+
+    // Kiểm tra nếu chọn "Khác" thì phải nhập lý do
+    if (selectedCancelReason === "Khác" && !cancelCustomReason) {
+      toast.error("Vui lòng nhập lý do hủy đơn hàng");
       return;
     }
 
     try {
       setLoading(true);
       const token = localStorage.getItem("authToken");
+
+      // Xác định lý do gửi lên server
+      const reasonToSubmit = selectedCancelReason === "Khác"
+        ? cancelCustomReason
+        : selectedCancelReason;
+
+      // Tạo FormData để gửi dữ liệu
+      const formData = new FormData();
+      formData.append('reason', reasonToSubmit);
+
       const response = await axiosInstance.post(
         `/orders/${id}/cancel`,
-        {},
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
 
       if (response.data.status === "success") {
+        // Đóng modal
+        setShowCancelModal(false);
+
         // Thay thế alert bằng toast.custom
         toast.custom(
           (t) => (
@@ -760,25 +1385,18 @@ const OrderDetail = () => {
           }
         );
 
-        // Cập nhật lại thông tin đơn hàng
-        const updatedOrder = { ...order, order_status: "Hủy Đơn" };
-        setOrder(updatedOrder);
-
-        // Phát sự kiện để thông báo cho các component khác
-        const cancelEvent = new CustomEvent('order-canceled', {
-          detail: {
-            orderId: id,
-            orderCode: order.order_code,
-            userId: order.user_id,
-            userName: order.user_name,
-            totalPrice: order.total_price
-          }
-        });
-        window.dispatchEvent(cancelEvent);
+        // Cập nhật trạng thái đơn hàng
+        setOrder((prevOrder) => ({
+          ...prevOrder,
+          order_status: "Hủy Đơn",
+          reason: reasonToSubmit
+        }));
+      } else {
+        toast.error(response.data.message || "Không thể hủy đơn hàng.");
       }
     } catch (error) {
-      console.error("Lỗi khi hủy đơn hàng:", error);
-      toast.error("Không thể hủy đơn hàng. Vui lòng thử lại sau.");
+      console.error("Lỗi khi hủy đơn hàng:", error.response?.data || error.message);
+      toast.error(error.response?.data?.message || "Không thể hủy đơn hàng. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -848,21 +1466,21 @@ const OrderDetail = () => {
                     </div>
                   </div>
                   <div className="ml-3 flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      Thành công!
-                    </p>
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm font-medium text-gray-900">
+                        Thành công!
+                      </p>
+                      <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+                      >
+                        <span className="sr-only">Đóng</span>
+                        <FiX className="h-5 w-5" />
+                      </button>
+                    </div>
                     <p className="mt-1 text-sm text-gray-500">
                       Yêu cầu hoàn hàng của bạn đã được gửi. Vui lòng chờ xét duyệt.
                     </p>
-                  </div>
-                  <div className="ml-4 flex-shrink-0 flex">
-                    <button
-                      onClick={() => toast.dismiss(t.id)}
-                      className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
-                    >
-                      <span className="sr-only">Đóng</span>
-                      <FiX className="h-5 w-5" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -887,10 +1505,11 @@ const OrderDetail = () => {
       }
     } catch (error) {
       console.error("Lỗi khi yêu cầu hoàn hàng:", error);
-      toast.error(
-        error.response?.data?.message ||
-        "Không thể gửi yêu cầu hoàn hàng. Vui lòng thử lại sau."
-      );
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Có lỗi xảy ra khi gửi yêu cầu hoàn hàng");
+      }
     } finally {
       setLoading(false);
     }
@@ -973,7 +1592,8 @@ const OrderDetail = () => {
         currentStep = 1;
         break;
       case "đã duyệt":
-        currentStep = 2;
+        // Nếu đã duyệt và đã hoàn tiền (payment_status = 1), chuyển bước cuối
+        currentStep = (order.payment_status === 1) ? 3 : 2;
         break;
       case "completed":
       case "refunded":
@@ -1018,9 +1638,7 @@ const OrderDetail = () => {
                 >
                   {step.icon}
                 </div>
-                <span className="text-xs font-medium text-center">
-                  {step.name}
-                </span>
+                <span className="text-xs font-medium">{step.name}</span>
               </div>
             ))}
           </div>
@@ -1145,6 +1763,80 @@ const OrderDetail = () => {
       amountStr = amountStr.slice(0, -3);
     }
     return amountStr.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " đ";
+  };
+
+  // Thêm useEffect để lấy danh sách sản phẩm đã đánh giá
+  useEffect(() => {
+    if (order && order.order_status === "Đã Nhận") {
+      fetchReviewedProducts();
+    }
+  }, [order]);
+
+  // Hàm lấy danh sách sản phẩm đã đánh giá
+  const fetchReviewedProducts = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
+
+      // Lấy danh sách đánh giá của đơn hàng này
+      const reviewsResponse = await axiosInstance.get(`/orders/${id}/reviews`);
+
+      if (reviewsResponse.data.status === 'success' && reviewsResponse.data.data) {
+        // Tạo danh sách sản phẩm đã đánh giá từ response, lưu thêm cả variant_id nếu có
+        const reviewedProductsData = reviewsResponse.data.data.map(review => ({
+          product_id: review.product_id,
+          variant_id: review.product_variant_id || null
+        }));
+        setReviewedProducts(reviewedProductsData);
+      } else {
+        // Phương pháp dự phòng: kiểm tra từng sản phẩm
+        const promises = order.order_items.map(item =>
+          axiosInstance.get(`/products/${item.product_id}/can-review`).catch(error => {
+            // Nếu API trả về lỗi 'đã đánh giá rồi', thêm vào danh sách đã đánh giá
+            if (error.response?.data?.message === 'Bạn đã đánh giá sản phẩm này rồi.') {
+              return {
+                data: {
+                  alreadyReviewed: true,
+                  productId: item.product_id,
+                  variantId: item.product_variant_id || null
+                }
+              };
+            }
+            return { data: { success: true } }; // Default is can review
+          })
+        );
+
+        const results = await Promise.all(promises);
+        const reviewed = results
+          .filter(response => response.data?.alreadyReviewed)
+          .map(response => ({
+            product_id: response.data.productId,
+            variant_id: response.data.variantId
+          }));
+
+        setReviewedProducts(reviewed);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin đánh giá:", error);
+    }
+  };
+
+  // Hàm xử lý hiển thị modal đánh giá
+  const handleOpenReviewModal = (item) => {
+    setSelectedProduct({
+      ...item,
+      // Thêm thông tin biến thể nếu có
+      product_variant: item.product_variant_id ? {
+        id: item.product_variant_id, // Lấy id từ product_variant_id
+        variant_details: item.product_variant?.variant_details || []
+      } : null
+    });
+    setShowReviewModal(true);
+  };
+
+  // Hàm xử lý sau khi đánh giá thành công
+  const handleReviewSuccess = (productId, variantId = null) => {
+    setReviewedProducts(prev => [...prev, { product_id: productId, variant_id: variantId }]);
   };
 
   if (loading) {
@@ -1286,7 +1978,7 @@ const OrderDetail = () => {
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3 mt-6 justify-end">
-            {["Chưa Xác Nhận", "Đã Xác Nhận"].includes(order.order_status) && (
+            {order.order_status === "Chưa Xác Nhận" && (
               <button
                 onClick={handleCancelOrder}
                 className="px-4 py-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors flex items-center"
@@ -1442,11 +2134,64 @@ const OrderDetail = () => {
                           {formatCurrency(item.quantity * item.price)}
                         </div>
                       </div>
+
+                      {/* Thêm phần đánh giá sản phẩm */}
+                      {order.order_status === "Đã Nhận" && (
+                        <div className="mt-3">
+                          {reviewedProducts.some(p =>
+                            p.product_id === item.product_id &&
+                            (p.variant_id === item.product_variant_id ||
+                              (p.variant_id === null && item.product_variant_id === null))
+                          ) ? (
+                            <div className="text-green-600 text-sm flex items-center">
+                              <FiCheckCircle className="mr-1" />
+                              Đã đánh giá
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenReviewModal(item)}
+                              className="inline-flex items-center text-sm px-3 py-1.5 bg-amber-100 text-amber-600 hover:bg-amber-200 rounded transition-colors"
+                            >
+                              <FiStar className="mr-1" />
+                              Đánh giá sản phẩm
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             </motion.div>
+
+            {/* Đánh giá của tôi - Chỉ hiển thị khi đơn hàng đã nhận */}
+            {order?.order_status === "Đã Nhận" && (
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="bg-white rounded-lg shadow-sm overflow-hidden"
+              >
+                <div className="border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                    <FiMessageSquare className="mr-2 text-amber-500" />
+                    Đánh giá của tôi
+                  </h2>
+                  <button
+                    onClick={() => setShowReviewsSection(!showReviewsSection)}
+                    className="text-amber-500 hover:text-amber-600 transition-colors"
+                  >
+                    {showReviewsSection ? "Ẩn đánh giá" : "Xem đánh giá"}
+                  </button>
+                </div>
+
+                {showReviewsSection && (
+                  <div className="p-6">
+                    <ReviewsList orderId={id} />
+                  </div>
+                )}
+              </motion.div>
+            )}
           </div>
 
           {/* Right column - Order Summary */}
@@ -1519,6 +2264,34 @@ const OrderDetail = () => {
         handleReasonSelect={handleReasonSelect}
         submitRefundRequest={submitRefundRequest}
       />
+
+      {/* Modal hủy đơn hàng */}
+      <CancelOrderModal
+        showModal={showCancelModal}
+        setShowModal={setShowCancelModal}
+        loading={loading}
+        selectedReason={selectedCancelReason}
+        customReason={cancelCustomReason}
+        setCustomReason={setCancelCustomReason}
+        showCustomInput={showCancelCustomInput}
+        handleReasonSelect={handleCancelReasonSelect}
+        submitCancelOrder={submitCancelOrder}
+      />
+
+      {/* Modal đánh giá sản phẩm */}
+      {selectedProduct && (
+        <ReviewModal
+          showModal={showReviewModal}
+          setShowModal={setShowReviewModal}
+          loading={loading}
+          productId={selectedProduct.product_id}
+          productName={selectedProduct.product_name}
+          productImage={selectedProduct.image_url}
+          orderId={id}
+          productVariant={selectedProduct.product_variant}
+          onReviewSubmitSuccess={handleReviewSuccess}
+        />
+      )}
     </motion.div>
   );
 };

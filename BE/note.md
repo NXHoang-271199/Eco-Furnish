@@ -18,7 +18,7 @@
 *   php artisan migrate:rollback --batch=5 => Rollback lại bước số 5
 
 -   php artisan migrate:reset => Rollback lại tất cả các thao tác của migration
--   php artisan migrate:refresh => Rollback lại tất cả các thao tác của migration sau đó tự động chạy migrate
+-   php artisan migrate:refresh= > Rollback lại tất cả các thao tác của migration sau đó tự động chạy migrate
 
 # Tạo và làm việc với Seeder
 

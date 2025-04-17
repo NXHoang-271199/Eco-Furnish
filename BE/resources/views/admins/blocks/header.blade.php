@@ -58,6 +58,22 @@
                     .dropdown-menu.show {
                         display: block;
                     }
+                    
+                    /* Đảm bảo dropdown thông báo hiển thị trên cùng và không bị che khuất */
+                    #notificationDropdown .dropdown-menu {
+                        z-index: 9999;
+                        position: absolute;
+                        right: 0;
+                        left: auto;
+                        transform: none !important;
+                        top: 100% !important;
+                    }
+                    
+                    /* Đảm bảo nội dung thông báo hiển thị đúng */
+                    #notificationItemsTabContent {
+                        z-index: 9999;
+                        position: relative;
+                    }
                 </style>
                 <div class="dropdown topbar-head-dropdown ms-1 header-item" id="notificationDropdown">
                     <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle"

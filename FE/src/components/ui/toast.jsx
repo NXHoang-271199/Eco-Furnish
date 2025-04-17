@@ -206,6 +206,94 @@ export const showWalletDepositToast = (notification) => {
 };
 
 /**
+ * Hiển thị thông báo toast khi đánh giá bị ẩn
+ */
+export const showReviewHiddenToast = (notification) => {
+    // Đảm bảo notification hợp lệ
+    if (!notification) return;
+
+    // Lấy thông tin từ notification
+    const reviewId = notification.review_id;
+    const productId = notification.product_id;
+    const productName = notification.product_name || "sản phẩm";
+    const reason = notification.reason || "Vi phạm quy định";
+    const message = notification.message || `Đánh giá của bạn về sản phẩm "${productName}" đã bị ẩn với lý do: ${reason}`;
+
+    // Tạo ID duy nhất cho toast để tránh hiển thị trùng lặp
+    const toastId = `review-hidden-notification-${notification.id || Date.now()}`;
+
+    // Phát âm thanh thông báo
+    // playNotificationSound();
+
+    // Màu sắc cho thông báo - đỏ
+    const colorClass = 'bg-red-500';
+
+    return toast.custom(
+        (t) => (
+            <div
+                className={`
+          ${t.visible ? 'animate-enter' : 'animate-leave'}
+          max-w-md w-full bg-white shadow-lg rounded-lg overflow-hidden pointer-events-auto 
+          flex flex-col ring-1 ring-black ring-opacity-5 border-l-4 ${colorClass}
+        `}
+            >
+                <div className="p-4">
+                    <div className="flex items-start">
+                        <div className="flex-shrink-0 pt-0.5">
+                            <div className={`h-10 w-10 rounded-full ${colorClass.replace('bg-', 'bg-opacity-20 text-')} flex items-center justify-center`}>
+                                <AlertTriangle className="h-6 w-6" />
+                            </div>
+                        </div>
+                        <div className="ml-3 flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                                Thông báo đánh giá
+                            </p>
+                            <p className="mt-1 text-sm text-gray-500">
+                                {message}
+                            </p>
+                            <div className="mt-3 flex space-x-3">
+                                <button
+                                    onClick={() => {
+                                        // Đóng toast trước
+                                        toast.remove(toastId);
+                                        // Chuyển hướng sau
+                                        setTimeout(() => {
+                                            window.location.href = `/product/${productId}`;
+                                        }, 0);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-medium text-white ${colorClass} hover:${colorClass.replace('bg-', 'bg-opacity-90 ')} focus:outline-none`}
+                                >
+                                    Xem sản phẩm
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        // Đóng toast ngay lập tức
+                                        toast.remove(toastId);
+                                    }}
+                                    className="px-3 py-1.5 rounded-md text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none"
+                                >
+                                    Đóng
+                                </button>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                // Đóng toast ngay lập tức
+                                toast.remove(toastId);
+                            }}
+                            className="flex-shrink-0 ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-gray-500 focus:outline-none"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        ),
+        { id: toastId, duration: 7000 }
+    );
+};
+
+/**
  * Hiển thị thông báo nhắc nhở thanh toán cho đơn hàng chưa thanh toán trực tuyến
  */
 export const showPaymentReminderToast = (order) => {

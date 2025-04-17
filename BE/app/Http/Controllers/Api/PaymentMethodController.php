@@ -101,7 +101,7 @@ class PaymentMethodController extends Controller
         $amount = $request->total_price;
         $orderId = $request->order_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5173/order-success";
-        $ipnUrl = $request->notify_url ?? "https://0abf-42-116-147-216.ngrok-free.app/api/momo/ipn";
+        $ipnUrl = $request->notify_url ?? "https://86bc-42-116-147-216.ngrok-free.app/api/momo/ipn";
 
         $extraData = '';
 
@@ -144,7 +144,7 @@ class PaymentMethodController extends Controller
         }
         //   $data = $request->all();
         $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-        $vnp_Returnurl = "http://localhost:5173/order-success";
+        $vnp_Returnurl = "http://localhost:5173/account/wallet";
         $vnp_TmnCode = $config['vnp_TmnCode']; //Mã website tại VNPAY
         $vnp_HashSecret = $config['vnp_HashSecret']; //Chuỗi bí mật
 
@@ -262,7 +262,7 @@ class PaymentMethodController extends Controller
         $amount = $request->amount;
         $orderId = $request->wallet_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5173/account/wallet/deposit-success";
-        $ipnUrl = $request->notify_url ?? "https://0abf-42-116-147-216.ngrok-free.app/api/momo/ipn";
+        $ipnUrl = $request->notify_url ?? "https://86bc-42-116-147-216.ngrok-free.app/api/momo/ipn";
 
         $extraData = '';
 
@@ -393,8 +393,7 @@ class PaymentMethodController extends Controller
                 $order = Order::where('order_code', $orderId)->first();
                 if ($order) {
                     $order->update([
-                        'payment_status' => 1,
-                        'order_status' => 'Đã Xác Nhận',
+                        'payment_status' => 1
                     ]);
 
                     // ✅ Cập nhật status cho WalletTransaction liên quan đơn hàng
@@ -450,8 +449,7 @@ class PaymentMethodController extends Controller
                 $order = Order::where('order_code', $txnRef)->first();
                 if ($order) {
                     $order->update([
-                        'payment_status' => 1,
-                        'order_status' => 'Đã Xác Nhận',
+                        'payment_status' => 1
                     ]);
 
                     // ✅ Cập nhật status cho WalletTransaction liên quan đơn hàng

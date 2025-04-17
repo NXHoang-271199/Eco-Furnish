@@ -262,11 +262,13 @@ const Payment = () => {
   // Hàm mở modal thêm địa chỉ
   const openAddAddressModal = () => {
     setEditingAddressId(null);
+    // Lấy email mặc định từ localStorage
+    const userData = JSON.parse(localStorage.getItem("userData")) || {};
     setAddressFormData({
       first_name: "",
       last_name: "",
       phone: "",
-      email: "",
+      email: userData.email || "",
       address_name: "",
       country: "Việt Nam",
       province: "",
@@ -1048,7 +1050,7 @@ const Payment = () => {
                   <div className="mt-6 text-center">
                     <button
                       onClick={openAddAddressModal}
-                      className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800"
+                      className="bg-black text-white px-6 py-2 rounded-md"
                     >
                       Thêm địa chỉ mới
                     </button>
@@ -1075,7 +1077,7 @@ const Payment = () => {
                       <input type="tel" name="phone" value={addressFormData.phone} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Email (Tùy chọn)</label>
+                      <label className="block text-sm font-medium mb-1">Email *</label>
                       <input type="email" name="email" value={addressFormData.email} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
                     </div>
                     <div className="flex items-center pt-2">
