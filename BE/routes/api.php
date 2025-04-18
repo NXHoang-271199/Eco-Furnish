@@ -17,10 +17,11 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\VariantApiController;
 use App\Http\Controllers\Api\VoucherApiController;
+use App\Http\Controllers\Api\BankAccountController;
 use App\Http\Controllers\Api\CategoryApiController;
+use App\Http\Controllers\Api\UserAddressController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\CategoryPostApiController;
-use App\Http\Controllers\Api\UserAddressController;
 use App\Http\Controllers\Api\UserNotificationController;
 
 /*
@@ -86,6 +87,12 @@ Route::prefix('users')->group(function () {
         Route::post('/{userId}/addresses', [UserAddressController::class, 'storeUserAddress']);
         Route::put('/{userId}/addresses/{addressId}', [UserAddressController::class, 'updateUserAddress']);
         Route::delete('/{userId}/addresses/{addressId}', [UserAddressController::class, 'deleteUserAddress']);
+
+        // Thêm routes cho mật khẩu cấp 2
+        Route::post('/level2-password/set', [UserApiController::class, 'setLevel2Password']);
+        Route::post('/level2-password/verify', [UserApiController::class, 'verifyLevel2Password']);
+        Route::put('/level2-password/update', [UserApiController::class, 'updateLevel2Password']);
+        Route::get('/level2-password/status', [UserApiController::class, 'checkLevel2PasswordStatus']);
 
         Route::post('/upload-avatar/{id}', [UserApiController::class, 'uploadAvatar']);
         Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
@@ -270,12 +277,24 @@ Route::middleware('auth:sanctum')->get('user/orders/unpaid', [OrderController::c
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
     Route::get('/products/{productId}/can-review', [ReviewController::class, 'canReview']); // kiểm tra quyền đánh giá
+    Route::get('/orders/{orderId}/reviews', [ReviewController::class, 'getOrderReviews']); // lấy đánh giá của một đơn hàng
 });
 Route::get('products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
 
+//wallet
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('wallet/balance', [WalletController::class, 'getBalance']); // số dư ví
     Route::post('wallet/deposit', [WalletController::class, 'deposit']); // nạp tiền
     Route::get('wallet/transactions', [WalletController::class, 'transactions']); // lịch sử giao dịch
-    Route::delete('/wallet/transactions/{id}/cancel', [WalletController::class, 'cancelTransaction']); // hủy giao dịch
+    Route::delete('wallet/transactions/{id}/cancel', [WalletController::class, 'cancelTransaction']); // hủy giao dịch
+    Route::post('wallet/withdraw-requests', [WalletController::class, 'storeWithdrawRequest']); // tạo yêu cầu rút tiền
+    Route::post('wallet/generate-qr-preview', [WalletController::class, 'generateQrPreview']); // api tạo mã qr cho FE
+});
+
+// bank account
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('bank-accounts', [BankAccountController::class, 'getUserBankAccounts']); // Lấy danh sách tài khoản ngân hàng của người dùng hiện tại
+    Route::post('bank-accounts', [BankAccountController::class, 'storeUserBankAccount']); // Tạo mới tài khoản ngân hàng cho người dùng hiện tại
+    Route::put('bank-accounts/{accountId}', [BankAccountController::class, 'updateUserBankAccount']); // Cập nhật tài khoản ngân hàng của người dùng hiện tại
+    Route::delete('bank-accounts/{accountId}', [BankAccountController::class, 'deleteUserBankAccount']); // Xóa tài khoản ngân hàng của người dùng hiện tại
 });

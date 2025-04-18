@@ -8,6 +8,7 @@ import axios from "axios";
 import { Link, useSearchParams } from "react-router-dom";
 import Banner from "../../../components/Banner";
 import { motion } from "framer-motion";
+import LoadingScreen from "../../../components/LoadingScreen";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -20,6 +21,9 @@ const Products = () => {
   const [priceRange, setPriceRange] = useState([0, 10000000]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [loadedImagesCount, setLoadedImagesCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage] = useState(9);
@@ -33,7 +37,7 @@ const Products = () => {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.5,
+        duration: 0.3,
       },
     },
   };
@@ -43,83 +47,101 @@ const Products = () => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
+        staggerChildren: 0.05,
       },
     },
   };
 
-  const fetchProducts = async (page, currentSpaceFilter, currentSearchTerm) => {
-    setIsLoading(true);
-    try {
-      const params = {
-        page: page,
-        limit: itemsPerPage,
-        ...(currentSpaceFilter && { space: currentSpaceFilter }),
-        ...(currentSearchTerm && { keyword: currentSearchTerm }),
-      };
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/products`,
-        { params }
-      );
-      console.log("API Product Response:", response.data);
+  useEffect(() => {
+    // Sử dụng Promise.all để tải dữ liệu song song
+    const fetchData = async () => {
+      setIsLoading(true);
+      setDataLoaded(false);
+      try {
+        const params = {
+          page: currentPage,
+          limit: itemsPerPage,
+          ...(spaceFilter && { space: spaceFilter }),
+          ...(searchTerm && { keyword: searchTerm }),
+        };
+        
+        const [productsResponse, categoriesResponse, variantsResponse] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_URL}/api/products`, { params }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/categories/all`, { 
+            params: { ...(spaceFilter && { space: spaceFilter }) }
+          }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/variants`)
+        ]);
+        
+        // Xử lý dữ liệu sản phẩm
+        if (productsResponse.data.status === "success" && productsResponse.data.data) {
+          setProducts(productsResponse.data.data.data || []);
+          setTotalPages(productsResponse.data.data.last_page || 1);
+          setCurrentPage(productsResponse.data.data.current_page || 1);
+        } else {
+          setProducts([]);
+          setTotalPages(1);
+          setCurrentPage(1);
+        }
+        
+        // Xử lý dữ liệu danh mục
+        if (categoriesResponse.data.success) {
+          setCategories(categoriesResponse.data.data || []);
+        } else {
+          setCategories([]);
+        }
+        
+        // Xử lý dữ liệu biến thể
+        if (variantsResponse.data.status === "success") {
+          setVariants(variantsResponse.data.data || []);
+        }
 
-      if (response.data.status === "success" && response.data.data) {
-        setProducts(response.data.data.data || []);
-        setTotalPages(response.data.data.last_page || 1);
-        setCurrentPage(response.data.data.current_page || 1);
-      } else {
+        // Đánh dấu dữ liệu đã được tải xong
+        setDataLoaded(true);
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu:", error);
         setProducts([]);
         setTotalPages(1);
         setCurrentPage(1);
+        // Đánh dấu dữ liệu đã được tải xong ngay cả khi có lỗi
+        setDataLoaded(true);
       }
-    } catch (error) {
-      console.error("Lỗi khi lấy dữ liệu sản phẩm:", error);
-      setProducts([]);
-      setTotalPages(1);
-      setCurrentPage(1);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+    
+    fetchData();
+  }, [currentPage, spaceFilter, searchTerm, itemsPerPage]);
 
-  const fetchFilterCategories = async (currentSpaceFilter) => {
-    try {
-      const params = {
-        ...(currentSpaceFilter && { space: currentSpaceFilter })
-      };
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/categories/all`,
-        { params }
-      );
-      console.log("Filter Categories Response:", response.data);
-      if (response.data.success) {
-        setCategories(response.data.data || []);
-      } else {
-        setCategories([]);
-      }
-    } catch (error) {
-      console.error("Lỗi khi lấy danh mục cho bộ lọc:", error);
-      setCategories([]);
-    }
-  };
-
-  const fetchVariants = async () => {
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/variants`
-      );
-      if (response.data.status === "success") {
-        setVariants(response.data.data || []);
-      }
-    } catch (error) {
-      console.error("Lỗi khi lấy biến thể:", error);
-    }
-  };
-
+  // Theo dõi trạng thái tải dữ liệu và hình ảnh
   useEffect(() => {
-    fetchProducts(currentPage, spaceFilter, searchTerm);
-    fetchFilterCategories(spaceFilter);
-    fetchVariants();
+    if (dataLoaded) {
+      // Nếu không có sản phẩm, đánh dấu hình ảnh đã tải xong
+      if (products.length === 0) {
+        setImagesLoaded(true);
+      } else {
+        // Đặt thời gian chờ dài hơn để đảm bảo hình ảnh có thời gian tải
+        const timer = setTimeout(() => {
+          // Chỉ tắt loading sau khi đã chờ đủ thời gian để hình ảnh tải
+          setImagesLoaded(true);
+        }, 3000); // Tăng thời gian chờ lên 3 giây
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [dataLoaded, products]);
+
+  // Theo dõi trạng thái tải dữ liệu và hình ảnh để cập nhật isLoading
+  useEffect(() => {
+    if (dataLoaded && imagesLoaded) {
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+  }, [dataLoaded, imagesLoaded]);
+
+  // Reset trạng thái tải hình ảnh khi chuyển trang hoặc thay đổi bộ lọc
+  useEffect(() => {
+    setImagesLoaded(false);
+    setLoadedImagesCount(0);
   }, [currentPage, spaceFilter, searchTerm]);
 
   const filteredProducts = useMemo(() => {
@@ -208,7 +230,7 @@ const Products = () => {
 
   const handleSearch = () => {
     setCurrentPage(1);
-    fetchProducts(1, spaceFilter, searchTerm);
+    // Không cần gọi fetchProducts vì useEffect sẽ tự động chạy khi searchTerm hoặc currentPage thay đổi
   };
 
   const handleSearchKeyPress = (e) => {
@@ -226,7 +248,8 @@ const Products = () => {
   const resetAllFilters = () => {
     resetClientFilters();
     setSearchTerm("");
-    fetchProducts(1, spaceFilter, "");
+    setCurrentPage(1);
+    // Không cần gọi fetchProducts vì useEffect sẽ tự động chạy khi searchTerm hoặc currentPage thay đổi
   };
 
   const toggleFilter = () => {
@@ -280,8 +303,18 @@ const Products = () => {
     return pageNumbers;
   };
 
+  // Hàm xử lý khi hình ảnh tải xong
+  const handleImageLoad = (productId) => {
+    setLoadedImagesCount(prev => prev + 1);
+    if (loadedImagesCount + 1 === products.length) {
+      setImagesLoaded(true);
+    }
+  };
+
   return (
     <>
+      {isLoading && <LoadingScreen />}
+      
       <motion.section
         className="w-full mx-auto mt-4 mb-8"
         initial={{ opacity: 0, y: -20 }}
@@ -505,6 +538,8 @@ const Products = () => {
                     key={product.id}
                     className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
                     variants={fadeIn}
+                    initial="hidden"
+                    animate="visible"
                     whileHover={{ y: -8 }}
                   >
                     <Link
@@ -512,7 +547,7 @@ const Products = () => {
                       className="block"
                     >
                       <div className="relative overflow-hidden">
-                        <div className="aspect-square overflow-hidden">
+                        <div className="aspect-square overflow-hidden bg-gray-100">
                           <img
                             src={
                               product.image_thumnail
@@ -523,8 +558,11 @@ const Products = () => {
                             }
                             alt={product.name}
                             className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-700 ${!checkProductInStock(product) ? 'opacity-50' : ''}`}
+                            loading="lazy"
+                            onLoad={() => handleImageLoad(product.id)}
                             onError={(e) => {
                               const productId = product.id;
+                              handleImageLoad(productId);
                               if (!imageLoadError[productId]) {
                                 setImageLoadError((prev) => ({
                                   ...prev,

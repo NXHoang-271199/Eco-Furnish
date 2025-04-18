@@ -44,4 +44,8 @@ class WalletTransaction extends Model
     {
         return $this->belongsTo(Order::class);
     }
+    public function withdrawRequest()
+    {
+        return $this->hasOne(WithdrawRequest::class);
+    }
 }

@@ -206,7 +206,7 @@ class OrderController extends Controller
                     'balance_after' => $balanceAfter,
                 ]);
                 $paymentStatus = 1; // Đã thanh toán
-                $orderStatus = 'Đã Xác Nhận';
+                $orderStatus = 'Chưa Xác Nhận';
             }
 
             // ✅ Tạo đơn hàng
@@ -460,7 +460,7 @@ class OrderController extends Controller
 
 
                 $paymentStatus = 1; // Đã thanh toán
-                $orderStatus = 'Đã Xác Nhận';
+                $orderStatus = 'Chưa Xác Nhận';
             }
 
             // Tạo đơn hàng
@@ -640,7 +640,11 @@ class OrderController extends Controller
     public function requestRefund($orderId, Request $request)
     {
         $userId = Auth::id();
-
+        $request->validate([
+            'reason' => 'required',
+        ], [
+            'reason.required' => 'Vui lòng nhập lý do hoàn hàng',
+        ]);
         // Tìm đơn hàng của người dùng
         $order = Order::where('id', $orderId)
             ->where('user_id', $userId)
@@ -655,7 +659,7 @@ class OrderController extends Controller
         }
 
         // Không cho gửi lại yêu cầu nếu đã có yêu cầu hoàn hàng rồi
-        if (in_array($order->order_status, ['Hoàn Hàng'])) {
+        if ($order->order_status === 'Hoàn Hàng') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Đơn hàng này đã có yêu cầu hoàn hàng trước đó, không thể gửi lại yêu cầu'
@@ -697,24 +701,29 @@ class OrderController extends Controller
                 'status' => 'Chờ Duyệt',
             ]);
 
-            // Tạo giao dịch ví tạm thời với trạng thái cho_thanh_toan
-            $user = User::with('wallet')->find($userId);
-            if (!$user || !$user->wallet) {
-                throw new \Exception('Không tìm thấy ví người dùng');
+            // Cập nhật trạng thái đơn hàng thành "Hoàn Hàng"
+            $order->update(['order_status' => 'Hoàn Hàng']);
+
+            // Kiểm tra payment_status của đơn hàng, nếu là 1 thì tạo giao dịch ví
+            if ($order->payment_status == 1) {  // payment_status phải là 1 (đã thanh toán)
+                $user = User::with('wallet')->find($userId);
+                if (!$user || !$user->wallet) {
+                    throw new \Exception('Không tìm thấy ví người dùng');
+                }
+
+                $wallet = $user->wallet;
+
+                WalletTransaction::create([
+                    'wallet_id' => $wallet->id,
+                    'amount' => $order->total_price,
+                    'type' => 'hoan_tien',
+                    'status' => 'cho_thanh_toan',
+                    'description' => 'Yêu cầu hoàn tiền cho đơn hàng #' . $order->order_code,
+                    'order_id' => $orderId,
+                    'balance_before' => null,
+                    'balance_after' => null, // chưa thay đổi vì chưa cộng tiền
+                ]);
             }
-
-            $wallet = $user->wallet;
-
-            WalletTransaction::create([
-                'wallet_id' => $wallet->id,
-                'amount' => $order->total_price,
-                'type' => 'hoan_tien',
-                'status' => 'cho_thanh_toan',
-                'description' => 'Yêu cầu hoàn tiền cho đơn hàng #' . $order->order_code,
-                'order_id' => $orderId,
-                'balance_before' => null,
-                'balance_after' => null, // chưa thay đổi vì chưa cộng tiền
-            ]);
 
             // ✅ Tạo thông báo cho người dùng trong cơ sở dữ liệu (không gửi thông báo realtime)
             $notification = OrderNotification::create([
@@ -767,13 +776,23 @@ class OrderController extends Controller
         }
     }
 
+
     /**
      * 📌 7. Hủy đơn hàng
      */
-    public function cancelOrder($orderId)
+    public function cancelOrder(Request $request, $orderId)
     {
         DB::beginTransaction();
         try {
+            // Kiểm tra lý do hủy đơn
+            $validated = $request->validate([
+                'reason' => 'required', // Yêu cầu lý do hủy đơn
+            ], [
+                'reason.required' => 'Lý do hủy đơn là bắt buộc.'
+            ]);
+
+            $reason = $validated['reason'];
+
             $order = Order::with('orderItems')->find($orderId);
 
             if (!$order) {
@@ -790,12 +809,15 @@ class OrderController extends Controller
                 ], 400);
             }
 
-            if (!in_array($order->order_status, ['Chưa Xác Nhận', 'Đã Xác Nhận'])) {
+            if ($order->order_status !== 'Chưa Xác Nhận') {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Đơn hàng đã được xử lý, không thể hủy.'
                 ], 400);
             }
+
+            // Lưu lý do hủy đơn vào trường reason
+            $order->update(['order_status' => 'Hủy Đơn', 'reason' => $reason]);
 
             // ✅ Hoàn lại số lượng sản phẩm
             foreach ($order->orderItems as $item) {
@@ -806,8 +828,15 @@ class OrderController extends Controller
                 }
             }
 
-            // ✅ Cập nhật trạng thái đơn hàng
-            $order->update(['order_status' => 'Hủy Đơn']);
+            // ✅ Xoá lượt sử dụng voucher và hoàn lại lượt sử dụng
+            if ($order->voucher_id) {
+                VoucherUsage::where('user_id', $order->user_id)
+                    ->where('voucher_id', $order->voucher_id)
+                    ->delete();
+
+                Voucher::where('id', $order->voucher_id)
+                    ->increment('usage_limit');
+            }
 
             $refundAmount = 0;
             if ($order->payment_status == 1) { // Đã thanh toán

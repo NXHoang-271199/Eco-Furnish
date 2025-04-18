@@ -212,12 +212,6 @@ class PaymentMethodController extends Controller
 
         return redirect()->route('payment-methods.index')->with('success', 'Cập nhật thông tin kết nối thành công!');
     }
-
-
-
-
-
-
     public function disconnect(string $id)
     {
         $method = PaymentMethod::findOrFail($id);

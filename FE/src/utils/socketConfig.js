@@ -276,6 +276,7 @@ export const subscribeToNotifications = (callback) => {
     socketInstance.on("refund_approval_notification", callback);
     socketInstance.on("refund_rejection_notification", callback);
     socketInstance.on("wallet_deposit_notification", callback);
+    socketInstance.on("review_hidden_notification", callback);
   }
   return () => {
     if (socketInstance) {
@@ -283,6 +284,7 @@ export const subscribeToNotifications = (callback) => {
       socketInstance.off("refund_approval_notification", callback);
       socketInstance.off("refund_rejection_notification", callback);
       socketInstance.off("wallet_deposit_notification", callback);
+      socketInstance.off("review_hidden_notification", callback);
     }
   };
 };
