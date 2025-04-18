@@ -242,15 +242,9 @@
                     <button type="button" class="btn shadow-none" id="page-header-user-dropdown"
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span class="d-flex align-items-center">
-                            @if(auth()->user()->avatar && Storage::exists(auth()->user()->avatar))
-                                <img class="rounded-circle header-profile-user"
-                                    src="{{ Storage::url(auth()->user()->avatar) }}"
-                                    alt="Header Avatar">
-                            @else
-                                <img class="rounded-circle header-profile-user"
-                                    src="{{ asset('assets/admins/images/users/avatarUser.png') }}"
-                                    alt="Header Avatar">
-                            @endif
+                            <img class="rounded-circle header-profile-user"
+                                src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : asset('assets/admins/images/users/avatarUser.png') }}"
+                                alt="Header Avatar">
                             <span class="text-start ms-xl-2">
                                 <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">
                                     @if(Auth::check())

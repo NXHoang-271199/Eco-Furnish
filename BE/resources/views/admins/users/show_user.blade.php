@@ -205,7 +205,7 @@
                             <li class="nav-item">
                                 <a class="nav-link" data-bs-toggle="tab" href="#inactive-users" role="tab"
                                     onclick="changeTab('inactive')">
-                                    Tài khoản bị vô hiệu hóa
+                                    Tài khoản bị hủy kích hoạt
                                 </a>
                             </li>
                         </ul>
@@ -222,7 +222,7 @@
                                                 <th scope="col">Địa chỉ</th>
                                                 <th scope="col">Ngày tham gia</th>
                                                 <th scope="col">Trạng thái</th>
-                                                @if(Auth::user()->hasPermission('delete-users'))
+                                                @if (Auth::user()->hasPermission('delete-users'))
                                                     <th scope="col" class="text-end">Thao tác</th>
                                                 @endif
                                             </tr>
@@ -233,13 +233,15 @@
                                                     <tr data-user-id="{{ $user->id }}">
                                                         <td>{{ $loop->iteration }}</td>
                                                         <td>
-                                                            @if ($user->avatar && Storage::exists($user->avatar))
+                                                            @if ($user->avatar)
                                                                 <img src="{{ Storage::url($user->avatar) }}"
-                                                                    alt="ảnh {{ $user->name }}"
-                                                                    class="rounded-circle avatar-md">
+                                                                    alt="ảnh {{ $user->name }}" class="avatar-md"
+                                                                    width="40" height="40"
+                                                                    style="object-fit: cover;">
                                                             @else
                                                                 <img src="{{ asset('assets/admins/images/users/avatarUser.png') }}"
-                                                                    alt="ảnh mặc định" class="rounded-circle avatar-md">
+                                                                    alt="ảnh mặc định" class="avatar-md" width="40"
+                                                                    height="40" style="object-fit: cover;">
                                                             @endif
                                                         </td>
                                                         <td>
@@ -262,6 +264,12 @@
                                                         @if (Auth::user()->hasPermission('delete-users'))
                                                             <td class="text-end">
                                                                 <div class="d-flex gap-2 justify-content-end">
+                                                                    @if (Auth::user()->isAdmin())
+                                                                        <a href="{{ route('users.show', $user->id) }}"
+                                                                            class="btn btn-sm btn-soft-primary">
+                                                                            <i class="ri-eye-line"></i>
+                                                                        </a>
+                                                                    @endif
                                                                     @if (Auth::user()->isAdmin() || auth()->id() === $user->id)
                                                                         @if ($user->is_active)
                                                                             <button class="btn btn-sm btn-soft-danger"
@@ -372,7 +380,7 @@
                         '#userTableContainer';
                     $(container).html(
                         '<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>'
-                        );
+                    );
                 },
                 success: function(response) {
                     if (response.success) {
@@ -463,7 +471,7 @@
                                                 .length === 0) {
                                                 $('#inactiveUserTableContainer').html(
                                                     '<div class="text-center p-4">Không có tài khoản bị vô hiệu hóa</div>'
-                                                    );
+                                                );
                                             }
                                         });
                                     }
@@ -482,7 +490,7 @@
                                                 .length === 0) {
                                                 $('#userTableContainer').html(
                                                     '<div class="text-center p-4">Không có tài khoản hoạt động</div>'
-                                                    );
+                                                );
                                             }
                                         });
                                     }

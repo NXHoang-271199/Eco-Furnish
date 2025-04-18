@@ -43,7 +43,7 @@ class Handler extends ExceptionHandler
     {
         if ($exception instanceof ValidationException) {
             return response()->json([
-                'message' => 'Số tiền nạp tối đa là 10.000.000 VNĐ',
+                'message' => 'Dữ liệu không hợp lệ',
                 'errors' => $exception->errors(),
             ], 422);
         }

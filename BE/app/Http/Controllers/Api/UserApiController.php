@@ -609,7 +609,7 @@ class UserApiController extends Controller
             }
 
             // Lưu avatar mới
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = $request->file('avatar')->store('uploads/avatar', 'public');
             Log::info('Đường dẫn avatar mới: ' . $path);
 
             // Cập nhật trường avatar của user

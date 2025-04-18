@@ -80,7 +80,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pnotify/5.2.0/PNotify.min.js"></script>
 @endsection
 @section('content')
-    @if($singerUser->role->slug === 'admin' || $singerUser->role->slug === 'staff')
+    @if(Auth::user()->hasPermission('view-users'))
     <div class="container-fluid">
         <div class="row">
             <div class="col-xl-12">
@@ -182,18 +182,27 @@
                                                 </div>
                                                 <div class="stats-info">
                                                     <h5>{{ $singerUser->created_at->diffForHumans() }}</h5>
-                                                    <p>Thời gian hoạt động</p>
+                                                    <p>{{ $singerUser->role->slug === 'client' ? 'Thời gian tham gia' : 'Thời gian hoạt động' }}</p>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="col-sm-6">
                                             <div class="stats-box text-center">
                                                 <div class="stats-icon bg-warning-subtle text-warning mx-auto">
-                                                    <i class="ri-calendar-line"></i>
+                                                    @if($singerUser->role->slug === 'client')
+                                                        <i class="ri-shopping-cart-line"></i>
+                                                    @else
+                                                        <i class="ri-calendar-line"></i>
+                                                    @endif
                                                 </div>
                                                 <div class="stats-info">
-                                                    <h5>{{ round((time() - strtotime($singerUser->created_at))/86400) }}</h5>
-                                                    <p>Ngày làm việc</p>
+                                                    @if($singerUser->role->slug === 'client')
+                                                        <h5>{{ $singerUser->orders->count() }}</h5>
+                                                        <p>Đơn hàng đã đặt</p>
+                                                    @else
+                                                        <h5>{{ round((time() - strtotime($singerUser->created_at))/86400) }}</h5>
+                                                        <p>Ngày làm việc</p>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -212,7 +221,7 @@
             <div class="col-12 text-center">
                 <div class="alert alert-danger">
                     <h4 class="alert-heading">Không có quyền truy cập!</h4>
-                    <p>Trang này chỉ dành cho Admin và Nhân viên.</p>
+                    <p>Bạn không có quyền xem thông tin này.</p>
                 </div>
             </div>
         </div>

@@ -273,16 +273,26 @@ class WalletController extends Controller
             return response()->json(['message' => 'Bạn chỉ được rút tối đa 5 lần trong ngày'], 400);
         }
 
+        $bankAccount = BankAccount::find($request->bank_account_id);
+
+        if (!$bankAccount) {
+            return response()->json(['message' => 'Không tìm thấy tài khoản ngân hàng'], 404);
+        }
+
         // Tạo yêu cầu rút tiền
         DB::beginTransaction();
         try {
-            // Tạo bản ghi yêu cầu rút tiền và lưu mã QR
+            // Tạo yêu cầu rút tiền với thông tin ngân hàng snapshot
             $withdrawRequest = WithdrawRequest::create([
                 'user_id' => $userId,
                 'amount' => $request->amount,
-                'bank_account_id' => $request->bank_account_id,
                 'status' => 'dang_xu_ly',
                 'qr_code' => $request->qr_code,
+                'bank_name' => $bankAccount->bank_name,
+                'bank_code' => $bankAccount->bank_code,
+                'bank_account_number' => $bankAccount->bank_account_number,
+                'account_holder_name' => $bankAccount->account_holder_name,
+                'bank_logo_url' => $bankAccount->bank_logo_url,
             ]);
 
             // Cập nhật số dư ví, tạm giữ số tiền rút

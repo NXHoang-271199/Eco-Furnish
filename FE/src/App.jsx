@@ -41,7 +41,8 @@ import WalletSuccess from "./pages/(website)/UserAccount/Wallet/WalletSuccess";
 import WalletDeposit from "./pages/(website)/UserAccount/Wallet/WalletDeposit";
 import { LoadingProvider, useLoading } from "./context/LoadingContext";
 import LoadingScreen from "./components/LoadingScreen";
-
+import BankInfo from "./pages/(website)/UserAccount/Bank/BankInfo";
+import WalletWithdraw from "./pages/(website)/UserAccount/Wallet/WalletWithdraw";
 // Component bọc để sử dụng hook useLoading
 const AppContent = () => {
   const { isLoading } = useLoading();
@@ -97,6 +98,8 @@ const AppContent = () => {
             <Route path="wallet" element={<WalletPage />} />
             <Route path="wallet/deposit" element={<WalletDeposit />} />
             <Route path="wallet/deposit-success" element={<WalletSuccess />} />
+            <Route path="wallet/withdraw" element={<WalletWithdraw />} />
+            <Route path="bank" element={<BankInfo />} />
           </Route>
         </Route>
         <Route path="/sign-in" element={<SignIn />} />
