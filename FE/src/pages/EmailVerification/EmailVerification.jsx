@@ -29,6 +29,19 @@ const EmailVerification = () => {
         );
 
         if (response.data.status === "success") {
+          localStorage.setItem("authToken", response.data.data.access_token);
+          localStorage.setItem(
+            "refreshToken",
+            response.data.data.refresh_token
+          );
+          localStorage.setItem(
+            "userData",
+            JSON.stringify({
+              id: response.data.data.id,
+              name: response.data.data.name,
+              email: response.data.data.email,
+            })
+          );
           alert("Xác thực email thành công! Vui lòng đăng nhập.");
           navigate("/sign-in");
         }

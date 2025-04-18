@@ -6,6 +6,7 @@ use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use App\Http\Requests\BankAccountRequest;
 
 class BankAccountController extends Controller
@@ -168,6 +169,56 @@ class BankAccountController extends Controller
                 'message' => 'Không thể xóa tài khoản ngân hàng',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+    public function getBanks()
+    {
+        try {
+            $response = Http::get('https://api.vietqr.io/v2/banks');
+
+            if ($response->successful()) {
+                return response()->json($response->json()['data']);
+            } else {
+                return response()->json(['message' => 'Không thể lấy danh sách ngân hàng'], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Lỗi khi gọi API', 'error' => $e->getMessage()], 500);
+        }
+    }
+    public function lookupBankAccount(Request $request)
+    {
+        $request->validate([
+            'bank_account_number' => 'required|string',
+            'bank_code' => 'required|string',  // Thay 'acq_id' bằng 'bank_code'
+        ]);
+
+        try {
+            // URL và thông tin API Key, Secret
+            $apiUrl = 'https://api.banklookup.net/api/bank/id-lookup-prod';
+            $apiKey = 'f0923bae-eb65-4569-9220-6f8abe416218key';  // API Key
+            $apiSecret = 'e1a42479-3b97-4091-b4e0-c68d4be8f59fsecret';  // API Secret
+
+            // Gửi yêu cầu tới API
+            $response = Http::withHeaders([
+                'x-api-key' => $apiKey,
+                'x-api-secret' => $apiSecret,
+                'Content-Type' => 'application/json',
+            ])->post($apiUrl, [
+                'bank' => $request->bank_code,  // Mã ngân hàng
+                'account' => $request->bank_account_number,  // Số tài khoản cần tra cứu
+            ]);
+
+            // Kiểm tra nếu API trả về thành công
+            if ($response->successful()) {
+                $data = $response->json();
+                return response()->json([
+                    'accountName' => $data['data']['ownerName'],  // Lấy tên chủ tài khoản từ dữ liệu trả về
+                ]);
+            } else {
+                return response()->json(['message' => 'Không tìm thấy thông tin tài khoản'], 404);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Lỗi khi tra cứu', 'error' => $e->getMessage()], 500);
         }
     }
 }

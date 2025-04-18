@@ -22,9 +22,9 @@ trait TokenHandler
         $refreshToken = $refreshTokenInstance->plainTextToken;
 
         // Lưu tokens (không cần thiết vì Sanctum đã lưu trong DB)
-        // $user->access_token = $accessToken;
-        // $user->refresh_token = $refreshToken;
-        // $user->save(); // Không cần save lại ở đây
+        $user->access_token = $accessToken;
+        $user->refresh_token = $refreshToken;
+        $user->save(); // Không cần save lại ở đây
 
         return [
             'access_token' => $accessToken,
