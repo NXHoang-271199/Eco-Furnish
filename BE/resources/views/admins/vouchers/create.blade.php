@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title')
-    Tạo mã giảm giá
+    Tạo mã khuyến mãi
 @endsection
 
 @section('JS')
@@ -31,36 +31,20 @@
             <div class="col-12">
                 <!-- Bọc toàn bộ form vào div có nền trắng -->
                 <div class="p-4 bg-white rounded ">
-                    <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-                        <h4 class="mb-sm-0">Thêm Voucher</h4>\
-                        <div class="page-title-right">
-                            <ol class="breadcrumb m-0">
-                                @foreach ($breadcrumbs as $breadcrumb)
-                                    <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
-                                        @if ($breadcrumb['url'])
-                                            <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
-                                        @else
-                                            {{ $breadcrumb['name'] }}
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ol>
-                        </div>
-                    </div>
                     <form action="{{ route('vouchers.store') }}" method="POST" enctype="multipart/form-data"
                         class="needs-validation" novalidate>
                         @csrf
 
                         <!-- Mã Voucher -->
                         <div class="mb-4">
-                            <label for="code" class="form-label ">Mã Voucher</label>
+                            <label for="code" class="form-label ">Mã Khuyến mãi</label>
                             <input type="text" class="form-control @error('code') is-invalid @enderror" name="code"
                                 value="{{ old('code') }}" required>
                             <div class="invalid-feedback">
                                 @error('code')
                                     {{ $message }}
                                 @else
-                                    Vui lòng nhập mã voucher.
+                                    Vui lòng nhập mã khuyến mãi.
                                 @enderror
                             </div>
                         </div>
