@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Review;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use GuzzleHttp\Client;
 
 class ReviewController extends Controller
 {
@@ -84,6 +85,42 @@ class ReviewController extends Controller
             $review->is_hidden = !$review->is_hidden;
             $review->note = $review->is_hidden ? $request->note : 'Đánh giá đã được hiển thị lại';
             $review->save();
+
+            // Gửi thông báo realtime cho người dùng khi ẩn đánh giá
+            if ($review->is_hidden) {
+                $user = $review->user;
+                $product = $review->product;
+                
+                // Gửi thông báo realtime qua socket server
+                $socketData = [
+                    'event' => 'review_hidden_notification',
+                    'userId' => $user->id,
+                    'data' => [
+                        'id' => $review->id, // Sử dụng review ID làm ID thông báo
+                        'title' => 'Đánh giá đã bị ẩn',
+                        'message' => "Đánh giá của bạn về sản phẩm '{$product->name}' đã bị ẩn với lý do: {$request->note}",
+                        'review_id' => $review->id,
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'reason' => $request->note,
+                        'created_at' => now()->toIso8601String(),
+                        'is_read' => false
+                    ]
+                ];
+                
+                // Gửi thông báo đến socket server
+                $socketServerUrl = env('SOCKET_SERVER_URL', 'http://localhost:3002');
+                $client = new \GuzzleHttp\Client();
+                try {
+                    $client->post("{$socketServerUrl}/broadcast-client", [
+                        'json' => $socketData,
+                        'timeout' => 3 // Timeout ngắn để không làm chậm request
+                    ]);
+                } catch (\Exception $e) {
+                    // Log lỗi nhưng không dừng xử lý
+                    \Log::error('Không thể gửi thông báo socket: ' . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,

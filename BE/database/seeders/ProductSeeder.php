@@ -21,12 +21,13 @@ class ProductSeeder extends Seeder
 
     // Định nghĩa các biến thể kích thước
     private $sizeVariants = [
-        'SMALL' => 'Nhỏ',
-        'MEDIUM' => 'Vừa',
-        'LARGE' => 'Lớn',
-        'XL' => 'XL',
-        'SINGLE' => '1 người',
-        'DOUBLE' => '2 người',
+        '1.2_0.6' => '1.2m x 0.6m',
+        '1.6_0.8' => '1.6m x 0.8m',
+        '2.0_1.0' => '2.0m x 1.0m',
+        '1.6_2.0' => '1.6m x 2.0m',
+        '1.8_2.0' => '1.8m x 2.0m',
+        '2.0_2.2' => '2.0m x 2.2m',
+        '0.8_1.9' => '0.8m x 1.9m',
     ];
 
     // Định nghĩa các danh mục
@@ -90,21 +91,30 @@ class ProductSeeder extends Seeder
                 ],
                 'variants' => [
                     [
-                        'sku' => 'TABLE-WOOD-S',
+                        'sku' => 'TABLE-WOOD-1.2_0.6',
                         'price' => 5000000,
                         'quantity' => 20,
                         'variant_details' => [
                             'color' => 'Nâu gỗ',
-                            'size' => 'Nhỏ'
+                            'size' => '1.2m x 0.6m'
                         ]
                     ],
                     [
-                        'sku' => 'TABLE-WOOD-M',
+                        'sku' => 'TABLE-WOOD-1.6_0.8',
                         'price' => 6000000,
                         'quantity' => 15,
                         'variant_details' => [
                             'color' => 'Nâu gỗ',
-                            'size' => 'Vừa'
+                            'size' => '1.6m x 0.8m'
+                        ]
+                    ],
+                    [
+                        'sku' => 'TABLE-WOOD-2.0_1.0',
+                        'price' => 7500000,
+                        'quantity' => 10,
+                        'variant_details' => [
+                            'color' => 'Nâu gỗ',
+                            'size' => '2.0m x 1.0m'
                         ]
                     ],
                 ]
@@ -119,21 +129,21 @@ class ProductSeeder extends Seeder
                 ],
                 'variants' => [
                     [
-                        'sku' => 'SOFA-WHITE-SINGLE',
+                        'sku' => 'SOFA-WHITE-1.2_0.6',
                         'price' => 3000000,
                         'quantity' => 25,
                         'variant_details' => [
                             'color' => 'Trắng',
-                            'size' => '1 người'
+                            'size' => '1.2m x 0.6m'
                         ]
                     ],
                     [
-                        'sku' => 'SOFA-BLACK-SINGLE',
+                        'sku' => 'SOFA-BLACK-1.2_0.6',
                         'price' => 3000000,
                         'quantity' => 25,
                         'variant_details' => [
                             'color' => 'Đen',
-                            'size' => '1 người'
+                            'size' => '1.2m x 0.6m'
                         ]
                     ],
                 ]
@@ -148,21 +158,39 @@ class ProductSeeder extends Seeder
                 ],
                 'variants' => [
                     [
-                        'sku' => 'BED-WOOD-SINGLE',
+                        'sku' => 'BED-WOOD-0.8_1.9',
                         'price' => 8000000,
                         'quantity' => 10,
                         'variant_details' => [
                             'color' => 'Nâu gỗ',
-                            'size' => '1 người'
+                            'size' => '0.8m x 1.9m'
                         ]
                     ],
                     [
-                        'sku' => 'BED-WOOD-DOUBLE',
+                        'sku' => 'BED-WOOD-1.6_2.0',
                         'price' => 12000000,
                         'quantity' => 8,
                         'variant_details' => [
                             'color' => 'Nâu gỗ',
-                            'size' => '2 người'
+                            'size' => '1.6m x 2.0m'
+                        ]
+                    ],
+                    [
+                        'sku' => 'BED-WOOD-1.8_2.0',
+                        'price' => 14000000,
+                        'quantity' => 5,
+                        'variant_details' => [
+                            'color' => 'Nâu gỗ',
+                            'size' => '1.8m x 2.0m'
+                        ]
+                    ],
+                    [
+                        'sku' => 'BED-WOOD-2.0_2.2',
+                        'price' => 16000000,
+                        'quantity' => 3,
+                        'variant_details' => [
+                            'color' => 'Nâu gỗ',
+                            'size' => '2.0m x 2.2m'
                         ]
                     ],
                 ]
@@ -186,4 +214,4 @@ class ProductSeeder extends Seeder
             }
         }
     }
-} 
+}

@@ -49,6 +49,7 @@ class ReviewController extends Controller
             })
             ->first();
 
+        // Kiểm tra xem đơn hàng có tồn tại, thuộc về người dùng và chứa sản phẩm không
         if (!$order) {
             return response()->json([
                 'success' => false,
@@ -91,7 +92,7 @@ class ReviewController extends Controller
         if ($existingReview) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn đã đánh giá sản phẩm này rồi.'
+                'message' => 'Bạn đã đánh giá sản phẩm này cho đơn hàng này rồi.' // Cập nhật thông báo lỗi
             ], 403);
         }
 
@@ -104,7 +105,7 @@ class ReviewController extends Controller
             }
         }
 
-        // Lưu đánh giá
+        // Lưu đánh giá với order_id từ request
         $review = Review::create([
             'user_id' => $userId,
             'product_id' => $productId,
@@ -220,6 +221,98 @@ class ReviewController extends Controller
             'success' => true,
             'message' => 'Bạn có thể đánh giá sản phẩm này',
             'order_id' => $order->id
+        ]);
+    }
+
+    /**
+     * Lấy danh sách đánh giá của một đơn hàng cụ thể
+     * 
+     * @param int $orderId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getOrderReviews($orderId)
+    {
+        $userId = Auth::id();
+        
+        if (!$userId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Vui lòng đăng nhập để xem đánh giá'
+            ], 401);
+        }
+
+        // Kiểm tra đơn hàng có thuộc về người dùng không
+        $order = Order::where('id', $orderId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Không tìm thấy đơn hàng'
+            ], 404);
+        }
+
+        // Lấy danh sách đánh giá của đơn hàng
+        $reviews = Review::with(['product'])
+            ->where('order_id', $orderId)
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($review) {
+                $review->images = json_decode($review->images, true); // Giải mã JSON
+
+                // Lấy thông tin về orderItem để lấy tên sản phẩm và thông tin biến thể
+                $orderItemQuery = \App\Models\OrderItem::where('order_id', $review->order_id)
+                    ->where('product_id', $review->product_id);
+
+                if ($review->product_variant_id) {
+                    $orderItemQuery->where('product_variant_id', $review->product_variant_id);
+                } else {
+                    $orderItemQuery->whereNull('product_variant_id');
+                }
+
+                $orderItem = $orderItemQuery->first();
+
+                if ($orderItem) {
+                    $review->product_name = $orderItem->product_name;
+                    $review->product_image = $orderItem->image_url;
+
+                    // Thêm thông tin biến thể nếu có
+                    if ($orderItem->product_variant_id) {
+                        $review->has_variant = true;
+                        $review->product_variant_id = $orderItem->product_variant_id; // Đảm bảo gán lại ID biến thể từ OrderItem chính xác
+
+                        // Lấy thông tin biến thể dựa trên ID biến thể từ OrderItem đã lọc đúng
+                        $productVariant = \App\Models\ProductVariant::withTrashed()
+                            ->find($orderItem->product_variant_id); // Sử dụng find cho khóa chính
+
+                        if ($productVariant && !empty($productVariant->variant_details)) {
+                            $review->variant_details = $productVariant->variant_details;
+                        } else {
+                            $review->variant_details = null; // Set null nếu không tìm thấy biến thể hoặc không có chi tiết
+                        }
+                    } else {
+                        $review->has_variant = false;
+                        $review->variant_details = null;
+                    }
+                } else {
+                    // Fallback nếu không tìm thấy orderItem (ít xảy ra nhưng nên có)
+                    $review->product_name = $review->product ? $review->product->name : 'Sản phẩm không xác định';
+                    $review->product_image = $review->product ? $review->product->image_thumbnail : null;
+                    $review->has_variant = false;
+                    $review->variant_details = null;
+                }
+                
+                // Loại bỏ các dữ liệu lớn không cần thiết
+                unset($review->product);
+                
+                return $review;
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $reviews
         ]);
     }
 }

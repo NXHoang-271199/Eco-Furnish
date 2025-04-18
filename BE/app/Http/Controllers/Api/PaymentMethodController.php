@@ -144,7 +144,7 @@ class PaymentMethodController extends Controller
         }
         //   $data = $request->all();
         $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-        $vnp_Returnurl = "http://localhost:5173/order-success";
+        $vnp_Returnurl = "http://localhost:5173/account/wallet";
         $vnp_TmnCode = $config['vnp_TmnCode']; //Mã website tại VNPAY
         $vnp_HashSecret = $config['vnp_HashSecret']; //Chuỗi bí mật
 

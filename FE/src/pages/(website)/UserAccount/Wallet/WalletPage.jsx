@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FaWallet,
   FaMoneyBillWave,
@@ -9,16 +9,28 @@ import {
   FaSpinner,
   FaSync,
   FaTimes,
+  FaReceipt,
+  FaInfoCircle,
+  FaRegCopy,
+  FaExchangeAlt,
 } from "react-icons/fa";
 import axios from "axios";
 import axiosInstance from "../../../../utils/axiosConfig";
+import { showWalletDepositToast } from "../../../../components/ui/toast";
 
 const WalletPage = () => {
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [copySuccess, setCopySuccess] = useState("");
+  const [balanceBeforeTransaction, setBalanceBeforeTransaction] = useState(0);
+  const [balanceAfterTransaction, setBalanceAfterTransaction] = useState(0);
+  const [previousBalance, setPreviousBalance] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Fetch dữ liệu ví và lịch sử giao dịch
   const fetchWalletData = async () => {
@@ -32,6 +44,13 @@ const WalletPage = () => {
         },
       });
 
+      // Lưu giá trị số dư cũ nếu đang từ trang nạp tiền thành công quay về
+      if (location.state && location.state.fromDepositSuccess) {
+        setPreviousBalance(parseFloat(localStorage.getItem("previousBalance") || 0));
+      } else {
+        setPreviousBalance(parseFloat(balanceResponse.data.balance));
+      }
+
       // Lấy lịch sử giao dịch
       const transactionsResponse = await axiosInstance.get(
         "/wallet/transactions",
@@ -42,8 +61,33 @@ const WalletPage = () => {
         }
       );
 
-      setBalance(parseFloat(balanceResponse.data.balance));
+      const currentBalance = parseFloat(balanceResponse.data.balance);
+      setBalance(currentBalance);
       setTransactions(transactionsResponse.data.transactions);
+
+      // Kiểm tra và hiển thị thông báo toast nếu từ trang nạp tiền thành công quay về
+      if (location.state && location.state.fromDepositSuccess) {
+        // Tìm giao dịch nạp tiền thành công gần nhất
+        const recentSuccessfulDeposit = transactionsResponse.data.transactions.find(
+          tx => tx.type === "nap_tien" && tx.status === "thanh_cong"
+        );
+
+        if (recentSuccessfulDeposit) {
+          const depositAmount = parseFloat(recentSuccessfulDeposit.amount);
+          const prevBalance = currentBalance - depositAmount;
+
+          showWalletDepositToast({
+            amount: depositAmount,
+            balance_after: currentBalance,
+            message: `Tài khoản của bạn vừa được cộng ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(depositAmount)}`,
+            id: recentSuccessfulDeposit.id
+          });
+
+          // Xóa trạng thái sau khi đã hiển thị thông báo
+          localStorage.removeItem("previousBalance");
+          navigate(location.pathname, { replace: true, state: {} });
+        }
+      }
 
       // Kiểm tra và tự động hủy các giao dịch quá hạn (30 phút)
       const pendingTransactions = transactionsResponse.data.transactions.filter(
@@ -68,8 +112,13 @@ const WalletPage = () => {
   };
 
   useEffect(() => {
+    // Trước khi nạp tiền, lưu số dư hiện tại để so sánh sau khi nạp thành công
+    if (location.pathname === "/account/wallet" && location.state?.from?.pathname === "/account/wallet/deposit") {
+      localStorage.setItem("previousBalance", balance.toString());
+    }
+
     fetchWalletData();
-  }, []);
+  }, [location.pathname]);
 
   // Hủy giao dịch
   const cancelTransaction = async (id) => {
@@ -158,6 +207,86 @@ const WalletPage = () => {
     return diffMinutes <= 30;
   };
 
+  // Hàm mở popup chi tiết giao dịch
+  const openTransactionDetail = (tx) => {
+    setSelectedTransaction(tx);
+
+    // Tính toán số dư trước và sau giao dịch
+    const amount = parseFloat(tx.amount);
+    let balanceAfter = 0;
+    let balanceBefore = 0;
+
+    if (tx.type === "nap_tien" || tx.type === "hoan_tien") {
+      // Nếu là giao dịch nạp tiền hoặc hoàn tiền, số dư sau = số dư hiện tại, số dư trước = số dư hiện tại - số tiền
+      if (tx.status === "thanh_cong") {
+        balanceAfter = balance;
+        balanceBefore = balance - amount;
+      } else {
+        // Nếu giao dịch chưa thành công, số dư không thay đổi
+        balanceAfter = balance;
+        balanceBefore = balance;
+      }
+    } else if (tx.type === "thanh_toan_don_hang" || tx.type === "rut_tien") {
+      // Nếu là giao dịch thanh toán hoặc rút tiền, số dư sau = số dư hiện tại, số dư trước = số dư hiện tại + số tiền
+      if (tx.status === "thanh_cong") {
+        balanceAfter = balance;
+        balanceBefore = balance + Math.abs(amount);
+      } else {
+        // Nếu giao dịch chưa thành công, số dư không thay đổi
+        balanceAfter = balance;
+        balanceBefore = balance;
+      }
+    }
+
+    setBalanceBeforeTransaction(balanceBefore);
+    setBalanceAfterTransaction(balanceAfter);
+    setShowModal(true);
+  };
+
+  // Hàm đóng popup
+  const closeTransactionDetail = () => {
+    setShowModal(false);
+    setTimeout(() => setSelectedTransaction(null), 300); // Đợi hiệu ứng hoàn thành
+  };
+
+  // Hàm sao chép ID giao dịch
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        setCopySuccess("Đã sao chép!");
+        setTimeout(() => setCopySuccess(""), 2000);
+      },
+      (err) => {
+        console.error('Không thể sao chép: ', err);
+      }
+    );
+  };
+
+  // Lấy màu trạng thái giao dịch
+  const getStatusColor = (status) => {
+    if (status === "thanh_cong") return "bg-green-100 text-green-800";
+    if (status === "cho_thanh_toan") return "bg-yellow-100 text-yellow-800";
+    if (status === "da_huy") return "bg-red-100 text-red-800";
+    return "bg-gray-100 text-gray-800";
+  };
+
+  // Lấy tên hiển thị của trạng thái
+  const getStatusName = (status) => {
+    if (status === "thanh_cong") return "Thành công";
+    if (status === "cho_thanh_toan") return "Chờ thanh toán";
+    if (status === "da_huy") return "Đã hủy";
+    return status;
+  };
+
+  // Lấy tên hiển thị cho loại giao dịch
+  const getTransactionTypeName = (type) => {
+    if (type === "nap_tien") return "Nạp tiền";
+    if (type === "thanh_toan_don_hang") return "Thanh toán đơn hàng";
+    if (type === "hoan_tien") return "Hoàn tiền";
+    if (type === "rut_tien") return "Rút tiền";
+    return type;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -184,9 +313,8 @@ const WalletPage = () => {
                 </div>
               ) : (
                 <h2
-                  className={`text-3xl font-bold ${
-                    balance > 0 ? "text-green-600" : "text-gray-400"
-                  }`}
+                  className={`text-3xl font-bold ${balance > 0 ? "text-green-600" : "text-gray-400"
+                    }`}
                 >
                   {formatMoney(balance)}
                 </h2>
@@ -236,7 +364,8 @@ const WalletPage = () => {
               {transactions.map((tx) => (
                 <li
                   key={tx.id}
-                  className="flex justify-between items-center border-b pb-3"
+                  className="flex justify-between items-center border-b pb-3 hover:bg-gray-50 cursor-pointer transition-colors rounded p-2"
+                  onClick={() => openTransactionDetail(tx)}
                 >
                   <div className="flex items-center gap-3">
                     {getTransactionIcon(tx.type, tx.amount)}
@@ -247,23 +376,22 @@ const WalletPage = () => {
                       <div className="flex flex-wrap gap-2 text-xs text-gray-500">
                         <p>{tx.created_at}</p>
                         <p
-                          className={`${
-                            tx.status === "thanh_cong"
-                              ? "text-green-600"
-                              : tx.status === "cho_thanh_toan"
+                          className={`${tx.status === "thanh_cong"
+                            ? "text-green-600"
+                            : tx.status === "cho_thanh_toan"
                               ? "text-orange-500"
                               : tx.status === "da_huy"
-                              ? "text-red-500"
-                              : ""
-                          }`}
+                                ? "text-red-500"
+                                : ""
+                            }`}
                         >
                           {tx.status === "thanh_cong"
                             ? "Thành công"
                             : tx.status === "cho_thanh_toan"
-                            ? "Chờ thanh toán"
-                            : tx.status === "da_huy"
-                            ? "Đã hủy"
-                            : tx.status}
+                              ? "Chờ thanh toán"
+                              : tx.status === "da_huy"
+                                ? "Đã hủy"
+                                : tx.status}
                         </p>
                       </div>
                     </div>
@@ -272,9 +400,12 @@ const WalletPage = () => {
                     {/* Hiển thị nút hành động cho giao dịch nạp tiền đang chờ thanh toán */}
                     {tx.type === "nap_tien" &&
                       tx.status === "cho_thanh_toan" && (
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => retryPayment(tx.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              retryPayment(tx.id);
+                            }}
                             disabled={actionLoading}
                             className="text-indigo-600 hover:text-indigo-800 p-1 rounded-full hover:bg-indigo-100"
                             title="Nạp tiền lại"
@@ -287,7 +418,10 @@ const WalletPage = () => {
                           </button>
                           {isWithin30Minutes(tx.created_at) && (
                             <button
-                              onClick={() => cancelTransaction(tx.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelTransaction(tx.id);
+                              }}
                               disabled={actionLoading}
                               className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100"
                               title="Hủy giao dịch"
@@ -302,11 +436,10 @@ const WalletPage = () => {
                         </div>
                       )}
                     <span
-                      className={`font-semibold ${
-                        tx.type === "nap_tien" || tx.type === "hoan_tien"
-                          ? "text-green-600"
-                          : "text-red-500"
-                      }`}
+                      className={`font-semibold ${tx.type === "nap_tien" || tx.type === "hoan_tien"
+                        ? "text-green-600"
+                        : "text-red-500"
+                        }`}
                     >
                       {tx.type === "nap_tien" || tx.type === "hoan_tien"
                         ? "+"
@@ -320,6 +453,185 @@ const WalletPage = () => {
           )}
         </motion.div>
       </div>
+
+      {/* Modal chi tiết giao dịch */}
+      <AnimatePresence>
+        {showModal && selectedTransaction && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={closeTransactionDetail}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                  <FaReceipt className="text-indigo-600" />
+                  Chi tiết giao dịch
+                </h3>
+                <button
+                  onClick={closeTransactionDetail}
+                  className="text-gray-400 hover:text-gray-600 transition p-1"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              {/* Nội dung */}
+              <div className="space-y-6">
+                {/* Số tiền và trạng thái */}
+                <div className="text-center py-4 bg-gray-50 rounded-xl">
+                  <div className="text-2xl font-bold mb-2">
+                    <span
+                      className={`${selectedTransaction.type === "nap_tien" || selectedTransaction.type === "hoan_tien"
+                        ? "text-green-600"
+                        : "text-red-500"
+                        }`}
+                    >
+                      {selectedTransaction.type === "nap_tien" || selectedTransaction.type === "hoan_tien"
+                        ? "+"
+                        : "-"}
+                      {formatMoney(selectedTransaction.amount)}
+                    </span>
+                  </div>
+                  <div className="inline-block px-3 py-1 rounded-full text-sm font-medium mb-1 mt-2">
+                    <span className={`${getStatusColor(selectedTransaction.status)} px-3 py-1 rounded-full`}>
+                      {getStatusName(selectedTransaction.status)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Số dư trước và sau giao dịch */}
+                {selectedTransaction.status === "thanh_cong" && (
+                  <div className="bg-indigo-50 rounded-xl overflow-hidden">
+                    <div className="grid grid-cols-2 divide-x divide-indigo-100">
+                      <div className="p-3 text-center">
+                        <p className="text-xs text-indigo-600 font-medium mb-1">Số dư trước</p>
+                        <p className="text-indigo-800 font-bold">{formatMoney(balanceBeforeTransaction)}</p>
+                      </div>
+                      <div className="p-3 text-center">
+                        <p className="text-xs text-indigo-600 font-medium mb-1">Số dư sau</p>
+                        <p className="text-indigo-800 font-bold">{formatMoney(balanceAfterTransaction)}</p>
+                      </div>
+                    </div>
+                    <div className="bg-indigo-100 px-3 py-2 flex justify-center items-center">
+                      <FaExchangeAlt className="text-indigo-500 mr-2" />
+                      <span className="text-xs text-indigo-700">
+                        {selectedTransaction.type === "nap_tien" || selectedTransaction.type === "hoan_tien"
+                          ? `+${formatMoney(selectedTransaction.amount)}`
+                          : `-${formatMoney(selectedTransaction.amount)}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Thông tin chi tiết */}
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600">Mã giao dịch</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-800 font-medium">{selectedTransaction.id}</span>
+                      <button
+                        className="text-indigo-600 hover:text-indigo-800"
+                        onClick={() => copyToClipboard(selectedTransaction.id)}
+                        title="Sao chép"
+                      >
+                        <FaRegCopy />
+                      </button>
+                      {copySuccess && <span className="text-green-500 text-xs">{copySuccess}</span>}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600">Loại giao dịch</span>
+                    <span className="text-gray-800 font-medium">
+                      {getTransactionTypeName(selectedTransaction.type)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600">Mô tả</span>
+                    <span className="text-gray-800 font-medium text-right">
+                      {selectedTransaction.description}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600">Thời gian</span>
+                    <span className="text-gray-800 font-medium">{selectedTransaction.created_at}</span>
+                  </div>
+
+                  {selectedTransaction.payment_method && (
+                    <div className="flex justify-between py-2 border-b">
+                      <span className="text-gray-600">Phương thức thanh toán</span>
+                      <span className="text-gray-800 font-medium">{selectedTransaction.payment_method}</span>
+                    </div>
+                  )}
+
+                  {selectedTransaction.order_id && (
+                    <div className="flex justify-between py-2 border-b">
+                      <span className="text-gray-600">Mã đơn hàng</span>
+                      <span className="text-gray-800 font-medium">{selectedTransaction.order_id}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Nút hành động */}
+                {selectedTransaction.type === "nap_tien" && selectedTransaction.status === "cho_thanh_toan" && (
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() => {
+                        retryPayment(selectedTransaction.id);
+                        closeTransactionDetail();
+                      }}
+                      className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-xl hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? <FaSpinner className="animate-spin" /> : <FaSync />}
+                      Thanh toán lại
+                    </button>
+                    {isWithin30Minutes(selectedTransaction.created_at) && (
+                      <button
+                        onClick={() => {
+                          cancelTransaction(selectedTransaction.id);
+                          closeTransactionDetail();
+                        }}
+                        className="flex-1 bg-red-600 text-white py-2 px-4 rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2"
+                        disabled={actionLoading}
+                      >
+                        {actionLoading ? <FaSpinner className="animate-spin" /> : <FaTimes />}
+                        Hủy giao dịch
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Lưu ý */}
+                <div className="bg-blue-50 p-3 rounded-xl text-sm text-blue-800 flex items-start gap-2">
+                  <FaInfoCircle className="mt-0.5 flex-shrink-0" />
+                  <p>
+                    {selectedTransaction.status === "thanh_cong"
+                      ? "Giao dịch đã được xử lý thành công và đã được cập nhật vào số dư tài khoản của bạn."
+                      : selectedTransaction.status === "cho_thanh_toan"
+                        ? "Giao dịch đang chờ xử lý. Vui lòng hoàn tất thanh toán hoặc đợi hệ thống xử lý."
+                        : selectedTransaction.status === "da_huy"
+                          ? "Giao dịch đã bị hủy và không được xử lý."
+                          : "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi."}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

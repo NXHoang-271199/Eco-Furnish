@@ -14,6 +14,17 @@
             cursor: pointer;
         }
 
+        /* Đảm bảo các phần tử trong trang không che khuất dropdown thông báo */
+        .card, .container-fluid, .tab-content, .tab-pane {
+            z-index: 1;
+            position: relative;
+        }
+        
+        /* Đảm bảo dropdown thông báo từ header luôn hiển thị trên cùng */
+        .dropdown-menu.show {
+            z-index: 9999 !important;
+        }
+
         /* Đảm bảo nút cập nhật trạng thái không bị mờ khi đã chọn checkbox */
         #btnBulkUpdateStatus:not(:disabled) {
             opacity: 1 !important;

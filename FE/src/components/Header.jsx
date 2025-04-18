@@ -10,7 +10,7 @@ import {
   MdOutlineComputer,
   MdOutlineYard,
   MdOutlineBathtub,
-  MdOutlineMore
+  MdOutlineMore,
 } from "react-icons/md";
 import CartBadge from "./CartBadge";
 import {
@@ -19,6 +19,7 @@ import {
   CreditCard,
   LogOut,
   BookOpen,
+  Key,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -41,31 +42,32 @@ const Header = () => {
   const [userData, setUserData] = useState(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [hasLevel2Password, setHasLevel2Password] = useState(false);
   const navigate = useNavigate();
   const [categoriesBySpace, setCategoriesBySpace] = useState({});
   const [spaceKeyMap, setSpaceKeyMap] = useState({});
 
   const spaceDisplayNames = {
-    living_room: 'Phòng Khách',
-    bedroom: 'Phòng Ngủ',
-    kitchen: 'Phòng Bếp',
-    dining_room: 'Phòng Ăn',
-    office: 'Văn Phòng',
-    outdoor: 'Ngoài Trời',
-    bathroom: 'Phòng Tắm',
-    other: 'Khác',
+    living_room: "Phòng Khách",
+    bedroom: "Phòng Ngủ",
+    kitchen: "Phòng Bếp",
+    dining_room: "Phòng Ăn",
+    office: "Văn Phòng",
+    outdoor: "Ngoài Trời",
+    bathroom: "Phòng Tắm",
+    other: "Khác",
   };
 
   // Map icons to space keys
   const spaceIcons = {
-    'Phòng Khách': <MdLiving className="text-green-600" size={20} />,
-    'Phòng Ngủ': <MdOutlineBed className="text-blue-500" size={20} />,
-    'Phòng Bếp': <MdOutlineKitchen className="text-orange-500" size={20} />,
-    'Phòng Ăn': <MdOutlineDining className="text-yellow-600" size={20} />,
-    'Văn Phòng': <MdOutlineComputer className="text-purple-500" size={20} />,
-    'Ngoài Trời': <MdOutlineYard className="text-emerald-500" size={20} />,
-    'Phòng Tắm': <MdOutlineBathtub className="text-cyan-500" size={20} />,
-    'Khác': <MdOutlineMore className="text-gray-500" size={20} />
+    "Phòng Khách": <MdLiving className="text-green-600" size={20} />,
+    "Phòng Ngủ": <MdOutlineBed className="text-blue-500" size={20} />,
+    "Phòng Bếp": <MdOutlineKitchen className="text-orange-500" size={20} />,
+    "Phòng Ăn": <MdOutlineDining className="text-yellow-600" size={20} />,
+    "Văn Phòng": <MdOutlineComputer className="text-purple-500" size={20} />,
+    "Ngoài Trời": <MdOutlineYard className="text-emerald-500" size={20} />,
+    "Phòng Tắm": <MdOutlineBathtub className="text-cyan-500" size={20} />,
+    "Khác": <MdOutlineMore className="text-gray-500" size={20} />,
   };
 
   useEffect(() => {
@@ -81,6 +83,9 @@ const Header = () => {
             avatar: parsedUserData.avatar || "https://via.placeholder.com/100",
             role: parsedUserData.role || "Khách hàng",
           });
+
+          // Kiểm tra trạng thái mật khẩu cấp 2
+          checkLevel2PasswordStatus(token);
         } catch (e) {
           console.error("Lỗi phân tích dữ liệu người dùng:", e);
           localStorage.removeItem("userData");
@@ -94,6 +99,27 @@ const Header = () => {
       }
     };
 
+    // Hàm kiểm tra trạng thái mật khẩu cấp 2
+    const checkLevel2PasswordStatus = async (token) => {
+      try {
+        if (!token) return;
+
+        const response = await axios.get("http://localhost:8000/api/users/level2-password/status", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        });
+
+        if (response.data.status === "success") {
+          setHasLevel2Password(response.data.data.has_level2_password);
+        }
+      } catch (error) {
+        console.error("Lỗi khi kiểm tra trạng thái mật khẩu cấp 2:", error);
+      }
+    };
+
     const handleAvatarUpdate = (e) => {
       if (e.detail && e.detail.avatar) {
         setUserData((prevData) => ({
@@ -103,10 +129,18 @@ const Header = () => {
       }
     };
 
+    // Lắng nghe sự kiện cập nhật trạng thái mật khẩu cấp 2
+    const handleLevel2PasswordUpdate = (e) => {
+      if (e.detail && e.detail.hasLevel2Password !== undefined) {
+        setHasLevel2Password(e.detail.hasLevel2Password);
+      }
+    };
+
     checkLoginStatus();
     window.addEventListener("user-login", checkLoginStatus);
     window.addEventListener("user-logout", checkLoginStatus);
     window.addEventListener("avatar-updated", handleAvatarUpdate);
+    window.addEventListener("level2password-updated", handleLevel2PasswordUpdate);
 
     const fetchCategories = async () => {
       try {
@@ -136,6 +170,7 @@ const Header = () => {
       window.removeEventListener("user-login", checkLoginStatus);
       window.removeEventListener("user-logout", checkLoginStatus);
       window.removeEventListener("avatar-updated", handleAvatarUpdate);
+      window.removeEventListener("level2password-updated", handleLevel2PasswordUpdate);
     };
   }, []);
 
@@ -176,7 +211,7 @@ const Header = () => {
   };
 
   const toggleUserDropdown = () => {
-    setIsUserDropdownOpen(prevState => !prevState);
+    setIsUserDropdownOpen((prevState) => !prevState);
   };
 
   const handleMouseEnter = () => {
@@ -321,7 +356,7 @@ const Header = () => {
                     <Avatar className="h-8 w-8 border-2 border-primary/10 group-hover:border-primary/30 transition-all">
                       <AvatarImage
                         src={
-                          userData.avatar && !userData.avatar.includes('placeholder.com')
+                          userData.avatar && !userData.avatar.includes("placeholder.com")
                             ? userData.avatar
                             : "/images/avatarEmpty/avatarUser.png"
                         }
@@ -346,7 +381,7 @@ const Header = () => {
                   <DropdownMenuLabel className="flex items-start gap-3">
                     <img
                       src={
-                        userData.avatar && !userData.avatar.includes('placeholder.com')
+                        userData.avatar && !userData.avatar.includes("placeholder.com")
                           ? userData.avatar
                           : "/images/avatarEmpty/avatarUser.png"
                       }
@@ -366,9 +401,7 @@ const Header = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
-                    <DropdownMenuItem
-                      onClick={() => handleUserNavigate("/account")}
-                    >
+                    <DropdownMenuItem onClick={() => handleUserNavigate("/account")}>
                       <User
                         size={16}
                         strokeWidth={2}
@@ -377,9 +410,7 @@ const Header = () => {
                       />
                       <span>Tài khoản của tôi</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleUserNavigate("/account/list_order")}
-                    >
+                    <DropdownMenuItem onClick={() => handleUserNavigate("/account/list_order")}>
                       <CreditCard
                         size={16}
                         strokeWidth={2}
@@ -388,9 +419,7 @@ const Header = () => {
                       />
                       <span>Đơn hàng của tôi</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleUserNavigate("/account/address")}
-                    >
+                    <DropdownMenuItem onClick={() => handleUserNavigate("/account/address")}>
                       <BookOpen
                         size={16}
                         strokeWidth={2}
@@ -398,6 +427,27 @@ const Header = () => {
                         aria-hidden="true"
                       />
                       <span>Địa chỉ của tôi</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleUserNavigate("/account?tab=level2password")}
+                      className="relative"
+                    >
+                      <Key
+                        size={16}
+                        strokeWidth={2}
+                        className="mr-2 opacity-60"
+                        aria-hidden="true"
+                      />
+                      <span>Mật khẩu cấp 2</span>
+                      {hasLevel2Password ? (
+                        <span className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                          Đã thiết lập
+                        </span>
+                      ) : (
+                        <span className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-300 text-gray-700 text-[10px] px-1.5 py-0.5 rounded-full">
+                          Chưa thiết lập
+                        </span>
+                      )}
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />

@@ -701,6 +701,9 @@ class OrderController extends Controller
                 'status' => 'Chờ Duyệt',
             ]);
 
+            // Cập nhật trạng thái đơn hàng thành "Hoàn Hàng"
+            $order->update(['order_status' => 'Hoàn Hàng']);
+
             // Kiểm tra payment_status của đơn hàng, nếu là 1 thì tạo giao dịch ví
             if ($order->payment_status == 1) {  // payment_status phải là 1 (đã thanh toán)
                 $user = User::with('wallet')->find($userId);
@@ -720,6 +723,41 @@ class OrderController extends Controller
                     'balance_before' => null,
                     'balance_after' => null, // chưa thay đổi vì chưa cộng tiền
                 ]);
+            }
+
+            // ✅ Tạo thông báo cho người dùng trong cơ sở dữ liệu (không gửi thông báo realtime)
+            $notification = OrderNotification::create([
+                'order_id' => $order->id,
+                'is_read' => false
+            ]);
+
+            // ✅ Gửi thông báo realtime, chỉ đến admin
+            try {
+                // Tạo dữ liệu thông báo cho admin
+                $adminNotificationData = [
+                    'event' => 'order_refund_request',
+                    'data' => [
+                        'order_id' => $order->id,
+                        'order_code' => $order->order_code,
+                        'user_name' => $order->user_name,
+                        'total_price' => $order->total_price,
+                        'created_at' => now()->toIso8601String(),
+                        'notification_id' => $notification->id,
+                        'reason' => $request->reason,
+                        'message' => "Đơn hàng #{$order->order_code} có yêu cầu hoàn hàng từ khách hàng.",
+                    ]
+                ];
+
+                // Gửi thông báo đến Socket Server chỉ cho admin
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002') . '/broadcast-admin', [
+                    'event' => 'order_refund_notification',
+                    'data' => $adminNotificationData
+                ]);
+
+                \Log::info('Đã gửi thông báo yêu cầu hoàn hàng đến admin cho đơn hàng #' . $order->order_code);
+            } catch (\Exception $e) {
+                // Chỉ ghi log lỗi mà không ảnh hưởng đến kết quả yêu cầu hoàn hàng
+                \Log::error('Không thể gửi thông báo realtime khi yêu cầu hoàn hàng: ' . $e->getMessage());
             }
 
             DB::commit();
