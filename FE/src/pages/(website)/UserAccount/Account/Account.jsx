@@ -190,7 +190,7 @@ const Account = () => {
 
           setError(
             error.response.data?.message ||
-              `Lỗi từ máy chủ: ${error.response.status}`
+            `Lỗi từ máy chủ: ${error.response.status}`
           );
         } else if (error.request) {
           console.error("Không nhận được phản hồi từ máy chủ");
@@ -414,7 +414,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
         // Cập nhật avatar trong component cha
         updateUserAvatar(tempUrl);
 
-        console.warn("Không nhận được URL avatar từ API, sử dụng URL tạm thởi");
+        console.warn("Không nhận được URL avatar từ API, sử dụng URL tạm thời");
       }
 
       setIsUploading(false);
@@ -424,7 +424,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       setIsUploading(false);
       setUploadError(
         error.response?.data?.message ||
-          "Không thể tải lên avatar. Vui lòng thử lại!"
+        "Không thể tải lên avatar. Vui lòng thử lại!"
       );
       toast.error("Không thể tải lên avatar. Vui lòng thử lại!");
     }
@@ -490,7 +490,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       console.error("Lỗi khi cập nhật thông tin:", error);
       setSaveError(
         error.response?.data?.message ||
-          "Không thể cập nhật thông tin. Vui lòng thử lại sau."
+        "Không thể cập nhật thông tin. Vui lòng thử lại sau."
       );
       toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
     } finally {
@@ -689,6 +689,7 @@ const SecuritySection = () => {
   const [hasLevel2Password, setHasLevel2Password] = useState(false);
   const [activeTab, setActiveTab] = useState("password");
   const location = window.location;
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Kiểm tra trạng thái mật khẩu cấp 2
@@ -725,10 +726,10 @@ const SecuritySection = () => {
       [id === "current-password"
         ? "currentPassword"
         : id === "new-password"
-        ? "newPassword"
-        : id === "confirm-password"
-        ? "confirmPassword"
-        : id]: value,
+          ? "newPassword"
+          : id === "confirm-password"
+            ? "confirmPassword"
+            : id]: value,
     }));
   };
 
@@ -739,16 +740,16 @@ const SecuritySection = () => {
       [id === "current-password-level2"
         ? "currentPassword"
         : id === "level2-password"
-        ? "level2Password"
-        : id === "confirm-level2-password"
-        ? "confirmLevel2Password"
-        : id === "current-level2-password"
-        ? "currentLevel2Password"
-        : id === "new-level2-password"
-        ? "newLevel2Password"
-        : id === "confirm-new-level2-password"
-        ? "confirmNewLevel2Password"
-        : id]: value,
+          ? "level2Password"
+          : id === "confirm-level2-password"
+            ? "confirmLevel2Password"
+            : id === "current-level2-password"
+              ? "currentLevel2Password"
+              : id === "new-level2-password"
+                ? "newLevel2Password"
+                : id === "confirm-new-level2-password"
+                  ? "confirmNewLevel2Password"
+                  : id]: value,
     }));
   };
 
@@ -842,7 +843,7 @@ const SecuritySection = () => {
       } else {
         setError(
           error.response?.data?.message ||
-            "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
+          "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
         );
       }
 
@@ -877,6 +878,12 @@ const SecuritySection = () => {
       return;
     }
 
+    // Kiểm tra mật khẩu cấp 2 không được giống mật khẩu cấp 1
+    if (level2PasswordData.currentPassword === level2PasswordData.level2Password) {
+      setLevel2Error("Mật khẩu cấp 2 không được giống mật khẩu cấp 1");
+      return;
+    }
+
     setLevel2Loading(true);
     setLevel2Error(null);
     setLevel2Success(false);
@@ -899,7 +906,16 @@ const SecuritySection = () => {
       // Cập nhật trạng thái thành công và hiển thị thông báo
       setLevel2Success(true);
       setHasLevel2Password(true);
-      toast.success("Thiết lập mật khẩu cấp 2 thành công!");
+
+      // Kiểm tra nếu có yêu cầu chuyển hướng quay lại trang thanh toán
+      const searchParams = new URLSearchParams(location.search);
+      const redirect = searchParams.get("redirect");
+
+      // Chỉ hiển thị toast thành công nếu KHÔNG có chuyển hướng đến trang rút tiền
+      if (!redirect || redirect !== "wallet_withdraw") {
+        toast.success("Thiết lập mật khẩu cấp 2 thành công!");
+      }
+
       resetLevel2Form();
 
       // Phát sự kiện để cập nhật trạng thái mật khẩu cấp 2 trong Header
@@ -908,6 +924,70 @@ const SecuritySection = () => {
           detail: { hasLevel2Password: true },
         })
       );
+
+      // Kiểm tra nếu có yêu cầu chuyển hướng quay lại trang thanh toán
+      if (redirect) {
+        // Đợi 1.5 giây để người dùng thấy thông báo thành công
+        setTimeout(() => {
+          // Lấy dữ liệu trạng thái thanh toán đã lưu
+          const pendingPaymentState = JSON.parse(localStorage.getItem("pendingPaymentState") || "{}");
+
+          // Chuyển hướng dựa vào loại thanh toán
+          if (redirect === "payment" && pendingPaymentState.type === "normal") {
+            // Cập nhật: Chuyển về trang thanh toán thường với toàn bộ dữ liệu sản phẩm
+            if (pendingPaymentState.selectedProductsData && pendingPaymentState.selectedProductsData.length > 0) {
+              // Nếu có thông tin sản phẩm đầy đủ, sử dụng nó
+              navigate("/payment", {
+                state: {
+                  selectedProducts: pendingPaymentState.selectedProductsData
+                }
+              });
+            } else if (pendingPaymentState.selectedProducts && pendingPaymentState.selectedProducts.length > 0) {
+              // Nếu chỉ có ID sản phẩm, lưu vào localStorage để trang Payment tự tải lại
+              localStorage.setItem("tempSelectedProducts", JSON.stringify(pendingPaymentState.selectedProducts));
+              navigate("/payment");
+            } else {
+              // Không có thông tin sản phẩm
+              navigate("/payment");
+            }
+            toast.info("Đang chuyển về trang thanh toán...");
+          } else if (redirect === "payment_buy_now" && pendingPaymentState.type === "buy_now") {
+            // Lấy dữ liệu sản phẩm
+            const product = pendingPaymentState.product_id;
+            const variant = pendingPaymentState.product_variant_id;
+            const quantity = pendingPaymentState.quantity;
+
+            // Chuyển về trang thanh toán mua ngay với thông tin sản phẩm
+            navigate("/payment_buy_now", {
+              state: {
+                selectedProducts: [{
+                  product: {
+                    id: product,
+                    name: pendingPaymentState.product_name,
+                    price: pendingPaymentState.product_price,
+                    discount_price: pendingPaymentState.product_discount_price,
+                    image_thumbnail: pendingPaymentState.product_image_thumbnail
+                  },
+                  product_variant: variant ? {
+                    id: variant,
+                    price: pendingPaymentState.variant_price,
+                    discount_price: pendingPaymentState.variant_discount_price
+                  } : null,
+                  quantity: quantity,
+                  total_price: pendingPaymentState.total_price || (pendingPaymentState.variant_price || pendingPaymentState.product_price) * quantity
+                }]
+              }
+            });
+            toast.info("Đang chuyển về trang thanh toán mua ngay...");
+          } else if (redirect === "wallet_withdraw") {
+            // Xử lý chuyển hướng về trang rút tiền sau khi thiết lập mật khẩu cấp 2
+            const pendingWithdrawState = JSON.parse(localStorage.getItem("pendingWithdrawState") || "{}");
+
+            // Chuyển về trang rút tiền với tham số thông báo thành công
+            navigate("/account/wallet/withdraw?from_level2_setup=true");
+          }
+        }, 1500);
+      }
     } catch (error) {
       console.error("Lỗi khi thiết lập mật khẩu cấp 2:", error);
 
@@ -918,7 +998,7 @@ const SecuritySection = () => {
       } else {
         setLevel2Error(
           error.response?.data?.message ||
-            "Không thể thiết lập mật khẩu cấp 2. Vui lòng thử lại sau."
+          "Không thể thiết lập mật khẩu cấp 2. Vui lòng thử lại sau."
         );
       }
 
@@ -954,6 +1034,10 @@ const SecuritySection = () => {
       );
       return;
     }
+
+    // Kiểm tra mật khẩu cấp 2 mới không được giống mật khẩu cấp 1
+    // Chúng ta để việc kiểm tra này cho backend xử lý
+    // Nếu giống mật khẩu cấp 1, backend sẽ trả về lỗi 400 với message phù hợp
 
     setLevel2Loading(true);
     setLevel2Error(null);
@@ -998,7 +1082,7 @@ const SecuritySection = () => {
       } else {
         setLevel2Error(
           error.response?.data?.message ||
-            "Không thể cập nhật mật khẩu cấp 2. Vui lòng thử lại sau."
+          "Không thể cập nhật mật khẩu cấp 2. Vui lòng thử lại sau."
         );
       }
 
