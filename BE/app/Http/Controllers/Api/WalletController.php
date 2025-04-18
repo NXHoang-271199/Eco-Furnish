@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\BankAccount;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class WalletController extends Controller
 {
@@ -242,6 +244,17 @@ class WalletController extends Controller
         ]);
 
         $userId = Auth::id();
+        $user = User::find($userId);
+        // Kiểm tra nếu người dùng chưa có mật khẩu cấp 2
+        if (!$user->has_level2_password) {
+            return response()->json(['message' => 'Bạn cần thiết lập mật khẩu cấp 2 để thực hiện yêu cầu rút tiền'], 422);
+        }
+
+        // Kiểm tra mật khẩu cấp 2 nhập vào có đúng không
+        if (!Hash::check($request->level2_password, $user->level2_password)) {
+            return response()->json(['message' => 'Mật khẩu cấp 2 không chính xác'], 422);
+        }
+
         $wallet = Wallet::where('user_id', $userId)->first();
 
         if (!$wallet) {
