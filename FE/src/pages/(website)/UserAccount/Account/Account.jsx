@@ -190,7 +190,7 @@ const Account = () => {
 
           setError(
             error.response.data?.message ||
-              `Lỗi từ máy chủ: ${error.response.status}`
+            `Lỗi từ máy chủ: ${error.response.status}`
           );
         } else if (error.request) {
           console.error("Không nhận được phản hồi từ máy chủ");
@@ -424,7 +424,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       setIsUploading(false);
       setUploadError(
         error.response?.data?.message ||
-          "Không thể tải lên avatar. Vui lòng thử lại!"
+        "Không thể tải lên avatar. Vui lòng thử lại!"
       );
       toast.error("Không thể tải lên avatar. Vui lòng thử lại!");
     }
@@ -490,7 +490,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
       console.error("Lỗi khi cập nhật thông tin:", error);
       setSaveError(
         error.response?.data?.message ||
-          "Không thể cập nhật thông tin. Vui lòng thử lại sau."
+        "Không thể cập nhật thông tin. Vui lòng thử lại sau."
       );
       toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
     } finally {
@@ -725,10 +725,10 @@ const SecuritySection = () => {
       [id === "current-password"
         ? "currentPassword"
         : id === "new-password"
-        ? "newPassword"
-        : id === "confirm-password"
-        ? "confirmPassword"
-        : id]: value,
+          ? "newPassword"
+          : id === "confirm-password"
+            ? "confirmPassword"
+            : id]: value,
     }));
   };
 
@@ -739,16 +739,16 @@ const SecuritySection = () => {
       [id === "current-password-level2"
         ? "currentPassword"
         : id === "level2-password"
-        ? "level2Password"
-        : id === "confirm-level2-password"
-        ? "confirmLevel2Password"
-        : id === "current-level2-password"
-        ? "currentLevel2Password"
-        : id === "new-level2-password"
-        ? "newLevel2Password"
-        : id === "confirm-new-level2-password"
-        ? "confirmNewLevel2Password"
-        : id]: value,
+          ? "level2Password"
+          : id === "confirm-level2-password"
+            ? "confirmLevel2Password"
+            : id === "current-level2-password"
+              ? "currentLevel2Password"
+              : id === "new-level2-password"
+                ? "newLevel2Password"
+                : id === "confirm-new-level2-password"
+                  ? "confirmNewLevel2Password"
+                  : id]: value,
     }));
   };
 
@@ -842,7 +842,7 @@ const SecuritySection = () => {
       } else {
         setError(
           error.response?.data?.message ||
-            "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
+          "Không thể cập nhật mật khẩu. Vui lòng thử lại sau."
         );
       }
 
@@ -874,6 +874,12 @@ const SecuritySection = () => {
       level2PasswordData.confirmLevel2Password
     ) {
       setLevel2Error("Mật khẩu cấp 2 và xác nhận mật khẩu cấp 2 không khớp");
+      return;
+    }
+
+    // Kiểm tra mật khẩu cấp 2 không được giống mật khẩu cấp 1
+    if (level2PasswordData.currentPassword === level2PasswordData.level2Password) {
+      setLevel2Error("Mật khẩu cấp 2 không được giống mật khẩu cấp 1");
       return;
     }
 
@@ -918,7 +924,7 @@ const SecuritySection = () => {
       } else {
         setLevel2Error(
           error.response?.data?.message ||
-            "Không thể thiết lập mật khẩu cấp 2. Vui lòng thử lại sau."
+          "Không thể thiết lập mật khẩu cấp 2. Vui lòng thử lại sau."
         );
       }
 
@@ -954,6 +960,10 @@ const SecuritySection = () => {
       );
       return;
     }
+
+    // Kiểm tra mật khẩu cấp 2 mới không được giống mật khẩu cấp 1
+    // Chúng ta để việc kiểm tra này cho backend xử lý
+    // Nếu giống mật khẩu cấp 1, backend sẽ trả về lỗi 400 với message phù hợp
 
     setLevel2Loading(true);
     setLevel2Error(null);
@@ -998,7 +1008,7 @@ const SecuritySection = () => {
       } else {
         setLevel2Error(
           error.response?.data?.message ||
-            "Không thể cập nhật mật khẩu cấp 2. Vui lòng thử lại sau."
+          "Không thể cập nhật mật khẩu cấp 2. Vui lòng thử lại sau."
         );
       }
 

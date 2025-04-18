@@ -25,8 +25,91 @@ const VariantSelectionModal = ({
 
             // Debug để kiểm tra dữ liệu sản phẩm
             console.log('Product data in modal:', product);
-            if (product.variants) {
-                console.log('Variants data:', product.variants);
+            
+            try {
+                // Kiểm tra và xử lý dữ liệu biến thể
+                if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+                    console.log('Variants data:', product.variants);
+                    
+                    // Đảm bảo tất cả các biến thể đều có quantity là số
+                    const processedVariants = product.variants.map(variant => {
+                        // Tạo bản sao của variant
+                        const variantCopy = {...variant};
+                        
+                        // Đảm bảo quantity là số
+                        if (variantCopy.quantity === undefined || variantCopy.quantity === null) {
+                            variantCopy.quantity = 0;
+                        } else if (typeof variantCopy.quantity === 'string') {
+                            variantCopy.quantity = parseInt(variantCopy.quantity) || 0;
+                        }
+                        
+                        // Đảm bảo variant_details là array
+                        if (!Array.isArray(variantCopy.variant_details)) {
+                            // Nếu là object, chuyển thành array của object
+                            if (typeof variantCopy.variant_details === 'object' && variantCopy.variant_details !== null) {
+                                variantCopy.variant_details = Object.entries(variantCopy.variant_details).map(([name, value]) => ({
+                                    name,
+                                    value
+                                }));
+                            } else {
+                                variantCopy.variant_details = [];
+                            }
+                        }
+                        
+                        return variantCopy;
+                    });
+                    
+                    console.log('Processed variants:', processedVariants);
+                    
+                    // Tìm biến thể đầu tiên có số lượng > 0
+                    const availableVariant = processedVariants.find(variant => 
+                        variant && 
+                        variant.quantity > 0 &&
+                        variant.variant_details && 
+                        Array.isArray(variant.variant_details) && 
+                        variant.variant_details.length > 0
+                    );
+                    
+                    console.log('Available variant:', availableVariant);
+                    
+                    // Nếu có biến thể khả dụng, chọn nó
+                    if (availableVariant) {
+                        const initialAttributes = {};
+                        availableVariant.variant_details.forEach(detail => {
+                            if (detail && detail.name && detail.value) {
+                                initialAttributes[detail.name] = detail.value;
+                            }
+                        });
+                        
+                        // Cập nhật state với biến thể có sẵn
+                        if (Object.keys(initialAttributes).length > 0) {
+                            console.log('Setting initial attributes:', initialAttributes);
+                            setSelectedVariantAttributes(initialAttributes);
+                            setSelectedVariantId(availableVariant.id);
+                            console.log('Auto-selected available variant:', availableVariant.id, initialAttributes, 'quantity:', availableVariant.quantity);
+                        }
+                    } else {
+                        // Nếu không tìm thấy biến thể có sẵn, chọn biến thể đầu tiên
+                        const firstVariant = processedVariants[0];
+                        if (firstVariant && firstVariant.variant_details && Array.isArray(firstVariant.variant_details)) {
+                            const initialAttributes = {};
+                            firstVariant.variant_details.forEach(detail => {
+                                if (detail && detail.name && detail.value) {
+                                    initialAttributes[detail.name] = detail.value;
+                                }
+                            });
+                            
+                            if (Object.keys(initialAttributes).length > 0) {
+                                console.log('Setting initial attributes for first variant:', initialAttributes);
+                                setSelectedVariantAttributes(initialAttributes);
+                                setSelectedVariantId(firstVariant.id);
+                                console.log('Auto-selected first variant:', firstVariant.id, initialAttributes, 'quantity:', firstVariant.quantity);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error processing variants in modal:', error);
             }
         }
     }, [isOpen, product]);
@@ -96,29 +179,60 @@ const VariantSelectionModal = ({
         if (!product) return 0;
 
         try {
-            if (selectedVariantId && product.variants) {
-                const selectedVariant = product.variants.find(
-                    (v) => v.id === selectedVariantId
-                );
+            if (selectedVariantId && product.variants && Array.isArray(product.variants)) {
+                const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
+                
                 if (selectedVariant) {
-                    // Thêm log để kiểm tra dữ liệu
-                    console.log('Selected variant data:', selectedVariant);
-                    console.log('Selected variant quantity:', selectedVariant.quantity);
-
-                    // Kiểm tra rõ ràng giá trị undefined và null
+                    // Debug
+                    console.log('Selected variant stock check:', selectedVariant.id, selectedVariant.quantity);
+                    
+                    // Đảm bảo quantity là số
+                    let quantity = 0;
                     if (selectedVariant.quantity === undefined || selectedVariant.quantity === null) {
-                        console.warn('Variant quantity is undefined or null');
-                        return 0;
+                        console.log('Variant quantity is undefined or null');
+                        quantity = 0;
+                    } else if (typeof selectedVariant.quantity === 'string') {
+                        quantity = parseInt(selectedVariant.quantity) || 0;
+                        console.log('Converted string quantity to number:', quantity);
+                    } else {
+                        quantity = selectedVariant.quantity;
+                        console.log('Using original number quantity:', quantity);
                     }
-
-                    return parseInt(selectedVariant.quantity) || 0;
+                    
+                    // Đảm bảo luôn trả về số nguyên không âm
+                    const stockQty = Math.max(0, Math.floor(quantity));
+                    console.log('Final stock quantity:', stockQty);
+                    return stockQty;
+                } else {
+                    console.log('Selected variant not found in product.variants');
                 }
+            } else {
+                console.log('No selectedVariantId or invalid product.variants:', {
+                    selectedVariantId,
+                    hasVariants: product ? !!product.variants : false,
+                    isArray: product && product.variants ? Array.isArray(product.variants) : false
+                });
             }
 
-            // Nếu không tìm thấy biến thể hoặc không có biến thể nào được chọn
-            return product.quantity ? parseInt(product.quantity) : 0;
+            // Nếu không có biến thể được chọn, sử dụng số lượng sản phẩm chung
+            if (product.quantity !== undefined && product.quantity !== null) {
+                let productQty = 0;
+                if (typeof product.quantity === 'string') {
+                    productQty = parseInt(product.quantity) || 0;
+                } else {
+                    productQty = product.quantity;
+                }
+                
+                // Đảm bảo luôn trả về số nguyên không âm
+                const finalQty = Math.max(0, Math.floor(productQty));
+                console.log('Using product quantity:', finalQty);
+                return finalQty;
+            } else {
+                console.log('Product has no quantity property');
+                return 0;
+            }
         } catch (error) {
-            console.error("Error getting stock quantity:", error);
+            console.error('Error in getStockQuantity:', error);
             return 0;
         }
     };
@@ -147,7 +261,7 @@ const VariantSelectionModal = ({
 
         // Kiểm tra số lượng tồn kho
         const stockQty = getStockQuantity();
-        console.log('Stock quantity check:', stockQty);
+        console.log('Stock quantity check before add to cart:', stockQty);
 
         if (stockQty <= 0) {
             toast.error("Sản phẩm đã hết hàng");
@@ -327,11 +441,7 @@ const VariantSelectionModal = ({
                                         +
                                     </button>
                                     <span className="ml-3 text-sm text-gray-500">
-                                        {getStockQuantity() > 0 ? (
-                                            <>{getStockQuantity()} sản phẩm có sẵn</>
-                                        ) : (
-                                            <span className="text-red-500 font-medium">Hết hàng</span>
-                                        )}
+                                        Còn {getStockQuantity()} sản phẩm
                                     </span>
                                 </div>
                             </div>
@@ -346,14 +456,22 @@ const VariantSelectionModal = ({
                                 </button>
                                 <button
                                     onClick={handleAddToCart}
-                                    disabled={!selectedVariantId || loading || getStockQuantity() <= 0}
-                                    className={`px-4 py-2 rounded-md text-white flex items-center ${!selectedVariantId || loading || getStockQuantity() <= 0
-                                        ? "bg-gray-400 cursor-not-allowed"
-                                        : "bg-blue-600 hover:bg-blue-700"
-                                        }`}
+                                    disabled={loading || (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0)}
+                                    className={`px-4 py-2 rounded-md text-white flex items-center ${
+                                        loading ? 
+                                            "bg-gray-400 cursor-not-allowed" : 
+                                        (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0) ? 
+                                            "bg-gray-400 cursor-not-allowed" : 
+                                            "bg-blue-600 hover:bg-blue-700"
+                                    }`}
                                 >
                                     <FaShoppingCart className="mr-2" />
-                                    {loading ? "Đang xử lý..." : getStockQuantity() <= 0 ? "Hết hàng" : "Thêm vào giỏ hàng"}
+                                    {loading ? 
+                                        "Đang xử lý..." : 
+                                        (selectedVariantId && getStockQuantity() <= 0) ? 
+                                            "Hết hàng" : 
+                                            "Thêm vào giỏ hàng"
+                                    }
                                 </button>
                             </div>
                         </>
