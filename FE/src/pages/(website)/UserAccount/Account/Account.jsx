@@ -414,7 +414,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
         // Cập nhật avatar trong component cha
         updateUserAvatar(tempUrl);
 
-        console.warn("Không nhận được URL avatar từ API, sử dụng URL tạm thởi");
+        console.warn("Không nhận được URL avatar từ API, sử dụng URL tạm thời");
       }
 
       setIsUploading(false);
@@ -689,6 +689,7 @@ const SecuritySection = () => {
   const [hasLevel2Password, setHasLevel2Password] = useState(false);
   const [activeTab, setActiveTab] = useState("password");
   const location = window.location;
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Kiểm tra trạng thái mật khẩu cấp 2
@@ -905,7 +906,16 @@ const SecuritySection = () => {
       // Cập nhật trạng thái thành công và hiển thị thông báo
       setLevel2Success(true);
       setHasLevel2Password(true);
-      toast.success("Thiết lập mật khẩu cấp 2 thành công!");
+
+      // Kiểm tra nếu có yêu cầu chuyển hướng quay lại trang thanh toán
+      const searchParams = new URLSearchParams(location.search);
+      const redirect = searchParams.get("redirect");
+
+      // Chỉ hiển thị toast thành công nếu KHÔNG có chuyển hướng đến trang rút tiền
+      if (!redirect || redirect !== "wallet_withdraw") {
+        toast.success("Thiết lập mật khẩu cấp 2 thành công!");
+      }
+
       resetLevel2Form();
 
       // Phát sự kiện để cập nhật trạng thái mật khẩu cấp 2 trong Header
@@ -914,6 +924,70 @@ const SecuritySection = () => {
           detail: { hasLevel2Password: true },
         })
       );
+
+      // Kiểm tra nếu có yêu cầu chuyển hướng quay lại trang thanh toán
+      if (redirect) {
+        // Đợi 1.5 giây để người dùng thấy thông báo thành công
+        setTimeout(() => {
+          // Lấy dữ liệu trạng thái thanh toán đã lưu
+          const pendingPaymentState = JSON.parse(localStorage.getItem("pendingPaymentState") || "{}");
+
+          // Chuyển hướng dựa vào loại thanh toán
+          if (redirect === "payment" && pendingPaymentState.type === "normal") {
+            // Cập nhật: Chuyển về trang thanh toán thường với toàn bộ dữ liệu sản phẩm
+            if (pendingPaymentState.selectedProductsData && pendingPaymentState.selectedProductsData.length > 0) {
+              // Nếu có thông tin sản phẩm đầy đủ, sử dụng nó
+              navigate("/payment", {
+                state: {
+                  selectedProducts: pendingPaymentState.selectedProductsData
+                }
+              });
+            } else if (pendingPaymentState.selectedProducts && pendingPaymentState.selectedProducts.length > 0) {
+              // Nếu chỉ có ID sản phẩm, lưu vào localStorage để trang Payment tự tải lại
+              localStorage.setItem("tempSelectedProducts", JSON.stringify(pendingPaymentState.selectedProducts));
+              navigate("/payment");
+            } else {
+              // Không có thông tin sản phẩm
+              navigate("/payment");
+            }
+            toast.info("Đang chuyển về trang thanh toán...");
+          } else if (redirect === "payment_buy_now" && pendingPaymentState.type === "buy_now") {
+            // Lấy dữ liệu sản phẩm
+            const product = pendingPaymentState.product_id;
+            const variant = pendingPaymentState.product_variant_id;
+            const quantity = pendingPaymentState.quantity;
+
+            // Chuyển về trang thanh toán mua ngay với thông tin sản phẩm
+            navigate("/payment_buy_now", {
+              state: {
+                selectedProducts: [{
+                  product: {
+                    id: product,
+                    name: pendingPaymentState.product_name,
+                    price: pendingPaymentState.product_price,
+                    discount_price: pendingPaymentState.product_discount_price,
+                    image_thumbnail: pendingPaymentState.product_image_thumbnail
+                  },
+                  product_variant: variant ? {
+                    id: variant,
+                    price: pendingPaymentState.variant_price,
+                    discount_price: pendingPaymentState.variant_discount_price
+                  } : null,
+                  quantity: quantity,
+                  total_price: pendingPaymentState.total_price || (pendingPaymentState.variant_price || pendingPaymentState.product_price) * quantity
+                }]
+              }
+            });
+            toast.info("Đang chuyển về trang thanh toán mua ngay...");
+          } else if (redirect === "wallet_withdraw") {
+            // Xử lý chuyển hướng về trang rút tiền sau khi thiết lập mật khẩu cấp 2
+            const pendingWithdrawState = JSON.parse(localStorage.getItem("pendingWithdrawState") || "{}");
+
+            // Chuyển về trang rút tiền với tham số thông báo thành công
+            navigate("/account/wallet/withdraw?from_level2_setup=true");
+          }
+        }, 1500);
+      }
     } catch (error) {
       console.error("Lỗi khi thiết lập mật khẩu cấp 2:", error);
 
