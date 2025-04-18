@@ -8,6 +8,7 @@
 
 @section('CSS')
 <style>
+    /* Base styles */
     .dashboard-container {
         padding-top: 60px !important;
         margin-top: 30px;
@@ -20,37 +21,162 @@
             padding-top: 80px !important;
         }
     }
-    /* Container cho date picker */
+
+    /* Chart container styles */
+    .chart-container {
+        position: relative;
+    }
+    
+    .chart-no-data-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .chart-no-data-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .no-data-message {
+        font-size: 20px;
+        font-weight: 500;
+        color: #6c757d;
+        text-align: center;
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    }
+    
+    .no-data-message i {
+        font-size: 40px;
+        color: #8E54E9;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    /* Material Design Shadows & Animations */
+    .card {
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: none !important;
+        border-radius: 12px !important;
+        overflow: hidden;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-animate {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .card-animate::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 8px;
+        height: 100%;
+        background: linear-gradient(to bottom, #8E54E9, #4776E6);
+        border-top-right-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+    
+    /* Modern Stats Cards */
+    .avatar-title {
+        transition: all 0.3s ease;
+    }
+    
+    .card-animate:hover .avatar-title {
+        transform: scale(1.1);
+    }
+    
+    .counter-value {
+        background: linear-gradient(45deg, #8E54E9, #4776E6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 700;
+        position: relative;
+    }
+    
+    /* Counter completion animation */
+    .counter-complete {
+        animation: counterPulse 0.6s ease;
+    }
+    
+    @keyframes counterPulse {
+        0% {
+            transform: scale(1);
+            text-shadow: 0 0 0 rgba(71, 118, 230, 0);
+        }
+        50% {
+            transform: scale(1.1);
+            text-shadow: 0 0 10px rgba(71, 118, 230, 0.5);
+        }
+        100% {
+            transform: scale(1);
+            text-shadow: 0 0 0 rgba(71, 118, 230, 0);
+        }
+    }
+    
+    /* Date Picker Styles */
     .date-picker-wrapper {
         position: relative;
         display: inline-flex;
         align-items: center;
     }
 
-    /* Button chọn khoảng ngày */
     .date-picker-display {
         background-color: #fff;
         border: 1px solid #ced4da;
         border-right: none;
-        border-radius: 0.25rem 0 0 0.25rem;
+        border-radius: 10px 0 0 10px;
         padding: 0.47rem 0.75rem;
         font-size: 0.875rem;
         color: #495057;
         cursor: pointer;
-        min-width: 150px;
+        min-width: 180px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .date-picker-display:hover {
+        background-color: #f8f9fa;
     }
 
-    /* Icon lịch */
     .date-picker-icon {
-        background-color: #556ee6;
+        background: linear-gradient(45deg, #4776E6, #8E54E9);
         color: white;
-        border: 1px solid #556ee6;
-        border-radius: 0 0.25rem 0.25rem 0;
+        border: none;
+        border-radius: 0 10px 10px 0;
         padding: 0.47rem 0.75rem;
         cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .date-picker-icon:hover {
+        background: linear-gradient(45deg, #4776E6, #8E54E9);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
     }
     
     /* Ẩn input gốc mà Flatpickr sử dụng */
@@ -58,53 +184,420 @@
         display: none !important;
     }
 
-    /* Đảm bảo calendar hiển thị phía trên các phần tử khác */
+    /* Modern Flatpickr Calendar */
     .flatpickr-calendar {
         z-index: 9999 !important;
         background-color: white;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        border-radius: 4px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        border-radius: 12px;
         margin-top: 2px;
-        width: 310px !important; /* Tăng chiều rộng một chút */
-        font-size: 13px !important; /* Giảm kích thước font chữ */
+        width: 320px !important;
+        font-size: 13px !important;
+        border: none !important;
+        padding: 10px;
+        animation: flatpickrFadeInDown 0.3s cubic-bezier(0, 1, 0.5, 1);
     }
+    
+    @keyframes flatpickrFadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
     .flatpickr-day {
-        height: 32px;
-        line-height: 32px;
-        margin: 0;
+        height: 38px;
+        line-height: 38px;
+        margin: 2px;
+        border-radius: 8px !important;
+        transition: all 0.2s ease;
     }
+    
+    .flatpickr-day:hover {
+        background-color: #f0f7ff !important;
+        border-color: #f0f7ff !important;
+    }
+    
     .flatpickr-day.selected {
-        background-color: #556ee6 !important;
-        border-color: #556ee6 !important;
+        background: linear-gradient(45deg, #4776E6, #8E54E9) !important;
+        border-color: transparent !important;
+        box-shadow: 0 4px 10px rgba(71, 118, 230, 0.3) !important;
     }
+    
     .flatpickr-day.selected.startRange, .flatpickr-day.selected.endRange {
-        background-color: #556ee6 !important;
-        border-color: #556ee6 !important;
+        background: linear-gradient(45deg, #4776E6, #8E54E9) !important;
+        border-color: transparent !important;
     }
+    
     .flatpickr-day.inRange {
-        background-color: rgba(85, 110, 230, 0.1) !important;
-        border-color: rgba(85, 110, 230, 0.1) !important;
+        background-color: rgba(71, 118, 230, 0.15) !important;
+        border-color: transparent !important;
     }
+    
     .flatpickr-months .flatpickr-month {
-        background-color: #556ee6 !important;
+        background: linear-gradient(45deg, #4776E6, #8E54E9) !important;
         color: white !important;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        padding-top: 5px;
     }
+    
     .flatpickr-current-month {
         padding-top: 8px !important;
     }
+    
     .flatpickr-current-month .flatpickr-monthDropdown-months {
-        background-color: #556ee6 !important;
+        background-color: transparent !important;
         color: white !important;
+        font-weight: 600;
     }
+    
     .flatpickr-weekday {
+        background-color: transparent;
+        color: #555;
+        font-weight: 600;
+        padding: 5px 0;
+    }
+    
+    /* Button styles */
+    .btn-primary {
+        background: linear-gradient(45deg, #4776E6, #8E54E9);
+        border: none;
+        box-shadow: 0 4px 10px rgba(71, 118, 230, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(45deg, #3d6ad5, #7d44d5);
+        box-shadow: 0 6px 15px rgba(71, 118, 230, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    .btn-light {
+        background: #f8f9fa;
+        border: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-light:hover {
+        background: #e9ecef;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .btn-soft-info {
+        background: rgba(71, 118, 230, 0.15);
+        color: #4776E6;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-soft-info:hover {
+        background: rgba(71, 118, 230, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    /* Greeting Section */
+    .greeting-section {
+        position: relative;
+        /* overflow: hidden; */
+        border-radius: 15px;
+        padding: 5px 0;
+        margin-bottom: 20px;
+        background: linear-gradient(120deg, #f6f9ff, #f0f7ff);
+    }
+    
+    .greeting-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 200%;
+        background: linear-gradient(120deg, rgba(71, 118, 230, 0.05), rgba(142, 84, 233, 0.08));
+        transform: rotate(-15deg);
+        z-index: 0;
+        border-radius: 50%;
+    }
+    
+    .greeting-text {
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Statistics Cards */
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .avatar-sm {
+        border-radius: 10px;
+    }
+    
+    .avatar-title.bg-success-subtle {
+        background: linear-gradient(45deg, rgba(82, 182, 172, 0.15), rgba(124, 207, 158, 0.15)) !important;
+    }
+    
+    .avatar-title.bg-info-subtle {
+        background: linear-gradient(45deg, rgba(71, 118, 230, 0.15), rgba(142, 84, 233, 0.15)) !important;
+    }
+    
+    .avatar-title.bg-warning-subtle {
+        background: linear-gradient(45deg, rgba(245, 186, 88, 0.15), rgba(255, 161, 91, 0.15)) !important;
+    }
+    
+    .text-success {
+        color: #52b6ac !important;
+    }
+    
+    .text-info {
+        color: #4776E6 !important;
+    }
+    
+    .text-warning {
+        color: #f5ba58 !important;
+    }
+    
+    /* Glowing effect for icons */
+    .bx-dollar-circle, .bx-shopping-bag, .bx-user-circle {
+        position: relative;
+    }
+    
+    .bx-dollar-circle::after, .bx-shopping-bag::after, .bx-user-circle::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        border-radius: 50%;
+        z-index: -1;
+        opacity: 0;
+        transition: all 0.5s ease;
+    }
+    
+    .card-animate:hover .bx-dollar-circle::after {
+        box-shadow: 0 0 20px rgba(82, 182, 172, 0.5);
+        opacity: 1;
+    }
+    
+    .card-animate:hover .bx-shopping-bag::after {
+        box-shadow: 0 0 20px rgba(71, 118, 230, 0.5);
+        opacity: 1;
+    }
+    
+    .card-animate:hover .bx-user-circle::after {
+        box-shadow: 0 0 20px rgba(245, 186, 88, 0.5);
+        opacity: 1;
+    }
+    
+    /* Alert styles */
+    .alert-info {
+        background: linear-gradient(45deg, rgba(71, 118, 230, 0.12), rgba(142, 84, 233, 0.12));
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(71, 118, 230, 0.1);
+    }
+    
+    /* Modern Data Cards */
+    .bg-light-subtle {
+        background: linear-gradient(120deg, #f6f9ff, #f0f7ff) !important;
+    }
+    
+    .border-dashed {
+        border-style: dashed !important;
+        border-color: rgba(71, 118, 230, 0.2) !important;
+    }
+    
+    /* Table styling */
+    .table-card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .table th, .table td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    .table-hover tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(71, 118, 230, 0.05);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .table-centered th, .table-centered td {
+        text-align: center;
+    }
+    
+    .avatar-xs {
+        width: 2rem;
+        height: 2rem;
+        object-fit: cover;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s ease;
+    }
+    
+    tr:hover .avatar-xs {
+        transform: scale(1.15);
+    }
+    
+    .badge {
+        padding: 0.4rem 0.8rem;
+        font-weight: 500;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .bg-success-subtle {
+        background: rgba(82, 182, 172, 0.15) !important;
+    }
+    
+    .bg-warning-subtle {
+        background: rgba(245, 186, 88, 0.15) !important;
+    }
+    
+    .bg-info-subtle {
+        background: rgba(71, 118, 230, 0.15) !important;
+    }
+    
+    .bg-danger-subtle {
+        background: rgba(243, 78, 78, 0.15) !important;
+    }
+    
+    /* Progress bar animation */
+    .progress-bar {
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        z-index: 1;
+    }
+    
+    .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+        );
+        z-index: 9;
+        animation: progressShine 2s infinite;
+    }
+    
+    @keyframes progressShine {
+        0% {
+            transform: translateX(-100%);
+        }
+        100% {
+            transform: translateX(100%);
+        }
+    }
+    
+    /* Star rating animation */
+    .text-warning i {
+        margin-right: 1px;
+        position: relative;
+    }
+    
+    tr:hover .text-warning i {
+        animation: starPulse 0.5s ease-in-out;
+    }
+    
+    @keyframes starPulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.25);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+    
+    /* Pagination styling */
+    .pagination {
+        margin-bottom: 0;
+    }
+    
+    .page-link {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0 3px;
+        border-radius: 6px;
+        color: #4776E6;
+        border: none;
+        background-color: #f0f7ff;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .page-link:hover {
+        transform: translateY(-2px);
+        background: rgba(71, 118, 230, 0.1);
+        color: #4776E6;
+    }
+    
+    .page-item.active .page-link {
+        background: linear-gradient(45deg, #4776E6, #8E54E9);
+        color: white;
+        box-shadow: 0 4px 8px rgba(71, 118, 230, 0.3);
+        z-index: 1;
+    }
+    
+    .page-item.disabled .page-link {
+        color: #adb5bd;
         background-color: #f8f9fa;
-        color: #495057;
+        box-shadow: none;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(45deg, #4776E6, #8E54E9);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(45deg, #3d6ad5, #7d44d5);
     }
 </style>
 <!-- Import ApexCharts -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.35.3/dist/apexcharts.min.css">
 <!-- Flatpickr CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- AOS library for scroll animations -->
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
 @endsection
 
 {{-- @section: dùng để chị định phần nội dụng được hiển thị --}}
@@ -115,14 +608,14 @@
         <div class="col-xl-12">
 
             <div class="h-100">
-                <div class="row mb-3 pb-1">
+                <div class="greeting-section mb-3 pb-1" data-aos="fade-up" data-aos-duration="800">
                     <div class="col-12">
                         <div class="d-flex align-items-lg-center flex-lg-row flex-column">
-                            <div class="flex-grow-1">
+                            <div class="flex-grow-1 greeting-text p-3">
                                 <h4 class="fs-16 mb-1">Chào buổi sáng {{ Auth::user()->name }}</h4>
                                 <p class="text-muted mb-0">Đây là những gì đang diễn ra với cửa hàng của bạn hôm nay.</p>
                             </div>
-                            <div class="mt-3 mt-lg-0">
+                            <div class="mt-3 mt-lg-0 p-3">
                                 <form action="{{ route('dashboard.filter') }}" method="GET" id="dateFilterForm">
                                     <div class="row g-3 mb-0 align-items-center">
                                         <div class="col-sm-auto">
@@ -160,7 +653,7 @@
                 <!--end row-->
 
                 @if(isset($isFiltered) && $isFiltered)
-                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                <div class="alert alert-info alert-dismissible fade show mb-4" role="alert" data-aos="fade-up" data-aos-duration="800" data-aos-delay="100">
                     <i class="ri-filter-2-line me-1 align-middle fs-16"></i>
                     <strong>Dữ liệu đã được lọc</strong> - Đang hiển thị dữ liệu từ {{ $formattedDateRange }}
                     <a href="{{ route('dashboard') }}" class="btn btn-sm btn-light ms-2">Xem tất cả dữ liệu</a>
@@ -169,7 +662,7 @@
                 @endif
 
                 <div class="row">
-                    <div class="col-xl-4 col-md-6">
+                    <div class="col-xl-4 col-md-6" data-aos="fade-up" data-aos-duration="800" data-aos-delay="100">
                         <!-- card -->
                         <div class="card card-animate">
                             <div class="card-body">
@@ -185,7 +678,7 @@
                                 </div>
                                 <div class="d-flex align-items-end justify-content-between mt-4">
                                     <div>
-                                        <h4 class="fs-22 fw-semibold ff-secondary mb-4"><span class="counter-value" data-target="{{ $totalEarnings ?? 0 }}">0</span> ₫</h4>
+                                        <h4 class="fs-22 fw-semibold ff-secondary mb-4"><span class="counter-value" data-target="@if(isset($isFiltered) && $isFiltered && isset($hasData) && !$hasData) 0 @else {{ $totalEarnings ?? 0 }} @endif">0</span> ₫</h4>
                                     </div>
                                     <div class="avatar-sm flex-shrink-0">
                                         <span class="avatar-title bg-success-subtle rounded fs-3">
@@ -197,7 +690,7 @@
                         </div><!-- end card -->
                     </div><!-- end col -->
 
-                    <div class="col-xl-4 col-md-6">
+                    <div class="col-xl-4 col-md-6" data-aos="fade-up" data-aos-duration="800" data-aos-delay="200">
                         <!-- card -->
                         <div class="card card-animate">
                             <div class="card-body">
@@ -213,7 +706,7 @@
                                 </div>
                                 <div class="d-flex align-items-end justify-content-between mt-4">
                                     <div>
-                                        <h4 class="fs-22 fw-semibold ff-secondary mb-4"><span class="counter-value" data-target="{{ $totalOrders ?? 0 }}">0</span></h4>
+                                        <h4 class="fs-22 fw-semibold ff-secondary mb-4"><span class="counter-value" data-target="@if(isset($isFiltered) && $isFiltered && isset($hasData) && !$hasData) 0 @else {{ $totalOrders ?? 0 }} @endif">0</span></h4>
                                     </div>
                                     <div class="avatar-sm flex-shrink-0">
                                         <span class="avatar-title bg-info-subtle rounded fs-3">
@@ -225,7 +718,7 @@
                         </div><!-- end card -->
                     </div><!-- end col -->
 
-                    <div class="col-xl-4 col-md-6">
+                    <div class="col-xl-4 col-md-6" data-aos="fade-up" data-aos-duration="800" data-aos-delay="300">
                         <!-- card -->
                         <div class="card card-animate">
                             <div class="card-body">
@@ -241,7 +734,7 @@
                                 </div>
                                 <div class="d-flex align-items-end justify-content-between mt-4">
                                     <div>
-                                        <h4 class="fs-22 fw-semibold ff-secondary mb-4"><span class="counter-value" data-target="{{ $totalCustomers ?? 0 }}">0</span></h4>
+                                        <h4 class="fs-22 fw-semibold ff-secondary mb-4"><span class="counter-value" data-target="@if(isset($isFiltered) && $isFiltered && isset($hasData) && !$hasData) 0 @else {{ $totalCustomers ?? 0 }} @endif">0</span></h4>
                                     </div>
                                     <div class="avatar-sm flex-shrink-0">
                                         <span class="avatar-title bg-warning-subtle rounded fs-3">
@@ -285,11 +778,11 @@
 
                 <div class="row">
                     <div class="col">
-                        <div class="card">
+                        <div class="card" data-aos="fade-up" data-aos-duration="800" data-aos-delay="100">
                             <div class="card-header border-0 align-items-center d-flex">
                                 <h4 class="card-title mb-0 flex-grow-1">Doanh thu</h4>
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-soft-info btn-sm material-shadow-none" id="exportRevenueReport" data-report-type="revenue" data-report-title="Báo cáo doanh thu">
+                                    <button type="button" class="btn btn-soft-info btn-sm" id="exportRevenueReport" data-report-type="revenue" data-report-title="Báo cáo doanh thu">
                                         <i class="ri-file-excel-2-line align-middle"></i> Xuất báo cáo
                                     </button>
                                     <!-- Xóa phần div chứa các nút lọc 1 tháng, 6 tháng, 1 năm -->
@@ -299,22 +792,22 @@
                             <div class="card-header p-0 border-0 bg-light-subtle">
                                 <div class="row g-0 text-center">
                                     <div class="col-6 col-sm-4">
-                                        <div class="p-3 border border-dashed border-start-0">
-                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'orders')) : 0 }}" id="chart-orders-counter">0</span></h5>
+                                        <div class="p-3 border border-dashed border-start-0" data-aos="fade-right" data-aos-duration="800" data-aos-delay="200">
+                                            <h5 class="mb-1"><span class="counter-value" data-target="@if(isset($isFiltered) && $isFiltered && isset($hasData) && !$hasData) 0 @else {{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'orders')) : 0 }} @endif" id="chart-orders-counter">0</span></h5>
                                             <p class="text-muted mb-0">Đơn hàng</p>
                                         </div>
                                     </div>
                                     <!--end col-->
                                     <div class="col-6 col-sm-4">
-                                        <div class="p-3 border border-dashed border-start-0">
-                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'revenue')) : 0 }}" id="chart-revenue-counter">0</span> ₫</h5>
+                                        <div class="p-3 border border-dashed border-start-0" data-aos="fade-right" data-aos-duration="800" data-aos-delay="300">
+                                            <h5 class="mb-1"><span class="counter-value" data-target="@if(isset($isFiltered) && $isFiltered && isset($hasData) && !$hasData) 0 @else {{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'revenue')) : 0 }} @endif" id="chart-revenue-counter">0</span> ₫</h5>
                                             <p class="text-muted mb-0">Doanh thu</p>
                                         </div>
                                     </div>
                                     <!--end col-->
                                     <div class="col-12 col-sm-4">
-                                        <div class="p-3 border border-dashed border-start-0 border-end-0">
-                                            <h5 class="mb-1"><span class="counter-value" data-target="{{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'refunds')) : 0 }}" id="chart-refunds-counter">0</span></h5>
+                                        <div class="p-3 border border-dashed border-start-0 border-end-0" data-aos="fade-right" data-aos-duration="800" data-aos-delay="400">
+                                            <h5 class="mb-1"><span class="counter-value" data-target="@if(isset($isFiltered) && $isFiltered && isset($hasData) && !$hasData) 0 @else {{ isset($monthlyData) ? array_sum(array_column($monthlyData, 'refunds')) : 0 }} @endif" id="chart-refunds-counter">0</span></h5>
                                             <p class="text-muted mb-0">Hoàn tiền</p>
                                         </div>
                                     </div>
@@ -323,8 +816,14 @@
                             </div><!-- end card header -->
 
                             <div class="card-body p-0 pb-2">
-                                <div class="w-100">
+                                <div class="w-100 chart-container" data-aos="zoom-in" data-aos-duration="800" data-aos-delay="300">
                                     <div id="customer_impression_charts" class="apex-charts" dir="ltr"></div>
+                                    <div class="chart-no-data-overlay" id="chartNoDataOverlay">
+                                        <div class="no-data-message">
+                                            <i class="ri-information-line"></i>
+                                            Không có dữ liệu trong khoảng thời gian này
+                                        </div>
+                                    </div>
                                 </div>
                             </div><!-- end card body -->
                         </div><!-- end card -->
@@ -335,11 +834,11 @@
 
                 <div class="row">
                     <div class="col-xl-6">
-                        <div class="card">
+                        <div class="card" data-aos="fade-up" data-aos-duration="800" data-aos-delay="200">
                             <div class="card-header align-items-center d-flex">
                                 <h4 class="card-title mb-0 flex-grow-1">Sản phẩm bán chạy nhất</h4>
                                 <div class="flex-shrink-0">
-                                    <button type="button" class="btn btn-soft-info btn-sm material-shadow-none me-2" id="exportProductsReport" data-report-type="products" data-report-title="Sản phẩm bán chạy">
+                                    <button type="button" class="btn btn-soft-info btn-sm me-2" id="exportProductsReport" data-report-type="products" data-report-title="Sản phẩm bán chạy">
                                         <i class="ri-file-excel-2-line align-middle"></i> Tạo báo cáo
                                     </button>
                                     <div class="dropdown card-header-dropdown d-inline-block">
@@ -381,7 +880,7 @@
                                     <table class="table table-hover table-centered align-middle table-nowrap mb-0">
                                         <tbody>
                                             @forelse($bestSellingProducts as $product)
-                                            <tr>
+                                            <tr data-aos="fade-up" data-aos-duration="800" data-aos-delay="{{ 100 + $loop->index * 50 }}">
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="avatar-sm bg-light rounded p-1 me-2">
@@ -509,11 +1008,11 @@
                     </div>
 
                     <div class="col-xl-6">
-                        <div class="card">
+                        <div class="card" data-aos="fade-up" data-aos-duration="800" data-aos-delay="300">
                             <div class="card-header align-items-center d-flex">
                                 <h4 class="card-title mb-0 flex-grow-1">Xếp hạng người mua hàng nhiều nhất</h4>
                                 <div class="flex-shrink-0">
-                                    <button type="button" class="btn btn-soft-info btn-sm material-shadow-none" id="createTopBuyersReport" data-report-type="topbuyers" data-report-title="Người mua hàng nhiều nhất">
+                                    <button type="button" class="btn btn-soft-info btn-sm" id="createTopBuyersReport" data-report-type="topbuyers" data-report-title="Người mua hàng nhiều nhất">
                                         <i class="ri-file-excel-2-line align-middle"></i> Tạo báo cáo
                                     </button>
                                 </div>
@@ -524,11 +1023,11 @@
                                     <table class="table table-centered table-hover align-middle table-nowrap mb-0">
                                         <tbody>
                                             @forelse($topBuyers as $buyer)
-                                            <tr>
+                                            <tr data-aos="fade-up" data-aos-duration="800" data-aos-delay="{{ 100 + $loop->index * 50 }}">
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="flex-shrink-0 me-2">
-                                                            <img src="{{ $buyer->avatar ? asset('storage/' . $buyer->avatar) : asset('assets/admins/images/users/avatar-' . ($loop->iteration <= 5 ? $loop->iteration : rand(1, 5)) . '.jpg') }}" alt="" class="avatar-xs rounded-circle material-shadow" />
+                                                            <img src="{{ $buyer->avatar ? asset('storage/' . $buyer->avatar) : asset('assets/admins/images/users/avatar-' . ($loop->iteration <= 5 ? $loop->iteration : rand(1, 5)) . '.jpg') }}" alt="" class="avatar-xs rounded-circle" />
                                                         </div>
                                                         <div>
                                                             <h5 class="fs-14 my-1 fw-medium"><a href="#" class="text-reset">{{ $buyer->name }}</a></h5>
@@ -537,7 +1036,7 @@
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <span class="badge badge-soft-info">Khách hàng</span>
+                                                    <span class="badge bg-info-subtle text-info">Khách hàng</span>
                                                 </td>
                                                 <td>
                                                     <p class="mb-0">{{ $buyer->orders_count }} đơn hàng</p>
@@ -627,11 +1126,11 @@
 
                 <div class="row">
                     <div class="col">
-                        <div class="card">
+                        <div class="card" data-aos="fade-up" data-aos-duration="800" data-aos-delay="200">
                             <div class="card-header align-items-center d-flex">
                                 <h4 class="card-title mb-0 flex-grow-1">Đơn hàng gần đây</h4>
                                 <div class="flex-shrink-0">
-                                    <button type="button" class="btn btn-soft-info btn-sm material-shadow-none" id="createOrderReport" data-report-type="orders" data-report-title="Báo cáo đơn hàng">
+                                    <button type="button" class="btn btn-soft-info btn-sm" id="createOrderReport" data-report-type="orders" data-report-title="Báo cáo đơn hàng">
                                         <i class="ri-file-list-3-line align-middle"></i> Tạo báo cáo
                                     </button>
                                 </div>
@@ -653,14 +1152,14 @@
                                         </thead>
                                         <tbody>
                                             @forelse($recentOrders as $order)
-                                            <tr>
+                                            <tr data-aos="fade-up" data-aos-duration="800" data-aos-delay="{{ 100 + $loop->index * 50 }}">
                                                 <td>
                                                     <a href="{{ route('orders.detail', $order->id) }}" class="fw-medium link-primary">{{ $order->order_code }}</a>
                                                 </td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="flex-shrink-0 me-2">
-                                                            <img src="{{ $order->user && $order->user->avatar ? asset('storage/' . $order->user->avatar) : asset('assets/admins/images/users/avatar-' . (($loop->iteration % 5) + 1) . '.jpg') }}" alt="" class="avatar-xs rounded-circle material-shadow" />
+                                                            <img src="{{ $order->user && $order->user->avatar ? asset('storage/' . $order->user->avatar) : asset('assets/admins/images/users/avatar-' . (($loop->iteration % 5) + 1) . '.jpg') }}" alt="" class="avatar-xs rounded-circle" />
                                                         </div>
                                                         <div class="flex-grow-1">{{ $order->user_name ?? ($order->user->name ?? 'N/A') }}</div>
                                                     </div>
@@ -940,8 +1439,18 @@
 <!-- ExcelJS và FileSaver -->
 <script src="https://unpkg.com/exceljs/dist/exceljs.min.js"></script>
 <script src="https://unpkg.com/file-saver/dist/FileSaver.min.js"></script>
+<!-- AOS Animation -->
+<script src="https://unpkg.com/aos@next/dist/aos.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Khởi tạo AOS animation
+        AOS.init({
+            duration: 800,
+            once: true,
+            mirror: false,
+            easing: 'ease-out-cubic'
+        });
+
         // Khởi tạo date picker
         const datePickerInput = document.getElementById('dateRangePicker'); // Input ẩn
         const dateRangeText = document.getElementById('dateRangeText'); // Span hiển thị
@@ -1054,7 +1563,7 @@
             exportToExcel(reportType, reportTitle);
         });
         
-        // Hàm khởi tạo counter
+        // Hàm khởi tạo counter với animation
         function initCounters() {
             const counterElements = document.querySelectorAll('.counter-value');
             
@@ -1073,6 +1582,11 @@
                         // Định dạng số với dấu phân cách hàng nghìn khi đạt giá trị mục tiêu
                         const formattedValue = formatNumberWithCommas(target);
                         element.textContent = formattedValue;
+                        
+                        // Thêm hiệu ứng nhấp nháy khi hoàn thành
+                        element.classList.add('counter-complete');
+                        setTimeout(() => element.classList.remove('counter-complete'), 600);
+                        
                         clearInterval(timer);
                     } else {
                         // Hiển thị số nguyên trong quá trình đếm
@@ -1124,118 +1638,69 @@
                         
                         const filteredData = {
                             months: [],
-                            series: []
+                            series: [
+                                {
+                                    name: 'Đơn hàng',
+                                    type: 'line',
+                                    data: [],
+                                    color: '#4776E6'
+                                },
+                                {
+                                    name: 'Doanh thu',
+                                    type: 'column',
+                                    data: [],
+                                    color: '#63ad6f'
+                                },
+                                {
+                                    name: 'Hoàn tiền',
+                                    type: 'line',
+                                    data: [],
+                                    color: '#f34e4e',
+                                    dashArray: 4
+                                }
+                            ]
                         };
                         
-                        // Chuyển đổi dữ liệu gốc thành định dạng ngày
-                        const monthData = chartData.months.map((month, index) => {
+                        // Xử lý dữ liệu từng tháng
+                        chartData.months.forEach((month, index) => {
                             // Giả sử tháng có định dạng "Th1", "Th2", etc.
                             const monthNumber = parseInt(month.replace('Th', ''));
                             const year = new Date().getFullYear(); // Hoặc lấy năm từ dữ liệu nếu có
-                            return {
-                                date: new Date(year, monthNumber - 1, 1),
-                                index: index,
-                                month: month,
-                                orders: chartData.rawData.orders[index],
-                                revenue: chartData.rawData.revenue[index],
-                                refunds: chartData.rawData.refunds[index]
-                            };
+                            const monthDate = new Date(year, monthNumber - 1, 15); // ngày 15 của tháng
+                            
+                            // Kiểm tra nếu tháng này nằm trong khoảng ngày được chọn
+                            if (monthDate >= startDate && monthDate <= endDate) {
+                                filteredData.months.push(month);
+                                filteredData.series[0].data.push(chartData.rawData.orders[index]);
+                                filteredData.series[1].data.push(chartData.rawData.revenue[index]);
+                                filteredData.series[2].data.push(chartData.rawData.refunds[index]);
+                            }
                         });
                         
-                        // Khi lọc theo khoảng ngày cụ thể, trả về tất cả dữ liệu của tháng có trong khoảng ngày
-                        // Ví dụ: nếu lọc từ 15/04 đến 20/04, trả về dữ liệu tháng 4
-                        const startMonth = startDate.getMonth() + 1; // getMonth() trả về 0-11
-                        const endMonth = endDate.getMonth() + 1;
-                        
-                        for (let month = startMonth; month <= endMonth; month++) {
-                            const monthLabel = 'Th' + month;
-                            const monthIndex = chartData.months.findIndex(m => m === monthLabel);
-                            
-                            if (monthIndex !== -1) {
-                                filteredData.months.push(monthLabel);
-                                let orderData = chartData.rawData.orders[monthIndex];
-                                let revenueData = chartData.rawData.revenue[monthIndex];
-                                let refundData = chartData.rawData.refunds[monthIndex];
-                                
-                                // Nếu khoảng ngày chỉ là một phần của tháng, có thể tính tỷ lệ ngày/tổng số ngày trong tháng
-                                // và chia dữ liệu theo tỷ lệ đó. Nhưng để đơn giản, ta sử dụng toàn bộ dữ liệu tháng
-                                
-                                filteredData.series.push({
-                                    name: 'Đơn hàng',
-                                    type: 'line',
-                                    data: [orderData],
-                                    color: '#3b76e1'
-                                });
-                                
-                                filteredData.series.push({
-                                    name: 'Doanh thu',
-                                    type: 'column',
-                                    data: [revenueData],
-                                    color: '#63ad6f'
-                                });
-                                
-                                filteredData.series.push({
-                                    name: 'Hoàn tiền',
-                                    type: 'line',
-                                    data: [refundData],
-                                    color: '#f34e4e',
-                                    dashArray: 4
-                                });
-                            }
-                        }
-                        
-                        // Nếu không tìm thấy dữ liệu nào, hiển thị biểu đồ trống với tháng đã chọn
+                        // Nếu không tìm thấy dữ liệu nào trong khoảng thời gian, hiển thị dữ liệu từ backend đã được lọc
                         if (filteredData.months.length === 0) {
-                            const startMonthLabel = 'Th' + startMonth;
-                            const endMonthLabel = 'Th' + endMonth;
-                            
-                            filteredData.months = [startMonth === endMonth ? startMonthLabel : (startMonthLabel + ' - ' + endMonthLabel)];
-                            
-                            // Hiển thị dữ liệu từ trang filter nếu có
-                            @if(isset($totalEarnings) && isset($totalOrders))
-                                filteredData.series = [
-                                    {
-                                        name: 'Đơn hàng',
-                                        type: 'line',
-                                        data: [{{ $totalOrders ?? 0 }}],
-                                        color: '#3b76e1'
-                                    },
-                                    {
-                                        name: 'Doanh thu',
-                                        type: 'column',
-                                        data: [{{ $totalEarnings ?? 0 }}],
-                                        color: '#63ad6f'
-                                    },
-                                    {
-                                        name: 'Hoàn tiền',
-                                        type: 'line',
-                                        data: [0], // Không có dữ liệu hoàn tiền
-                                        color: '#f34e4e',
-                                        dashArray: 4
-                                    }
-                                ];
+                            @if(isset($isFiltered) && $isFiltered && isset($formattedDateRange))
+                                filteredData.months = ['{{ $formattedDateRange }}'];
+                                
+                                @if(isset($hasData) && $hasData && isset($totalOrders) && isset($totalEarnings) && $totalOrders > 0)
+                                    filteredData.series[0].data = [{{ $totalOrders ?? 0 }}];
+                                    filteredData.series[1].data = [{{ $totalEarnings ?? 0 }}];
+                                    filteredData.series[2].data = [{{ isset($totalRefunds) ? $totalRefunds : 0 }}];
+                                @else
+                                    // Không có dữ liệu trong khoảng ngày này
+                                    filteredData.months = ['{{ $formattedDateRange }}'];
+                                    filteredData.series[0].data = [0];
+                                    filteredData.series[1].data = [0];
+                                    filteredData.series[2].data = [0];
+                                    filteredData.noData = true; // Đánh dấu là không có dữ liệu
+                                @endif
                             @else
-                                filteredData.series = [
-                                    {
-                                        name: 'Đơn hàng',
-                                        type: 'line',
-                                        data: [0],
-                                        color: '#3b76e1'
-                                    },
-                                    {
-                                        name: 'Doanh thu',
-                                        type: 'column',
-                                        data: [0],
-                                        color: '#63ad6f'
-                                    },
-                                    {
-                                        name: 'Hoàn tiền',
-                                        type: 'line',
-                                        data: [0],
-                                        color: '#f34e4e',
-                                        dashArray: 4
-                                    }
-                                ];
+                                // Nếu không có dữ liệu được lọc, hiển thị trống
+                                filteredData.months = ['Không có dữ liệu'];
+                                filteredData.series[0].data = [0];
+                                filteredData.series[1].data = [0];
+                                filteredData.series[2].data = [0];
+                                filteredData.noData = true; // Đánh dấu là không có dữ liệu
                             @endif
                         }
                         
@@ -1251,62 +1716,126 @@
                 }
                 
                 // Tạo biểu đồ với dữ liệu ban đầu
+                // Nếu đang có bộ lọc được áp dụng, sử dụng dữ liệu đã lọc
+                let initialChartData;
+                
+                @if(isset($isFiltered) && $isFiltered)
+                    initialChartData = filterChartData();
+                @else
+                    initialChartData = {
+                        months: chartData.months,
+                        series: chartData.series
+                    };
+                @endif
+                
+                // Kiểm tra nếu không có dữ liệu và cập nhật trạng thái overlay
+                function updateNoDataOverlay(chartData) {
+                    const chartNoDataOverlay = document.getElementById('chartNoDataOverlay');
+                    if (!chartNoDataOverlay) return;
+                    
+                    if (chartData.noData || 
+                        (chartData.series[0].data.length === 1 && 
+                         chartData.series[0].data[0] === 0 && 
+                         chartData.series[1].data[0] === 0 && 
+                         chartData.series[2].data[0] === 0)) {
+                        chartNoDataOverlay.classList.add('active');
+                    } else {
+                        chartNoDataOverlay.classList.remove('active');
+                    }
+                }
+                
+                // Cập nhật trạng thái ban đầu của overlay
+                updateNoDataOverlay(initialChartData);
+                
                 // Cấu hình cho biểu đồ
                 const options = {
-                    series: chartData.series,
+                    series: initialChartData.series,
                     chart: {
                         height: 370,
                         type: 'line',
                         stacked: false,
                         toolbar: {
                             show: false
+                        },
+                        animations: {
+                            enabled: true,
+                            easing: 'easeinout',
+                            speed: 800,
+                            animateGradually: {
+                                enabled: true,
+                                delay: 150
+                            },
+                            dynamicAnimation: {
+                                enabled: true,
+                                speed: 350
+                            }
+                        },
+                        dropShadow: {
+                            enabled: true,
+                            enabledOnSeries: [0, 2], // Chỉ áp dụng cho series 'Đơn hàng' và 'Hoàn tiền'
+                            top: 5,
+                            left: 0,
+                            blur: 3,
+                            opacity: 0.2
                         }
                     },
                     dataLabels: {
                         enabled: false
                     },
                     stroke: {
-                        width: [2, 0, 2],
+                        width: [3, 0, 3],
                         curve: 'smooth',
                         dashArray: [0, 0, 4]
                     },
                     plotOptions: {
                         bar: {
                             columnWidth: '30%',
-                            borderRadius: 4
+                            borderRadius: 6,
+                            dataLabels: {
+                                position: 'top'
+                            }
                         }
                     },
-                    colors: ["#3b76e1", "#63ad6f", "#f34e4e"],
+                    colors: ["#4776E6", "#63ad6f", "#f34e4e"],
                     fill: {
-                        opacity: [0.2, 1, 0.2],
+                        type: ['gradient', 'solid', 'gradient'],
                         gradient: {
-                            inverseColors: false,
                             shade: 'light',
                             type: "vertical",
-                            opacityFrom: 0.85,
-                            opacityTo: 0.55
+                            shadeIntensity: 0.5,
+                            gradientToColors: ["#8E54E9", undefined, "#ff6b6b"],
+                            inverseColors: false,
+                            opacityFrom: 0.8,
+                            opacityTo: 0.5
                         }
                     },
-                    labels: chartData.months,
+                    labels: initialChartData.months,
                     markers: {
-                        size: 4,
+                        size: 5,
+                        strokeWidth: 0,
                         hover: {
-                            sizeOffset: 3
+                            size: 8
                         }
                     },
                     legend: {
                         show: true,
                         position: 'bottom',
                         horizontalAlign: 'center',
-                        offsetY: 5
+                        offsetY: 5,
+                        fontFamily: 'Roboto, sans-serif',
+                        itemMargin: {
+                            horizontal: 15,
+                            vertical: 10
+                        }
                     },
                     xaxis: {
                         type: 'category',
-                        categories: chartData.months,
+                        categories: initialChartData.months,
                         labels: {
                             style: {
                                 colors: '#adb5bd',
-                                fontFamily: 'Roboto, sans-serif'
+                                fontFamily: 'Roboto, sans-serif',
+                                fontWeight: 400
                             }
                         },
                         axisBorder: {
@@ -1326,11 +1855,11 @@
                             },
                             axisBorder: {
                                 show: true,
-                                color: '#3b76e1'
+                                color: '#4776E6'
                             },
                             labels: {
                                 style: {
-                                    colors: '#3b76e1'
+                                    colors: '#4776E6'
                                 },
                                 formatter: function (value) {
                                     return Math.round(value);
@@ -1339,8 +1868,10 @@
                             title: {
                                 text: "Đơn hàng",
                                 style: {
-                                    color: '#3b76e1',
-                                    fontSize: '12px'
+                                    color: '#4776E6',
+                                    fontSize: '12px',
+                                    fontFamily: 'Roboto, sans-serif',
+                                    fontWeight: 500
                                 }
                             }
                         },
@@ -1366,7 +1897,9 @@
                                 text: "Doanh thu",
                                 style: {
                                     color: '#63ad6f',
-                                    fontSize: '12px'
+                                    fontSize: '12px',
+                                    fontFamily: 'Roboto, sans-serif',
+                                    fontWeight: 500
                                 }
                             }
                         },
@@ -1390,7 +1923,9 @@
                                 text: "Hoàn tiền",
                                 style: {
                                     color: '#f34e4e',
-                                    fontSize: '12px'
+                                    fontSize: '12px',
+                                    fontFamily: 'Roboto, sans-serif',
+                                    fontWeight: 500
                                 }
                             }
                         }
@@ -1404,6 +1939,11 @@
                     tooltip: {
                         shared: true,
                         intersect: false,
+                        theme: 'dark',
+                        style: {
+                            fontSize: '12px',
+                            fontFamily: 'Roboto, sans-serif'
+                        },
                         y: {
                             formatter: function (value, { seriesIndex, dataPointIndex, w }) {
                                 const seriesName = w.config.series[seriesIndex].name;
@@ -1418,54 +1958,26 @@
                                 return value;
                             }
                         }
+                    },
+                    states: {
+                        hover: {
+                            filter: {
+                                type: 'lighten',
+                                value: 0.05
+                            }
+                        },
+                        active: {
+                            filter: {
+                                type: 'darken',
+                                value: 0.1
+                            }
+                        }
                     }
                 };
                 
                 // Khởi tạo biểu đồ
                 const chart = new ApexCharts(document.querySelector("#customer_impression_charts"), options);
                 chart.render();
-                
-                // Bắt sự kiện khi người dùng click vào nút lọc
-                // Xóa đoạn code này
-                /*
-                document.querySelectorAll('.filter-revenue').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const period = this.getAttribute('data-period');
-                        
-                        // Cập nhật trạng thái active cho nút
-                        document.querySelectorAll('.filter-revenue').forEach(btn => {
-                            btn.classList.remove('btn-soft-primary');
-                            btn.classList.add('btn-soft-secondary');
-                        });
-                        this.classList.remove('btn-soft-secondary');
-                        this.classList.add('btn-soft-primary');
-                        
-                        // Lọc dữ liệu theo thời gian
-                        const newData = filterChartData(period);
-                        
-                        // Cập nhật biểu đồ với dữ liệu mới
-                        chart.updateOptions({
-                            labels: newData.months,
-                            xaxis: {
-                                categories: newData.months
-                            }
-                        });
-                        
-                        // Cập nhật series
-                        chart.updateSeries(newData.series);
-                        
-                        // Cập nhật tổng thống kê
-                        updateStatistics(period);
-                    });
-                });
-                
-                // Khởi tạo với mặc định là 1 năm (gọi click event cho nút "1 NĂM")
-                const defaultFilterButton = document.querySelector('.filter-revenue[data-period="1year"]');
-                if (defaultFilterButton) {
-                    // Gọi sự kiện click trên nút mặc định
-                    defaultFilterButton.click();
-                }
-                */
                 
                 // Hàm cập nhật thống kê tổng hợp khi lọc
                 function updateStatistics(period) {
@@ -1477,61 +1989,23 @@
                     let totalRevenue = 0;
                     let totalRefunds = 0;
                     
-                    // Lọc theo khoảng ngày nếu có
-                    if (dateRange) {
-                        // Sử dụng giá trị từ backend đã lọc thay vì tính toán lại bằng JavaScript
-                        @if(isset($totalOrders) && isset($totalEarnings))
+                    // Nếu đang xem dữ liệu đã lọc, lấy thông tin từ backend
+                    @if(isset($isFiltered) && $isFiltered)
+                        @if(isset($hasData) && !$hasData)
+                            totalOrders = 0;
+                            totalRevenue = 0;
+                            totalRefunds = 0;
+                        @elseif(isset($totalOrders) && isset($totalEarnings))
                             totalOrders = {{ $totalOrders }};
                             totalRevenue = {{ $totalEarnings }};
-                            totalRefunds = {{ isset($chartData) && isset($chartData['rawData']) && isset($chartData['rawData']['refunds']) ? array_sum($chartData['rawData']['refunds']) : 0 }};
-                        @else
-                            const rangeParts = dateRange.split(' đến ');
-                            const startDate = new Date(rangeParts[0]);
-                            const endDate = rangeParts.length > 1 ? new Date(rangeParts[1]) : new Date(rangeParts[0]);
-                            
-                            // Lấy dữ liệu gốc từ biểu đồ
-                            const chartData = @json($chartData ?? null);
-                            
-                            if (chartData && chartData.rawData) {
-                                // Chuyển đổi dữ liệu tháng thành định dạng ngày để so sánh
-                                const monthData = chartData.months.map((month, index) => {
-                                    // Giả sử tháng có định dạng "Th1", "Th2", etc.
-                                    const monthNumber = parseInt(month.replace('Th', ''));
-                                    const year = new Date().getFullYear();
-                                    return {
-                                        date: new Date(year, monthNumber - 1, 1),
-                                        index: index,
-                                        orders: chartData.rawData.orders[index],
-                                        revenue: chartData.rawData.revenue[index],
-                                        refunds: chartData.rawData.refunds[index]
-                                    };
-                                });
-                                
-                                // Lọc dữ liệu trong khoảng ngày (tương tự phần trên, tính toán theo tháng)
-                                const startMonth = startDate.getMonth() + 1;
-                                const endMonth = endDate.getMonth() + 1;
-                                
-                                for (let month = startMonth; month <= endMonth; month++) {
-                                    const monthLabel = 'Th' + month;
-                                    const monthIndex = chartData.months.findIndex(m => m === monthLabel);
-                                    
-                                    if (monthIndex !== -1) {
-                                        totalOrders += chartData.rawData.orders[monthIndex];
-                                        totalRevenue += chartData.rawData.revenue[monthIndex];
-                                        totalRefunds += chartData.rawData.refunds[monthIndex];
-                                    }
-                                }
-                            }
+                            totalRefunds = {{ isset($totalRefunds) ? $totalRefunds : 0 }};
                         @endif
-                    } else {
+                    @elseif(isset($chartData) && isset($chartData['rawData']))
                         // Nếu không có khoảng ngày được chọn, sử dụng tất cả dữ liệu
-                        const chartData = @json($chartData ?? null);
-                        if (chartData && chartData.rawData) {
-                            totalOrders = chartData.rawData.orders.reduce((sum, val) => sum + val, 0);
-                            totalRevenue = chartData.rawData.revenue.reduce((sum, val) => sum + val, 0);
-                            totalRefunds = chartData.rawData.refunds.reduce((sum, val) => sum + val, 0);
-                        }
-                    }
+                        totalOrders = {{ array_sum($chartData['rawData']['orders'] ?? [0]) }};
+                        totalRevenue = {{ array_sum($chartData['rawData']['revenue'] ?? [0]) }};
+                        totalRefunds = {{ array_sum($chartData['rawData']['refunds'] ?? [0]) }};
+                    @endif
                     
                     // Cập nhật giá trị hiển thị trên giao diện
                     const orderCounter = document.getElementById('chart-orders-counter');
@@ -2080,20 +2554,19 @@
 
         // Cập nhật biểu đồ khi form được submit
         document.getElementById('dateFilterForm').addEventListener('submit', function(e) {
-            // Không cần ngăn form submit vì ta muốn trang tải lại với dữ liệu mới
-            const newData = filterChartData();
-            if (chart) {
-                chart.updateOptions({
-                    labels: newData.months,
-                    xaxis: {
-                        categories: newData.months
-                    }
-                });
-                chart.updateSeries(newData.series);
-            }
+            // Ngăn form submit mặc định vì ta sẽ xử lý AJAX
+            e.preventDefault();
             
-            // Cập nhật thống kê tổng hợp theo khoảng ngày đã chọn
-            updateStatistics();
+            // Lấy giá trị ngày đã chọn
+            const dateRange = document.getElementById('dateRangePicker').value;
+            
+            if (dateRange) {
+                // Chuyển hướng đến URL với tham số date_range
+                window.location.href = "{{ route('dashboard.filter') }}?date_range=" + encodeURIComponent(dateRange);
+            } else {
+                // Nếu không có khoảng ngày, chuyển về trang dashboard mặc định
+                window.location.href = "{{ route('dashboard') }}";
+            }
         });
         
         // Chạy updateStatistics khi trang được tải
@@ -2103,7 +2576,40 @@
             if (urlParams.has('date_range')) {
                 updateStatistics();
             }
+            
+            // Refresh AOS animations sau khi trang đã tải hoàn toàn
+            setTimeout(function() {
+                AOS.refresh();
+            }, 500);
         });
+        
+        // Sự kiện khi tab hoặc cửa sổ được kích hoạt lại
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                // Refresh AOS animations khi quay lại tab
+                AOS.refresh();
+            }
+        });
+
+        // Khởi tạo biểu đồ
+        const chart = new ApexCharts(document.querySelector("#customer_impression_charts"), options);
+        chart.render();
+        
+        // Hàm cập nhật biểu đồ khi dữ liệu thay đổi
+        function updateChart(newData) {
+            chart.updateOptions({
+                labels: newData.months,
+                xaxis: {
+                    categories: newData.months
+                }
+            });
+            chart.updateSeries(newData.series);
+            
+            // Cập nhật trạng thái overlay "Không có dữ liệu"
+            updateNoDataOverlay(newData);
+        }
+        
+        console.log('Biểu đồ đã được khởi tạo');
     });
 </script>
 @endsection
