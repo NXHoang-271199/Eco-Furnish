@@ -21,12 +21,13 @@ use App\Http\Requests\OrderRequest;
 use App\Mail\OrderConfirmationMail;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\QuickOrderRequest;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Api\PaymentMethodController;
-use Illuminate\Support\Facades\Http;
 
 class OrderController extends Controller
 {
@@ -107,6 +108,7 @@ class OrderController extends Controller
     public function createOrder(OrderRequest $request)
     {
         $userId = Auth::id();
+        $user = User::findOrFail($userId);
         $cart = Cart::with(['cartItems.product', 'cartItems.productVariant'])
             ->where('user_id', $userId)
             ->first();
@@ -176,6 +178,16 @@ class OrderController extends Controller
             $orderStatus = 'Chưa Xác Nhận';
             // Nếu chọn thanh toán bằng ví
             if ($paymentMethod === 'Ví') {
+                // Kiểm tra nếu người dùng chưa có mật khẩu cấp 2
+                if (!$user->has_level2_password) {
+                    return response()->json(['message' => 'Bạn cần thiết lập mật khẩu cấp 2 để thanh toán bằng ví'], 422);
+                }
+
+                // Kiểm tra mật khẩu cấp 2 nhập vào có đúng không
+                if (!Hash::check($request->level2_password, $user->level2_password)) {
+                    return response()->json(['message' => 'Mật khẩu cấp 2 không chính xác'], 422);
+                }
+
                 $wallet = Wallet::where('user_id', $userId)->first();
                 if (!$wallet || $wallet->balance < $totalPrice) {
                     return response()->json([
@@ -355,6 +367,7 @@ class OrderController extends Controller
     public function quickOrder(QuickOrderRequest $request)
     {
         $userId = Auth::id();
+        $user = User::findOrFail($userId);
 
         DB::beginTransaction();
         try {
@@ -428,6 +441,16 @@ class OrderController extends Controller
 
             // Nếu chọn thanh toán bằng ví
             if ($paymentMethod === 'Ví') {
+                // Kiểm tra nếu người dùng chưa có mật khẩu cấp 2
+                if (!$user->has_level2_password) {
+                    return response()->json(['message' => 'Bạn cần thiết lập mật khẩu cấp 2 để thanh toán bằng ví'], 422);
+                }
+
+                // Kiểm tra mật khẩu cấp 2 nhập vào có đúng không
+                if (!Hash::check($request->level2_password, $user->level2_password)) {
+                    return response()->json(['message' => 'Mật khẩu cấp 2 không chính xác'], 422);
+                }
+
                 $wallet = Wallet::where('user_id', $userId)->first();
                 if (!$wallet || $wallet->balance < $totalPrice) {
                     return response()->json([
@@ -458,10 +481,10 @@ class OrderController extends Controller
                     'balance_after' => $balanceAfter,
                 ]);
 
-
                 $paymentStatus = 1; // Đã thanh toán
                 $orderStatus = 'Chưa Xác Nhận';
             }
+
 
             // Tạo đơn hàng
             $order = Order::create([
@@ -945,18 +968,18 @@ class OrderController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             // Lấy các đơn hàng thanh toán online (VNPAY, MoMo) chưa thanh toán hoặc đang chờ thanh toán
             $unpaidOrders = Order::with(['paymentMethod'])
                 ->where('user_id', $user->id)
                 ->whereIn('payment_status', [0, 2]) // 0: Chưa thanh toán, 2: Đang chờ thanh toán
-                ->whereHas('paymentMethod', function($query) {
+                ->whereHas('paymentMethod', function ($query) {
                     $query->whereIn('name', ['VNPAY', 'MoMo']); // Chỉ lấy phương thức thanh toán online
                 })
                 ->whereNotIn('order_status', ['Hủy Đơn', 'Đã Nhận', 'Hoàn Hàng']) // Không lấy đơn đã hủy, đã nhận hoặc hoàn hàng
                 ->orderBy('created_at', 'desc')
                 ->get();
-            
+
             return response()->json([
                 'status' => 'success',
                 'data' => $unpaidOrders
