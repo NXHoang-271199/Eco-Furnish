@@ -8,64 +8,66 @@
             <th scope="col">Địa chỉ</th>
             <th scope="col">Ngày tham gia</th>
             <th scope="col">Trạng thái</th>
-            @if(Auth::user()->hasPermission('delete-users'))
+            @if (Auth::user()->hasPermission('delete-users'))
                 <th scope="col" class="text-end">Thao tác</th>
             @endif
         </tr>
     </thead>
     <tbody>
         @foreach ($listUsers as $user)
-            @if($user->role->slug === 'client')
-            <tr data-user-id="{{ $user->id }}">
-                <td>{{ $loop->iteration }}</td>
-                <td>
-                    @if($user->avatar && Storage::exists($user->avatar))
-                        <img src="{{ Storage::url($user->avatar) }}" 
-                            alt="ảnh {{ $user->name }}"
-                            class="rounded-circle avatar-md">
-                    @else
-                        <img src="{{ asset('assets/admins/images/users/avatarUser.png') }}"
-                            alt="ảnh mặc định"
-                            class="rounded-circle avatar-md">
-                    @endif
-                </td>
-                <td>
-                    <div class="d-flex gap-2 align-items-center">
-                        <div class="flex-grow-1">
-                            <h5 class="fs-14 mb-0">{{ $user->name }}</h5>
+            @if ($user->role->slug === 'client')
+                <tr data-user-id="{{ $user->id }}">
+                    <td>{{ $loop->iteration }}</td>
+                    <td>
+                        @if ($user->avatar)
+                            <img src="{{ Storage::url($user->avatar) }}" alt="ảnh {{ $user->name }}" class="avatar-md"
+                                width="40" height="40" style="object-fit: cover;">
+                        @else
+                            <img src="{{ asset('assets/admins/images/users/avatarUser.png') }}" alt="ảnh mặc định"
+                                class="avatar-md" width="40" height="40" style="object-fit: cover;">
+                        @endif
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="flex-grow-1">
+                                <h5 class="fs-14 mb-0">{{ $user->name }}</h5>
+                            </div>
                         </div>
-                    </div>
-                </td>
-                <td>{{ $user->email }}</td>
-                <td>{{ $user->address }}</td>
-                <td>{{ $user->created_at->format('d/m/Y') }}</td>
-                <td>
-                    @if($user->is_active)
-                        <span class="badge bg-success-subtle">Hoạt động</span>
-                    @else
-                        <span class="badge bg-danger-subtle">Đã khóa</span>
-                    @endif
-                </td>
-                @if (Auth::user()->isAdmin() || auth()->id() === $user->id)
-                    @if ($user->is_active)
+                    </td>
+                    <td>{{ $user->email }}</td>
+                    <td>{{ $user->address }}</td>
+                    <td>{{ $user->created_at->format('d/m/Y') }}</td>
+                    <td>
+                        @if ($user->is_active)
+                            <span class="badge bg-success-subtle">Hoạt động</span>
+                        @else
+                            <span class="badge bg-danger-subtle">Đã khóa</span>
+                        @endif
+                    </td>
+                    @if (Auth::user()->hasPermission('delete-users'))
                         <td class="text-end">
                             <div class="d-flex gap-2 justify-content-end">
-                                <button class="btn btn-sm btn-soft-danger" onclick="toggleStatus({{ $user->id }})">
-                                    <i class="ri-lock-line"></i>
-                                </button>
-                            </div>
-                        </td>
-                    @else
-                        <td class="text-end">
-                            <div class="d-flex gap-2 justify-content-end">
-                                <button class="btn btn-sm btn-soft-success" onclick="toggleStatus({{ $user->id }})">
-                                    <i class="ri-lock-unlock-line"></i>
-                                </button>
+                                <a href="{{ route('users.show', $user->id) }}" 
+                                   class="btn btn-sm btn-soft-primary">
+                                    <i class="ri-eye-line"></i>
+                                </a>
+                                @if (Auth::user()->isAdmin() || auth()->id() === $user->id)
+                                    @if ($user->is_active)
+                                        <button class="btn btn-sm btn-soft-danger"
+                                            onclick="toggleStatus({{ $user->id }})">
+                                            <i class="ri-lock-line"></i>
+                                        </button>
+                                    @else
+                                        <button class="btn btn-sm btn-soft-success"
+                                            onclick="toggleStatus({{ $user->id }})">
+                                            <i class="ri-lock-unlock-line"></i>
+                                        </button>
+                                    @endif
+                                @endif
                             </div>
                         </td>
                     @endif
-                @endif
-            </tr>
+                </tr>
             @endif
         @endforeach
     </tbody>
@@ -108,7 +110,7 @@
             });
 
             // Load inactive users when tab is clicked
-            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
                 const status = $(e.target).attr('href') === '#inactive-users' ? 'inactive' : 'active';
                 $('#statusFilter').val(status);
                 performSearch();
@@ -121,7 +123,7 @@
         }
 
         function performSearch() {
-            let url = '{{ route("users.index") }}?' + $('#searchForm').serialize();
+            let url = '{{ route('users.index') }}?' + $('#searchForm').serialize();
             loadUsers(url);
             window.history.pushState({}, '', url);
         }
@@ -137,14 +139,19 @@
                 url: url,
                 type: 'GET',
                 beforeSend: function() {
-                    let container = status === 'inactive' ? '#inactiveUserTableContainer' : '#userTableContainer';
-                    $(container).html('<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>');
+                    let container = status === 'inactive' ? '#inactiveUserTableContainer' :
+                        '#userTableContainer';
+                    $(container).html(
+                        '<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>'
+                    );
                 },
                 success: function(response) {
                     if (response.success) {
-                        let container = status === 'inactive' ? '#inactiveUserTableContainer' : '#userTableContainer';
-                        let paginationContainer = status === 'inactive' ? '#inactivePaginationContainer' : '#paginationContainer';
-                        
+                        let container = status === 'inactive' ? '#inactiveUserTableContainer' :
+                            '#userTableContainer';
+                        let paginationContainer = status === 'inactive' ? '#inactivePaginationContainer' :
+                            '#paginationContainer';
+
                         $(container).html(response.html);
                         $(paginationContainer).html(response.pagination);
                     } else {
@@ -223,14 +230,17 @@
                                         $(`tr[data-user-id="${userId}"]`).fadeOut(300, function() {
                                             $(this).remove();
                                             // Nếu không còn dòng nào trong bảng
-                                            if ($('#inactiveUserTableContainer table tbody tr').length === 0) {
-                                                $('#inactiveUserTableContainer').html('<div class="text-center p-4">Không có tài khoản bị vô hiệu hóa</div>');
+                                            if ($('#inactiveUserTableContainer table tbody tr')
+                                                .length === 0) {
+                                                $('#inactiveUserTableContainer').html(
+                                                    '<div class="text-center p-4">Không có tài khoản bị vô hiệu hóa</div>'
+                                                );
                                             }
                                         });
                                     }
                                     // Load lại tab active để hiển thị tài khoản mới được kích hoạt
                                     if ($('#statusFilter').val() === 'active') {
-                                        loadUsers('{{ route("users.index") }}?status=active');
+                                        loadUsers('{{ route('users.index') }}?status=active');
                                     }
                                 } else {
                                     // Nếu tài khoản bị vô hiệu hóa
@@ -239,14 +249,17 @@
                                         $(`tr[data-user-id="${userId}"]`).fadeOut(300, function() {
                                             $(this).remove();
                                             // Nếu không còn dòng nào trong bảng
-                                            if ($('#userTableContainer table tbody tr').length === 0) {
-                                                $('#userTableContainer').html('<div class="text-center p-4">Không có tài khoản hoạt động</div>');
+                                            if ($('#userTableContainer table tbody tr')
+                                                .length === 0) {
+                                                $('#userTableContainer').html(
+                                                    '<div class="text-center p-4">Không có tài khoản hoạt động</div>'
+                                                );
                                             }
                                         });
                                     }
                                     // Load lại tab inactive để hiển thị tài khoản mới bị vô hiệu hóa
                                     if ($('#statusFilter').val() === 'inactive') {
-                                        loadUsers('{{ route("users.index") }}?status=inactive');
+                                        loadUsers('{{ route('users.index') }}?status=inactive');
                                     }
                                 }
                             } else {
@@ -273,4 +286,4 @@
             });
         }
     </script>
-@endsection 
+@endsection

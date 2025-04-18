@@ -19,12 +19,18 @@
                 <tr>
                     <td>{{ $loop->iteration }}</td>
                     <td>
-                        @if ($user->avatar && Storage::exists($user->avatar))
-                            <img src="{{ Storage::url($user->avatar) }}" alt="ảnh {{ $user->name }}"
-                                class="rounded-circle avatar-md">
+                        @if ($user->avatar)
+                            <img src="{{ Storage::url($user->avatar) }}" 
+                                alt="ảnh {{ $user->name }}"
+                                class="avatar-md"
+                                width="40" height="40"
+                                style="object-fit: cover;">
                         @else
-                            <img src="{{ asset('assets/admins/images/users/avatarUser.png') }}" alt="ảnh mặc định"
-                                class="rounded-circle avatar-md">
+                            <img src="{{ asset('assets/admins/images/users/avatarUser.png') }}" 
+                                alt="ảnh mặc định"
+                                class="avatar-md"
+                                width="40" height="40"
+                                style="object-fit: cover;">
                         @endif
                     </td>
                     <td>
@@ -51,6 +57,11 @@
                     @if (Auth::user()->hasPermission('update-users'))
                         <td class="text-end">
                             <div class="d-flex gap-2 justify-content-end">
+                                @if (Auth::user()->isAdmin())
+                                    <a href="{{ route('users.show', $user->id) }}" class="btn btn-sm btn-soft-primary">
+                                        <i class="ri-eye-line"></i>
+                                    </a>
+                                @endif
                                 @if (Auth::user()->isAdmin() || auth()->id() === $user->id)
                                     <a href="{{ route('users.edit', $user->id) }}" class="btn btn-sm btn-soft-primary">
                                         <i class="ri-pencil-line"></i>
