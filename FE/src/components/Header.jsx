@@ -43,6 +43,8 @@ const Header = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [hasLevel2Password, setHasLevel2Password] = useState(false);
+  const [closeTimeout, setCloseTimeout] = useState(null);
+  const [userCloseTimeout, setUserCloseTimeout] = useState(null);
   const navigate = useNavigate();
   const [categoriesBySpace, setCategoriesBySpace] = useState({});
   const [spaceKeyMap, setSpaceKeyMap] = useState({});
@@ -215,12 +217,46 @@ const Header = () => {
   };
 
   const handleMouseEnter = () => {
+    // Xóa bỏ timeout đóng dropdown nếu có
+    if (closeTimeout) {
+      clearTimeout(closeTimeout);
+      setCloseTimeout(null);
+    }
     setIsDropdownOpen(true);
   };
 
   const handleMouseLeave = () => {
-    setIsDropdownOpen(false);
+    // Thiết lập timeout để đóng dropdown sau một khoảng thời gian
+    const timeout = setTimeout(() => {
+      setIsDropdownOpen(false);
+    }, 100); // Đợi 100ms trước khi đóng dropdown
+    setCloseTimeout(timeout);
   };
+
+  const handleUserMouseEnter = () => {
+    // Xóa bỏ timeout đóng dropdown nếu có
+    if (userCloseTimeout) {
+      clearTimeout(userCloseTimeout);
+      setUserCloseTimeout(null);
+    }
+    setIsUserDropdownOpen(true);
+  };
+
+  const handleUserMouseLeave = () => {
+    // Thiết lập timeout để đóng dropdown sau một khoảng thời gian
+    const timeout = setTimeout(() => {
+      setIsUserDropdownOpen(false);
+    }, 100); // Đợi 100ms trước khi đóng dropdown
+    setUserCloseTimeout(timeout);
+  };
+
+  // Xóa timeout khi component unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeout) clearTimeout(closeTimeout);
+      if (userCloseTimeout) clearTimeout(userCloseTimeout);
+    };
+  }, [closeTimeout, userCloseTimeout]);
 
   return (
     <>
@@ -266,7 +302,11 @@ const Header = () => {
               </Button>
 
               {isDropdownOpen && (
-                <div className="absolute left-0 w-[520px] mt-2 border-0 shadow-xl rounded-xl bg-white overflow-hidden">
+                <div
+                  className="absolute left-0 w-[520px] mt-2 border-0 shadow-xl rounded-xl bg-white overflow-hidden"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
                   <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 border-b">
                     <h3 className="text-base font-semibold text-green-800">Danh mục theo không gian</h3>
                     <p className="text-sm text-green-600 mt-1">Chọn không gian bạn muốn khám phá</p>
@@ -347,121 +387,149 @@ const Header = () => {
             </Link>
 
             {isLoggedIn && userData ? (
-              <DropdownMenu open={isUserDropdownOpen} onOpenChange={setIsUserDropdownOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-2 p-2 rounded-full transition-all hover:bg-gray-100 h-auto"
-                  >
-                    <Avatar className="h-8 w-8 border-2 border-primary/10 group-hover:border-primary/30 transition-all">
-                      <AvatarImage
-                        src={
-                          userData.avatar && !userData.avatar.includes("placeholder.com")
-                            ? userData.avatar
-                            : "/images/avatarEmpty/avatarUser.png"
-                        }
-                        alt={userData.name}
-                      />
-                      <AvatarFallback>
-                        {userData.name ? userData.name.charAt(0) : "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium text-sm hidden md:inline">
-                      {userData.name}
-                    </span>
-                    <ChevronDown
-                      size={16}
-                      strokeWidth={2}
-                      className={`ms-1 opacity-60 transition-transform ${isUserDropdownOpen ? "rotate-180" : ""}`}
-                      aria-hidden="true"
-                    />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 mt-1" align="end">
-                  <DropdownMenuLabel className="flex items-start gap-3">
-                    <img
+              <div
+                className="relative"
+                onMouseEnter={handleUserMouseEnter}
+                onMouseLeave={handleUserMouseLeave}
+              >
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 p-2 rounded-full transition-all hover:bg-gray-100 h-auto"
+                >
+                  <Avatar className="h-8 w-8 border-2 border-primary/10 group-hover:border-primary/30 transition-all">
+                    <AvatarImage
                       src={
                         userData.avatar && !userData.avatar.includes("placeholder.com")
                           ? userData.avatar
                           : "/images/avatarEmpty/avatarUser.png"
                       }
-                      alt="Avatar"
-                      width={32}
-                      height={32}
-                      className="shrink-0 rounded-full"
+                      alt={userData.name}
                     />
-                    <div className="flex min-w-0 flex-col">
-                      <span className="truncate text-sm font-medium">
-                        {userData.name}
-                      </span>
-                      <span className="truncate text-xs text-muted-foreground">
-                        {userData.email}
-                      </span>
+                    <AvatarFallback>
+                      {userData.name ? userData.name.charAt(0) : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-sm hidden md:inline">
+                    {userData.name}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    strokeWidth={2}
+                    className={`ms-1 opacity-60 transition-transform ${isUserDropdownOpen ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                  />
+                </Button>
+
+                {isUserDropdownOpen && (
+                  <div
+                    className="absolute right-0 w-56 mt-1 border-0 shadow-xl rounded-xl bg-white overflow-hidden z-50"
+                    onMouseEnter={handleUserMouseEnter}
+                    onMouseLeave={handleUserMouseLeave}
+                  >
+                    <div className="flex items-start gap-3 p-3 border-b">
+                      <img
+                        src={
+                          userData.avatar && !userData.avatar.includes("placeholder.com")
+                            ? userData.avatar
+                            : "/images/avatarEmpty/avatarUser.png"
+                        }
+                        alt="Avatar"
+                        width={32}
+                        height={32}
+                        className="shrink-0 rounded-full"
+                      />
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm font-medium">
+                          {userData.name}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {userData.email}
+                        </span>
+                      </div>
                     </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem onClick={() => handleUserNavigate("/account")}>
-                      <User
-                        size={16}
-                        strokeWidth={2}
-                        className="mr-2 opacity-60"
-                        aria-hidden="true"
-                      />
-                      <span>Tài khoản của tôi</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleUserNavigate("/account/list_order")}>
-                      <CreditCard
-                        size={16}
-                        strokeWidth={2}
-                        className="mr-2 opacity-60"
-                        aria-hidden="true"
-                      />
-                      <span>Đơn hàng của tôi</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleUserNavigate("/account/address")}>
-                      <BookOpen
-                        size={16}
-                        strokeWidth={2}
-                        className="mr-2 opacity-60"
-                        aria-hidden="true"
-                      />
-                      <span>Địa chỉ của tôi</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleUserNavigate("/account?tab=level2password")}
-                      className="relative"
+
+                    <div className="border-b"></div>
+
+                    <div className="p-1">
+                      <div
+                        onClick={() => handleUserNavigate("/account")}
+                        className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 cursor-pointer"
+                      >
+                        <User
+                          size={16}
+                          strokeWidth={2}
+                          className="opacity-60"
+                          aria-hidden="true"
+                        />
+                        <span>Tài khoản của tôi</span>
+                      </div>
+
+                      <div
+                        onClick={() => handleUserNavigate("/account/list_order")}
+                        className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 cursor-pointer"
+                      >
+                        <CreditCard
+                          size={16}
+                          strokeWidth={2}
+                          className="opacity-60"
+                          aria-hidden="true"
+                        />
+                        <span>Đơn hàng của tôi</span>
+                      </div>
+
+                      <div
+                        onClick={() => handleUserNavigate("/account/address")}
+                        className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 cursor-pointer"
+                      >
+                        <BookOpen
+                          size={16}
+                          strokeWidth={2}
+                          className="opacity-60"
+                          aria-hidden="true"
+                        />
+                        <span>Địa chỉ của tôi</span>
+                      </div>
+
+                      <div
+                        onClick={() => handleUserNavigate("/account?tab=level2password")}
+                        className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-100 cursor-pointer relative"
+                      >
+                        <Key
+                          size={16}
+                          strokeWidth={2}
+                          className="opacity-60"
+                          aria-hidden="true"
+                        />
+                        <span>Mật khẩu cấp 2</span>
+                        {hasLevel2Password ? (
+                          <span className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                            Đã thiết lập
+                          </span>
+                        ) : (
+                          <span className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-300 text-gray-700 text-[10px] px-1.5 py-0.5 rounded-full">
+                            Chưa thiết lập
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border-t"></div>
+
+                    <div
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
                     >
-                      <Key
+                      <LogOut
                         size={16}
                         strokeWidth={2}
-                        className="mr-2 opacity-60"
+                        className="opacity-60"
                         aria-hidden="true"
                       />
-                      <span>Mật khẩu cấp 2</span>
-                      {hasLevel2Password ? (
-                        <span className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                          Đã thiết lập
-                        </span>
-                      ) : (
-                        <span className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-300 text-gray-700 text-[10px] px-1.5 py-0.5 rounded-full">
-                          Chưa thiết lập
-                        </span>
-                      )}
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut
-                      size={16}
-                      strokeWidth={2}
-                      className="mr-2 opacity-60"
-                      aria-hidden="true"
-                    />
-                    <span>Đăng xuất</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      <span>Đăng xuất</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <Link
                 to="/sign-in"
