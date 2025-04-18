@@ -292,7 +292,6 @@ class WalletController extends Controller
                 'bank_code' => $bankAccount->bank_code,
                 'bank_account_number' => $bankAccount->bank_account_number,
                 'account_holder_name' => $bankAccount->account_holder_name,
-                'bank_logo_url' => $bankAccount->bank_logo_url,
             ]);
 
             // Cập nhật số dư ví, tạm giữ số tiền rút

@@ -8,10 +8,10 @@
         </div>
         <div class="card-body p-3">
             <div class="row g-3">
-                <div class="col-12 text-center">
+                {{-- <div class="col-12 text-center">
                     <img src="{{ $withdraw->bank_logo_url }}" alt="Bank Logo" class="img-fluid rounded"
                         style="max-width: 100px;">
-                </div>
+                </div> --}}
                 <div class="col-12">
                     <div class="d-flex justify-content-between border-bottom pb-2">
                         <strong>Tên ngân hàng:</strong>
@@ -44,10 +44,7 @@
                 </div>
                 <div class="col-12 text-center">
                     <div class="border-bottom pb-2">
-                        <strong>QR Code:</strong>
-                        <div class="mt-2">
-                            <img src="{{ $withdraw->qr_code }}" alt="QR Code" class="img-fluid rounded" style="max-width: 150px;">
-                        </div>
+                            <img src="{{ $withdraw->qr_code }}" alt="QR Code" class="img-fluid rounded" style="max-width: 200px;">
                     </div>
                 </div>
             </div>

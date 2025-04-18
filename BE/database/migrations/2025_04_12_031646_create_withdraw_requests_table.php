@@ -23,7 +23,6 @@ return new class extends Migration
             $table->string('bank_code',255);
             $table->string('bank_account_number', 255);
             $table->string('account_holder_name', 255);
-            $table->string('bank_logo_url', 255)->nullable();
             $table->enum('status', ['dang_xu_ly', 'da_duyet', 'tu_choi', 'da_huy'])->default('dang_xu_ly');
             $table->longText('qr_code')->nullable();
             $table->timestamps();
