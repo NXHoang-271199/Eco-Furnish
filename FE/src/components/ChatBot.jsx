@@ -53,7 +53,7 @@ const ChatBubble = ({
 
 const ChatBubbleMessage = ({
   variant = "received",
-  isLoading,
+  isLoading: initialIsLoading,
   className,
   children,
   products,
@@ -74,6 +74,8 @@ const ChatBubbleMessage = ({
   // State để quản lý modal chọn biến thể
   const [variantModalOpen, setVariantModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  // Thêm state isLoading cho component này
+  const [isLoadingState, setIsLoadingState] = useState(initialIsLoading || false);
 
   // Hàm theo dõi khi người dùng thêm sản phẩm vào giỏ hàng
   const handleAddToCart = async (event, product) => {
@@ -84,29 +86,87 @@ const ChatBubbleMessage = ({
     if (product.has_variants) {
       // Đảm bảo dữ liệu đầy đủ trước khi mở modal
       try {
-        // Nếu sản phẩm chưa có thông tin đầy đủ về biến thể, lấy thêm dữ liệu
-        if (!product.variants || !Array.isArray(product.variants) || product.variants.length === 0) {
-          setIsLoading(true);
-          const response = await axiosInstance.get(`/products/${product.id}`);
-          if (response.data && response.data.data) {
-            // Cập nhật sản phẩm với dữ liệu đầy đủ
-            product = { ...product, ...response.data.data };
+        // Luôn lấy dữ liệu sản phẩm đầy đủ từ API để đảm bảo có thông tin biến thể mới nhất
+        setIsLoadingState(true);
+        
+        // Tạo một promise với timeout để tránh request treo quá lâu
+        const fetchProductWithTimeout = async (productId, timeoutMs = 10000) => {
+          return Promise.race([
+            axiosInstance.get(`/products/${productId}`),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+            )
+          ]);
+        };
+        
+        const response = await fetchProductWithTimeout(product.id);
+        
+        if (response && response.data && response.data.data) {
+          // Cập nhật sản phẩm với dữ liệu đầy đủ
+          const fullProduct = {...response.data.data};
+          console.log('Đã lấy thêm dữ liệu sản phẩm:', fullProduct);
+          
+          // Kiểm tra dữ liệu biến thể
+          if (!fullProduct.variants || !Array.isArray(fullProduct.variants) || fullProduct.variants.length === 0) {
+            setIsLoadingState(false);
+            toast.error("Không thể tải thông tin biến thể sản phẩm");
+            return;
           }
-          setIsLoading(false);
+          
+          // Đảm bảo rằng mỗi biến thể có thông tin variant_details đầy đủ và quantity là số
+          let hasValidVariants = false;
+          
+          // Clone mảng variants để tránh lỗi với prop read-only
+          fullProduct.variants = fullProduct.variants.map(variant => {
+            // Tạo bản sao của variant
+            const variantCopy = {...variant};
+            
+            // Đảm bảo quantity là số
+            if (variantCopy.quantity === undefined || variantCopy.quantity === null) {
+              variantCopy.quantity = 0;
+            } else if (typeof variantCopy.quantity === 'string') {
+              variantCopy.quantity = parseInt(variantCopy.quantity) || 0;
+            }
+            
+            // Kiểm tra variant_details
+            if (variantCopy.variant_details && Array.isArray(variantCopy.variant_details) && variantCopy.variant_details.length > 0) {
+              hasValidVariants = true;
+            }
+            
+            return variantCopy;
+          });
+          
+          if (!hasValidVariants) {
+            setIsLoadingState(false);
+            toast.error("Thông tin biến thể sản phẩm không hợp lệ");
+            return;
+          }
+          
+          console.log('Opening variant modal with product:', fullProduct);
+          setSelectedProduct(fullProduct);
+          setVariantModalOpen(true);
+        } else {
+          toast.error("Không thể tải thông tin sản phẩm");
         }
-
-        // Kiểm tra lại sau khi lấy dữ liệu
-        if (!product.variants || !Array.isArray(product.variants) || product.variants.length === 0) {
-          toast.error("Không thể tải thông tin biến thể sản phẩm");
-          return;
-        }
-
-        console.log('Opening variant modal with product:', product);
-        setSelectedProduct(product);
-        setVariantModalOpen(true);
+        setIsLoadingState(false);
       } catch (error) {
         console.error('Lỗi khi lấy thông tin sản phẩm:', error);
-        toast.error('Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.');
+        
+        // Hiển thị thông báo lỗi cụ thể hơn
+        let errorMessage = 'Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.';
+        
+        if (error.message === 'Request timeout') {
+          errorMessage = 'Kết nối tới máy chủ quá lâu. Vui lòng kiểm tra kết nối và thử lại.';
+        } else if (error.response) {
+          if (error.response.status === 404) {
+            errorMessage = 'Không tìm thấy thông tin sản phẩm.';
+          } else if (error.response.status === 401) {
+            errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+          }
+        }
+        
+        toast.error(errorMessage);
+        setIsLoadingState(false);
       }
       return;
     }
@@ -217,7 +277,7 @@ const ChatBubbleMessage = ({
           className
         )}
       >
-        {isLoading ? (
+        {isLoadingState ? (
           <MessageLoading />
         ) : (
           <div>
