@@ -9,12 +9,22 @@
 @section('CSS')
 <style>
     /* Base styles */
+    body, html {
+        overflow-x: hidden !important;
+    }
+    
+    .container-fluid {
+        overflow-x: hidden !important;
+    }
+    
     .dashboard-container {
         padding-top: 60px !important;
         margin-top: 30px;
+        overflow-x: hidden !important;
     }
     .page-content {
         padding-top: 10px !important;
+        overflow-x: hidden !important;
     }
     @media (max-width: 768px) {
         .dashboard-container {
