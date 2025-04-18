@@ -432,7 +432,7 @@ const WalletWithdraw = () => {
               {showQrCode ? (
                 <>
                   {qrCode ? (
-                    <img src={qrCode} alt="QR Code" className="w-48 h-48" />
+                    <img src={qrCode} alt="QR Code" className="p-2" />
                   ) : (
                     <p className="text-red-600">Không thể hiển thị mã QR.</p>
                   )}
