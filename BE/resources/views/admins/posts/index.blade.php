@@ -210,8 +210,13 @@
                                         class="list-group-item text-muted py-3 px-2">
                                         <div class="d-flex align-items-center">
                                             <div class="flex-shrink-0 me-3">
-                                                <img src="{{ Storage::url($post->image_thumbnail) }}"
-                                                    alt="{{ $post->title }}" class="fixed-thumbnail rounded">
+                                                @if($post->image_thumbnail)
+                                                    <img src="{{ Storage::url($post->image_thumbnail) }}"
+                                                        alt="{{ $post->title }}" class="fixed-thumbnail rounded">
+                                                @else
+                                                    <img src="{{ asset('assets/admins/images/blog/overview.jpg') }}"
+                                                        alt="{{ $post->title }}" class="fixed-thumbnail rounded">
+                                                @endif  
                                             </div>
                                             <div class="flex-grow-1 overflow-hidden">
                                                 <h5 class="fs-15 text-truncate">{{ $post->title }}</h5>
@@ -280,8 +285,13 @@
                                 <div class="row g-4">
                                     <div class="col-xxl-3 col-lg-5">
                                         <div class="post-thumbnail-container rounded">
-                                            <img src="{{ Storage::url($post->image_thumbnail) }}"
-                                                alt="ảnh {{ $post->title }}" class="post-thumbnail rounded">
+                                            @if($post->image_thumbnail)
+                                                <img src="{{ Storage::url($post->image_thumbnail) }}"
+                                                    alt="{{ $post->title }}" class="post-thumbnail rounded">
+                                            @else
+                                                <img src="{{ asset('assets/admins/images/blog/overview.jpg') }}"
+                                                    alt="{{ $post->title }}" class="post-thumbnail rounded">
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="col-xxl-9 col-lg-7">

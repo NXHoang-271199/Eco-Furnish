@@ -95,6 +95,42 @@
         .is-invalid+.log_css {
             display: block;
         }
+
+        /* Style cho preview ảnh */
+        #thumbnail-preview-wrapper {
+            margin-top: 15px;
+            display: none;
+            position: relative;
+        }
+
+        #thumbnail-preview {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .remove-preview {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #fff;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .remove-preview:hover {
+            background: #dc3545;
+            color: #fff;
+        }
     </style>
 @endsection
 
@@ -168,15 +204,27 @@
         function previewImage(event) {
             const file = event.target.files[0];
             const preview = document.getElementById('thumbnail-preview');
+            const previewWrapper = document.getElementById('thumbnail-preview-wrapper');
 
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     preview.src = e.target.result;
-                    preview.style.display = 'block';
+                    previewWrapper.style.display = 'block';
                 }
                 reader.readAsDataURL(file);
             }
+        }
+
+        // Hàm xóa ảnh preview
+        function removePreview() {
+            const input = document.getElementById('project-thumbnail-img');
+            const preview = document.getElementById('thumbnail-preview');
+            const previewWrapper = document.getElementById('thumbnail-preview-wrapper');
+            
+            input.value = '';
+            preview.src = '';
+            previewWrapper.style.display = 'none';
         }
     </script>
 @endsection
@@ -321,10 +369,11 @@
                                     </div>
                                 </div>
                                 <!-- Hiển thị ảnh bìa đã chọn -->
-                                <div class="mt-3">
-                                    <img id="thumbnail-preview"
-                                        src="{{ isset($post) ? asset($post->image_thumbnail) : '' }}" alt="Ảnh bìa"
-                                        class="img-fluid" style="display: {{ isset($post) ? 'block' : 'none' }};">
+                                <div id="thumbnail-preview-wrapper">
+                                    <img id="thumbnail-preview" src="" alt="Ảnh bìa">
+                                    <div class="remove-preview" onclick="removePreview()">
+                                        <i class="ri-close-line"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
