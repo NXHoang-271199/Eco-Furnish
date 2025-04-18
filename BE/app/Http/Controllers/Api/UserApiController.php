@@ -790,6 +790,14 @@ class UserApiController extends Controller
             ], 400);
         }
 
+        // Kiểm tra mật khẩu cấp 2 không được giống mật khẩu cấp 1
+        if ($request->current_password === $request->level2_password) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu cấp 2 không được giống mật khẩu cấp 1'
+            ], 400);
+        }
+
         // Kiểm tra xem người dùng đã có mật khẩu cấp 2 chưa
         if ($user->has_level2_password) {
             return response()->json([
@@ -891,6 +899,14 @@ class UserApiController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Mật khẩu cấp 2 hiện tại không đúng'
+            ], 400);
+        }
+
+        // Kiểm tra mật khẩu cấp 2 mới không được giống mật khẩu cấp 1
+        if (Hash::check($request->new_level2_password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu cấp 2 mới không được giống mật khẩu cấp 1'
             ], 400);
         }
 
