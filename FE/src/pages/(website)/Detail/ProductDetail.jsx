@@ -431,13 +431,35 @@ const ProductDetail = () => {
     if (selectedVariant && selectedVariant.variant_details) {
       const attributes = {};
       selectedVariant.variant_details.forEach((attr) => {
-        attributes[attr.name] = attr.value;
+        if (attr && attr.name && attr.value) {
+          attributes[attr.name] = attr.value;
+        }
       });
       setSelectedVariantAttributes(attributes);
     }
 
     // Reset số lượng
     setQuantity(1);
+  };
+
+  // Hàm xử lý khi chọn thuộc tính biến thể (color, size, ...)
+  const handleVariantAttributeChange = (variantName, value) => {
+    // Cập nhật thuộc tính đã chọn
+    const newAttributes = { ...selectedVariantAttributes, [variantName]: value };
+    setSelectedVariantAttributes(newAttributes);
+
+    // Tìm biến thể phù hợp với tất cả thuộc tính đã chọn
+    if (product && product.variants && Array.isArray(product.variants)) {
+      const matchingVariant = product.variants.find((variant) => {
+        if (!variant.variant_details || !Array.isArray(variant.variant_details)) return false;
+        return variant.variant_details.every((detail) => {
+          return newAttributes[detail.name] === detail.value;
+        });
+      });
+      if (matchingVariant) {
+        setSelectedVariantId(matchingVariant.id);
+      }
+    }
   };
 
   const getCurrentPrice = () => {
@@ -822,60 +844,34 @@ const ProductDetail = () => {
     }
 
     try {
-      console.log("Rendering variants for product:", product);
-
       // Lấy danh sách unique các giá trị biến thể
       const uniqueVariantDetails = product.variants.reduce((acc, variant) => {
         if (variant.variant_details && Array.isArray(variant.variant_details)) {
           variant.variant_details.forEach((detail, index) => {
-            if (!acc[index]) acc[index] = new Set();
+            if (!acc[index]) acc[index] = { name: detail.name, values: new Set() };
             if (detail && detail.value) {
-              acc[index].add(detail.value);
+              acc[index].values.add(detail.value);
             }
           });
         }
         return acc;
       }, []);
 
-      console.log("Unique variant details:", uniqueVariantDetails);
-
-      if (uniqueVariantDetails.length === 0) {
-        console.log("No variant details found");
-        return null;
-      }
-
       return (
         <div className="space-y-4">
-          {uniqueVariantDetails.map((values, index) => {
-            const variantName =
-              product.variants[0]?.variant_details[index]?.name ||
-              `Biến thể ${index + 1}`;
+          {uniqueVariantDetails.map((item, index) => {
+            if (!item) return null;
+            const variantName = item.name;
             return (
               <div key={index} className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   {variantName}
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {Array.from(values).map((value) => (
+                  {Array.from(item.values).map((value) => (
                     <button
                       key={value}
-                      onClick={() => {
-                        const newAttributes = { ...selectedVariantAttributes };
-                        newAttributes[variantName] = value;
-                        setSelectedVariantAttributes(newAttributes);
-
-                        // Tìm biến thể phù hợp
-                        const matchingVariant = product.variants.find(
-                          (v) =>
-                            v.variant_details &&
-                            v.variant_details[index] &&
-                            v.variant_details[index].value === value
-                        );
-
-                        if (matchingVariant) {
-                          setSelectedVariantId(matchingVariant.id);
-                        }
-                      }}
+                      onClick={() => handleVariantAttributeChange(variantName, value)}
                       className={`px-3 py-1 rounded-md text-sm font-medium ${selectedVariantAttributes[variantName] === value
                         ? "bg-amber-500 text-white"
                         : "bg-gray-100 text-gray-800 hover:bg-gray-200"
@@ -1513,6 +1509,33 @@ const ProductDetail = () => {
                                       • {formatDateTime(review.created_at)}
                                     </span>
                                   </div>
+
+                                  {/* Hiển thị thông tin biến thể nếu có - SỬA LỖI: Sử dụng variant_info */}
+                                  {review.variant_info && (
+                                    (Array.isArray(review.variant_info) && review.variant_info.length > 0) ||
+                                    (typeof review.variant_info === 'object' && Object.keys(review.variant_info).length > 0)
+                                  ) && (
+                                      <div className="bg-gray-50 px-2 py-1 rounded-md text-xs my-2 inline-block border border-gray-200">
+                                        {/* <span className="font-medium text-gray-600 mr-1">Phiên bản:</span> */}
+                                        {Array.isArray(review.variant_info) ? (
+                                          // Nếu variant_info là mảng
+                                          review.variant_info.map((detail, idx) => (
+                                            <span key={idx} className="text-gray-700">
+                                              {detail.attribute_name || detail.name}: <strong>{detail.attribute_value || detail.value}</strong>
+                                              {idx < review.variant_info.length - 1 ? ' - ' : ''}
+                                            </span>
+                                          ))
+                                        ) : (
+                                          // Nếu variant_info là object
+                                          Object.entries(review.variant_info).map(([key, value], idx, arr) => (
+                                            <span key={key} className="text-gray-700">
+                                              {key}: <strong>{value}</strong>
+                                              {idx < arr.length - 1 ? ' - ' : ''}
+                                            </span>
+                                          ))
+                                        )}
+                                      </div>
+                                    )}
 
                                   <p className="text-gray-600 mb-4">
                                     {review.review_text}

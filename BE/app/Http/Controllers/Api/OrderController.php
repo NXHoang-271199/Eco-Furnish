@@ -701,6 +701,9 @@ class OrderController extends Controller
                 'status' => 'Chờ Duyệt',
             ]);
 
+            // Cập nhật trạng thái đơn hàng thành "Hoàn Hàng"
+            $order->update(['order_status' => 'Hoàn Hàng']);
+
             // Kiểm tra payment_status của đơn hàng, nếu là 1 thì tạo giao dịch ví
             if ($order->payment_status == 1) {  // payment_status phải là 1 (đã thanh toán)
                 $user = User::with('wallet')->find($userId);
@@ -720,6 +723,41 @@ class OrderController extends Controller
                     'balance_before' => null,
                     'balance_after' => null, // chưa thay đổi vì chưa cộng tiền
                 ]);
+            }
+
+            // ✅ Tạo thông báo cho người dùng trong cơ sở dữ liệu (không gửi thông báo realtime)
+            $notification = OrderNotification::create([
+                'order_id' => $order->id,
+                'is_read' => false
+            ]);
+
+            // ✅ Gửi thông báo realtime, chỉ đến admin
+            try {
+                // Tạo dữ liệu thông báo cho admin
+                $adminNotificationData = [
+                    'event' => 'order_refund_request',
+                    'data' => [
+                        'order_id' => $order->id,
+                        'order_code' => $order->order_code,
+                        'user_name' => $order->user_name,
+                        'total_price' => $order->total_price,
+                        'created_at' => now()->toIso8601String(),
+                        'notification_id' => $notification->id,
+                        'reason' => $request->reason,
+                        'message' => "Đơn hàng #{$order->order_code} có yêu cầu hoàn hàng từ khách hàng.",
+                    ]
+                ];
+
+                // Gửi thông báo đến Socket Server chỉ cho admin
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002') . '/broadcast-admin', [
+                    'event' => 'order_refund_notification',
+                    'data' => $adminNotificationData
+                ]);
+
+                \Log::info('Đã gửi thông báo yêu cầu hoàn hàng đến admin cho đơn hàng #' . $order->order_code);
+            } catch (\Exception $e) {
+                // Chỉ ghi log lỗi mà không ảnh hưởng đến kết quả yêu cầu hoàn hàng
+                \Log::error('Không thể gửi thông báo realtime khi yêu cầu hoàn hàng: ' . $e->getMessage());
             }
 
             DB::commit();
@@ -843,7 +881,43 @@ class OrderController extends Controller
                 ]);
             }
 
+            // ✅ Tạo thông báo cho người dùng trong cơ sở dữ liệu (không gửi thông báo realtime)
+            $notification = OrderNotification::create([
+                'order_id' => $order->id,
+                'is_read' => false
+            ]);
+
             DB::commit();
+
+            // ✅ Gửi thông báo realtime, chỉ đến admin
+            try {
+                // Bỏ phần gửi thông báo đến người dùng và chỉ giữ phần gửi đến admin
+
+                // Tạo dữ liệu thông báo cho admin
+                $adminNotificationData = [
+                    'event' => 'order_cancel',
+                    'data' => [
+                        'order_id' => $order->id,
+                        'order_code' => $order->order_code,
+                        'user_name' => $order->user_name,
+                        'total_price' => $order->total_price,
+                        'created_at' => now()->toIso8601String(),
+                        'notification_id' => $notification->id,
+                        'message' => "Đơn hàng #{$order->order_code} đã bị hủy bởi khách hàng.",
+                    ]
+                ];
+
+                // Gửi thông báo đến Socket Server chỉ cho admin
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002') . '/broadcast-admin', [
+                    'event' => 'order_cancel_notification',
+                    'data' => $adminNotificationData
+                ]);
+
+                \Log::info('Đã gửi thông báo hủy đơn hàng đến admin cho đơn hàng #' . $order->order_code);
+            } catch (\Exception $e) {
+                // Chỉ ghi log lỗi mà không ảnh hưởng đến kết quả hủy đơn
+                \Log::error('Không thể gửi thông báo realtime khi hủy đơn hàng: ' . $e->getMessage());
+            }
 
             $message = 'Đơn hàng đã được hủy.';
             if ($refundAmount > 0) {
@@ -859,6 +933,38 @@ class OrderController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Lỗi khi hủy đơn hàng',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy danh sách đơn hàng chưa thanh toán trực tuyến của người dùng
+     */
+    public function getUnpaidOrders()
+    {
+        try {
+            $user = Auth::user();
+            
+            // Lấy các đơn hàng thanh toán online (VNPAY, MoMo) chưa thanh toán hoặc đang chờ thanh toán
+            $unpaidOrders = Order::with(['paymentMethod'])
+                ->where('user_id', $user->id)
+                ->whereIn('payment_status', [0, 2]) // 0: Chưa thanh toán, 2: Đang chờ thanh toán
+                ->whereHas('paymentMethod', function($query) {
+                    $query->whereIn('name', ['VNPAY', 'MoMo']); // Chỉ lấy phương thức thanh toán online
+                })
+                ->whereNotIn('order_status', ['Hủy Đơn', 'Đã Nhận', 'Hoàn Hàng']) // Không lấy đơn đã hủy, đã nhận hoặc hoàn hàng
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            return response()->json([
+                'status' => 'success',
+                'data' => $unpaidOrders
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Không thể lấy danh sách đơn hàng chưa thanh toán',
                 'error' => $e->getMessage()
             ], 500);
         }

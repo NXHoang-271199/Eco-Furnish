@@ -5,6 +5,9 @@ import { cn } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Textarea } from "./ui/textarea";
+import '../styles/chatbot.css'; // Import CSS mới
+import { toast, Toaster } from 'react-hot-toast';
+import VariantSelectionModal from './VariantSelectionModal';
 
 // Icons import (sử dụng từ react-icons như cũ)
 import {
@@ -22,9 +25,9 @@ import {
 const MessageLoading = () => {
   return (
     <div className="flex space-x-2 justify-center items-center h-8">
-      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-75"></div>
-      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-150"></div>
+      <div className="w-2 h-2 rounded-full loading-dot"></div>
+      <div className="w-2 h-2 rounded-full loading-dot"></div>
+      <div className="w-2 h-2 rounded-full loading-dot"></div>
     </div>
   );
 };
@@ -50,7 +53,7 @@ const ChatBubble = ({
 
 const ChatBubbleMessage = ({
   variant = "received",
-  isLoading,
+  isLoading: initialIsLoading,
   className,
   children,
   products,
@@ -68,50 +71,147 @@ const ChatBubbleMessage = ({
     window.trackProductView(product.id, product.name, product.category);
   };
 
+  // State để quản lý modal chọn biến thể
+  const [variantModalOpen, setVariantModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  // Thêm state isLoading cho component này
+  const [isLoadingState, setIsLoadingState] = useState(initialIsLoading || false);
+
   // Hàm theo dõi khi người dùng thêm sản phẩm vào giỏ hàng
   const handleAddToCart = async (event, product) => {
     event.preventDefault();
     console.log('Đang thêm vào giỏ:', product);
 
+    // Kiểm tra xem sản phẩm có biến thể hay không
+    if (product.has_variants) {
+      // Đảm bảo dữ liệu đầy đủ trước khi mở modal
+      try {
+        // Luôn lấy dữ liệu sản phẩm đầy đủ từ API để đảm bảo có thông tin biến thể mới nhất
+        setIsLoadingState(true);
+        
+        // Tạo một promise với timeout để tránh request treo quá lâu
+        const fetchProductWithTimeout = async (productId, timeoutMs = 10000) => {
+          return Promise.race([
+            axiosInstance.get(`/products/${productId}`),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+            )
+          ]);
+        };
+        
+        const response = await fetchProductWithTimeout(product.id);
+        
+        if (response && response.data && response.data.data) {
+          // Cập nhật sản phẩm với dữ liệu đầy đủ
+          const fullProduct = {...response.data.data};
+          console.log('Đã lấy thêm dữ liệu sản phẩm:', fullProduct);
+          
+          // Kiểm tra dữ liệu biến thể
+          if (!fullProduct.variants || !Array.isArray(fullProduct.variants) || fullProduct.variants.length === 0) {
+            setIsLoadingState(false);
+            toast.error("Không thể tải thông tin biến thể sản phẩm");
+            return;
+          }
+          
+          // Đảm bảo rằng mỗi biến thể có thông tin variant_details đầy đủ và quantity là số
+          let hasValidVariants = false;
+          
+          // Clone mảng variants để tránh lỗi với prop read-only
+          fullProduct.variants = fullProduct.variants.map(variant => {
+            // Tạo bản sao của variant
+            const variantCopy = {...variant};
+            
+            // Đảm bảo quantity là số
+            if (variantCopy.quantity === undefined || variantCopy.quantity === null) {
+              variantCopy.quantity = 0;
+            } else if (typeof variantCopy.quantity === 'string') {
+              variantCopy.quantity = parseInt(variantCopy.quantity) || 0;
+            }
+            
+            // Kiểm tra variant_details
+            if (variantCopy.variant_details && Array.isArray(variantCopy.variant_details) && variantCopy.variant_details.length > 0) {
+              hasValidVariants = true;
+            }
+            
+            return variantCopy;
+          });
+          
+          if (!hasValidVariants) {
+            setIsLoadingState(false);
+            toast.error("Thông tin biến thể sản phẩm không hợp lệ");
+            return;
+          }
+          
+          console.log('Opening variant modal with product:', fullProduct);
+          setSelectedProduct(fullProduct);
+          setVariantModalOpen(true);
+        } else {
+          toast.error("Không thể tải thông tin sản phẩm");
+        }
+        setIsLoadingState(false);
+      } catch (error) {
+        console.error('Lỗi khi lấy thông tin sản phẩm:', error);
+        
+        // Hiển thị thông báo lỗi cụ thể hơn
+        let errorMessage = 'Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.';
+        
+        if (error.message === 'Request timeout') {
+          errorMessage = 'Kết nối tới máy chủ quá lâu. Vui lòng kiểm tra kết nối và thử lại.';
+        } else if (error.response) {
+          if (error.response.status === 404) {
+            errorMessage = 'Không tìm thấy thông tin sản phẩm.';
+          } else if (error.response.status === 401) {
+            errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+          }
+        }
+        
+        toast.error(errorMessage);
+        setIsLoadingState(false);
+      }
+      return;
+    }
+
     try {
       // Gọi API để thêm vào giỏ hàng sử dụng axiosInstance
-      const response = await axiosInstance.post('/cart/add', { // Sử dụng axiosInstance
+      const response = await axiosInstance.post('/cart/add', {
         product_id: product.id,
         quantity: 1, // Mặc định số lượng là 1
-        // product_variant_id: null // Tạm thời không gửi biến thể
       }, {
         headers: {
-          // Giả sử axios đã được cấu hình để gửi token nếu cần
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         }
       });
 
       console.log('API add to cart response:', response.data);
-      // TODO: Hiển thị thông báo thành công cho người dùng (ví dụ: toast)
-      alert('Đã thêm sản phẩm vào giỏ hàng!'); // Thông báo tạm thời
+      toast.success('Đã thêm sản phẩm vào giỏ hàng!');
 
     } catch (error) {
       console.error('Lỗi khi thêm vào giỏ hàng:', error.response ? error.response.data : error.message);
-      // TODO: Hiển thị thông báo lỗi cho người dùng
-      alert(`Lỗi: ${error.response?.data?.message || error.message}`); // Thông báo lỗi tạm thời
+      toast.error(`Lỗi: ${error.response?.data?.message || error.message}`);
     }
 
     // Vẫn theo dõi hành động
     window.trackAddToCart(product.id, product.name, product.category);
   };
 
+  // Xử lý khi thêm thành công từ modal
+  const handleVariantAddToCart = (product, variantId, quantity) => {
+    // Theo dõi hành động
+    window.trackAddToCart(product.id, product.name, product.category);
+  };
+
   // Product Card component (nâng cấp giao diện)
   const ProductCard = ({ product }) => {
     return (
-      <div className="border rounded-lg overflow-hidden mb-2 bg-white shadow-sm hover:shadow-md transition-shadow">
+      <div className="border rounded-lg overflow-hidden mb-2 bg-white shadow-sm product-card">
         <div className="flex">
-          <div className="w-20 h-20 flex-shrink-0 bg-gray-100 flex items-center justify-center">
-            {product.image ? (
+          <div className="w-20 h-20 flex-shrink-0 bg-gray-100 flex items-center justify-center overflow-hidden">
+            {product.image || product.image_thumnail ? (
               <img
-                src={`/storage/${product.image}`}
+                src={`/storage/${product.image || product.image_thumnail}`}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover product-image"
                 onError={(e) => {
                   console.log("Lỗi tải ảnh:", e.target.src);
                   e.target.onerror = null;
@@ -147,16 +247,16 @@ const ChatBubbleMessage = ({
             href={`/product-detail/${product.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+            className="text-xs text-blue-600 hover:text-blue-800 flex items-center transition-all duration-200 hover:translate-x-1"
             onClick={() => handleViewProduct(product)}
           >
             <FaExternalLinkAlt className="mr-1" size={10} />
             Xem chi tiết
           </a>
           <a
-            href={`/cart/add/${product.id}`}
-            className="text-xs text-green-600 hover:text-green-800 flex items-center"
+            href="#"
             onClick={(e) => handleAddToCart(e, product)}
+            className="text-xs text-green-600 hover:text-green-800 flex items-center transition-all duration-200 hover:translate-y-[-2px]"
           >
             <FaShoppingCart className="mr-1" size={10} />
             Thêm vào giỏ
@@ -167,88 +267,98 @@ const ChatBubbleMessage = ({
   };
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl p-3 max-w-[85%] shadow-sm",
-        variant === "sent"
-          ? "bg-blue-600 text-white rounded-tr-none"
-          : "bg-gray-100 text-gray-800 rounded-tl-none",
-        className
-      )}
-    >
-      {isLoading ? (
-        <MessageLoading />
-      ) : (
-        <div>
-          <div className="text-sm whitespace-pre-wrap">{children}</div>
+    <>
+      <div
+        className={cn(
+          "rounded-2xl p-3 max-w-[85%] shadow-sm message-bubble",
+          variant === "sent"
+            ? "user-bubble"
+            : "bot-bubble",
+          className
+        )}
+      >
+        {isLoadingState ? (
+          <MessageLoading />
+        ) : (
+          <div>
+            <div className="text-sm whitespace-pre-wrap">{children}</div>
 
-          {/* Hiển thị sản phẩm nếu có */}
-          {products && products.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-300">
-              <p className="text-xs font-medium mb-2">Sản phẩm gợi ý cho bạn:</p>
+            {/* Hiển thị sản phẩm nếu có */}
+            {products && products.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-300">
+                <p className="text-xs font-medium mb-2">👇Sản phẩm gợi ý cho bạn👇:</p>
 
-              {/* Nếu có thông tin danh mục, hiển thị theo từng danh mục */}
-              {categories && categories.length > 0 ? (
-                categories.map((category) => {
-                  // Lọc sản phẩm theo danh mục hiện tại
-                  const categoryProducts = products.filter(
-                    (product) => product.category === category
-                  );
+                {/* Nếu có thông tin danh mục, hiển thị theo từng danh mục */}
+                {categories && categories.length > 0 ? (
+                  categories.map((category) => {
+                    // Lọc sản phẩm theo danh mục hiện tại
+                    const categoryProducts = products.filter(
+                      (product) => product.category === category
+                    );
 
-                  if (categoryProducts.length === 0) return null;
+                    if (categoryProducts.length === 0) return null;
 
-                  return (
-                    <div key={category} className="mb-3">
-                      <h4 className="text-xs font-medium text-gray-700 bg-gray-100 p-1 rounded mb-2">
-                        {category}
-                      </h4>
-                      <div className="space-y-2">
-                        {categoryProducts.map((product) => (
-                          <ProductCard key={product.id} product={product} />
-                        ))}
+                    return (
+                      <div key={category} className="mb-3">
+                        <h4 className="text-xs font-medium text-gray-700 bg-gray-100 p-1 rounded mb-2">
+                          {category}
+                        </h4>
+                        <div className="space-y-2">
+                          {categoryProducts.map((product) => (
+                            <ProductCard key={product.id} product={product} />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              ) : (
-                // Nếu không có thông tin danh mục, hiển thị tất cả sản phẩm
-                <div className="space-y-2">
-                  {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Hiển thị thông báo khi không tìm thấy sản phẩm */}
-          {isProductSearch && products && products.length === 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-300">
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 rounded">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
+                    );
+                  })
+                ) : (
+                  // Nếu không có thông tin danh mục, hiển thị tất cả sản phẩm
+                  <div className="space-y-2">
+                    {products.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
                   </div>
-                  <div className="ml-3">
-                    <p className="text-xs text-yellow-700">
-                      Không tìm thấy sản phẩm nào phù hợp với từ khóa "{searchKeywords}".
-                    </p>
+                )}
+              </div>
+            )}
+
+            {/* Hiển thị thông báo khi không tìm thấy sản phẩm */}
+            {isProductSearch && products && products.length === 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-300">
+                <div className="bg-yellow-50 p-2 rounded search-notification">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-xs text-yellow-700">
+                        Không tìm thấy sản phẩm nào phù hợp với từ khóa "{searchKeywords}".
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {timestamp && (
-            <span className="text-xs opacity-70 block mt-1">
-              {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-        </div>
-      )}
-    </div>
+            {timestamp && (
+              <span className="text-xs opacity-70 block mt-1 message-timestamp">
+                {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal chọn biến thể */}
+      <VariantSelectionModal
+        isOpen={variantModalOpen}
+        onClose={() => setVariantModalOpen(false)}
+        product={selectedProduct}
+        onAddToCart={handleVariantAddToCart}
+      />
+    </>
   );
 };
 
@@ -256,11 +366,13 @@ const ChatBubbleAvatar = ({
   src,
   fallback = "AI",
   className,
+  isUser = false,
 }) => {
   return (
-    <Avatar className={cn("h-9 w-9", className)}>
+    <Avatar className={cn("h-9 w-9", isUser ? "avatar-user" : "avatar-bot", className)}>
       {src && <AvatarImage src={src} alt={fallback} />}
-      <AvatarFallback className="bg-gradient-to-br from-blue-400 to-blue-600 text-white text-xs font-medium">
+      <AvatarFallback className={cn("text-white text-xs font-medium",
+        isUser ? "bg-gradient-to-br from-purple-400 to-purple-600" : "bg-gradient-to-br from-blue-400 to-blue-600")}>
         {fallback}
       </AvatarFallback>
     </Avatar>
@@ -502,13 +614,13 @@ const ChatBot = () => {
 
   return (
     <div className="fixed bottom-5 right-5 z-50">
+      <Toaster position="top-right" />
       {/* Chat Button */}
       <Button
         onClick={toggleChat}
         className={cn(
-          "w-14 h-14 rounded-full shadow-lg flex items-center justify-center",
-          "hover:shadow-blue-300/30 transition-all duration-200",
-          "bg-gradient-to-r from-blue-500 to-blue-600"
+          "w-14 h-14 rounded-full shadow-lg flex items-center justify-center bot-button",
+          "hover:shadow-blue-300/30 transition-all duration-200 ripple-effect"
         )}
         aria-label="Chat với trợ lý AI"
       >
@@ -519,11 +631,10 @@ const ChatBot = () => {
       {isOpen && (
         <div className={cn(
           "absolute bottom-16 right-0 w-80 sm:w-96 bg-white rounded-xl shadow-2xl",
-          "flex flex-col overflow-hidden border border-gray-200",
-          "transition-all duration-300 animate-in fade-in-0 zoom-in-95"
+          "flex flex-col overflow-hidden border border-gray-200 chatbot-container chatbot-animation"
         )}>
           {/* Chat Header */}
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 flex items-center">
+          <div className="chatbot-header text-white p-4 flex items-center">
             <ChatBubbleAvatar fallback="AI" className="mr-3" />
             <div>
               <h3 className="font-medium">Trợ lý AI</h3>
@@ -535,7 +646,7 @@ const ChatBot = () => {
                   onClick={clearChat}
                   size="icon"
                   variant="ghost"
-                  className="text-white hover:text-white hover:bg-blue-600/50 h-8 w-8"
+                  className="text-white hover:text-white hover:bg-blue-600/50 h-8 w-8 ripple-effect"
                   aria-label="Xóa lịch sử chat"
                   title="Xóa lịch sử chat"
                 >
@@ -546,7 +657,7 @@ const ChatBot = () => {
                 onClick={toggleChat}
                 size="icon"
                 variant="ghost"
-                className="text-white hover:text-white hover:bg-blue-600/50 h-8 w-8"
+                className="text-white hover:text-white hover:bg-blue-600/50 h-8 w-8 ripple-effect"
                 aria-label="Đóng chat"
               >
                 <FaTimes size={14} />
@@ -555,11 +666,13 @@ const ChatBot = () => {
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 p-3 overflow-y-auto max-h-96 bg-gray-50">
+          <div className="flex-1 p-3 overflow-y-auto max-h-96 message-container chatbot-messages custom-scrollbar smooth-scroll">
             {messages.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <FaRobot className="mx-auto mb-2 text-gray-400" size={24} />
-                <p>Xin chào! Tôi có thể giúp gì cho bạn?</p>
+              <div className="text-center text-gray-500 py-8 empty-state pulse-effect">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-blue-50 flex items-center justify-center">
+                  <FaRobot className="text-blue-500" size={24} />
+                </div>
+                <p className="font-medium">Xin chào! Tôi có thể giúp gì cho bạn?</p>
                 <p className="text-sm mt-2">Hãy đặt câu hỏi về sản phẩm, dịch vụ hoặc bất kỳ thông tin nào bạn cần.</p>
               </div>
             ) : (
@@ -570,6 +683,7 @@ const ChatBot = () => {
                 >
                   <ChatBubbleAvatar
                     fallback={msg.sender === 'user' ? 'Bạn' : 'AI'}
+                    isUser={msg.sender === 'user'}
                   />
                   <ChatBubbleMessage
                     variant={msg.sender === 'user' ? 'sent' : 'received'}
@@ -595,7 +709,7 @@ const ChatBot = () => {
 
           {/* Chat Input */}
           <form onSubmit={sendMessage} className="border-t border-gray-200 p-3">
-            <div className="relative rounded-xl border border-gray-300 focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white overflow-hidden flex">
+            <div className="relative rounded-xl overflow-hidden flex input-container">
               <Textarea
                 value={input}
                 onChange={handleInputChange}
@@ -610,8 +724,7 @@ const ChatBot = () => {
                   type="submit"
                   size="icon"
                   className={cn(
-                    "rounded-full ml-1 h-9 w-9 text-white transition-colors",
-                    "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
+                    "rounded-full ml-1 h-9 w-9 text-white transition-colors send-button glow-effect",
                     (isLoading || input.trim() === '') && "opacity-50 cursor-not-allowed"
                   )}
                   disabled={isLoading || input.trim() === ''}

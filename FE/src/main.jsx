@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import { store } from "./store";
 import App from "./App.jsx";
 import "./index.css";
+import "./styles/chat.css"; // Import CSS cho chat
 import { BrowserRouter } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

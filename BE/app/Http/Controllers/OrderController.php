@@ -313,6 +313,40 @@ class OrderController extends Controller
                 ]);
             }
 
+            // ✅ Tạo thông báo cho người dùng trong cơ sở dữ liệu
+            $notification = OrderNotification::create([
+                'order_id' => $order->id,
+                'is_read' => false
+            ]);
+
+            // ✅ Gửi thông báo realtime cho người dùng
+            try {
+                // Tạo nội dung thông báo
+                $notificationData = [
+                    'id' => $notification->id,
+                    'order_id' => $order->id,
+                    'order_code' => $order->order_code,
+                    'user_id' => $order->user_id,
+                    'order_status' => 'Hoàn Hàng',
+                    'message' => "Yêu cầu hoàn hàng đơn hàng #{$order->order_code} đã được phê duyệt",
+                    'created_at' => now()->toIso8601String(),
+                    'is_read' => false,
+                    'refund_status' => 'Đã Duyệt'
+                ];
+
+                // Gửi thông báo đến Socket Server
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002') . '/broadcast-client', [
+                    'event' => 'refund_approval_notification',
+                    'userId' => $order->user_id,
+                    'data' => $notificationData
+                ]);
+
+                \Log::info('Thông báo phê duyệt hoàn hàng đã được gửi đến user ' . $order->user_id . ' cho đơn hàng #' . $order->order_code);
+            } catch (\Exception $e) {
+                // Ghi log lỗi nhưng không dừng quá trình cập nhật
+                \Log::error('Không thể gửi thông báo realtime phê duyệt hoàn hàng: ' . $e->getMessage());
+            }
+
             DB::commit();
 
             // ✅ Gửi mail
@@ -350,6 +384,40 @@ class OrderController extends Controller
                         'updated_by' => auth()->id()
                     ]);
                 }
+            }
+
+            // ✅ Tạo thông báo cho người dùng trong cơ sở dữ liệu
+            $notification = OrderNotification::create([
+                'order_id' => $order->id,
+                'is_read' => false
+            ]);
+
+            // ✅ Gửi thông báo realtime cho người dùng
+            try {
+                // Tạo nội dung thông báo
+                $notificationData = [
+                    'id' => $notification->id,
+                    'order_id' => $order->id,
+                    'order_code' => $order->order_code,
+                    'user_id' => $order->user_id,
+                    'order_status' => $order->order_status,
+                    'message' => "Yêu cầu hoàn hàng đơn hàng #{$order->order_code} đã bị từ chối",
+                    'created_at' => now()->toIso8601String(),
+                    'is_read' => false,
+                    'refund_status' => 'Từ Chối'
+                ];
+
+                // Gửi thông báo đến Socket Server
+                Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002') . '/broadcast-client', [
+                    'event' => 'refund_rejection_notification',
+                    'userId' => $order->user_id,
+                    'data' => $notificationData
+                ]);
+
+                \Log::info('Thông báo từ chối hoàn hàng đã được gửi đến user ' . $order->user_id . ' cho đơn hàng #' . $order->order_code);
+            } catch (\Exception $e) {
+                // Ghi log lỗi nhưng không dừng quá trình cập nhật
+                \Log::error('Không thể gửi thông báo realtime từ chối hoàn hàng: ' . $e->getMessage());
             }
 
             DB::commit();
@@ -526,7 +594,6 @@ class OrderController extends Controller
 
                 // Cập nhật trạng thái đơn hàng
                 $order->update(['order_status' => $newStatus]);
-
                 // Tạo thông báo cho đơn hàng
                 $notification = OrderNotification::create([
                     'order_id' => $order->id,

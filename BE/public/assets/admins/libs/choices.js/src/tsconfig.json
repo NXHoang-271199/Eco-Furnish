@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "module": "es6",
-    "lib": ["es2017", "dom"],
+    "lib": [
+      "es2017",
+      "dom"
+    ],
     "target": "es5",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
@@ -17,6 +20,11 @@
     "declaration": false,
     "declarationMap": false
   },
-  "include": ["."],
-  "exclude": ["**/node_modules", "**/public"]
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/public"
+  ]
 }

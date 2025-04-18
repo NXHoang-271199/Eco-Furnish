@@ -45,7 +45,7 @@ use App\Http\Controllers\Admin\AdminForgotPasswordController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('admin.login');
 });
 
 // Đặt route upload image ở ngoài middleware group để tránh lỗi CSRF
@@ -78,6 +78,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['permission:view-dashboard'])->group(function () {
             Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard/filter', [DashboardController::class, 'filter'])->name('dashboard.filter');
         });
 
         // Categories Management

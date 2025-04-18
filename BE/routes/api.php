@@ -88,6 +88,12 @@ Route::prefix('users')->group(function () {
         Route::put('/{userId}/addresses/{addressId}', [UserAddressController::class, 'updateUserAddress']);
         Route::delete('/{userId}/addresses/{addressId}', [UserAddressController::class, 'deleteUserAddress']);
 
+        // Thêm routes cho mật khẩu cấp 2
+        Route::post('/level2-password/set', [UserApiController::class, 'setLevel2Password']);
+        Route::post('/level2-password/verify', [UserApiController::class, 'verifyLevel2Password']);
+        Route::put('/level2-password/update', [UserApiController::class, 'updateLevel2Password']);
+        Route::get('/level2-password/status', [UserApiController::class, 'checkLevel2PasswordStatus']);
+
         Route::post('/upload-avatar/{id}', [UserApiController::class, 'uploadAvatar']);
         Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
         Route::post('/logout', [UserApiController::class, 'apiLogout']);
@@ -263,10 +269,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('orders/{id}/confirm', [OrderController::class, 'confirmOrder']); //Xác nhận đã nhận hàng
     Route::post('check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
 });
+
+// Thêm route cho lấy đơn hàng chưa thanh toán
+Route::middleware('auth:sanctum')->get('user/orders/unpaid', [OrderController::class, 'getUnpaidOrders']); // Lấy danh sách đơn hàng chưa thanh toán trực tuyến
+
 // review routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
     Route::get('/products/{productId}/can-review', [ReviewController::class, 'canReview']); // kiểm tra quyền đánh giá
+    Route::get('/orders/{orderId}/reviews', [ReviewController::class, 'getOrderReviews']); // lấy đánh giá của một đơn hàng
 });
 Route::get('products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
 

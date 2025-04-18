@@ -58,6 +58,22 @@
                     .dropdown-menu.show {
                         display: block;
                     }
+                    
+                    /* Đảm bảo dropdown thông báo hiển thị trên cùng và không bị che khuất */
+                    #notificationDropdown .dropdown-menu {
+                        z-index: 9999;
+                        position: absolute;
+                        right: 0;
+                        left: auto;
+                        transform: none !important;
+                        top: 100% !important;
+                    }
+                    
+                    /* Đảm bảo nội dung thông báo hiển thị đúng */
+                    #notificationItemsTabContent {
+                        z-index: 9999;
+                        position: relative;
+                    }
                 </style>
                 <div class="dropdown topbar-head-dropdown ms-1 header-item" id="notificationDropdown">
                     <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle"
@@ -227,7 +243,7 @@
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <img class="rounded-circle header-profile-user"
-                                src="{{ asset('assets/images/users/avatar-1.jpg') }}"
+                                src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : asset('assets/images/users/avatar-1.jpg') }}"
                                 alt="Header Avatar">
                             <span class="text-start ms-xl-2">
                                 <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">

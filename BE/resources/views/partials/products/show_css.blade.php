@@ -214,6 +214,20 @@
         border: 1px solid #eef2f7;
     }
 
+    /* Tùy chỉnh hiển thị cho biến thể hết hàng */
+    tr.opacity-50 {
+        opacity: 0.5;
+        background-color: #f9f9f9;
+    }
+
+    .badge.bg-warning-subtle {
+        background-color: #fff8e1 !important;
+    }
+
+    .badge.text-warning {
+        color: #ff9800 !important;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
         .main-image {

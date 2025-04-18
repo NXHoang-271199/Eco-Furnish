@@ -114,7 +114,7 @@ class WalletController extends Controller
             $wallet->balance += $request->amount;
             $wallet->save();
 
-            WalletTransaction::create([
+            $transaction = WalletTransaction::create([
                 'wallet_id' => $wallet->id,
                 'amount' => $request->amount,
                 'type' => 'nap_tien',
@@ -124,6 +124,39 @@ class WalletController extends Controller
                 'balance_before' => $balanceBefore,
                 'balance_after' => $wallet->balance,
             ]);
+
+            // Gửi thông báo realtime đến client
+            try {
+                // Lấy thông tin về user
+                $user = $wallet->user;
+
+                // Dữ liệu thông báo
+                $notificationData = [
+                    'id' => $transaction->id,
+                    'user_id' => $user->id,
+                    'wallet_id' => $wallet->id,
+                    'amount' => $request->amount,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $wallet->balance,
+                    'transaction_type' => 'nap_tien',
+                    'message' => "Tài khoản của bạn vừa được cộng " . number_format($request->amount, 0, ',', '.') . " đ",
+                    'description' => $request->description ?? 'Giao dịch cộng tiền từ admin',
+                    'created_at' => now()->toIso8601String(),
+                    'is_read' => false
+                ];
+
+                // Gửi thông báo đến Socket Server
+                \Illuminate\Support\Facades\Http::post(env('SOCKET_SERVER_URL', 'http://localhost:3002') . '/broadcast-client', [
+                    'event' => 'wallet_deposit_notification',
+                    'userId' => $user->id,
+                    'data' => $notificationData
+                ]);
+
+                \Log::info('Đã gửi thông báo cộng tiền đến user ' . $user->id . ' cho số tiền ' . $request->amount);
+            } catch (\Exception $e) {
+                \Log::error('Không thể gửi thông báo realtime khi cộng tiền: ' . $e->getMessage());
+                // Không throw exception để vẫn thực hiện giao dịch ngay cả khi không gửi được thông báo
+            }
 
             DB::commit();
 

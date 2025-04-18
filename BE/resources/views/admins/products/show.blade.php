@@ -212,7 +212,7 @@
                                                                         }
                                                                     }
                                                                 @endphp
-                                                                <tr>
+                                                                <tr @if($firstVariant->quantity <= 0) class="opacity-50" @endif>
                                                                     <td>{{ $sku }}</td>
                                                                     <td>{{ implode(' - ', $variantDetails) }}</td>
                                                                     <td>
@@ -229,7 +229,9 @@
                                                                     </td>
                                                                     <td>{{ number_format($firstVariant->quantity) }}</td>
                                                                     <td>
-                                                                        @if($firstVariant->status)
+                                                                        @if($firstVariant->quantity <= 0)
+                                                                            <span class="badge bg-warning-subtle text-warning">Hết hàng</span>
+                                                                        @elseif($firstVariant->status)
                                                                             <span class="badge bg-success-subtle text-success">Đang bán</span>
                                                                         @else
                                                                             <span class="badge bg-danger-subtle text-danger">Ngừng bán</span>
