@@ -144,9 +144,9 @@ class WalletController extends Controller
                         'bank_name' => $trx->withdrawRequest->bank_name,
                         'bank_account_number' => $trx->withdrawRequest->bank_account_number,
                         'account_holder_name' => $trx->withdrawRequest->account_holder_name,
-                        'bank_logo_url' => $trx->withdrawRequest->bank_logo_url,
+                        'bank_code' => $trx->withdrawRequest->bank_code,
+                        'qr_code' => $trx->withdrawRequest->qr_code,
                         'status' => $trx->withdrawRequest->status,
-                        'note' => $trx->withdrawRequest->note,
                     ];
                 }
 
