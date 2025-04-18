@@ -521,31 +521,34 @@ class DashboardController extends Controller
             ->whereBetween('orders.created_at', [$lastMonthStart, $lastMonthEnd])
             ->sum(DB::raw('order_items.price * order_items.quantity'));
         
-        // Tính phần trăm tăng/giảm doanh thu
-        $earningsPercentage = $lastMonthEarnings > 0 
-            ? round((($totalEarnings - $lastMonthEarnings) / $lastMonthEarnings) * 100, 2) 
-            : 100; // Nếu tháng trước không có doanh thu, coi như tăng 100%
-        
         // Tổng số đơn hàng trong khoảng ngày đã chọn
         $totalOrders = Order::whereBetween('created_at', [$startDate, $endDate])->count();
-        
-        // Số đơn hàng tháng trước (vẫn giữ để hiển thị % tăng/giảm)
-        $lastMonthOrders = Order::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
-        
-        // Tính phần trăm tăng/giảm đơn hàng
-        $ordersPercentage = $lastMonthOrders > 0 
-            ? round((($totalOrders - $lastMonthOrders) / $lastMonthOrders) * 100, 2) 
-            : 100; // Nếu tháng trước không có đơn hàng, coi như tăng 100%
         
         // Tổng số khách hàng đăng ký trong khoảng ngày đã chọn
         $totalCustomers = User::where('role_id', '!=', 1)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->count();
         
+        // Kiểm tra nếu không có dữ liệu trong khoảng thời gian này
+        $hasData = ($totalOrders > 0 || $totalEarnings > 0 || $totalCustomers > 0);
+        
+        // Số đơn hàng tháng trước (vẫn giữ để hiển thị % tăng/giảm)
+        $lastMonthOrders = Order::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+        
         // Số khách hàng đăng ký tháng trước (vẫn giữ để hiển thị % tăng/giảm)
         $lastMonthCustomers = User::where('role_id', '!=', 1)
             ->whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])
             ->count();
+        
+        // Tính phần trăm tăng/giảm doanh thu
+        $earningsPercentage = $lastMonthEarnings > 0 
+            ? round((($totalEarnings - $lastMonthEarnings) / $lastMonthEarnings) * 100, 2) 
+            : 100; // Nếu tháng trước không có doanh thu, coi như tăng 100%
+        
+        // Tính phần trăm tăng/giảm đơn hàng
+        $ordersPercentage = $lastMonthOrders > 0 
+            ? round((($totalOrders - $lastMonthOrders) / $lastMonthOrders) * 100, 2) 
+            : 100; // Nếu tháng trước không có đơn hàng, coi như tăng 100%
         
         // Tính phần trăm tăng/giảm khách hàng
         $customersPercentage = $lastMonthCustomers > 0 
@@ -777,7 +780,8 @@ class DashboardController extends Controller
             'dateRange' => $dateRange,
             'formattedDateRange' => $formattedDateRange,
             'sortLabels' => $sortLabels,
-            'isFiltered' => true
+            'isFiltered' => true,
+            'hasData' => $hasData
         ]);
     }
 } 

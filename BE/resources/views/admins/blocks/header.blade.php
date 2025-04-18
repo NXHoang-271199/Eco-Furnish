@@ -58,7 +58,7 @@
                     .dropdown-menu.show {
                         display: block;
                     }
-                    
+
                     /* Đảm bảo dropdown thông báo hiển thị trên cùng và không bị che khuất */
                     #notificationDropdown .dropdown-menu {
                         z-index: 9999;
@@ -68,7 +68,7 @@
                         transform: none !important;
                         top: 100% !important;
                     }
-                    
+
                     /* Đảm bảo nội dung thông báo hiển thị đúng */
                     #notificationItemsTabContent {
                         z-index: 9999;
