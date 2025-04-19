@@ -254,8 +254,6 @@ class UserApiController extends Controller
             'data' => [
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
-                'remember_me' => $user->remember_me,
-                'remember_me_expires_at' => $user->remember_me ? $user->remember_me_expires_at : null
             ]
         ]);
     }
@@ -611,7 +609,7 @@ class UserApiController extends Controller
             }
 
             // Lưu avatar mới
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = $request->file('avatar')->store('uploads/avatar', 'public');
             Log::info('Đường dẫn avatar mới: ' . $path);
 
             // Cập nhật trường avatar của user

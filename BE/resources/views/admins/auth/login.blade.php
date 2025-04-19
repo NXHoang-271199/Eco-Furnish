@@ -98,15 +98,9 @@
                                             </div>
                                         </div>
 
-                                        <div class="float-end">
+                                        {{-- <div class="float-end">
                                             <a href="{{ route('admin.password.request') }}" class="text-muted">Quên mật khẩu?</a>
-                                        </div>
-
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="remember" value="1"
-                                                id="auth-remember-check">
-                                            <label class="form-check-label" for="auth-remember-check">Nhớ đăng nhập</label>
-                                        </div>
+                                        </div> --}}
 
                                         <div class="mt-4">
                                             <button class="btn btn-success w-100" type="submit">Đăng nhập</button>

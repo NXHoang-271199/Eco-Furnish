@@ -33,7 +33,12 @@ class ModelHelper
             'App\Models\OrderDetail' => 'Quản lý chi tiết đơn hàng',
             'App\Models\OrderNotification' => 'Quản lý thông báo đơn hàng',
             'App\Models\CategoryPost' => 'Quản lý danh mục bài viết',
-
+            'App\Models\Review' => 'Quản lý đánh giá sản phẩm',
+            'App\Models\Wallet' => 'Quản lý ví',
+            'App\Models\WalletTransaction' => 'Quản lý giao dịch ví',
+            'App\Models\WithdrawRequest' => 'Quản lý yêu cầu rút tiền',
+            'App\Models\Message' => 'Quản lý tin nhắn',
+            'App\Models\Banner' => 'Quản lý banner',
         ];
 
         return $modelMap[$modelName] ?? $modelName;

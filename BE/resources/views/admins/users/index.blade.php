@@ -28,29 +28,55 @@
 
     <script>
         $(document).ready(function() {
-            $(document).on('click', '.delete-btn', function(e) {
+            // Xử lý form toggle status
+            $('form[action*="toggle-status"]').on('submit', function(e) {
                 e.preventDefault();
-
-                let form = $(this).closest("form");
-
-                // Debug: Kiểm tra xem sự kiện có chạy không
-                console.log("Nút xóa đã được nhấn!");
-
+                
+                let form = $(this);
+                let isActive = form.find('button.dropdown-item').text().trim().includes('Hủy kích hoạt');
+                
                 Swal.fire({
-                    title: "Bạn có chắc chắn muốn xóa?",
-                    text: "Hành động này không thể hoàn tác!",
+                    title: isActive ? "Bạn có chắc chắn muốn hủy kích hoạt?" : "Bạn có chắc chắn muốn kích hoạt?",
+                    text: "Hành động này sẽ thay đổi trạng thái của người dùng!",
                     icon: "warning",
                     showCancelButton: true,
-                    confirmButtonColor: "#dc3545",
+                    confirmButtonColor: isActive ? "#dc3545" : "#28a745",
                     cancelButtonColor: "#6c757d",
-                    confirmButtonText: "Có, xóa!",
+                    confirmButtonText: isActive ? "Có, hủy kích hoạt!" : "Có, kích hoạt!",
                     cancelButtonText: "Hủy"
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        console.log("Đã xác nhận xóa!"); // Debug: Kiểm tra xem có xác nhận không
-                        form.submit(); // Gửi form sau khi xác nhận
-                    } else {
-                        console.log("Hủy xóa!"); // Debug: Kiểm tra nếu người dùng hủy
+                        form.off('submit');
+                        
+                        // Submit form bằng AJAX
+                        $.ajax({
+                            url: form.attr('action'),
+                            type: 'POST',
+                            data: form.serialize(),
+                            success: function(response) {
+                                // Hiển thị thông báo thành công
+                                Swal.fire({
+                                    title: isActive ? "Đã hủy kích hoạt!" : "Đã kích hoạt!",
+                                    text: isActive ? "Người dùng đã bị hủy kích hoạt thành công." : "Người dùng đã được kích hoạt thành công.",
+                                    icon: "success",
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                }).then(() => {
+                                    // Reload trang sau khi hiển thị thông báo
+                                    window.location.reload();
+                                });
+                            },
+                            error: function(xhr) {
+                                // Hiển thị thông báo lỗi nếu có
+                                Swal.fire({
+                                    title: "Lỗi!",
+                                    text: "Đã xảy ra lỗi khi thực hiện thao tác.",
+                                    icon: "error",
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                            }
+                        });
                     }
                 });
             });
@@ -187,11 +213,19 @@
                                                                     <td class="text-center">
                                                                         {{ $key + 1 + ($listUsers->currentPage() - 1) * $listUsers->perPage() }}
                                                                     </td>
-                                                                    <td class="text-center"><img
-                                                                            src="{{ Storage::url($user->avatar) }}"
-                                                                            alt="ảnh {{ $user->name }}" srcset=""
-                                                                            width="75" height="75"
-                                                                            class="object-fit-cover"></td>
+                                                                    <td class="text-center">
+                                                                        @if($user->avatar && Storage::exists($user->avatar))
+                                                                            <img src="{{ Storage::url($user->avatar) }}"
+                                                                                alt="ảnh {{ $user->name }}" 
+                                                                                width="75" height="75"
+                                                                                class="object-fit-cover rounded-circle">
+                                                                        @else
+                                                                            <img src="{{ asset('assets/admins/images/users/avatarUser.png') }}"
+                                                                                alt="ảnh mặc định"
+                                                                                width="75" height="75"
+                                                                                class="object-fit-cover rounded-circle avatar-md">
+                                                                        @endif
+                                                                    </td>
                                                                     <td>{{ $user->name }}</td>
                                                                     <td>{{ $user->email }}</td>
                                                                     <td class="text-center">{{ $user->age }}</td>
@@ -201,9 +235,9 @@
                                                                     </td>
                                                                     <td class="text-center">
                                                                         @if ($user->is_active == 1)
-                                                                            <span class="badge bg-success">Kích hoạt</span>
+                                                                            <span class="badge bg-success kichhoat">Kích hoạt</span>
                                                                         @else
-                                                                            <span class="badge bg-danger">Hủy kích
+                                                                            <span class="badge bg-danger huykichhoat">Hủy kích
                                                                                 hoạt</span>
                                                                         @endif
                                                                     </td>

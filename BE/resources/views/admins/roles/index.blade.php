@@ -109,7 +109,7 @@
                                                 <li><a class="dropdown-item edit-item-btn"
                                                         href="{{ route('roles.edit', $role->id) }}"><i
                                                             class="ri-pencil-fill align-bottom me-2 text-muted"></i>
-                                                        Edit</a></li>
+                                                        Cập nhật</a></li>
                                                 <li>
                                                     <form action="{{ route('roles.destroy', $role->id) }}" method="POST"
                                                         class="d-inline delete-form">

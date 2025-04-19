@@ -16,19 +16,19 @@ class RoleSeeder extends Seeder
     {
         Role::insert([
             [
-                'name' => 'Admin',
+                'name' => 'Quản trị viên',
                 'slug' => 'admin',
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],
             [
-                'name' => 'Staff',
+                'name' => 'Nhân viên',
                 'slug' => 'staff',
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],
             [
-                'name' => 'Client',
+                'name' => 'Khách hàng',
                 'slug' => 'client',
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
