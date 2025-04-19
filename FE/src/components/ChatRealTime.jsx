@@ -7,9 +7,10 @@ import axios from "axios";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import { toast } from "react-hot-toast";
+import "../styles/chat.css";
 
 // Tạo audio elements toàn cục để khởi tạo sớm
-const messageAudio = new Audio('/sounds/message.mp3');
+const messageAudio = new Audio('/sounds/notification-sound.mp3');
 messageAudio.preload = 'auto';
 messageAudio.volume = 0.8;
 
@@ -486,7 +487,7 @@ const ChatRealTime = () => {
                         if (!isOpen) {
                             setUnreadCount(prev => prev + 1);
                             // Phát âm thanh thông báo
-                            playNotificationSound('/sounds/message.mp3');
+                            playNotificationSound('/sounds/notification-sound.mp3');
                         }
                     });
                 }
@@ -709,7 +710,7 @@ const ChatRealTime = () => {
                     if (!isOpen) {
                         setUnreadCount(prev => prev + 1);
                         // Phát âm thanh thông báo
-                        playNotificationSound('/sounds/message.mp3');
+                        playNotificationSound('/sounds/notification-sound.mp3');
                     } else {
                         // Nếu chat đang mở, đánh dấu đã đọc
                         markMessagesAsRead();
@@ -755,7 +756,7 @@ const ChatRealTime = () => {
                     if (isAdminMessage && !isOpen) {
                         setUnreadCount(prev => prev + 1);
                         // Phát âm thanh thông báo
-                        playNotificationSound('/sounds/message.mp3');
+                        playNotificationSound('/sounds/notification-sound.mp3');
                     } else if (isOpen) {
                         // Nếu chat đang mở, đánh dấu đã đọc
                         markMessagesAsRead();
@@ -792,7 +793,7 @@ const ChatRealTime = () => {
                     if (!isOpen) {
                         setUnreadCount(prev => prev + 1);
                         // Phát âm thanh thông báo
-                        playNotificationSound('/sounds/message.mp3');
+                        playNotificationSound('/sounds/notification-sound.mp3');
                     } else {
                         markMessagesAsRead();
                         // Reset unreadCount
@@ -1260,7 +1261,7 @@ const ChatRealTime = () => {
 
     return (
         <div className="fixed bottom-5 left-5 z-50">
-            {/* Chat Bubble Button */}
+            {/* Chat Bubble Button - Cải thiện với hiệu ứng mới */}
             <button
                 onClick={() => {
                     setIsOpen(!isOpen);
@@ -1270,28 +1271,32 @@ const ChatRealTime = () => {
                         markMessagesAsRead(); // Gọi API đánh dấu đã đọc và update UI
                     }
                 }}
-                className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+                className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 chat-bubble-button ripple-button ${isOpen
+                    ? "bg-gradient-to-r from-red-500 to-red-600"
+                    : "bg-gradient-to-r from-emerald-500 to-green-600"
                     }`}
             >
                 {isOpen ? <BsXLg className="text-2xl" /> : <BsChatDots className="text-2xl" />}
                 {!isOpen && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center animate-pulse">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center animate-pulse shadow-lg">
                         {unreadCount}
                     </span>
                 )}
                 {!isConnected && !isOpen && (
-                    <span className="absolute -bottom-1 -right-1 bg-yellow-500 w-3 h-3 rounded-full animate-pulse"></span>
+                    <span className="absolute -bottom-1 -right-1 bg-yellow-500 w-4 h-4 rounded-full animate-pulse shadow-md"></span>
                 )}
             </button>
 
-            {/* Chat Box */}
+            {/* Chat Box - Cải thiện với hiệu ứng glass morphism */}
             {isOpen && (
-                <div className="absolute bottom-20 left-0 w-[350px] h-[500px] bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden animate-slideIn">
-                    {/* Header */}
-                    <div className="bg-green-500 text-white p-4 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Chat Room</h3>
+                <div className="absolute bottom-24 left-0 w-[380px] h-[520px] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slideIn glass-effect">
+                    {/* Header - Gradient */}
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 flex items-center justify-between rounded-t-xl">
+                        <h3 className="text-lg font-semibold flex items-center">
+                            <BsChatDots className="mr-2" /> Hỗ Trợ Trực Tuyến
+                        </h3>
                         <div className="flex items-center">
-                            <span className="flex items-center text-sm mr-2">
+                            <span className="flex items-center text-sm mr-2 bg-white bg-opacity-20 px-3 py-1 rounded-full">
                                 {isConnected ? (
                                     <>
                                         <span className="w-2 h-2 rounded-full mr-2 bg-white animate-pulse"></span>
@@ -1307,34 +1312,42 @@ const ChatRealTime = () => {
                         </div>
                     </div>
 
-                    {/* Error message */}
+                    {/* Error message - Cải thiện với thiết kế nhẹ nhàng hơn */}
                     {lastError && (
-                        <div className="bg-red-100 text-red-700 p-2 text-xs">
-                            {lastError}
+                        <div className="bg-red-50 text-red-700 p-3 text-xs border-l-4 border-red-500 flex items-center">
+                            <span className="mr-2">⚠️</span> {lastError}
                         </div>
                     )}
 
-                    {/* Messages */}
-                    <div className="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-4">
+                    {/* Messages - Cải thiện với background và hiệu ứng */}
+                    <div className="flex-1 p-4 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-gray-50 to-white space-y-4 chat-box">
                         {isLoading ? (
-                            <div className="h-full flex items-center justify-center text-gray-500">
+                            <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-3">
+                                <div className="typing-indicator">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
                                 <p>Đang tải tin nhắn...</p>
                             </div>
                         ) : messages.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-gray-500">
-                                <p>Bắt đầu cuộc trò chuyện với chúng tôi</p>
+                            <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                                <img src="/images/welcome-chat.svg" alt="Welcome" className="w-32 h-32 mb-4 opacity-70" onError={(e) => e.target.style.display = 'none'} />
+                                <p className="bg-gray-100 p-3 rounded-lg shadow-sm">Bắt đầu cuộc trò chuyện với chúng tôi</p>
                             </div>
                         ) : (
                             <>
                                 {messages.map((msg, index) => (
-                                    <div key={index} className={`flex ${msg.sender_id === userData?.id || msg.isCurrentUser ? "justify-end" : "justify-start"}`}>
+                                    <div key={index} className={`flex ${msg.sender_id === userData?.id || msg.isCurrentUser ? "justify-end" : "justify-start"} message-appear chat-message-container`}>
                                         <div
-                                            className={`max-w-[80%] rounded-lg p-3 ${msg.sender_id === userData?.id || msg.isCurrentUser ? "bg-green-500 text-white rounded-br-sm" : "bg-gray-200 text-gray-800 rounded-bl-sm"
+                                            className={`max-w-[85%] rounded-2xl p-3 shadow-sm chat-message-content ${msg.sender_id === userData?.id || msg.isCurrentUser
+                                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-br-none sparkle-effect"
+                                                : "bg-white border border-gray-100 text-gray-800 rounded-bl-none"
                                                 }`}
                                         >
                                             {/* Hiển thị nhóm ảnh nếu có */}
                                             {msg.imageGroup && (
-                                                <div className="mb-2 relative">
+                                                <div className="mb-2 relative chat-image">
                                                     {msg.imageGroup.isUploading ? (
                                                         <>
                                                             {/* Hiển thị preview khi đang upload */}
@@ -1344,13 +1357,13 @@ const ChatRealTime = () => {
                                                                         <img
                                                                             src={preview}
                                                                             alt={`Preview ${idx + 1}`}
-                                                                            className="h-[80px] w-[80px] object-cover rounded opacity-70"
+                                                                            className="h-[80px] w-[80px] object-cover rounded-lg opacity-70"
                                                                         />
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                             {/* Progress bar cho upload nhóm */}
-                                                            <div className="w-full bg-white bg-opacity-30 h-1 mt-1 rounded overflow-hidden">
+                                                            <div className="w-full bg-white bg-opacity-30 h-2 mt-1 rounded-full overflow-hidden">
                                                                 <div
                                                                     className="h-full bg-white"
                                                                     style={{ width: `${msg.imageGroup.uploadProgress || 0}%` }}
@@ -1361,7 +1374,7 @@ const ChatRealTime = () => {
                                                             </p>
                                                         </>
                                                     ) : msg.imageGroup.uploadFailed ? (
-                                                        <div className="text-center text-sm text-white bg-red-400 p-2 rounded">
+                                                        <div className="text-center text-sm text-white bg-red-400 p-2 rounded-lg">
                                                             Tải ảnh thất bại, vui lòng thử lại
                                                         </div>
                                                     ) : (
@@ -1372,13 +1385,13 @@ const ChatRealTime = () => {
                                                                     {msg.imageGroup.urls.length === 1 ? (
                                                                         // Nếu chỉ có 1 ảnh, hiển thị to hơn
                                                                         <div
-                                                                            className="cursor-pointer"
+                                                                            className="cursor-pointer transition-transform hover:scale-105"
                                                                             onClick={() => openLightbox(msg.imageGroup.urls, 0)}
                                                                         >
                                                                             <img
                                                                                 src={msg.imageGroup.urls[0]}
                                                                                 alt="Hình ảnh"
-                                                                                className="rounded max-w-full max-h-[200px] object-contain"
+                                                                                className="rounded-lg max-w-full max-h-[200px] object-contain"
                                                                             />
                                                                         </div>
                                                                     ) : msg.imageGroup.urls.length === 2 ? (
@@ -1387,13 +1400,13 @@ const ChatRealTime = () => {
                                                                             {msg.imageGroup.urls.map((url, idx) => (
                                                                                 <div
                                                                                     key={idx}
-                                                                                    className="cursor-pointer"
+                                                                                    className="cursor-pointer transition-transform hover:scale-105"
                                                                                     onClick={() => openLightbox(msg.imageGroup.urls, idx)}
                                                                                 >
                                                                                     <img
                                                                                         src={url}
                                                                                         alt={`Hình ảnh ${idx + 1}`}
-                                                                                        className="w-full h-[100px] object-cover rounded"
+                                                                                        className="w-full h-[100px] object-cover rounded-lg"
                                                                                     />
                                                                                 </div>
                                                                             ))}
@@ -1404,64 +1417,71 @@ const ChatRealTime = () => {
                                                                             {msg.imageGroup.urls.slice(0, 2).map((url, idx) => (
                                                                                 <div
                                                                                     key={idx}
-                                                                                    className="cursor-pointer"
+                                                                                    className="cursor-pointer transition-transform hover:scale-105"
                                                                                     onClick={() => openLightbox(msg.imageGroup.urls, idx)}
                                                                                 >
                                                                                     <img
                                                                                         src={url}
                                                                                         alt={`Hình ảnh ${idx + 1}`}
-                                                                                        className="w-full h-[80px] object-cover rounded"
+                                                                                        className="w-full h-[80px] object-cover rounded-lg"
                                                                                     />
                                                                                 </div>
                                                                             ))}
                                                                             <div
-                                                                                className="col-span-2 cursor-pointer"
+                                                                                className="col-span-2 cursor-pointer transition-transform hover:scale-105"
                                                                                 onClick={() => openLightbox(msg.imageGroup.urls, 2)}
                                                                             >
                                                                                 <img
                                                                                     src={msg.imageGroup.urls[2]}
                                                                                     alt="Hình ảnh 3"
-                                                                                    className="w-full h-[80px] object-cover rounded"
+                                                                                    className="w-full h-[80px] object-cover rounded-lg"
                                                                                 />
                                                                             </div>
                                                                         </div>
-                                                                    ) : (
-                                                                        // Nếu có 4+ ảnh, hiển thị dạng lưới với ảnh cuối "+X"
+                                                                    ) : msg.imageGroup.urls.length === 4 ? (
+                                                                        // Nếu có 4 ảnh, hiển thị dạng lưới 2x2
                                                                         <div className="grid grid-cols-2 gap-1">
-                                                                            {msg.imageGroup.urls.slice(0, 2).map((url, idx) => (
+                                                                            {msg.imageGroup.urls.slice(0, 4).map((url, idx) => (
                                                                                 <div
                                                                                     key={idx}
-                                                                                    className="cursor-pointer"
+                                                                                    className="cursor-pointer transition-transform hover:scale-105"
                                                                                     onClick={() => openLightbox(msg.imageGroup.urls, idx)}
                                                                                 >
                                                                                     <img
                                                                                         src={url}
                                                                                         alt={`Hình ảnh ${idx + 1}`}
-                                                                                        className="w-full h-[80px] object-cover rounded"
+                                                                                        className="w-full h-[80px] object-cover rounded-lg"
+                                                                                    />
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        // Nếu có 5+ ảnh, hiển thị 4 ảnh với ảnh cuối "+X"
+                                                                        <div className="grid grid-cols-2 gap-1">
+                                                                            {msg.imageGroup.urls.slice(0, 3).map((url, idx) => (
+                                                                                <div
+                                                                                    key={idx}
+                                                                                    className="cursor-pointer transition-transform hover:scale-105"
+                                                                                    onClick={() => openLightbox(msg.imageGroup.urls, idx)}
+                                                                                >
+                                                                                    <img
+                                                                                        src={url}
+                                                                                        alt={`Hình ảnh ${idx + 1}`}
+                                                                                        className="w-full h-[80px] object-cover rounded-lg"
                                                                                     />
                                                                                 </div>
                                                                             ))}
                                                                             <div
-                                                                                className="cursor-pointer"
-                                                                                onClick={() => openLightbox(msg.imageGroup.urls, 2)}
-                                                                            >
-                                                                                <img
-                                                                                    src={msg.imageGroup.urls[2]}
-                                                                                    alt="Hình ảnh 3"
-                                                                                    className="w-full h-[80px] object-cover rounded"
-                                                                                />
-                                                                            </div>
-                                                                            <div
-                                                                                className="cursor-pointer relative"
+                                                                                className="cursor-pointer relative transition-transform hover:scale-105"
                                                                                 onClick={() => openLightbox(msg.imageGroup.urls, 3)}
                                                                             >
                                                                                 <img
                                                                                     src={msg.imageGroup.urls[3]}
                                                                                     alt="Hình ảnh 4+"
-                                                                                    className="w-full h-[80px] object-cover rounded brightness-50"
+                                                                                    className="w-full h-[80px] object-cover rounded-lg brightness-50"
                                                                                 />
                                                                                 <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl">
-                                                                                    +{msg.imageGroup.urls.length - 3}
+                                                                                    +{msg.imageGroup.urls.length - 4}
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -1476,19 +1496,19 @@ const ChatRealTime = () => {
                                             {/* Hiển thị ảnh đơn lẻ (cho tin nhắn cũ) */}
                                             {msg.image && !msg.imageGroup && (
                                                 <div
-                                                    className="mb-2 relative cursor-pointer"
+                                                    className="mb-2 relative cursor-pointer transition-transform hover:scale-105 chat-image"
                                                     onClick={() => openLightbox([msg.image], 0)}
                                                 >
                                                     <img
                                                         src={msg.image}
                                                         alt="Hình ảnh"
-                                                        className="rounded max-w-full max-h-[200px] object-contain"
+                                                        className="rounded-lg max-w-full max-h-[200px] object-contain"
                                                     />
 
                                                     {/* Hiển thị progress bar nếu đang upload */}
                                                     {msg.isUploading && (
-                                                        <div className="absolute bottom-0 left-0 w-full bg-black bg-opacity-50 p-1">
-                                                            <div className="h-1 bg-white rounded overflow-hidden">
+                                                        <div className="absolute bottom-0 left-0 w-full bg-black bg-opacity-50 p-1 rounded-b-lg">
+                                                            <div className="h-1 bg-white rounded-full overflow-hidden">
                                                                 <div
                                                                     className="h-full bg-green-300"
                                                                     style={{ width: `${msg.uploadProgress || 0}%` }}
@@ -1514,7 +1534,7 @@ const ChatRealTime = () => {
 
                                             <div className="flex justify-between items-center mt-1">
                                                 <span className="text-xs opacity-70">
-                                                    {new Date(msg.sent_at).toLocaleTimeString()}
+                                                    {new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                                 {(msg.sender_id === userData?.id || msg.isCurrentUser) && (
                                                     <span className={`text-xs ${msg.is_read ? "message-read" : "message-unread"}`}>
@@ -1530,28 +1550,28 @@ const ChatRealTime = () => {
                         )}
                     </div>
 
-                    {/* Image Preview */}
+                    {/* Image Preview - Cải thiện với thiết kế hiện đại */}
                     {imagePreviews.length > 0 && (
-                        <div className="px-4 pt-2">
+                        <div className="px-4 pt-2 bg-gray-50">
                             <div className="flex flex-wrap gap-2">
                                 {imagePreviews.map((preview, index) => (
                                     <div key={index} className="relative inline-block">
                                         <img
                                             src={preview}
                                             alt={`Preview ${index + 1}`}
-                                            className="h-20 rounded border border-gray-300 object-cover"
+                                            className="h-20 rounded-lg border border-gray-200 object-cover shadow-sm transition-transform hover:scale-105"
                                         />
                                         <button
                                             onClick={() => removeImage(index)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md transition-transform hover:scale-110"
                                         >
-                                            <BsXLg size={10} />
+                                            <BsXLg size={12} />
                                         </button>
                                     </div>
                                 ))}
                                 <button
                                     onClick={cancelImageUpload}
-                                    className="text-sm text-red-500 mt-2"
+                                    className="text-sm text-red-500 mt-2 hover:text-red-700 transition-colors"
                                 >
                                     Hủy tất cả
                                 </button>
@@ -1559,29 +1579,29 @@ const ChatRealTime = () => {
                         </div>
                     )}
 
-                    {/* Input Area */}
-                    <div className="p-4 bg-white border-t border-gray-200">
+                    {/* Input Area - Cải thiện với thiết kế hiện đại */}
+                    <div className="p-4 bg-white border-t border-gray-100">
                         <div className="flex items-center gap-2">
                             <textarea
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
                                 placeholder="Nhập tin nhắn..."
-                                className="flex-1 resize-none rounded-full px-4 py-2 border border-gray-300 focus:outline-none focus:border-green-500 text-sm min-h-[40px] max-h-[100px]"
+                                className="flex-1 resize-none rounded-full px-5 py-3 border border-gray-200 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 text-sm min-h-[45px] max-h-[100px] shadow-sm transition-all"
                                 rows="1"
                                 disabled={!isConnected || isUploading}
                             />
 
-                            {/* Nút chọn ảnh */}
+                            {/* Nút chọn ảnh - Cải thiện với hiệu ứng */}
                             <button
                                 onClick={() => imageInputRef.current?.click()}
                                 disabled={!isConnected || isUploading}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isConnected && !isUploading
-                                    ? "bg-blue-500 hover:bg-blue-600 text-white"
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg ${isConnected && !isUploading
+                                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:scale-110"
+                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
                                     }`}
                             >
-                                <MdImage className="text-lg" />
+                                <MdImage className="text-xl" />
                             </button>
 
                             {/* Input file ẩn - hỗ trợ chọn nhiều file */}
@@ -1594,16 +1614,16 @@ const ChatRealTime = () => {
                                 className="hidden"
                             />
 
-                            {/* Nút gửi */}
+                            {/* Nút gửi - Cải thiện với hiệu ứng */}
                             <button
                                 onClick={sendMessage}
                                 disabled={(!message.trim() && selectedImages.length === 0) || !isConnected || isUploading}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-colors ${(message.trim() || selectedImages.length > 0) && isConnected && !isUploading
-                                    ? "bg-green-500 hover:bg-green-600"
-                                    : "bg-gray-300 cursor-not-allowed"
+                                className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-md hover:shadow-lg ${(message.trim() || selectedImages.length > 0) && isConnected && !isUploading
+                                    ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:scale-110"
+                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                     }`}
                             >
-                                <IoMdSend className="text-lg" />
+                                <IoMdSend className="text-xl" />
                             </button>
                         </div>
                     </div>

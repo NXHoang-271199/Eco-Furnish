@@ -36,6 +36,8 @@ const Payment = () => {
   const [voucherId, setVoucherId] = useState(null); // Lưu ID của voucher được áp dụng
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [orderCode, setOrderCode] = useState("");
+  const [walletBalance, setWalletBalance] = useState(0); // Thêm state để lưu số dư ví
+  const [loadingWallet, setLoadingWallet] = useState(false); // Thêm state để kiểm tra trạng thái loading của ví
 
   // State mới cho danh sách voucher
   const [availableVouchers, setAvailableVouchers] = useState([]);
@@ -66,6 +68,13 @@ const Payment = () => {
   });
   const [editingAddressId, setEditingAddressId] = useState(null); // ID của địa chỉ đang sửa
 
+  // Thêm các state cho mật khẩu cấp 2
+  const [hasLevel2Password, setHasLevel2Password] = useState(false);
+  const [showLevel2PasswordModal, setShowLevel2PasswordModal] = useState(false);
+  const [level2Password, setLevel2Password] = useState("");
+  const [level2PasswordError, setLevel2PasswordError] = useState("");
+  const [checkingLevel2Password, setCheckingLevel2Password] = useState(false);
+
   useEffect(() => {
     // Lấy địa chỉ từ localStorage khi component mount
     const savedAddress = JSON.parse(localStorage.getItem("userAddress")) || {};
@@ -88,7 +97,55 @@ const Payment = () => {
 
     getPaymentMethod();
     fetchProvinces();
+    getWalletBalance(); // Thêm gọi hàm lấy số dư ví
+    checkLevel2PasswordStatus(); // Thêm gọi hàm kiểm tra trạng thái mật khẩu cấp 2
   }, [selectedProducts, navigate, state]);
+
+  // Thêm useEffect để kiểm tra pendingPaymentState khi component mount
+  useEffect(() => {
+    // Kiểm tra xem có dữ liệu thanh toán đang chờ xử lý không
+    const pendingState = localStorage.getItem("pendingPaymentState");
+
+    if (pendingState) {
+      try {
+        const pendingData = JSON.parse(pendingState);
+
+        // Kiểm tra nếu là loại thanh toán thông thường và có thông tin sản phẩm đầy đủ
+        if (pendingData.type === "normal" && pendingData.selectedProductsData) {
+          console.log("Đang khôi phục thông tin sản phẩm từ pendingPaymentState", pendingData);
+
+          // Khôi phục trạng thái từ pendingPaymentState
+          if (pendingData.selectedProductsData && pendingData.selectedProductsData.length > 0) {
+            // Nếu có state đang chứa selectedProducts, ưu tiên state
+            if (!(state?.selectedProducts && state.selectedProducts.length > 0)) {
+              // Nếu không có sản phẩm từ state của navigate, khôi phục từ pendingPaymentState
+              localStorage.setItem("tempSelectedProducts", JSON.stringify(pendingData.selectedProductsData));
+              window.location.reload(); // Tải lại trang để áp dụng tempSelectedProducts
+            }
+          }
+
+          // Khôi phục trạng thái khác
+          if (pendingData.voucherId) {
+            setVoucherId(pendingData.voucherId);
+          }
+
+          if (pendingData.discountAmount) {
+            setDiscountAmount(pendingData.discountAmount);
+          }
+
+          if (pendingData.paymentMethod) {
+            setPaymentMethod(pendingData.paymentMethod);
+          }
+
+          // Xóa pendingPaymentState sau khi đã khôi phục
+          localStorage.removeItem("pendingPaymentState");
+        }
+      } catch (error) {
+        console.error("Lỗi khi parse pendingPaymentState:", error);
+        localStorage.removeItem("pendingPaymentState");
+      }
+    }
+  }, [state]);
 
   // Lấy danh sách tỉnh/thành phố
   const fetchProvinces = async () => {
@@ -259,11 +316,13 @@ const Payment = () => {
   // Hàm mở modal thêm địa chỉ
   const openAddAddressModal = () => {
     setEditingAddressId(null);
+    // Lấy email mặc định từ localStorage
+    const userData = JSON.parse(localStorage.getItem("userData")) || {};
     setAddressFormData({
       first_name: "",
       last_name: "",
       phone: "",
-      email: "",
+      email: userData.email || "",
       address_name: "",
       country: "Việt Nam",
       province: "",
@@ -548,6 +607,26 @@ const Payment = () => {
     }
   };
 
+  // Thêm hàm kiểm tra trạng thái mật khẩu cấp 2
+  const checkLevel2PasswordStatus = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
+
+      const response = await axiosInstance.get("/users/level2-password/status", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.status === "success") {
+        setHasLevel2Password(response.data.data.has_level2_password);
+      }
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra trạng thái mật khẩu cấp 2:", error);
+    }
+  };
+
   const handlePayment = async () => {
     if (!paymentMethod) {
       setError("Vui lòng chọn phương thức thanh toán");
@@ -568,11 +647,43 @@ const Payment = () => {
       return;
     }
 
+    // Xử lý thanh toán bằng ví
+    const selectedMethodObj = paymentMethods.find((method) => method.id === Number(paymentMethod));
+    if (selectedMethodObj && selectedMethodObj.name === "Ví") {
+      // Kiểm tra nếu chưa có mật khẩu cấp 2
+      if (!hasLevel2Password) {
+        // Chuyển hướng đến trang thiết lập mật khẩu cấp 2 với tham số redirect để quay lại
+        // Lưu trạng thái hiện tại vào localStorage để có thể khôi phục sau khi thiết lập mật khẩu cấp 2
+        localStorage.setItem("pendingPaymentState", JSON.stringify({
+          selectedProducts: selectedProducts.map(item => item.id), // Lưu ID để tham chiếu
+          selectedProductsData: selectedProducts, // Lưu thông tin đầy đủ của sản phẩm
+          selectedAddress: selectedAddress?.id,
+          paymentMethod,
+          voucherId,
+          discountAmount,
+          type: "normal"
+        }));
+
+        navigate("/account?tab=level2password&redirect=payment");
+        toast.info("Vui lòng thiết lập mật khẩu cấp 2 để thanh toán bằng ví.");
+        return;
+      }
+
+      // Nếu đã có mật khẩu cấp 2, hiển thị modal xác nhận
+      setShowLevel2PasswordModal(true);
+      setLevel2Password("");
+      setLevel2PasswordError("");
+      return;
+    }
+
+    // Tiếp tục xử lý đặt hàng nếu không phải thanh toán bằng ví
+    processOrder();
+  };
+
+  // Tách logic xử lý đặt hàng
+  const processOrder = async (level2PasswordInput = "") => {
     setLoading(true);
     setError("");
-
-    // Không cần lưu address vào localStorage nữa
-    // localStorage.setItem("userAddress", JSON.stringify(address));
 
     try {
       const token = localStorage.getItem("authToken");
@@ -587,9 +698,10 @@ const Payment = () => {
         voucher_id: voucherId && discountAmount > 0 ? voucherId : null, // Giữ nguyên voucher
       };
 
-      // Thêm voucher_id nếu đã áp dụng mã giảm giá
-      if (voucherId && discountAmount > 0) {
-        orderData.voucher_id = voucherId;
+      // Thêm mật khẩu cấp 2 nếu thanh toán bằng ví
+      const selectedMethod = paymentMethods.find((method) => method.id === Number(paymentMethod));
+      if (selectedMethod && selectedMethod.name === "Ví" && level2PasswordInput) {
+        orderData.level2_password = level2PasswordInput;
       }
 
       // Gọi trực tiếp API orders - KHÔNG gọi payment/process
@@ -615,9 +727,6 @@ const Payment = () => {
       setOrderCode(newOrderCode);
 
       // Lấy tên phương thức thanh toán đã chọn
-      const selectedMethod = paymentMethods.find(
-        (method) => method.id === Number(paymentMethod)
-      );
       const paymentMethodName = selectedMethod
         ? selectedMethod.name
         : "Không xác định";
@@ -655,11 +764,62 @@ const Payment = () => {
       }
     } catch (err) {
       console.error("Lỗi khi gọi API:", err);
-      setError(
-        err.response?.data?.message || "Có lỗi xảy ra khi xử lý đơn hàng"
-      );
+
+      // Kiểm tra xem có phải lỗi mật khẩu cấp 2 không chính xác không
+      if (err.response?.data?.message === "Mật khẩu cấp 2 không chính xác") {
+        toast.error("Mật khẩu cấp 2 không chính xác");
+        // Reset lại trạng thái kiểm tra mật khẩu cấp 2 để có thể thử lại
+        setCheckingLevel2Password(false);
+        // Giữ modal mở để người dùng có thể nhập lại
+      } else {
+        // Các lỗi khác vẫn hiển thị như cũ
+        setError(
+          err.response?.data?.message || "Có lỗi xảy ra khi xử lý đơn hàng"
+        );
+        // Đóng modal cho lỗi không phải mật khẩu cấp 2
+        setShowLevel2PasswordModal(false);
+      }
     } finally {
       setLoading(false);
+      // Không đóng modal nếu là lỗi mật khẩu cấp 2
+    }
+  };
+
+  // Hàm xử lý khi nhấn nút xác nhận mật khẩu cấp 2
+  const handleConfirmLevel2Password = () => {
+    // Kiểm tra xem đã nhập mật khẩu cấp 2 chưa
+    if (!level2Password) {
+      setLevel2PasswordError("Vui lòng nhập mật khẩu cấp 2");
+      return;
+    }
+
+    // Xóa lỗi cũ nếu có
+    setLevel2PasswordError("");
+    setError("");
+
+    // Gọi hàm xử lý đặt hàng với mật khẩu cấp 2
+    setCheckingLevel2Password(true);
+    processOrder(level2Password);
+  };
+
+  // Thêm hàm để lấy số dư ví
+  const getWalletBalance = async () => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      try {
+        setLoadingWallet(true);
+        const response = await axiosInstance.get("/wallet/balance", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setWalletBalance(response.data.balance || 0);
+      } catch (error) {
+        console.error("Lỗi khi lấy số dư ví:", error);
+        setWalletBalance(0);
+      } finally {
+        setLoadingWallet(false);
+      }
     }
   };
 
@@ -691,32 +851,106 @@ const Payment = () => {
             )}
           </div>
 
-          <div className="mt-4">
-            <h3 className="font-semibold">Phương thức thanh toán</h3>
-            <div className="mt-2 space-y-2">
+          <div className="mt-6 bg-white p-5 rounded-lg shadow-sm border">
+            <h3 className="font-semibold text-lg mb-4 text-gray-800 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+              </svg>
+              Phương thức thanh toán
+            </h3>
+            <div className="space-y-3">
               {paymentMethods.length > 0 ? (
-                paymentMethods.map((method) => (
-                  <label
-                    key={method.id}
-                    className="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={method.id} // Sử dụng ID từ API
-                      checked={paymentMethod === method.id.toString()} // So sánh với ID
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    />
-                    <span>
-                      {method.name === "Tiền mặt"
-                        ? "Thanh toán khi nhận hàng"
-                        : method.name}
-                    </span>{" "}
-                    {/* Giả sử API trả về field "name" */}
-                  </label>
-                ))
+                paymentMethods.map((method) => {
+                  // Kiểm tra xem phương thức thanh toán có phải là Ví không
+                  const isWalletMethod = method.name === "Ví";
+                  // Kiểm tra xem số dư ví có đủ để thanh toán không
+                  const insufficientBalance = isWalletMethod && walletBalance < calculateTotal();
+                  // Quyết định disabled dựa trên điều kiện số dư
+                  const isDisabled = isWalletMethod && insufficientBalance;
+
+                  return (
+                    <label
+                      key={method.id}
+                      className={`relative flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${paymentMethod === method.id.toString() && !isDisabled
+                        ? "bg-blue-50 border-2 border-blue-500"
+                        : "border border-gray-200 hover:border-blue-400"
+                        } ${isDisabled
+                          ? "opacity-60 cursor-not-allowed bg-gray-50"
+                          : "cursor-pointer"
+                        }`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <input
+                          type="radio"
+                          name="payment"
+                          value={method.id}
+                          checked={paymentMethod === method.id.toString()}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          disabled={isDisabled}
+                          className="form-radio h-5 w-5 text-blue-600"
+                        />
+                        {method.image ? (
+                          <div className="w-12 h-12 flex items-center justify-center rounded-lg overflow-hidden bg-white p-1 border border-gray-100 shadow-sm">
+                            <img
+                              src={`http://localhost:8000/storage/${method.image}`}
+                              alt={method.name}
+                              className="h-8 object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                              <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-800">
+                            {method.name === "Tiền mặt"
+                              ? "Thanh toán khi nhận hàng"
+                              : method.name}
+                          </span>
+                          {isWalletMethod && (
+                            <span className={`text-sm ${insufficientBalance ? "text-red-500" : "text-green-600"}`}>
+                              Số dư: {formatPrice(walletBalance)}
+                            </span>
+                          )}
+                          {method.name === "MoMo" && (
+                            <span className="text-sm text-gray-500">Thanh toán qua ví điện tử MoMo</span>
+                          )}
+                          {method.name === "VNPAY" && (
+                            <span className="text-sm text-gray-500">Thanh toán qua cổng VNPAY</span>
+                          )}
+                          {method.name === "Tiền mặt" && (
+                            <span className="text-sm text-gray-500">Thanh toán khi nhận được hàng</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Phù hợp nhất / Không đủ số dư */}
+                      {(paymentMethod === method.id.toString() && !isDisabled) && (
+                        <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+                          Đã chọn
+                        </span>
+                      )}
+                      {isWalletMethod && insufficientBalance && (
+                        <span className="text-xs text-red-500 font-medium bg-red-50 px-2 py-1 rounded-full">
+                          Số dư không đủ
+                        </span>
+                      )}
+                    </label>
+                  );
+                })
               ) : (
-                <p>Đang tải phương thức thanh toán...</p>
+                <div className="flex items-center justify-center p-6 text-gray-500">
+                  <svg className="animate-spin mr-2 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Đang tải phương thức thanh toán...
+                </div>
               )}
             </div>
           </div>
@@ -950,7 +1184,7 @@ const Payment = () => {
                   <div className="mt-6 text-center">
                     <button
                       onClick={openAddAddressModal}
-                      className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800"
+                      className="bg-black text-white px-6 py-2 rounded-md"
                     >
                       Thêm địa chỉ mới
                     </button>
@@ -977,7 +1211,7 @@ const Payment = () => {
                       <input type="tel" name="phone" value={addressFormData.phone} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Email (Tùy chọn)</label>
+                      <label className="block text-sm font-medium mb-1">Email *</label>
                       <input type="email" name="email" value={addressFormData.email} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
                     </div>
                     <div className="flex items-center pt-2">
@@ -1061,6 +1295,65 @@ const Payment = () => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal xác nhận mật khẩu cấp 2 */}
+      {showLevel2PasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Xác nhận thanh toán</h2>
+              <button
+                onClick={() => setShowLevel2PasswordModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+                disabled={checkingLevel2Password}
+              >
+                &times;
+              </button>
+            </div>
+
+            <p className="mb-4 text-gray-700">Để bảo mật giao dịch, vui lòng nhập mật khẩu cấp 2 của bạn.</p>
+
+            <div className="mb-4">
+              <input
+                type="password"
+                value={level2Password}
+                onChange={(e) => setLevel2Password(e.target.value)}
+                placeholder="Nhập mật khẩu cấp 2"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={checkingLevel2Password}
+              />
+              {level2PasswordError && (
+                <p className="mt-1 text-red-500 text-sm">{level2PasswordError}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLevel2PasswordModal(false)}
+                className="px-4 py-2 border rounded-md"
+                disabled={checkingLevel2Password}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmLevel2Password}
+                className="px-4 py-2 bg-black text-white rounded-md"
+                disabled={checkingLevel2Password}
+              >
+                {checkingLevel2Password ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Đang xác thực
+                  </span>
+                ) : "Xác nhận"}
+              </button>
+            </div>
           </div>
         </div>
       )}

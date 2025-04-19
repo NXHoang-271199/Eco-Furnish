@@ -102,7 +102,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Review permissions
             ['name' => 'Xem Đánh Giá Sản Phẩm', 'slug' => 'view-reviews', 'model' => 'App\Models\Review'],
-            
+
             // Comment permissions
             ['name' => 'Xem Bình Luận', 'slug' => 'view-comments', 'model' => 'App\Models\Comment'],
             ['name' => 'Cập Nhật Bình Luận', 'slug' => 'update-comments', 'model' => 'App\Models\Comment'],
@@ -130,6 +130,11 @@ class RolesAndPermissionsSeeder extends Seeder
             // Order Notification permissions
             ['name' => 'Xem Thông Báo Đơn Hàng', 'slug' => 'view-order-notifications', 'model' => 'App\Models\OrderNotification'],
             ['name' => 'Cập Nhật Thông Báo Đơn Hàng', 'slug' => 'update-order-notifications', 'model' => 'App\Models\OrderNotification'],
+
+            // Wallet
+            ['name' => 'Xem Thông Tin Ví Tiền', 'slug' => 'view-wallets', 'model' => 'App\Models\Wallet'],
+            ['name' => 'Xem Lịch Sử Giao Dịch', 'slug' => 'view-wallets-transactions', 'model' => 'App\Models\Wallet'],
+            ['name' => 'Cộng Tiền Vào Ví', 'slug' => 'edit-wallets', 'model' => 'App\Models\Wallet'],
         ];
 
         // Tạo các quyền trong database

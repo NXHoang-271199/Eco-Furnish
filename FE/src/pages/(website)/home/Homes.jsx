@@ -10,26 +10,38 @@ import {
   useAnimation,
 } from "framer-motion";
 import { BsStarFill, BsStarHalf, BsStar } from "react-icons/bs";
-import api from "../../../service/api";
+import axiosInstance from "../../../utils/axiosConfig";
 import Banner from "../../../components/Banner";
-import { IoCartOutline, IoStar } from "react-icons/io5";
+import LoadingScreen from "../../../components/LoadingScreen";
+import { IoCartOutline, IoStar, IoSparkles } from "react-icons/io5";
 import { HiOutlineArrowNarrowRight } from "react-icons/hi";
-import { FaLeaf, FaTree, FaSeedling, FaRobot, FaFire } from "react-icons/fa";
+import Popup from "../../../components/Popup";
+import {
+  FaLeaf,
+  FaTree,
+  FaSeedling,
+  FaRobot,
+  FaFire,
+  FaLightbulb,
+} from "react-icons/fa";
 
 // Helper function để theo dõi hoạt động khi ChatBot chưa tải
 const trackActivity = (type, data) => {
   try {
-    const storedActivities = localStorage.getItem('userActivities') || '[]';
+    const storedActivities = localStorage.getItem("userActivities") || "[]";
     const activities = JSON.parse(storedActivities);
     activities.unshift({ ...data, type, timestamp: new Date().toISOString() });
-    localStorage.setItem('userActivities', JSON.stringify(activities.slice(0, 30)));
+    localStorage.setItem(
+      "userActivities",
+      JSON.stringify(activities.slice(0, 30))
+    );
     // Kích hoạt sự kiện nếu có thể
-    if (typeof CustomEvent === 'function') {
-      const event = new CustomEvent('userActivityUpdate');
+    if (typeof CustomEvent === "function") {
+      const event = new CustomEvent("userActivityUpdate");
       window.dispatchEvent(event);
     }
   } catch (error) {
-    console.error('Error tracking activity:', error);
+    console.error("Error tracking activity:", error);
   }
 };
 
@@ -39,6 +51,9 @@ const Homes = () => {
   const [posts, setPosts] = useState([]);
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [hasActivityData, setHasActivityData] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const dataFetchedRef = useRef(false);
+
   const bannerRef = useRef(null);
   const bannerInView = useInView(bannerRef, { once: false, amount: 0.5 });
   const bannerControls = useAnimation();
@@ -57,7 +72,7 @@ const Homes = () => {
     // Function để phân tích hoạt động người dùng và tạo gợi ý
     const analyzeUserActivities = () => {
       try {
-        const storedActivities = localStorage.getItem('userActivities');
+        const storedActivities = localStorage.getItem("userActivities");
         if (!storedActivities) {
           setHasActivityData(false);
           return;
@@ -74,20 +89,20 @@ const Homes = () => {
 
         // Phân tích hoạt động người dùng để tạo gợi ý
         const viewedProducts = activities
-          .filter(activity => activity.type === 'view_product')
-          .map(activity => ({
+          .filter((activity) => activity.type === "view_product")
+          .map((activity) => ({
             id: activity.productId,
             name: activity.productName,
             category: activity.category,
           }));
 
         const searchedKeywords = activities
-          .filter(activity => activity.type === 'search_product')
-          .map(activity => activity.keyword);
+          .filter((activity) => activity.type === "search_product")
+          .map((activity) => activity.keyword);
 
         const cartProducts = activities
-          .filter(activity => activity.type === 'add_to_cart')
-          .map(activity => ({
+          .filter((activity) => activity.type === "add_to_cart")
+          .map((activity) => ({
             id: activity.productId,
             name: activity.productName,
             category: activity.category,
@@ -96,7 +111,7 @@ const Homes = () => {
         // Gửi request để nhận gợi ý
         fetchRecommendations(viewedProducts, searchedKeywords, cartProducts);
       } catch (error) {
-        console.error('Error analyzing user activities:', error);
+        console.error("Error analyzing user activities:", error);
       }
     };
 
@@ -106,14 +121,14 @@ const Homes = () => {
     };
 
     // Đăng ký lắng nghe sự kiện
-    window.addEventListener('userActivityUpdate', handleActivityUpdate);
+    window.addEventListener("userActivityUpdate", handleActivityUpdate);
 
     // Phân tích lần đầu khi component mount
     analyzeUserActivities();
 
     // Cleanup listener
     return () => {
-      window.removeEventListener('userActivityUpdate', handleActivityUpdate);
+      window.removeEventListener("userActivityUpdate", handleActivityUpdate);
     };
   }, []);
 
@@ -121,7 +136,7 @@ const Homes = () => {
   useEffect(() => {
     const checkUserActivities = () => {
       try {
-        const storedActivities = localStorage.getItem('userActivities');
+        const storedActivities = localStorage.getItem("userActivities");
         if (storedActivities) {
           const activities = JSON.parse(storedActivities);
           if (activities.length > 0) {
@@ -129,31 +144,35 @@ const Homes = () => {
 
             // Phân tích hoạt động người dùng để tạo gợi ý
             const viewedProducts = activities
-              .filter(activity => activity.type === 'view_product')
-              .map(activity => ({
+              .filter((activity) => activity.type === "view_product")
+              .map((activity) => ({
                 id: activity.productId,
                 name: activity.productName,
                 category: activity.category,
               }));
 
             const searchedKeywords = activities
-              .filter(activity => activity.type === 'search_product')
-              .map(activity => activity.keyword);
+              .filter((activity) => activity.type === "search_product")
+              .map((activity) => activity.keyword);
 
             const cartProducts = activities
-              .filter(activity => activity.type === 'add_to_cart')
-              .map(activity => ({
+              .filter((activity) => activity.type === "add_to_cart")
+              .map((activity) => ({
                 id: activity.productId,
                 name: activity.productName,
                 category: activity.category,
               }));
 
             // Gửi request để nhận gợi ý
-            fetchRecommendations(viewedProducts, searchedKeywords, cartProducts);
+            fetchRecommendations(
+              viewedProducts,
+              searchedKeywords,
+              cartProducts
+            );
           }
         }
       } catch (error) {
-        console.error('Error checking user activities:', error);
+        console.error("Error checking user activities:", error);
       }
     };
 
@@ -162,15 +181,22 @@ const Homes = () => {
   }, []);
 
   // Function gọi API để lấy sản phẩm gợi ý dựa trên hoạt động người dùng
-  const fetchRecommendations = async (viewedProducts, searchedKeywords, cartProducts) => {
+  const fetchRecommendations = async (
+    viewedProducts,
+    searchedKeywords,
+    cartProducts
+  ) => {
     try {
-      const response = await api.post("ai-recommendations", {
+      const response = await axiosInstance.post("ai-recommendations", {
         viewedProducts,
         searchedKeywords,
-        cartProducts
+        cartProducts,
       });
 
-      if (response.data.status === "success" && Array.isArray(response.data.recommendations)) {
+      if (
+        response.data.status === "success" &&
+        Array.isArray(response.data.recommendations)
+      ) {
         setAiRecommendations(response.data.recommendations);
       }
     } catch (error) {
@@ -179,50 +205,64 @@ const Homes = () => {
       // Fallback: Phân tích nâng cao khi API chưa hoạt động
       if (products.length > 0) {
         // Nếu có hoạt động người dùng, tạo gợi ý dựa trên hoạt động
-        if (viewedProducts.length > 0 || searchedKeywords.length > 0 || cartProducts.length > 0) {
+        if (
+          viewedProducts.length > 0 ||
+          searchedKeywords.length > 0 ||
+          cartProducts.length > 0
+        ) {
           // 1. Thu thập các danh mục đã quan tâm
-          const interestedCategories = [...new Set([
-            ...viewedProducts.map(p => p.category),
-            ...cartProducts.map(p => p.category)
-          ])].filter(Boolean);
+          const interestedCategories = [
+            ...new Set([
+              ...viewedProducts.map((p) => p.category),
+              ...cartProducts.map((p) => p.category),
+            ]),
+          ].filter(Boolean);
 
           // 2. Thu thập các ID sản phẩm đã xem để loại trừ
-          const viewedIds = viewedProducts.map(p => p.id);
+          const viewedIds = viewedProducts.map((p) => p.id);
 
           // 3. Tìm các sản phẩm liên quan đến từ khóa tìm kiếm
           let keywordRelatedProducts = [];
           if (searchedKeywords.length > 0) {
-            const keywords = searchedKeywords.join(' ').toLowerCase().split(' ');
-            keywordRelatedProducts = products.filter(p =>
-              keywords.some(keyword =>
-                p.name.toLowerCase().includes(keyword) ||
-                (p.description && p.description.toLowerCase().includes(keyword))
-              ) && !viewedIds.includes(p.id)
+            const keywords = searchedKeywords
+              .join(" ")
+              .toLowerCase()
+              .split(" ");
+            keywordRelatedProducts = products.filter(
+              (p) =>
+                keywords.some(
+                  (keyword) =>
+                    p.name.toLowerCase().includes(keyword) ||
+                    (p.description &&
+                      p.description.toLowerCase().includes(keyword))
+                ) && !viewedIds.includes(p.id)
             );
           }
 
           // 4. Tìm các sản phẩm cùng danh mục
           let categoryRelatedProducts = [];
           if (interestedCategories.length > 0) {
-            categoryRelatedProducts = products.filter(p =>
-              interestedCategories.includes(p.category) &&
-              !viewedIds.includes(p.id) &&
-              !keywordRelatedProducts.some(kp => kp.id === p.id)
+            categoryRelatedProducts = products.filter(
+              (p) =>
+                interestedCategories.includes(p.category) &&
+                !viewedIds.includes(p.id) &&
+                !keywordRelatedProducts.some((kp) => kp.id === p.id)
             );
           }
 
           // 5. Kết hợp kết quả, ưu tiên sản phẩm theo từ khóa trước
           const combinedResults = [
             ...keywordRelatedProducts,
-            ...categoryRelatedProducts
+            ...categoryRelatedProducts,
           ].slice(0, 4); // Giới hạn kết quả
 
           // 6. Nếu vẫn thiếu sản phẩm, bổ sung thêm sản phẩm ngẫu nhiên
           if (combinedResults.length < 4) {
             const randomProducts = products
-              .filter(p =>
-                !viewedIds.includes(p.id) &&
-                !combinedResults.some(cp => cp.id === p.id)
+              .filter(
+                (p) =>
+                  !viewedIds.includes(p.id) &&
+                  !combinedResults.some((cp) => cp.id === p.id)
               )
               .sort(() => 0.5 - Math.random())
               .slice(0, 4 - combinedResults.length);
@@ -269,73 +309,265 @@ const Homes = () => {
   };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await api.get("products");
-        if (
-          response.data.status === "success" &&
-          Array.isArray(response.data.data.data)
-        ) {
-          setProducts(response.data.data.data);
-        } else {
-          console.log("Dữ liệu không phải là mảng hoặc API trả về lỗi");
-        }
-      } catch (error) {
-        console.log("Lỗi khi gọi API sản phẩm:", error);
-      }
-    };
+    if (dataFetchedRef.current) return;
 
-    const fetchBestSellers = async () => {
+    const fetchAllData = async () => {
+      setIsLoading(true); // Bắt đầu loading
       try {
-        const response = await api.get("best-sellers");
-        if (
-          response.data.status === "success" &&
-          Array.isArray(response.data.data)
-        ) {
-          setBestSellers(response.data.data);
-        } else {
-          console.log("Dữ liệu không phải là mảng hoặc API trả về lỗi");
-        }
-      } catch (error) {
-        console.log("Lỗi khi gọi API sản phẩm bán chạy:", error);
-      }
-    };
+        dataFetchedRef.current = true;
+        const [productsResponse, bestSellersResponse, postsResponse] =
+          await Promise.all([
+            axiosInstance.get("/products"),
+            axiosInstance.get("/best-sellers"),
+            axiosInstance.get("/posts"),
+          ]);
 
-    const fetchPosts = async () => {
-      try {
-        const response = await api.get("posts");
+        // Xử lý products
+        let processedProducts = [];
         if (
-          response.data.status === "success" &&
-          Array.isArray(response.data.data)
+          productsResponse.data.status === "success" &&
+          Array.isArray(productsResponse.data.data.data)
         ) {
-          console.log("Dữ liệu bài viết:", response.data.data);
-          setPosts(response.data.data);
+          processedProducts = productsResponse.data.data.data.map((product) => {
+            // Tạo bản sao sâu của sản phẩm để tránh tham chiếu
+            const newProduct = JSON.parse(JSON.stringify(product));
+
+            // Chuẩn hóa has_variants thành boolean
+            newProduct.has_variants = Boolean(
+              newProduct.has_variants === 1 ||
+                newProduct.has_variants === true ||
+                newProduct.has_variants === "1" ||
+                newProduct.has_variants === "true"
+            );
+
+            // Đảm bảo variants là một mảng
+            if (!Array.isArray(newProduct.variants)) {
+              newProduct.variants = [];
+            }
+
+            // Tính price_range
+            if (newProduct.has_variants && newProduct.variants.length > 0) {
+              // Lọc ra các giá trị hợp lệ
+              const validVariants = newProduct.variants.filter(
+                (v) => v && typeof v === "object"
+              );
+
+              if (validVariants.length > 0) {
+                const prices = validVariants
+                  .map((v) => parseFloat(v.price) || 0)
+                  .filter((p) => p > 0);
+
+                const discountPrices = validVariants
+                  .map((v) => {
+                    const discount = parseFloat(v.discount_price) || 0;
+                    return discount > 0 ? discount : 0;
+                  })
+                  .filter((p) => p > 0);
+
+                // Chỉ tính nếu có ít nhất một giá hợp lệ
+                if (prices.length > 0) {
+                  newProduct.price_range = {
+                    min: Math.min(...prices),
+                    max: Math.max(...prices),
+                    min_discount:
+                      discountPrices.length > 0
+                        ? Math.min(...discountPrices)
+                        : 0,
+                    max_discount:
+                      discountPrices.length > 0
+                        ? Math.max(...discountPrices)
+                        : 0,
+                  };
+                } else {
+                  // Fallback nếu không có giá hợp lệ
+                  newProduct.price_range = {
+                    min: parseFloat(newProduct.price) || 0,
+                    max: parseFloat(newProduct.price) || 0,
+                    min_discount: parseFloat(newProduct.discount_price) || 0,
+                    max_discount: parseFloat(newProduct.discount_price) || 0,
+                  };
+                }
+              } else {
+                // Không có variants hợp lệ
+                newProduct.price_range = {
+                  min: parseFloat(newProduct.price) || 0,
+                  max: parseFloat(newProduct.price) || 0,
+                  min_discount: parseFloat(newProduct.discount_price) || 0,
+                  max_discount: parseFloat(newProduct.discount_price) || 0,
+                };
+              }
+            } else {
+              // Sản phẩm không có variants, nhưng vẫn tạo price_range để đồng nhất
+              newProduct.price_range = {
+                min: parseFloat(newProduct.price) || 0,
+                max: parseFloat(newProduct.price) || 0,
+                min_discount: parseFloat(newProduct.discount_price) || 0,
+                max_discount: parseFloat(newProduct.discount_price) || 0,
+              };
+            }
+
+            // Đảm bảo thuộc tính price_range luôn tồn tại
+            if (!newProduct.price_range) {
+              newProduct.price_range = {
+                min: parseFloat(newProduct.price) || 0,
+                max: parseFloat(newProduct.price) || 0,
+                min_discount: parseFloat(newProduct.discount_price) || 0,
+                max_discount: parseFloat(newProduct.discount_price) || 0,
+              };
+            }
+
+            return newProduct;
+          });
+          console.log("Processed Products:", processedProducts);
+          setProducts(processedProducts);
         } else {
-          console.log(
-            "Dữ liệu bài viết không phải là mảng hoặc API trả về lỗi"
+          console.log("Lỗi tải products hoặc dữ liệu không hợp lệ");
+          setProducts([]); // Reset nếu lỗi
+        }
+
+        // Xử lý bestSellers
+        let processedBestSellers = [];
+        if (
+          bestSellersResponse.data.status === "success" &&
+          Array.isArray(bestSellersResponse.data.data)
+        ) {
+          processedBestSellers = bestSellersResponse.data.data.map(
+            (product) => {
+              // Tạo bản sao sâu của sản phẩm để tránh tham chiếu
+              const newProduct = JSON.parse(JSON.stringify(product));
+
+              // Chuẩn hóa has_variants thành boolean
+              newProduct.has_variants = Boolean(
+                newProduct.has_variants === 1 ||
+                  newProduct.has_variants === true ||
+                  newProduct.has_variants === "1" ||
+                  newProduct.has_variants === "true"
+              );
+
+              // Đảm bảo variants là một mảng
+              if (!Array.isArray(newProduct.variants)) {
+                newProduct.variants = [];
+              }
+
+              // Tính price_range
+              if (newProduct.has_variants && newProduct.variants.length > 0) {
+                // Lọc ra các giá trị hợp lệ
+                const validVariants = newProduct.variants.filter(
+                  (v) => v && typeof v === "object"
+                );
+
+                if (validVariants.length > 0) {
+                  const prices = validVariants
+                    .map((v) => parseFloat(v.price) || 0)
+                    .filter((p) => p > 0);
+
+                  const discountPrices = validVariants
+                    .map((v) => {
+                      const discount = parseFloat(v.discount_price) || 0;
+                      return discount > 0 ? discount : 0;
+                    })
+                    .filter((p) => p > 0);
+
+                  // Chỉ tính nếu có ít nhất một giá hợp lệ
+                  if (prices.length > 0) {
+                    newProduct.price_range = {
+                      min: Math.min(...prices),
+                      max: Math.max(...prices),
+                      min_discount:
+                        discountPrices.length > 0
+                          ? Math.min(...discountPrices)
+                          : 0,
+                      max_discount:
+                        discountPrices.length > 0
+                          ? Math.max(...discountPrices)
+                          : 0,
+                    };
+                  } else {
+                    // Fallback nếu không có giá hợp lệ
+                    newProduct.price_range = {
+                      min: parseFloat(newProduct.price) || 0,
+                      max: parseFloat(newProduct.price) || 0,
+                      min_discount: parseFloat(newProduct.discount_price) || 0,
+                      max_discount: parseFloat(newProduct.discount_price) || 0,
+                    };
+                  }
+                } else {
+                  // Không có variants hợp lệ
+                  newProduct.price_range = {
+                    min: parseFloat(newProduct.price) || 0,
+                    max: parseFloat(newProduct.price) || 0,
+                    min_discount: parseFloat(newProduct.discount_price) || 0,
+                    max_discount: parseFloat(newProduct.discount_price) || 0,
+                  };
+                }
+              } else {
+                // Sản phẩm không có variants, nhưng vẫn tạo price_range để đồng nhất
+                newProduct.price_range = {
+                  min: parseFloat(newProduct.price) || 0,
+                  max: parseFloat(newProduct.price) || 0,
+                  min_discount: parseFloat(newProduct.discount_price) || 0,
+                  max_discount: parseFloat(newProduct.discount_price) || 0,
+                };
+              }
+
+              // Đảm bảo thuộc tính price_range luôn tồn tại
+              if (!newProduct.price_range) {
+                newProduct.price_range = {
+                  min: parseFloat(newProduct.price) || 0,
+                  max: parseFloat(newProduct.price) || 0,
+                  min_discount: parseFloat(newProduct.discount_price) || 0,
+                  max_discount: parseFloat(newProduct.discount_price) || 0,
+                };
+              }
+
+              return newProduct;
+            }
           );
+          console.log("Processed Best Sellers:", processedBestSellers);
+          setBestSellers(processedBestSellers);
+        } else {
+          console.log("Lỗi tải best sellers hoặc dữ liệu không hợp lệ");
+          setBestSellers([]); // Reset nếu lỗi
+        }
+
+        // Xử lý posts
+        if (
+          postsResponse.data.status === "success" &&
+          Array.isArray(postsResponse.data.data)
+        ) {
+          setPosts(postsResponse.data.data);
+        } else {
+          console.log("Lỗi tải posts hoặc dữ liệu không hợp lệ");
+          setPosts([]);
         }
       } catch (error) {
-        console.log("Lỗi khi gọi API bài viết:", error);
+        dataFetchedRef.current = false; // Đặt lại trạng thái khi có lỗi để có thể thử lại
+        console.error("Lỗi nghiêm trọng khi tải dữ liệu trang chủ:", error);
+        setProducts([]);
+        setBestSellers([]);
+        setPosts([]);
+      } finally {
+        setIsLoading(false); // Kết thúc loading bất kể thành công hay lỗi
       }
     };
 
-    fetchProducts();
-    fetchBestSellers();
-    fetchPosts();
-  }, []);
+    fetchAllData();
+  }, []); // Dependency rỗng đảm bảo chỉ chạy 1 lần khi mount
 
   // Tạo gợi ý mặc định khi có sản phẩm
   useEffect(() => {
-    // Nếu có sản phẩm nhưng chưa có gợi ý AI, tạo gợi ý mặc định
-    if (products.length > 0 && aiRecommendations.length === 0) {
-      // Lấy một số sản phẩm ngẫu nhiên để hiển thị như gợi ý mặc định
+    if (
+      products.length > 0 &&
+      aiRecommendations.length === 0 &&
+      hasActivityData === false
+    ) {
+      // Chỉ tạo gợi ý mặc định nếu chưa có hoạt động
       const randomRecommendations = [...products]
         .sort(() => 0.5 - Math.random())
         .slice(0, 4);
       setAiRecommendations(randomRecommendations);
     }
-  }, [products, aiRecommendations]);
+  }, [products, aiRecommendations, hasActivityData]); // Thêm dependency hasActivityData
 
   // Animation variants
   const fadeInUp = {
@@ -373,7 +605,6 @@ const Homes = () => {
     },
   };
 
-  console.log("Sản phẩm:", products);
   // Banner text variants
   const bannerTextVariants = {
     hidden: {
@@ -429,6 +660,7 @@ const Homes = () => {
 
   return (
     <>
+      {isLoading && <LoadingScreen />}
       {/* Banner chính */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -541,8 +773,7 @@ const Homes = () => {
                   transition={{ duration: 0.6 }}
                   viewport={{ once: true }}
                 >
-                  <FaRobot className="mr-2" />
-                  <span>AI RECOMMENDATIONS</span>
+                  <FaLightbulb className="mr-2" /> GỢI Ý SẢN PHẨM
                 </motion.div>
                 <motion.h2
                   className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
@@ -551,8 +782,7 @@ const Homes = () => {
                   transition={{ duration: 0.8 }}
                   viewport={{ once: true }}
                 >
-                  Sản phẩm được{" "}
-                  <span className="text-blue-500">trợ lý AI</span> gợi ý
+                  Sản phẩm được <span className="text-blue-500">gợi ý</span>
                 </motion.h2>
                 <motion.p
                   className="text-gray-600"
@@ -561,7 +791,8 @@ const Homes = () => {
                   transition={{ duration: 0.8, delay: 0.2 }}
                   viewport={{ once: true }}
                 >
-                  Dựa trên hoạt động gần đây của bạn, trợ lý AI của chúng tôi đã chọn ra những sản phẩm bạn có thể quan tâm.
+                  Dựa trên hoạt động gần đây của bạn, Trang web của chúng tôi đã
+                  chọn ra những sản phẩm bạn có thể quan tâm.
                 </motion.p>
               </div>
               <motion.div
@@ -596,37 +827,51 @@ const Homes = () => {
                     y: -12,
                     transition: { duration: 0.3, ease: "easeOut" },
                   }}
-                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
+                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group relative z-0"
                 >
                   <Link
                     to={`product-detail/${product.id}`}
-                    className="block"
+                    className="block absolute inset-0 z-10"
                     onClick={() => {
                       // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
                       if (window.trackProductView) {
-                        window.trackProductView(product.id, product.name, product.category);
+                        window.trackProductView(
+                          product.id,
+                          product.name,
+                          product.category
+                        );
                       } else {
-                        trackActivity('view_product', {
+                        trackActivity("view_product", {
                           productId: product.id,
                           productName: product.name,
-                          category: product.category
+                          category: product.category,
                         });
                       }
                     }}
                   >
+                    <span className="sr-only">Xem chi tiết {product.name}</span>
+                  </Link>
+                  <div className="relative">
                     <div className="relative overflow-hidden">
                       <div className="aspect-square overflow-hidden">
                         <motion.img
-                          src={`http://localhost:8000/storage/${product.image_thumnail}`}
+                          src={
+                            product.image_thumnail
+                              ? product.image_thumnail.startsWith("http")
+                                ? product.image_thumnail
+                                : `http://localhost:8000/storage/${product.image_thumnail}`
+                              : "https://via.placeholder.com/300x300?text=No+Image"
+                          }
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700 bg-gray-100"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "/images/no-image.png";
+                          }}
                           initial={{ scale: 1.2, y: 20 }}
                           animate={{ scale: 1, y: 0 }}
                           transition={{ duration: 0.8, delay: index * 0.1 }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = 'https://via.placeholder.com/300x300?text=Image+Not+Found';
-                          }}
                         />
                       </div>
 
@@ -641,11 +886,11 @@ const Homes = () => {
                           delay: 0.5 + index * 0.1,
                         }}
                       >
-                        <FaRobot className="mr-1" /> AI
+                        <FaLightbulb className="mr-1" /> Gợi ý
                       </motion.div>
 
                       {/* Nút mua nhanh */}
-                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
                         <motion.button
                           className="bg-white text-blue-500 p-3 rounded-full shadow-md hover:bg-blue-500 hover:text-white transition-all duration-300"
                           whileHover={{ scale: 1.1 }}
@@ -655,12 +900,16 @@ const Homes = () => {
                             e.stopPropagation();
                             // Sử dụng window.trackAddToCart nếu có, nếu không thì dùng helper function
                             if (window.trackAddToCart) {
-                              window.trackAddToCart(product.id, product.name, product.category);
+                              window.trackAddToCart(
+                                product.id,
+                                product.name,
+                                product.category
+                              );
                             } else {
-                              trackActivity('add_to_cart', {
+                              trackActivity("add_to_cart", {
                                 productId: product.id,
                                 productName: product.name,
-                                category: product.category
+                                category: product.category,
                               });
                             }
                             window.location.href = `/cart/add/${product.id}`;
@@ -677,8 +926,9 @@ const Homes = () => {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <IoStar
                             key={star}
-                            className={`${star <= 4 ? "text-blue-400" : "text-gray-300"
-                              } w-4 h-4`}
+                            className={`${
+                              star <= 4 ? "text-blue-400" : "text-gray-300"
+                            } w-4 h-4`}
                           />
                         ))}
                         <span className="text-gray-500 text-sm ml-2">
@@ -694,23 +944,25 @@ const Homes = () => {
                         Phù hợp với sở thích của bạn
                       </p>
 
-                      {product.has_variants ? (
+                      {Boolean(product.has_variants) ? (
                         // Sản phẩm có biến thể
-                        <div>
-                          {product.price_range?.min_discount ? (
+                        <div className="relative">
+                          {product.price_range &&
+                          product.price_range.min_discount > 0 ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
-                              <span className="font-semibold text-blue-600 text-lg">
+                              <span className="font-semibold text-amber-600 text-lg">
                                 {new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
                                 }).format(product.price_range.min_discount)}
-                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                {product.price_range.max_discount > 0 &&
+                                  product.price_range.max_discount !==
+                                    product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
-                                  }).format(product.price_range.max_discount)}`
-                                }
+                                  }).format(product.price_range.max_discount)}`}
                               </span>
                               <span className="text-gray-400 line-through text-sm">
                                 {new Intl.NumberFormat("vi-VN", {
@@ -721,23 +973,30 @@ const Homes = () => {
                             </div>
                           ) : (
                             // Không có khuyến mãi
-                            <span className="font-semibold text-blue-600 text-lg">
+                            <span className="font-semibold text-amber-600 text-lg">
                               {new Intl.NumberFormat("vi-VN", {
                                 style: "currency",
                                 currency: "VND",
-                              }).format(product.price_range?.min || 0)}
-                              {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                              }).format(
+                                product.price_range && product.price_range.min
+                                  ? product.price_range.min
+                                  : product.price || 0
+                              )}
+                              {product.price_range &&
+                                product.price_range.max &&
+                                product.price_range.min &&
+                                product.price_range.max !==
+                                  product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
-                                }).format(product.price_range.max)}`
-                              }
+                                }).format(product.price_range.max)}`}
                             </span>
                           )}
                         </div>
                       ) : (
                         // Sản phẩm thường
-                        <div>
+                        <div className="z-20 relative">
                           {product.discount_price ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
@@ -766,7 +1025,7 @@ const Homes = () => {
                         </div>
                       )}
                     </div>
-                  </Link>
+                  </div>
                 </motion.div>
               ))}
             </motion.div>
@@ -792,7 +1051,7 @@ const Homes = () => {
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
               >
-                <FaFire className="inline-block mr-1" /> BÁN CHẠY NHẤT
+                <FaFire className="mr-1" /> BÁN CHẠY NHẤT
               </motion.div>
               <motion.h2
                 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
@@ -810,7 +1069,8 @@ const Homes = () => {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 viewport={{ once: true }}
               >
-                Những sản phẩm được khách hàng yêu thích và chọn mua nhiều nhất tại Eco-Furnish.
+                Những sản phẩm được khách hàng yêu thích và chọn mua nhiều nhất
+                tại Eco-Furnish.
               </motion.p>
             </div>
             <motion.div
@@ -846,33 +1106,51 @@ const Homes = () => {
                     y: -12,
                     transition: { duration: 0.3, ease: "easeOut" },
                   }}
-                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
+                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group relative z-0"
                 >
-                  <Link to={`product-detail/${product.id}`} className="block" onClick={() => {
-                    // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
-                    if (window.trackProductView) {
-                      window.trackProductView(product.id, product.name, product.category);
-                    } else {
-                      trackActivity('view_product', {
-                        productId: product.id,
-                        productName: product.name,
-                        category: product.category
-                      });
-                    }
-                  }}>
+                  <Link
+                    to={`product-detail/${product.id}`}
+                    className="block absolute inset-0 z-10"
+                    onClick={() => {
+                      // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
+                      if (window.trackProductView) {
+                        window.trackProductView(
+                          product.id,
+                          product.name,
+                          product.category
+                        );
+                      } else {
+                        trackActivity("view_product", {
+                          productId: product.id,
+                          productName: product.name,
+                          category: product.category,
+                        });
+                      }
+                    }}
+                  >
+                    <span className="sr-only">Xem chi tiết {product.name}</span>
+                  </Link>
+                  <div className="relative">
                     <div className="relative overflow-hidden">
                       <div className="aspect-square overflow-hidden">
                         <motion.img
-                          src={`http://localhost:8000/storage/${product.image_thumnail}`}
+                          src={
+                            product.image_thumnail
+                              ? product.image_thumnail.startsWith("http")
+                                ? product.image_thumnail
+                                : `http://localhost:8000/storage/${product.image_thumnail}`
+                              : "https://via.placeholder.com/300x300?text=No+Image"
+                          }
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700 bg-gray-100"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "/images/no-image.png";
+                          }}
                           initial={{ scale: 1.2, y: 20 }}
                           animate={{ scale: 1, y: 0 }}
                           transition={{ duration: 0.8, delay: index * 0.1 }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = 'https://via.placeholder.com/300x300?text=Image+Not+Found';
-                          }}
                         />
                       </div>
 
@@ -892,7 +1170,7 @@ const Homes = () => {
 
                       {/* Số thứ tự xếp hạng */}
                       <motion.div
-                        className="absolute top-3 left-3 bg-rose-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg"
+                        className="absolute top-3 left-3 bg-rose-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg z-20"
                         initial={{ opacity: 0, scale: 0.5 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         transition={{
@@ -905,7 +1183,7 @@ const Homes = () => {
                       </motion.div>
 
                       {/* Nút mua nhanh */}
-                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
                         <motion.button
                           className="bg-white text-rose-500 p-3 rounded-full shadow-md hover:bg-rose-500 hover:text-white transition-all duration-300"
                           whileHover={{ scale: 1.1 }}
@@ -915,12 +1193,16 @@ const Homes = () => {
                             e.stopPropagation();
                             // Sử dụng window.trackAddToCart nếu có, nếu không thì dùng helper function
                             if (window.trackAddToCart) {
-                              window.trackAddToCart(product.id, product.name, product.category);
+                              window.trackAddToCart(
+                                product.id,
+                                product.name,
+                                product.category
+                              );
                             } else {
-                              trackActivity('add_to_cart', {
+                              trackActivity("add_to_cart", {
                                 productId: product.id,
                                 productName: product.name,
-                                category: product.category
+                                category: product.category,
                               });
                             }
                             window.location.href = `/cart/add/${product.id}`;
@@ -937,8 +1219,9 @@ const Homes = () => {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <IoStar
                             key={star}
-                            className={`${star <= 4 ? "text-rose-400" : "text-gray-300"
-                              } w-4 h-4`}
+                            className={`${
+                              star <= 4 ? "text-rose-400" : "text-gray-300"
+                            } w-4 h-4`}
                           />
                         ))}
                         <span className="text-gray-500 text-sm ml-2">
@@ -954,10 +1237,11 @@ const Homes = () => {
                         Sản phẩm bán chạy hàng đầu
                       </p>
 
-                      {product.has_variants ? (
+                      {Boolean(product.has_variants) ? (
                         // Sản phẩm có biến thể
-                        <div>
-                          {product.price_range?.min_discount ? (
+                        <div className="relative">
+                          {product.price_range &&
+                          product.price_range.min_discount > 0 ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-rose-600 text-lg">
@@ -965,12 +1249,13 @@ const Homes = () => {
                                   style: "currency",
                                   currency: "VND",
                                 }).format(product.price_range.min_discount)}
-                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                {product.price_range.max_discount > 0 &&
+                                  product.price_range.max_discount !==
+                                    product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
-                                  }).format(product.price_range.max_discount)}`
-                                }
+                                  }).format(product.price_range.max_discount)}`}
                               </span>
                               <span className="text-gray-400 line-through text-sm">
                                 {new Intl.NumberFormat("vi-VN", {
@@ -985,19 +1270,26 @@ const Homes = () => {
                               {new Intl.NumberFormat("vi-VN", {
                                 style: "currency",
                                 currency: "VND",
-                              }).format(product.price_range?.min || 0)}
-                              {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                              }).format(
+                                product.price_range && product.price_range.min
+                                  ? product.price_range.min
+                                  : product.price || 0
+                              )}
+                              {product.price_range &&
+                                product.price_range.max &&
+                                product.price_range.min &&
+                                product.price_range.max !==
+                                  product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
-                                }).format(product.price_range.max)}`
-                              }
+                                }).format(product.price_range.max)}`}
                             </span>
                           )}
                         </div>
                       ) : (
                         // Sản phẩm thường
-                        <div>
+                        <div className="z-20 relative">
                           {product.discount_price ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
@@ -1026,7 +1318,7 @@ const Homes = () => {
                         </div>
                       )}
                     </div>
-                  </Link>
+                  </div>
                 </motion.div>
               ))
             ) : (
@@ -1071,7 +1363,7 @@ const Homes = () => {
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
               >
-                NEW ARRIVALS
+                MỚI NHẤT
               </motion.div>
               <motion.h2
                 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800"
@@ -1127,26 +1419,48 @@ const Homes = () => {
                     y: -12,
                     transition: { duration: 0.3, ease: "easeOut" },
                   }}
-                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group"
+                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group relative z-0"
                 >
-                  <Link to={`product-detail/${product.id}`} className="block" onClick={() => {
-                    // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function 
-                    if (window.trackProductView) {
-                      window.trackProductView(product.id, product.name, product.category);
-                    } else {
-                      trackActivity('view_product', {
-                        productId: product.id,
-                        productName: product.name,
-                        category: product.category
-                      });
-                    }
-                  }}>
+                  <Link
+                    to={`product-detail/${product.id}`}
+                    className="block absolute inset-0 z-10"
+                    onClick={() => {
+                      // Sử dụng window.trackProductView nếu có, nếu không thì dùng helper function
+                      if (window.trackProductView) {
+                        window.trackProductView(
+                          product.id,
+                          product.name,
+                          product.category
+                        );
+                      } else {
+                        trackActivity("view_product", {
+                          productId: product.id,
+                          productName: product.name,
+                          category: product.category,
+                        });
+                      }
+                    }}
+                  >
+                    <span className="sr-only">Xem chi tiết {product.name}</span>
+                  </Link>
+                  <div className="relative">
                     <div className="relative overflow-hidden">
                       <div className="aspect-square overflow-hidden">
                         <motion.img
-                          src={`http://localhost:8000/storage/${product.image_thumnail}`}
+                          src={
+                            product.image_thumnail
+                              ? product.image_thumnail.startsWith("http")
+                                ? product.image_thumnail
+                                : `http://localhost:8000/storage/${product.image_thumnail}`
+                              : "https://via.placeholder.com/300x300?text=No+Image"
+                          }
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700 bg-gray-100"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "/images/no-image.png";
+                          }}
                           initial={{ scale: 1.2, y: 20 }}
                           animate={{ scale: 1, y: 0 }}
                           transition={{ duration: 0.8, delay: index * 0.1 }}
@@ -1168,7 +1482,7 @@ const Homes = () => {
                       </motion.div>
 
                       {/* Nút mua nhanh */}
-                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
                         <motion.button
                           className="bg-white text-amber-500 p-3 rounded-full shadow-md hover:bg-amber-500 hover:text-white transition-all duration-300"
                           whileHover={{ scale: 1.1 }}
@@ -1178,12 +1492,16 @@ const Homes = () => {
                             e.stopPropagation();
                             // Sử dụng window.trackAddToCart nếu có, nếu không thì dùng helper function
                             if (window.trackAddToCart) {
-                              window.trackAddToCart(product.id, product.name, product.category);
+                              window.trackAddToCart(
+                                product.id,
+                                product.name,
+                                product.category
+                              );
                             } else {
-                              trackActivity('add_to_cart', {
+                              trackActivity("add_to_cart", {
                                 productId: product.id,
                                 productName: product.name,
-                                category: product.category
+                                category: product.category,
                               });
                             }
                             window.location.href = `/cart/add/${product.id}`;
@@ -1200,8 +1518,9 @@ const Homes = () => {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <IoStar
                             key={star}
-                            className={`${star <= 4 ? "text-amber-400" : "text-gray-300"
-                              } w-4 h-4`}
+                            className={`${
+                              star <= 4 ? "text-amber-400" : "text-gray-300"
+                            } w-4 h-4`}
                           />
                         ))}
                         <span className="text-gray-500 text-sm ml-2">
@@ -1217,10 +1536,11 @@ const Homes = () => {
                         Sản phẩm nội thất cao cấp, bền đẹp
                       </p>
 
-                      {product.has_variants ? (
+                      {Boolean(product.has_variants) ? (
                         // Sản phẩm có biến thể
-                        <div>
-                          {product.price_range?.min_discount ? (
+                        <div className="relative">
+                          {product.price_range &&
+                          product.price_range.min_discount > 0 ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-amber-600 text-lg">
@@ -1228,12 +1548,13 @@ const Homes = () => {
                                   style: "currency",
                                   currency: "VND",
                                 }).format(product.price_range.min_discount)}
-                                {product.price_range.max_discount && product.price_range.max_discount !== product.price_range.min_discount &&
+                                {product.price_range.max_discount > 0 &&
+                                  product.price_range.max_discount !==
+                                    product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
-                                  }).format(product.price_range.max_discount)}`
-                                }
+                                  }).format(product.price_range.max_discount)}`}
                               </span>
                               <span className="text-gray-400 line-through text-sm">
                                 {new Intl.NumberFormat("vi-VN", {
@@ -1248,19 +1569,26 @@ const Homes = () => {
                               {new Intl.NumberFormat("vi-VN", {
                                 style: "currency",
                                 currency: "VND",
-                              }).format(product.price_range?.min || 0)}
-                              {product.price_range?.max && product.price_range.max !== product.price_range.min &&
+                              }).format(
+                                product.price_range && product.price_range.min
+                                  ? product.price_range.min
+                                  : product.price || 0
+                              )}
+                              {product.price_range &&
+                                product.price_range.max &&
+                                product.price_range.min &&
+                                product.price_range.max !==
+                                  product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
-                                }).format(product.price_range.max)}`
-                              }
+                                }).format(product.price_range.max)}`}
                             </span>
                           )}
                         </div>
                       ) : (
                         // Sản phẩm thường
-                        <div>
+                        <div className="z-20 relative">
                           {product.discount_price ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
@@ -1289,7 +1617,7 @@ const Homes = () => {
                         </div>
                       )}
                     </div>
-                  </Link>
+                  </div>
                 </motion.div>
               ))
             ) : (
@@ -1496,8 +1824,6 @@ const Homes = () => {
           transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
         />
 
-
-
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <motion.div className="mb-16 text-center" variants={fadeInUp}>
             <motion.span
@@ -1551,10 +1877,7 @@ const Homes = () => {
                   whileHover={{ y: -10 }}
                   transition={{ duration: 0.4 }}
                 >
-                  <Link
-                    to={`/blog-detail/${post.slug}`}
-                    className="block h-full"
-                  >
+                  <Link to={`/blog-detail/${post.slug}`} className="block">
                     <motion.article
                       className="bg-white rounded-2xl overflow-hidden shadow-lg h-full transform transition-all duration-300 border border-gray-100"
                       initial={{
@@ -1579,8 +1902,8 @@ const Homes = () => {
                               ? post.thumbnail.startsWith("http")
                                 ? post.thumbnail
                                 : post.thumbnail.startsWith("/")
-                                  ? `http://localhost:8000${post.thumbnail}`
-                                  : `http://localhost:8000/${post.thumbnail}`
+                                ? `http://localhost:8000${post.thumbnail}`
+                                : `http://localhost:8000/${post.thumbnail}`
                               : "http://localhost:5173/src/assets/img/blog/blog-1.jpg"
                           }
                           alt={post.title}
@@ -1638,7 +1961,7 @@ const Homes = () => {
 
                         {/* Tiêu đề */}
                         <motion.h3
-                          className="font-bold text-xl mb-3 text-gray-800 group-hover:text-amber-600 transition-colors duration-200 line-clamp-2 relative z-10"
+                          className="font-bold text-xl mb-3 text-gray-800 group-hover:text-amber-600 transition-colors line-clamp-2 relative z-10"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{
@@ -1666,7 +1989,7 @@ const Homes = () => {
                         <motion.div
                           className="flex items-center text-amber-500 font-medium transition-all duration-200 group-hover:text-amber-600 relative z-10"
                           whileHover={{ x: 5 }}
-                          transition={{ duration: 0.5 }}
+                          transition={{ duration: 0.3 }}
                         >
                           <span>Đọc tiếp</span>
                           <svg
@@ -1842,6 +2165,7 @@ const Homes = () => {
           </motion.div>
         </div>
       </motion.section>
+      <Popup />
     </>
   );
 };
