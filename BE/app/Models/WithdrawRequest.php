@@ -20,7 +20,6 @@ class WithdrawRequest extends Model
         'bank_code',
         'bank_account_number',
         'account_holder_name',
-        'bank_logo_url',
     ];
     // Mối quan hệ: Mỗi yêu cầu rút tiền thuộc về một người dùng (User)
     public function user()

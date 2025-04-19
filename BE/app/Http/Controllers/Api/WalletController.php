@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\BankAccount;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class WalletController extends Controller
 {
@@ -139,12 +141,12 @@ class WalletController extends Controller
 
                 if ($trx->type === 'rut_tien' && $trx->withdrawRequest) {
                     $data['withdraw_request'] = [
-                        'bank_name' => $trx->withdrawRequest->bank_name,
+                       'bank_name' => $trx->withdrawRequest->bank_name,
                         'bank_account_number' => $trx->withdrawRequest->bank_account_number,
                         'account_holder_name' => $trx->withdrawRequest->account_holder_name,
-                        'bank_logo_url' => $trx->withdrawRequest->bank_logo_url,
+                        'bank_code' => $trx->withdrawRequest->bank_code,
+                        'qr_code' => $trx->withdrawRequest->qr_code,
                         'status' => $trx->withdrawRequest->status,
-                        'note' => $trx->withdrawRequest->note,
                     ];
                 }
 
@@ -242,6 +244,17 @@ class WalletController extends Controller
         ]);
 
         $userId = Auth::id();
+        $user = User::find($userId);
+        // Kiểm tra nếu người dùng chưa có mật khẩu cấp 2
+        if (!$user->has_level2_password) {
+            return response()->json(['message' => 'Bạn cần thiết lập mật khẩu cấp 2 để thực hiện yêu cầu rút tiền'], 422);
+        }
+
+        // Kiểm tra mật khẩu cấp 2 nhập vào có đúng không
+        if (!Hash::check($request->level2_password, $user->level2_password)) {
+            return response()->json(['message' => 'Mật khẩu cấp 2 không chính xác'], 422);
+        }
+
         $wallet = Wallet::where('user_id', $userId)->first();
 
         if (!$wallet) {
@@ -292,7 +305,6 @@ class WalletController extends Controller
                 'bank_code' => $bankAccount->bank_code,
                 'bank_account_number' => $bankAccount->bank_account_number,
                 'account_holder_name' => $bankAccount->account_holder_name,
-                'bank_logo_url' => $bankAccount->bank_logo_url,
             ]);
 
             // Cập nhật số dư ví, tạm giữ số tiền rút

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axiosInstance from "../../../../utils/axiosConfig";
 import { toast } from "react-hot-toast";
 
@@ -20,7 +20,15 @@ const WalletWithdraw = () => {
   const [amountError, setAmountError] = useState("");
   const [qrCode, setQrCode] = useState("");
   const [showQrCode, setShowQrCode] = useState(false);
+  // Thêm state cho mật khẩu cấp 2
+  const [hasLevel2Password, setHasLevel2Password] = useState(false);
+  const [showLevel2PasswordModal, setShowLevel2PasswordModal] = useState(false);
+  const [level2Password, setLevel2Password] = useState("");
+  const [level2PasswordError, setLevel2PasswordError] = useState("");
+  const [checkingLevel2Password, setCheckingLevel2Password] = useState(false);
+
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Animation variants for the entire container
   const cardVariants = {
@@ -42,22 +50,19 @@ const WalletWithdraw = () => {
         const token = localStorage.getItem("authToken");
 
         // Fetch balance
-        const balanceResponse = await axiosInstance.get("/wallet/balance", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const balanceResponse = await axiosInstance.get("/wallet/balance");
         setBalance(parseFloat(balanceResponse.data.balance));
 
         // Fetch bank accounts
-        const accountsResponse = await axiosInstance.get("/bank-accounts", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const accountsResponse = await axiosInstance.get("/bank-accounts");
         setBankAccounts(accountsResponse.data.data || []);
 
         // Fetch all banks list (for logos)
-        const allBanksResponse = await axiosInstance.get("/banks", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const allBanksResponse = await axiosInstance.get("/banks");
         setAllBanks(allBanksResponse.data || []);
+
+        // Kiểm tra trạng thái mật khẩu cấp 2
+        await checkLevel2PasswordStatus();
       } catch (err) {
         setError("Không thể tải dữ liệu ví hoặc tài khoản ngân hàng");
         toast.error("Không thể tải dữ liệu");
@@ -67,7 +72,103 @@ const WalletWithdraw = () => {
     };
 
     fetchData();
-  }, []);
+
+    // Kiểm tra nếu người dùng vừa thiết lập mật khẩu cấp 2 và quay lại
+    const searchParams = new URLSearchParams(location.search);
+    const fromLevel2Setup = searchParams.get("from_level2_setup");
+    if (fromLevel2Setup === "true") {
+      // Hiển thị thông báo thành công với biểu tượng và thiết kế đẹp
+      toast.custom((t) => (
+        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
+          <div className="flex-1 w-0 p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-0.5">
+                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium text-gray-900">Thiết lập thành công!</p>
+                <p className="mt-1 text-sm text-gray-500">Mật khẩu cấp 2 đã được thiết lập. Bạn có thể tiếp tục rút tiền.</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex border-l border-gray-200">
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      ), { duration: 4000, id: 'level2-password-success' });
+
+      // Xóa ngay tham số query để tránh hiển thị lại thông báo khi refresh hoặc thao tác khác
+      navigate("/account/wallet/withdraw", { replace: true });
+
+      // Khôi phục dữ liệu từ pendingWithdrawState nếu có
+      try {
+        const pendingState = localStorage.getItem("pendingWithdrawState");
+        if (pendingState) {
+          const withdrawData = JSON.parse(pendingState);
+          // Khôi phục dữ liệu form
+          setFormData({
+            amount: withdrawData.amount || "",
+            bank_account_id: withdrawData.bank_account_id || "",
+            qr_code: withdrawData.qr_code || "",
+          });
+
+          // Xóa dữ liệu đã lưu
+          localStorage.removeItem("pendingWithdrawState");
+        }
+      } catch (e) {
+        console.error("Lỗi khi khôi phục dữ liệu rút tiền:", e);
+      }
+    }
+  }, [location, navigate]);
+
+  // Hàm kiểm tra trạng thái mật khẩu cấp 2
+  const checkLevel2PasswordStatus = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
+
+      const response = await axiosInstance.get("/users/level2-password/status");
+
+      if (response.data.status === "success") {
+        setHasLevel2Password(response.data.data.has_level2_password);
+      }
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra trạng thái mật khẩu cấp 2:", error);
+    }
+  };
+
+  // Hàm xử lý khi người dùng nhập xong số tiền và rời khỏi ô input
+  const handleAmountBlur = async (e) => {
+    // Kiểm tra đã chọn tài khoản ngân hàng và đã nhập số tiền
+    if (formData.bank_account_id && formData.amount) {
+      // Kiểm tra số tiền hợp lệ
+      const amount = parseFloat(formData.amount);
+      if (!isNaN(amount) && amount >= 100000 && amount <= 10000000 && amount <= balance) {
+        // Tạo mã QR và hiển thị
+        const generatedQrCode = await generateQrCode();
+        if (generatedQrCode) {
+          setShowQrCode(true);
+        }
+      }
+    }
+  };
+
+  // Hàm xử lý khi người dùng nhấn Enter trong ô nhập số tiền
+  const handleAmountKeyDown = async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.target.blur(); // Kích hoạt sự kiện blur
+    }
+  };
 
   // Handle input change
   const handleInputChange = (e) => {
@@ -136,9 +237,6 @@ const WalletWithdraw = () => {
         {
           amount: formData.amount,
           bank_account_id: formData.bank_account_id,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
         }
       );
       const generatedQrCode = qrResponse.data.qr_code;
@@ -165,6 +263,91 @@ const WalletWithdraw = () => {
     }
   };
 
+  // Hàm xử lý khi nhấn nút xác nhận mật khẩu cấp 2
+  const handleConfirmLevel2Password = () => {
+    // Kiểm tra xem đã nhập mật khẩu cấp 2 chưa
+    if (!level2Password) {
+      setLevel2PasswordError("Vui lòng nhập mật khẩu cấp 2");
+      return;
+    }
+
+    // Gọi hàm xử lý rút tiền với mật khẩu cấp 2
+    setCheckingLevel2Password(true);
+    processWithdrawRequest(level2Password);
+  };
+
+  // Hàm xử lý rút tiền với mật khẩu cấp 2
+  const processWithdrawRequest = async (level2PasswordValue) => {
+    try {
+      setLoading(true);
+
+      // Hiển thị toast đang xử lý
+      toast("Đang xử lý yêu cầu rút tiền...", {
+        icon: '🕒',
+        duration: 3000,
+      });
+
+      // 1. Tạo mã QR nếu chưa có
+      let generatedQrCode = qrCode;
+      if (!generatedQrCode) {
+        generatedQrCode = await generateQrCode();
+      }
+
+      // 2. Tạo payload cuối cùng bao gồm mã QR (nếu có) và mật khẩu cấp 2
+      const finalPayload = {
+        amount: formData.amount,
+        bank_account_id: formData.bank_account_id,
+        qr_code: generatedQrCode || "",
+        level2_password: level2PasswordValue
+      };
+
+      // 3. Gọi API để tạo yêu cầu rút tiền
+      const response = await axiosInstance.post("/wallet/withdraw-requests", finalPayload);
+
+      // Kiểm tra kết quả từ API
+      if (response.data) {
+        // Hiển thị thông báo thành công với biểu tượng ✓
+        toast.success("Yêu cầu rút tiền đã được gửi thành công!", {
+          duration: 5000,
+          icon: '✅',
+        });
+
+        // Nếu API trả về số dư mới, cập nhật số dư
+        if (response.data.new_balance !== undefined) {
+          setBalance(response.data.new_balance);
+        }
+
+        // Đảm bảo chắc chắn sẽ chuyển hướng sau khi hiển thị toast
+        setTimeout(() => {
+          navigate("/account/wallet");
+        }, 500);
+      } else {
+        toast.error(response.data?.message || "Không thể tạo yêu cầu rút tiền", {
+          duration: 5000,
+        });
+      }
+    } catch (err) {
+      let message = err.response?.data?.message || "Không thể tạo yêu cầu rút tiền";
+
+      // Kiểm tra nếu lỗi là do mật khẩu cấp 2 không đúng
+      if (err.response?.status === 400 && err.response?.data?.message?.includes("mật khẩu cấp 2")) {
+        setLevel2PasswordError("Mật khẩu cấp 2 không đúng");
+        toast.error("Mật khẩu cấp 2 không đúng", {
+          duration: 3000,
+        });
+      } else {
+        setError(message);
+        toast.error(message, {
+          duration: 5000,
+        });
+      }
+    } finally {
+      setLoading(false);
+      setCheckingLevel2Password(false);
+      setShowLevel2PasswordModal(false);
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -184,38 +367,51 @@ const WalletWithdraw = () => {
       return;
     }
 
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("authToken");
-
-      // 1. Tạo mã QR nếu chưa có
-      let generatedQrCode = qrCode;
-      if (!generatedQrCode) {
-        generatedQrCode = await generateQrCode();
-      }
-
-      // 2. Tạo payload cuối cùng bao gồm mã QR (nếu có)
-      const finalPayload = {
+    // Kiểm tra nếu chưa có mật khẩu cấp 2
+    if (!hasLevel2Password) {
+      // Lưu trạng thái hiện tại vào localStorage để có thể khôi phục sau khi thiết lập mật khẩu cấp 2
+      localStorage.setItem("pendingWithdrawState", JSON.stringify({
         amount: formData.amount,
         bank_account_id: formData.bank_account_id,
-        qr_code: generatedQrCode || "",
-      };
+        qr_code: qrCode || ""
+      }));
 
-      // 3. Gọi API để tạo yêu cầu rút tiền
-      await axiosInstance.post("/wallet/withdraw-requests", finalPayload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Hiển thị toast thông báo với biểu tượng thông tin - một lần duy nhất
+      toast.custom((t) => (
+        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex`}>
+          <div className="flex-1 w-0 p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-0.5">
+                <svg className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  Thiết lập mật khẩu cấp 2
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Bạn cần thiết lập mật khẩu cấp 2 để bảo vệ các giao dịch rút tiền.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ), { duration: 3000 });
 
-      toast.success("Yêu cầu rút tiền đã được gửi thành công!");
-      navigate("/account/wallet");
-    } catch (err) {
-      const message =
-        err.response?.data?.message || "Không thể tạo yêu cầu rút tiền";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
+      // Đợi toast hiển thị khoảng 1 giây rồi mới chuyển hướng
+      setTimeout(() => {
+        // Chuyển hướng đến trang thiết lập mật khẩu cấp 2 với tham số redirect để quay lại
+        navigate("/account?tab=level2password&redirect=wallet_withdraw");
+      }, 2000);
+
+      return;
     }
+
+    // Nếu đã có mật khẩu cấp 2, hiển thị modal xác nhận
+    setShowLevel2PasswordModal(true);
+    setLevel2Password("");
+    setLevel2PasswordError("");
   };
 
   // Format money
@@ -347,6 +543,8 @@ const WalletWithdraw = () => {
                     name="amount"
                     value={formData.amount}
                     onChange={handleInputChange}
+                    onBlur={handleAmountBlur}
+                    onKeyDown={handleAmountKeyDown}
                     className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Nhập số tiền (100.000 - 10.000.000 VNĐ)"
                     min="100000"
@@ -381,41 +579,17 @@ const WalletWithdraw = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center">
                   <motion.button
                     type="submit"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     disabled={loading}
-                    className={`px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${
-                      loading ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
+                    className={`px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${loading ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                   >
                     {loading ? "Đang xử lý..." : "Gửi yêu cầu rút tiền"}
                   </motion.button>
-                  {/* Cần gạt thay cho nút "Hiển thị mã QR" */}
-                  <label className="flex items-center cursor-pointer">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={showQrCode}
-                        onChange={handleToggleQrCode}
-                        className="sr-only"
-                        disabled={loading}
-                      />
-                      <div
-                        className={`block w-12 h-6 rounded-full transition-colors duration-200 ${
-                          showQrCode ? "bg-blue-500" : "bg-gray-300"
-                        }`}
-                      ></div>
-                      <div
-                        className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${
-                          showQrCode ? "translate-x-6" : ""
-                        }`}
-                      ></div>
-                    </div>
-                    <span className="ml-2 text-gray-700">Hiển thị mã QR</span>
-                  </label>
                 </div>
               </form>
             )}
@@ -432,20 +606,63 @@ const WalletWithdraw = () => {
               {showQrCode ? (
                 <>
                   {qrCode ? (
-                    <img src={qrCode} alt="QR Code" className="w-48 h-48" />
+                    <img src={qrCode} alt="QR Code" className="p-2" />
                   ) : (
                     <p className="text-red-600">Không thể hiển thị mã QR.</p>
                   )}
                 </>
               ) : (
                 <p className="text-gray-600 text-center">
-                  Bật cần gạt để hiển thị mã QR
+                  Chọn tài khoản ngân hàng và nhập số tiền để hiển thị mã QR
                 </p>
               )}
             </div>
           </motion.div>
         </div>
       </div>
+
+      {/* Modal xác nhận mật khẩu cấp 2 */}
+      {showLevel2PasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4 text-gray-800">
+              Xác nhận rút tiền
+            </h3>
+            <p className="mb-4 text-gray-700">
+              Để bảo mật giao dịch, vui lòng nhập mật khẩu cấp 2 của bạn.
+            </p>
+            <div className="mb-4">
+              <input
+                type="password"
+                value={level2Password}
+                onChange={(e) => setLevel2Password(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Nhập mật khẩu cấp 2"
+              />
+              {level2PasswordError && (
+                <p className="mt-2 text-red-500">{level2PasswordError}</p>
+              )}
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowLevel2PasswordModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                disabled={checkingLevel2Password}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmLevel2Password}
+                className={`px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${checkingLevel2Password ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                disabled={checkingLevel2Password}
+              >
+                {checkingLevel2Password ? "Đang xử lý..." : "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };

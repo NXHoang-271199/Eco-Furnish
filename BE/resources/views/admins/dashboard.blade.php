@@ -1053,6 +1053,17 @@
                                                     <h5 class="fs-14 mb-0">{{ number_format($buyer->total_spent, 0, ',', '.') }} ₫</h5>
                                                 </td>
                                                 <td>
+                                                    @php
+                                                        $totalStock = 0;
+                                                        if ($buyer->orders_count > 0) {
+                                                            $totalStock = $buyer->total_spent / $buyer->orders_count;
+                                                        }
+                                                        $statusClass = $totalStock > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+                                                        $statusText = $totalStock > 0 ? 'Còn hàng' : 'Hết hàng';
+                                                    @endphp
+                                                    <span class="badge {{ $statusClass }}">{{ $statusText }}</span>
+                                                </td>
+                                                <td>
                                                     <div class="d-flex align-items-center gap-2">
                                                         @php
                                                             $percent = min(round(($buyer->orders_count / ($topBuyerStats->max_orders ?: 1)) * 100), 100);
@@ -1136,9 +1147,9 @@
                     <div class="col">
                         <div class="card" data-aos="fade-up" data-aos-duration="800" data-aos-delay="200">
                             <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Đơn hàng gần đây</h4>
+                                <h4 class="card-title mb-0 flex-grow-1">Top 5 sản phẩm có lượt đánh giá cao nhất</h4>
                                 <div class="flex-shrink-0">
-                                    <button type="button" class="btn btn-soft-info btn-sm" id="createOrderReport" data-report-type="orders" data-report-title="Báo cáo đơn hàng">
+                                    <button type="button" class="btn btn-soft-info btn-sm" id="createTopRatedReport" data-report-type="toprated" data-report-title="Sản phẩm đánh giá cao">
                                         <i class="ri-file-list-3-line align-middle"></i> Tạo báo cáo
                                     </button>
                                 </div>
@@ -1149,79 +1160,97 @@
                                     <table class="table table-borderless table-centered align-middle table-nowrap mb-0">
                                         <thead class="text-muted table-light">
                                             <tr>
-                                                <th scope="col">Mã đơn hàng</th>
-                                                <th scope="col">Khách hàng</th>
                                                 <th scope="col">Sản phẩm</th>
-                                                <th scope="col">Số tiền</th>
-                                                <th scope="col">Nhà cung cấp</th>
+                                                <th scope="col">Giá</th>
+                                                <th scope="col">Tổng đánh giá</th>
+                                                <th scope="col">Xếp hạng trung bình</th>
                                                 <th scope="col">Trạng thái</th>
-                                                <th scope="col">Đánh giá</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse($recentOrders as $order)
+                                            @php
+                                                $topRatedProducts = App\Models\Product::withReviewStats()
+                                                    ->has('reviews')
+                                                    ->take(5)
+                                                    ->get();
+                                            @endphp
+                                            @forelse($topRatedProducts as $product)
                                             <tr data-aos="fade-up" data-aos-duration="800" data-aos-delay="{{ 100 + $loop->index * 50 }}">
                                                 <td>
-                                                    <a href="{{ route('orders.detail', $order->id) }}" class="fw-medium link-primary">{{ $order->order_code }}</a>
-                                                </td>
-                                                <td>
                                                     <div class="d-flex align-items-center">
-                                                        <div class="flex-shrink-0 me-2">
-                                                            <img src="{{ $order->user && $order->user->avatar ? asset('storage/' . $order->user->avatar) : asset('assets/admins/images/users/avatar-' . (($loop->iteration % 5) + 1) . '.jpg') }}" alt="" class="avatar-xs rounded-circle" />
+                                                        <div class="flex-shrink-0 me-3">
+                                                            <div class="avatar-sm bg-light rounded p-1">
+                                                                <img src="{{ asset('storage/'.$product->image_thumnail) }}" alt="{{ $product->name }}" class="img-fluid d-block">
+                                                            </div>
                                                         </div>
-                                                        <div class="flex-grow-1">{{ $order->user_name ?? ($order->user->name ?? 'N/A') }}</div>
+                                                        <div class="flex-grow-1">
+                                                            <h5 class="fs-14 mb-1">
+                                                                <a href="{{ route('products.show', $product->id) }}" class="text-dark">{{ $product->name }}</a>
+                                                            </h5>
+                                                            <p class="text-muted mb-0">Danh mục: <span class="fw-medium">{{ $product->category->name ?? 'N/A' }}</span></p>
+                                                        </div>
                                                     </div>
-                                                </td>
-                                                <td>{{ $order->orderItems->first()->product->name ?? 'Multiple Products' }}</td>
-                                                <td>
-                                                    <span class="text-success">{{ number_format($order->orderItems->sum(function($item) { return $item->price * $item->quantity; }), 0, ',', '.') }} ₫</span>
-                                                </td>
-                                                <td>{{ $order->paymentMethod->name ?? 'N/A' }}</td>
-                                                <td>
-                                                    @php
-                                                        $statusClass = [
-                                                            'pending' => 'bg-warning-subtle text-warning',
-                                                            'processing' => 'bg-info-subtle text-info',
-                                                            'completed' => 'bg-success-subtle text-success',
-                                                            'cancelled' => 'bg-danger-subtle text-danger',
-                                                            'paid' => 'bg-success-subtle text-success',
-                                                            'unpaid' => 'bg-danger-subtle text-danger',
-                                                        ];
-                                                        $orderStatusClass = $statusClass[$order->order_status] ?? 'bg-secondary-subtle text-secondary';
-                                                        $paymentStatusClass = $statusClass[$order->payment_status] ?? 'bg-secondary-subtle text-secondary';
-                                                    @endphp
-                                                    <span class="badge {{ $orderStatusClass }}">{{ ucfirst($order->order_status) }}</span>
                                                 </td>
                                                 <td>
                                                     @php
-                                                        $rating = $order->avg_rating ?? 0;
-                                                        $starCount = (int)$rating;
-                                                        $hasHalfStar = $rating - $starCount >= 0.5;
-                                                        $emptyStarCount = 5 - $starCount - ($hasHalfStar ? 1 : 0);
+                                                        // Kiểm tra sản phẩm có biến thể không
+                                                        $variants = $product->variants;
+                                                        $hasVariants = $variants->count() > 0;
+                                                        
+                                                        if ($hasVariants) {
+                                                            $minPrice = $variants->min('price');
+                                                            $maxPrice = $variants->max('price');
+                                                            
+                                                            if ($minPrice != $maxPrice) {
+                                                                echo number_format($minPrice, 0, ',', '.') . ' - ' . number_format($maxPrice, 0, ',', '.') . ' ₫';
+                                                            } else {
+                                                                echo number_format($minPrice, 0, ',', '.') . ' ₫';
+                                                            }
+                                                        } else {
+                                                            echo number_format($product->price, 0, ',', '.') . ' ₫';
+                                                        }
                                                     @endphp
-                                                    
-                                                    <div>
-                                                        <span class="fs-14 fw-medium">{{ $rating }}</span>
-                                                        <span class="text-warning align-middle fs-11 ms-1">
-                                                            @for($i = 0; $i < $starCount; $i++)
-                                                                <i class="ri-star-fill"></i>
-                                                            @endfor
-                                                            
-                                                            @if($hasHalfStar)
-                                                                <i class="ri-star-half-fill"></i>
-                                                            @endif
-                                                            
-                                                            @for($i = 0; $i < $emptyStarCount; $i++)
-                                                                <i class="ri-star-line"></i>
-                                                            @endfor
-                                                        </span>
-                                                        <span class="text-muted fs-11 ms-1">({{ $order->ratings_count ?? 0 }})</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info-subtle text-info fs-12">{{ $product->total_reviews }} đánh giá</span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-warning fs-14 mb-0">
+                                                        @php
+                                                            $avgRating = $product->average_rating;
+                                                            $fullStars = floor($avgRating);
+                                                            $hasHalfStar = $avgRating - $fullStars >= 0.5;
+                                                            $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
+                                                        @endphp
+                                                        
+                                                        @for($i = 0; $i < $fullStars; $i++)
+                                                            <i class="ri-star-fill"></i>
+                                                        @endfor
+                                                        
+                                                        @if($hasHalfStar)
+                                                            <i class="ri-star-half-fill"></i>
+                                                        @endif
+                                                        
+                                                        @for($i = 0; $i < $emptyStars; $i++)
+                                                            <i class="ri-star-line"></i>
+                                                        @endfor
+                                                        
+                                                        <span class="ms-1">({{ number_format($avgRating, 1) }})</span>
                                                     </div>
+                                                </td>
+                                                <td>
+                                                    @php
+                                                        // Sử dụng phương thức getTotalQuantityAttribute() có sẵn trong model Product
+                                                        $totalStock = $product->total_quantity;
+                                                        $statusClass = $totalStock > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+                                                        $statusText = $totalStock > 0 ? 'Còn hàng' : 'Hết hàng';
+                                                    @endphp
+                                                    <span class="badge {{ $statusClass }}">{{ $statusText }}</span>
                                                 </td>
                                             </tr>
                                             @empty
                                             <tr>
-                                                <td colspan="7" class="text-center">No recent orders available</td>
+                                                <td colspan="5" class="text-center">Không có sản phẩm nào có đánh giá</td>
                                             </tr>
                                             @endforelse
                                         </tbody>

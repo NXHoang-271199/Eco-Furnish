@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Order;
 use App\Models\Review;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use App\Models\ProductVariant;
 use App\Http\Controllers\Controller;
@@ -226,14 +227,14 @@ class ReviewController extends Controller
 
     /**
      * Lấy danh sách đánh giá của một đơn hàng cụ thể
-     * 
+     *
      * @param int $orderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function getOrderReviews($orderId)
     {
         $userId = Auth::id();
-        
+
         if (!$userId) {
             return response()->json([
                 'status' => 'error',
@@ -263,7 +264,7 @@ class ReviewController extends Controller
                 $review->images = json_decode($review->images, true); // Giải mã JSON
 
                 // Lấy thông tin về orderItem để lấy tên sản phẩm và thông tin biến thể
-                $orderItemQuery = \App\Models\OrderItem::where('order_id', $review->order_id)
+                $orderItemQuery = OrderItem::where('order_id', $review->order_id)
                     ->where('product_id', $review->product_id);
 
                 if ($review->product_variant_id) {
@@ -284,7 +285,7 @@ class ReviewController extends Controller
                         $review->product_variant_id = $orderItem->product_variant_id; // Đảm bảo gán lại ID biến thể từ OrderItem chính xác
 
                         // Lấy thông tin biến thể dựa trên ID biến thể từ OrderItem đã lọc đúng
-                        $productVariant = \App\Models\ProductVariant::withTrashed()
+                        $productVariant = ProductVariant::withTrashed()
                             ->find($orderItem->product_variant_id); // Sử dụng find cho khóa chính
 
                         if ($productVariant && !empty($productVariant->variant_details)) {
@@ -303,10 +304,10 @@ class ReviewController extends Controller
                     $review->has_variant = false;
                     $review->variant_details = null;
                 }
-                
+
                 // Loại bỏ các dữ liệu lớn không cần thiết
                 unset($review->product);
-                
+
                 return $review;
             });
 
