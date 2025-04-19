@@ -460,6 +460,9 @@ const ProductDetail = () => {
         setSelectedVariantId(matchingVariant.id);
       }
     }
+
+    // Reset số lượng về 1 khi thay đổi biến thể
+    setQuantity(1);
   };
 
   const getCurrentPrice = () => {
