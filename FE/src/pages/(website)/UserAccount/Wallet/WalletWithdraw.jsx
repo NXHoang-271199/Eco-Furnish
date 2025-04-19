@@ -78,33 +78,55 @@ const WalletWithdraw = () => {
     const fromLevel2Setup = searchParams.get("from_level2_setup");
     if (fromLevel2Setup === "true") {
       // Hiển thị thông báo thành công với biểu tượng và thiết kế đẹp
-      toast.custom((t) => (
-        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
-          <div className="flex-1 w-0 p-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 pt-0.5">
-                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+      toast.custom(
+        (t) => (
+          <div
+            className={`${
+              t.visible ? "animate-enter" : "animate-leave"
+            } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+          >
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg
+                      className="h-6 w-6 text-green-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    Thiết lập thành công!
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Mật khẩu cấp 2 đã được thiết lập. Bạn có thể tiếp tục rút
+                    tiền.
+                  </p>
                 </div>
               </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-900">Thiết lập thành công!</p>
-                <p className="mt-1 text-sm text-gray-500">Mật khẩu cấp 2 đã được thiết lập. Bạn có thể tiếp tục rút tiền.</p>
-              </div>
+            </div>
+            <div className="flex border-l border-gray-200">
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none"
+              >
+                Đóng
+              </button>
             </div>
           </div>
-          <div className="flex border-l border-gray-200">
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none"
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      ), { duration: 4000, id: 'level2-password-success' });
+        ),
+        { duration: 4000, id: "level2-password-success" }
+      );
 
       // Xóa ngay tham số query để tránh hiển thị lại thông báo khi refresh hoặc thao tác khác
       navigate("/account/wallet/withdraw", { replace: true });
@@ -259,7 +281,7 @@ const WalletWithdraw = () => {
 
       // Hiển thị toast đang xử lý
       toast("Đang xử lý yêu cầu rút tiền...", {
-        icon: '🕒',
+        icon: "🕒",
         duration: 3000,
       });
 
@@ -274,18 +296,21 @@ const WalletWithdraw = () => {
         amount: formData.amount,
         bank_account_id: formData.bank_account_id,
         qr_code: generatedQrCode || "",
-        level2_password: level2PasswordValue
+        level2_password: level2PasswordValue,
       };
 
       // 3. Gọi API để tạo yêu cầu rút tiền
-      const response = await axiosInstance.post("/wallet/withdraw-requests", finalPayload);
+      const response = await axiosInstance.post(
+        "/wallet/withdraw-requests",
+        finalPayload
+      );
 
       // Kiểm tra kết quả từ API
       if (response.data) {
         // Hiển thị thông báo thành công với biểu tượng ✓
         toast.success("Yêu cầu rút tiền đã được gửi thành công!", {
           duration: 5000,
-          icon: '✅',
+          icon: "✅",
         });
 
         // Nếu API trả về số dư mới, cập nhật số dư
@@ -298,15 +323,22 @@ const WalletWithdraw = () => {
           navigate("/account/wallet");
         }, 500);
       } else {
-        toast.error(response.data?.message || "Không thể tạo yêu cầu rút tiền", {
-          duration: 5000,
-        });
+        toast.error(
+          response.data?.message || "Không thể tạo yêu cầu rút tiền",
+          {
+            duration: 5000,
+          }
+        );
       }
     } catch (err) {
-      let message = err.response?.data?.message || "Không thể tạo yêu cầu rút tiền";
+      let message =
+        err.response?.data?.message || "Không thể tạo yêu cầu rút tiền";
 
       // Kiểm tra nếu lỗi là do mật khẩu cấp 2 không đúng
-      if (err.response?.status === 400 && err.response?.data?.message?.includes("mật khẩu cấp 2")) {
+      if (
+        err.response?.status === 400 &&
+        err.response?.data?.message?.includes("mật khẩu cấp 2")
+      ) {
         setLevel2PasswordError("Mật khẩu cấp 2 không đúng");
         toast.error("Mật khẩu cấp 2 không đúng", {
           duration: 3000,
@@ -346,34 +378,55 @@ const WalletWithdraw = () => {
     // Kiểm tra nếu chưa có mật khẩu cấp 2
     if (!hasLevel2Password) {
       // Lưu trạng thái hiện tại vào localStorage để có thể khôi phục sau khi thiết lập mật khẩu cấp 2
-      localStorage.setItem("pendingWithdrawState", JSON.stringify({
-        amount: formData.amount,
-        bank_account_id: formData.bank_account_id,
-        qr_code: qrCode || ""
-      }));
+      localStorage.setItem(
+        "pendingWithdrawState",
+        JSON.stringify({
+          amount: formData.amount,
+          bank_account_id: formData.bank_account_id,
+          qr_code: qrCode || "",
+        })
+      );
 
       // Hiển thị toast thông báo với biểu tượng thông tin - một lần duy nhất
-      toast.custom((t) => (
-        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex`}>
-          <div className="flex-1 w-0 p-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 pt-0.5">
-                <svg className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  Thiết lập mật khẩu cấp 2
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                  Bạn cần thiết lập mật khẩu cấp 2 để bảo vệ các giao dịch rút tiền.
-                </p>
+      toast.custom(
+        (t) => (
+          <div
+            className={`${
+              t.visible ? "animate-enter" : "animate-leave"
+            } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex`}
+          >
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <svg
+                    className="h-10 w-10 text-blue-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    Thiết lập mật khẩu cấp 2
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Bạn cần thiết lập mật khẩu cấp 2 để bảo vệ các giao dịch rút
+                    tiền.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ), { duration: 3000 });
+        ),
+        { duration: 3000 }
+      );
 
       // Đợi toast hiển thị khoảng 1 giây rồi mới chuyển hướng
       setTimeout(() => {
@@ -559,8 +612,9 @@ const WalletWithdraw = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     disabled={loading}
-                    className={`px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${loading ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
+                    className={`px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${
+                      loading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
                     {loading ? "Đang xử lý..." : "Gửi yêu cầu rút tiền"}
                   </motion.button>
@@ -575,12 +629,14 @@ const WalletWithdraw = () => {
                         disabled={loading}
                       />
                       <div
-                        className={`block w-12 h-6 rounded-full transition-colors duration-200 ${showQrCode ? "bg-blue-500" : "bg-gray-300"
-                          }`}
+                        className={`block w-12 h-6 rounded-full transition-colors duration-200 ${
+                          showQrCode ? "bg-blue-500" : "bg-gray-300"
+                        }`}
                       ></div>
                       <div
-                        className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${showQrCode ? "translate-x-6" : ""
-                          }`}
+                        className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${
+                          showQrCode ? "translate-x-6" : ""
+                        }`}
                       ></div>
                     </div>
                     <span className="ml-2 text-gray-700">Hiển thị mã QR</span>
@@ -648,8 +704,9 @@ const WalletWithdraw = () => {
               </button>
               <button
                 onClick={handleConfirmLevel2Password}
-                className={`px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${checkingLevel2Password ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                className={`px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${
+                  checkingLevel2Password ? "opacity-50 cursor-not-allowed" : ""
+                }`}
                 disabled={checkingLevel2Password}
               >
                 {checkingLevel2Password ? "Đang xử lý..." : "Xác nhận"}
