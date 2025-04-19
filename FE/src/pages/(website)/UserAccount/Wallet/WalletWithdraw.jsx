@@ -168,6 +168,35 @@ const WalletWithdraw = () => {
     }
   };
 
+  // Hàm xử lý khi người dùng nhập xong số tiền và rời khỏi ô input
+  const handleAmountBlur = async (e) => {
+    // Kiểm tra đã chọn tài khoản ngân hàng và đã nhập số tiền
+    if (formData.bank_account_id && formData.amount) {
+      // Kiểm tra số tiền hợp lệ
+      const amount = parseFloat(formData.amount);
+      if (
+        !isNaN(amount) &&
+        amount >= 100000 &&
+        amount <= 10000000 &&
+        amount <= balance
+      ) {
+        // Tạo mã QR và hiển thị
+        const generatedQrCode = await generateQrCode();
+        if (generatedQrCode) {
+          setShowQrCode(true);
+        }
+      }
+    }
+  };
+
+  // Hàm xử lý khi người dùng nhấn Enter trong ô nhập số tiền
+  const handleAmountKeyDown = async (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.target.blur(); // Kích hoạt sự kiện blur
+    }
+  };
+
   // Handle input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -572,6 +601,8 @@ const WalletWithdraw = () => {
                     name="amount"
                     value={formData.amount}
                     onChange={handleInputChange}
+                    onBlur={handleAmountBlur}
+                    onKeyDown={handleAmountKeyDown}
                     className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Nhập số tiền (100.000 - 10.000.000 VNĐ)"
                     min="100000"
@@ -606,7 +637,7 @@ const WalletWithdraw = () => {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center">
                   <motion.button
                     type="submit"
                     whileHover={{ scale: 1.05 }}
@@ -618,29 +649,6 @@ const WalletWithdraw = () => {
                   >
                     {loading ? "Đang xử lý..." : "Gửi yêu cầu rút tiền"}
                   </motion.button>
-                  {/* Cần gạt thay cho nút "Hiển thị mã QR" */}
-                  <label className="flex items-center cursor-pointer">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={showQrCode}
-                        onChange={handleToggleQrCode}
-                        className="sr-only"
-                        disabled={loading}
-                      />
-                      <div
-                        className={`block w-12 h-6 rounded-full transition-colors duration-200 ${
-                          showQrCode ? "bg-blue-500" : "bg-gray-300"
-                        }`}
-                      ></div>
-                      <div
-                        className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${
-                          showQrCode ? "translate-x-6" : ""
-                        }`}
-                      ></div>
-                    </div>
-                    <span className="ml-2 text-gray-700">Hiển thị mã QR</span>
-                  </label>
                 </div>
               </form>
             )}
@@ -664,7 +672,7 @@ const WalletWithdraw = () => {
                 </>
               ) : (
                 <p className="text-gray-600 text-center">
-                  Bật cần gạt để hiển thị mã QR
+                  Chọn tài khoản ngân hàng và nhập số tiền để hiển thị mã QR
                 </p>
               )}
             </div>
