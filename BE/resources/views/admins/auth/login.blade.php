@@ -250,7 +250,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <!-- <div class="d-flex justify-content-between align-items-center mb-3">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="remember" value="1"
                                                     id="auth-remember-check">
@@ -259,7 +259,7 @@
                                             <div>
                                                 <a href="{{ route('admin.password.request') }}" class="text-primary">Quên mật khẩu?</a>
                                             </div>
-                                        </div>
+                                        </div> -->
 
                                         <div class="mt-4">
                                             <button class="btn btn-success w-100" type="submit" id="loginButton">
