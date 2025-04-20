@@ -770,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Cuộn xuống dưới
                         chatBox.scrollTop = chatBox.scrollHeight;
-                    }, index * 100); // Delay 100ms giữa các nhóm tin nhắn
+                    }, index * 20); // Delay 20ms giữa các nhóm tin nhắn
                 });
 
                 // Log dữ liệu tin nhắn để debug
@@ -1349,6 +1349,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Xử lý sự kiện nút gửi (đã được sửa ở trên)
     sendMessageBtn.addEventListener('click', sendMessage);
+
+    // Thêm xử lý sự kiện phím Enter cho ô nhập tin nhắn
+    messageInput.addEventListener('keydown', function(event) {
+        // Kiểm tra nếu phím Enter được nhấn và không giữ phím Shift (để hỗ trợ xuống dòng khi nhấn Shift+Enter)
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); // Ngăn không cho xuống dòng mặc định
+            sendMessage(); // Gọi hàm gửi tin nhắn
+        }
+    });
 
     // Xử lý sự kiện chọn ảnh
     imageInput.addEventListener('change', function(event) {
