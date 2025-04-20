@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Validator;
 
 class BannerController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view-banners');
+        $this->middleware('permission:create-banners', ['only' => ['create', 'store']]);
+        $this->middleware('permission:update-banners', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-banners', ['only' => ['destroy']]);
+        $this->middleware('permission:arrange-banners', ['only' => ['updatePosition']]);
+    }
+
     /**
      * Hiển thị danh sách banner.
      */

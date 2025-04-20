@@ -17,24 +17,27 @@ class PaymentMethodSeeder extends Seeder
             [
                 'name' => 'MoMo',
                 'config' => json_encode([
-                    'partner_code' => 'MOMOXXXX',
-                    'access_key' => 'YOUR_ACCESS_KEY',
-                    'secret_key' => 'YOUR_SECRET_KEY',
-                    'endpoint_url' => 'https://sandbox.momodev.vn/gw_payment/transactionProcessor'
+                    'access_key' => 'klm05TvNBzhg7h7j',
+                    'secret_key' => 'at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa',
+                    'partner_code' => 'MOMOBKUN20180529',
                 ]),
-                'is_connected' => false
+                'is_connected' => true
             ],
             [
                 'name' => 'VNPAY',
                 'config' => json_encode([
-                    'vnp_tmn_code' => 'YOUR_TMN_CODE',
-                    'vnp_hash_secret' => 'YOUR_HASH_SECRET',
-                    'vnp_url' => 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
+                    'vnp_TmnCode' => 'ESX7PR2Z',
+                    'vnp_HashSecret' => 'XXVMZ29XCOUF3IO5V971AM5JRSCDT9AG',
                 ]),
-                'is_connected' => false
+                'is_connected' => true
             ],
             [
                 'name' => 'Tiền mặt',
+                'config' => json_encode([]),
+                'is_connected' => true
+            ],
+            [
+                'name' => 'Ví',
                 'config' => json_encode([]),
                 'is_connected' => true
             ]

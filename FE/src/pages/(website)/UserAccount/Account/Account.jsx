@@ -17,6 +17,8 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  Wallet,
+  Landmark,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 
@@ -55,11 +57,15 @@ import { Label } from "../../../../components/ui/label";
 import { Switch } from "../../../../components/ui/switch";
 import OrderHistory from "../OrderHistory/OrderHistory";
 import axiosInstance from "../../../../utils/axiosConfig";
+import WalletPage from "../Wallet/WalletPage";
+import BankInfo from "../Bank/BankInfo";
+
 const Account = () => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = window.location;
 
   const updateUserAvatar = (newAvatarUrl) => {
     if (user && newAvatarUrl) {
@@ -222,6 +228,16 @@ const Account = () => {
     );
   }
 
+  // Xác định tab mặc định từ URL query parameter
+  const getDefaultTabFromUrl = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get("tab");
+    if (tab === "level2password") {
+      return "security";
+    }
+    return "profile";
+  };
+
   return (
     <div className="container mx-auto pt-0 pb-10 px-4 md:px-6 w-full">
       <Toaster position="top-right" />
@@ -252,8 +268,8 @@ const Account = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid grid-cols-3 md:w-[300px] mb-8">
+          <Tabs defaultValue={getDefaultTabFromUrl()} className="w-full">
+            <TabsList className="grid grid-cols-5 md:w-[595px] mb-8">
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User size={16} />
                 <span className="hidden sm:inline">Hồ sơ</span>
@@ -265,6 +281,14 @@ const Account = () => {
               <TabsTrigger value="billing" className="flex items-center gap-2">
                 <CreditCard size={16} />
                 <span className="hidden sm:inline">Đơn hàng</span>
+              </TabsTrigger>
+              <TabsTrigger value="wallet" className="flex items-center gap-2">
+                <Wallet size={16} />
+                <span className="hidden sm:inline">Ví tiền</span>
+              </TabsTrigger>
+              <TabsTrigger value="landmark" className="flex items-center gap-2">
+                <Landmark size={16} />
+                <span className="hidden sm:inline">Ngân hàng</span>
               </TabsTrigger>
             </TabsList>
 
@@ -282,6 +306,14 @@ const Account = () => {
 
             <TabsContent value="billing" className="space-y-6">
               <BillingSection />
+            </TabsContent>
+
+            <TabsContent value="wallet" className="space-y-6">
+              <WalletSection />
+            </TabsContent>
+
+            <TabsContent value="landmark" className="space-y-6">
+              <BankSection />
             </TabsContent>
           </Tabs>
         </motion.div>
@@ -375,7 +407,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
 
         console.log("Đã cập nhật avatar trong localStorage:", avatarUrl);
       } else {
-        // Sử dụng URL tạm thời nếu không có URL từ API
+        // Sử dụng URL tạm thởi nếu không có URL từ API
         const tempUrl = URL.createObjectURL(file);
         setAvatar(tempUrl);
 
@@ -503,7 +535,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
                     <>
                       <AvatarImage
                         src={
-                          avatar && !avatar.includes('placeholder.com')
+                          avatar && !avatar.includes("placeholder.com")
                             ? avatar
                             : "/images/avatarEmpty/avatarUser.png"
                         }
@@ -602,40 +634,7 @@ const ProfileSection = ({ user, updateUserAvatar, updateUserInfo }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-      >
-        {/* <Card>
-          <CardHeader>
-            <CardTitle>Mạng xã hội</CardTitle>
-            <CardDescription>
-              Kết nối tài khoản mạng xã hội của bạn với hồ sơ
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="facebook">Facebook</Label>
-                <Input id="facebook" placeholder="facebook.com/username" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="instagram">Instagram</Label>
-                <Input id="instagram" placeholder="@username" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="twitter">Twitter</Label>
-                <Input id="twitter" placeholder="@username" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
-                <Input id="website" placeholder="https://example.com" />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end gap-2">
-            <Button variant="outline">Hủy bỏ</Button>
-            <Button>Lưu thay đổi</Button>
-          </CardFooter>
-        </Card> */}
-      </motion.div>
+      ></motion.div>
     </>
   );
 };
@@ -646,15 +645,79 @@ const SecuritySection = () => {
     newPassword: "",
     confirmPassword: "",
   });
+  const [level2PasswordData, setLevel2PasswordData] = useState({
+    currentPassword: "",
+    level2Password: "",
+    confirmLevel2Password: "",
+    currentLevel2Password: "",
+    newLevel2Password: "",
+    confirmNewLevel2Password: "",
+  });
   const [loading, setLoading] = useState(false);
+  const [level2Loading, setLevel2Loading] = useState(false);
   const [error, setError] = useState(null);
+  const [level2Error, setLevel2Error] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [level2Success, setLevel2Success] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isCurrentPasswordFocused, setIsCurrentPasswordFocused] = useState(false);
+  const [showLevel2Password, setShowLevel2Password] = useState(false);
+  const [showConfirmLevel2Password, setShowConfirmLevel2Password] =
+    useState(false);
+  const [showCurrentLevel2Password, setShowCurrentLevel2Password] =
+    useState(false);
+  const [showNewLevel2Password, setShowNewLevel2Password] = useState(false);
+  const [showConfirmNewLevel2Password, setShowConfirmNewLevel2Password] =
+    useState(false);
+  const [isCurrentPasswordFocused, setIsCurrentPasswordFocused] =
+    useState(false);
   const [isNewPasswordFocused, setIsNewPasswordFocused] = useState(false);
-  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] =
+    useState(false);
+  const [isLevel2PasswordFocused, setIsLevel2PasswordFocused] = useState(false);
+  const [isConfirmLevel2PasswordFocused, setIsConfirmLevel2PasswordFocused] =
+    useState(false);
+  const [isCurrentLevel2PasswordFocused, setIsCurrentLevel2PasswordFocused] =
+    useState(false);
+  const [isNewLevel2PasswordFocused, setIsNewLevel2PasswordFocused] =
+    useState(false);
+  const [
+    isConfirmNewLevel2PasswordFocused,
+    setIsConfirmNewLevel2PasswordFocused,
+  ] = useState(false);
+  const [hasLevel2Password, setHasLevel2Password] = useState(false);
+  const [activeTab, setActiveTab] = useState("password");
+  const location = window.location;
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Kiểm tra trạng thái mật khẩu cấp 2
+    const checkLevel2PasswordStatus = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          return;
+        }
+
+        const response = await axiosInstance.get(
+          "/users/level2-password/status"
+        );
+        setHasLevel2Password(response.data.data.has_level2_password);
+      } catch (error) {
+        console.error("Lỗi khi kiểm tra trạng thái mật khẩu cấp 2:", error);
+      }
+    };
+
+    checkLevel2PasswordStatus();
+
+    // Kiểm tra URL query parameter để mở tab mật khẩu cấp 2 nếu cần
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get("tab");
+    if (tab === "level2password") {
+      setActiveTab("level2password");
+    }
+  }, [location.search]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -670,6 +733,26 @@ const SecuritySection = () => {
     }));
   };
 
+  const handleLevel2InputChange = (e) => {
+    const { id, value } = e.target;
+    setLevel2PasswordData((prev) => ({
+      ...prev,
+      [id === "current-password-level2"
+        ? "currentPassword"
+        : id === "level2-password"
+          ? "level2Password"
+          : id === "confirm-level2-password"
+            ? "confirmLevel2Password"
+            : id === "current-level2-password"
+              ? "currentLevel2Password"
+              : id === "new-level2-password"
+                ? "newLevel2Password"
+                : id === "confirm-new-level2-password"
+                  ? "confirmNewLevel2Password"
+                  : id]: value,
+    }));
+  };
+
   const resetForm = () => {
     setPasswordData({
       currentPassword: "",
@@ -678,6 +761,19 @@ const SecuritySection = () => {
     });
     setError(null);
     setSuccess(false);
+  };
+
+  const resetLevel2Form = () => {
+    setLevel2PasswordData({
+      currentPassword: "",
+      level2Password: "",
+      confirmLevel2Password: "",
+      currentLevel2Password: "",
+      newLevel2Password: "",
+      confirmNewLevel2Password: "",
+    });
+    setLevel2Error(null);
+    setLevel2Success(false);
   };
 
   const handleUpdatePassword = async () => {
@@ -757,6 +853,245 @@ const SecuritySection = () => {
     }
   };
 
+  const handleSetLevel2Password = async () => {
+    // Xác thực dữ liệu
+    if (!level2PasswordData.currentPassword) {
+      setLevel2Error("Vui lòng nhập cấp 1");
+      return;
+    }
+
+    if (!level2PasswordData.level2Password) {
+      setLevel2Error("Vui lòng nhập mật khẩu cấp 2");
+      return;
+    }
+
+    if (level2PasswordData.level2Password.length < 5) {
+      setLevel2Error("Mật khẩu cấp 2 phải có ít nhất 5 ký tự");
+      return;
+    }
+
+    if (
+      level2PasswordData.level2Password !==
+      level2PasswordData.confirmLevel2Password
+    ) {
+      setLevel2Error("Mật khẩu cấp 2 và xác nhận mật khẩu cấp 2 không khớp");
+      return;
+    }
+
+    // Kiểm tra mật khẩu cấp 2 không được giống mật khẩu cấp 1
+    if (level2PasswordData.currentPassword === level2PasswordData.level2Password) {
+      setLevel2Error("Mật khẩu cấp 2 không được giống mật khẩu cấp 1");
+      return;
+    }
+
+    setLevel2Loading(true);
+    setLevel2Error(null);
+    setLevel2Success(false);
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("Bạn cần đăng nhập để thực hiện chức năng này");
+      }
+
+      // Gọi API thiết lập mật khẩu cấp 2
+      const response = await axiosInstance.post("/users/level2-password/set", {
+        current_password: level2PasswordData.currentPassword,
+        level2_password: level2PasswordData.level2Password,
+        confirm_level2_password: level2PasswordData.confirmLevel2Password,
+      });
+
+      console.log("Phản hồi API thiết lập mật khẩu cấp 2:", response.data);
+
+      // Cập nhật trạng thái thành công và hiển thị thông báo
+      setLevel2Success(true);
+      setHasLevel2Password(true);
+
+      // Kiểm tra nếu có yêu cầu chuyển hướng quay lại trang thanh toán
+      const searchParams = new URLSearchParams(location.search);
+      const redirect = searchParams.get("redirect");
+
+      // Chỉ hiển thị toast thành công nếu KHÔNG có chuyển hướng đến trang rút tiền
+      if (!redirect || redirect !== "wallet_withdraw") {
+        toast.success("Thiết lập mật khẩu cấp 2 thành công!");
+      }
+
+      resetLevel2Form();
+
+      // Phát sự kiện để cập nhật trạng thái mật khẩu cấp 2 trong Header
+      window.dispatchEvent(
+        new CustomEvent("level2password-updated", {
+          detail: { hasLevel2Password: true },
+        })
+      );
+
+      // Kiểm tra nếu có yêu cầu chuyển hướng quay lại trang thanh toán
+      if (redirect) {
+        // Đợi 1.5 giây để người dùng thấy thông báo thành công
+        setTimeout(() => {
+          // Lấy dữ liệu trạng thái thanh toán đã lưu
+          const pendingPaymentState = JSON.parse(localStorage.getItem("pendingPaymentState") || "{}");
+
+          // Chuyển hướng dựa vào loại thanh toán
+          if (redirect === "payment" && pendingPaymentState.type === "normal") {
+            // Cập nhật: Chuyển về trang thanh toán thường với toàn bộ dữ liệu sản phẩm
+            if (pendingPaymentState.selectedProductsData && pendingPaymentState.selectedProductsData.length > 0) {
+              // Nếu có thông tin sản phẩm đầy đủ, sử dụng nó
+              navigate("/payment", {
+                state: {
+                  selectedProducts: pendingPaymentState.selectedProductsData
+                }
+              });
+            } else if (pendingPaymentState.selectedProducts && pendingPaymentState.selectedProducts.length > 0) {
+              // Nếu chỉ có ID sản phẩm, lưu vào localStorage để trang Payment tự tải lại
+              localStorage.setItem("tempSelectedProducts", JSON.stringify(pendingPaymentState.selectedProducts));
+              navigate("/payment");
+            } else {
+              // Không có thông tin sản phẩm
+              navigate("/payment");
+            }
+            toast.info("Đang chuyển về trang thanh toán...");
+          } else if (redirect === "payment_buy_now" && pendingPaymentState.type === "buy_now") {
+            // Lấy dữ liệu sản phẩm
+            const product = pendingPaymentState.product_id;
+            const variant = pendingPaymentState.product_variant_id;
+            const quantity = pendingPaymentState.quantity;
+
+            // Chuyển về trang thanh toán mua ngay với thông tin sản phẩm
+            navigate("/payment_buy_now", {
+              state: {
+                selectedProducts: [{
+                  product: {
+                    id: product,
+                    name: pendingPaymentState.product_name,
+                    price: pendingPaymentState.product_price,
+                    discount_price: pendingPaymentState.product_discount_price,
+                    image_thumbnail: pendingPaymentState.product_image_thumbnail
+                  },
+                  product_variant: variant ? {
+                    id: variant,
+                    price: pendingPaymentState.variant_price,
+                    discount_price: pendingPaymentState.variant_discount_price
+                  } : null,
+                  quantity: quantity,
+                  total_price: pendingPaymentState.total_price || (pendingPaymentState.variant_price || pendingPaymentState.product_price) * quantity
+                }]
+              }
+            });
+            toast.info("Đang chuyển về trang thanh toán mua ngay...");
+          } else if (redirect === "wallet_withdraw") {
+            // Xử lý chuyển hướng về trang rút tiền sau khi thiết lập mật khẩu cấp 2
+            const pendingWithdrawState = JSON.parse(localStorage.getItem("pendingWithdrawState") || "{}");
+
+            // Chuyển về trang rút tiền với tham số thông báo thành công
+            navigate("/account/wallet/withdraw?from_level2_setup=true");
+          }
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Lỗi khi thiết lập mật khẩu cấp 2:", error);
+
+      if (error.response && error.response.status === 400) {
+        setLevel2Error(
+          error.response.data.message || "Mật khẩu cấp 1 không đúng"
+        );
+      } else {
+        setLevel2Error(
+          error.response?.data?.message ||
+          "Không thể thiết lập mật khẩu cấp 2. Vui lòng thử lại sau."
+        );
+      }
+
+      toast.error("Không thể thiết lập mật khẩu cấp 2");
+    } finally {
+      setLevel2Loading(false);
+    }
+  };
+
+  const handleUpdateLevel2Password = async () => {
+    // Xác thực dữ liệu
+    if (!level2PasswordData.currentLevel2Password) {
+      setLevel2Error("Vui lòng nhập mật khẩu cấp 2 hiện tại");
+      return;
+    }
+
+    if (!level2PasswordData.newLevel2Password) {
+      setLevel2Error("Vui lòng nhập mật khẩu cấp 2 mới");
+      return;
+    }
+
+    if (level2PasswordData.newLevel2Password.length < 5) {
+      setLevel2Error("Mật khẩu cấp 2 mới phải có ít nhất 5 ký tự");
+      return;
+    }
+
+    if (
+      level2PasswordData.newLevel2Password !==
+      level2PasswordData.confirmNewLevel2Password
+    ) {
+      setLevel2Error(
+        "Mật khẩu cấp 2 mới và xác nhận mật khẩu cấp 2 không khớp"
+      );
+      return;
+    }
+
+    // Kiểm tra mật khẩu cấp 2 mới không được giống mật khẩu cấp 1
+    // Chúng ta để việc kiểm tra này cho backend xử lý
+    // Nếu giống mật khẩu cấp 1, backend sẽ trả về lỗi 400 với message phù hợp
+
+    setLevel2Loading(true);
+    setLevel2Error(null);
+    setLevel2Success(false);
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("Bạn cần đăng nhập để thực hiện chức năng này");
+      }
+
+      // Gọi API cập nhật mật khẩu cấp 2
+      const response = await axiosInstance.put(
+        "/users/level2-password/update",
+        {
+          current_level2_password: level2PasswordData.currentLevel2Password,
+          new_level2_password: level2PasswordData.newLevel2Password,
+          confirm_level2_password: level2PasswordData.confirmNewLevel2Password,
+        }
+      );
+
+      console.log("Phản hồi API cập nhật mật khẩu cấp 2:", response.data);
+
+      // Cập nhật trạng thái thành công và hiển thị thông báo
+      setLevel2Success(true);
+      toast.success("Cập nhật mật khẩu cấp 2 thành công!");
+      resetLevel2Form();
+
+      // Phát sự kiện để cập nhật trạng thái mật khẩu cấp 2 trong Header
+      window.dispatchEvent(
+        new CustomEvent("level2password-updated", {
+          detail: { hasLevel2Password: true },
+        })
+      );
+    } catch (error) {
+      console.error("Lỗi khi cập nhật mật khẩu cấp 2:", error);
+
+      if (error.response && error.response.status === 400) {
+        setLevel2Error(
+          error.response.data.message || "Mật khẩu cấp 2 hiện tại không đúng"
+        );
+      } else {
+        setLevel2Error(
+          error.response?.data?.message ||
+          "Không thể cập nhật mật khẩu cấp 2. Vui lòng thử lại sau."
+        );
+      }
+
+      toast.error("Không thể cập nhật mật khẩu cấp 2");
+    } finally {
+      setLevel2Loading(false);
+    }
+  };
+
   return (
     <>
       <motion.div
@@ -764,121 +1099,393 @@ const SecuritySection = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle>Mật khẩu</CardTitle>
-            <CardDescription>
-              Cập nhật mật khẩu để bảo mật tài khoản của bạn
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="text-red-500 text-sm flex items-center gap-1 mb-4">
-                <AlertCircle size={14} />
-                <span>{error}</span>
-              </div>
-            )}
-            <div className="space-y-2 relative">
-              <Label htmlFor="current-password">Mật khẩu hiện tại</Label>
-              <Input
-                id="current-password"
-                type={showCurrentPassword ? "text" : "password"}
-                value={passwordData.currentPassword}
-                onChange={handleInputChange}
-                className="pr-10"
-                onFocus={() => setIsCurrentPasswordFocused(true)}
-                onBlur={() => setIsCurrentPasswordFocused(false)}
-              />
-              {passwordData.currentPassword && isCurrentPasswordFocused && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setShowCurrentPassword((prev) => !prev)}
-                >
-                  {showCurrentPassword ? (
-                    <EyeOff size={16} />
+        <Tabs
+          defaultValue="password"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="password">Mật khẩu</TabsTrigger>
+            <TabsTrigger value="level2password">Mật khẩu cấp 2</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="password">
+            <Card>
+              <CardHeader>
+                <CardTitle>Mật khẩu</CardTitle>
+                <CardDescription>
+                  Cập nhật mật khẩu để bảo mật tài khoản của bạn
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {error && (
+                  <div className="text-red-500 text-sm flex items-center gap-1 mb-4">
+                    <AlertCircle size={14} />
+                    <span>{error}</span>
+                  </div>
+                )}
+                <div className="space-y-2 relative">
+                  <Label htmlFor="current-password">Mật khẩu hiện tại</Label>
+                  <Input
+                    id="current-password"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={passwordData.currentPassword}
+                    onChange={handleInputChange}
+                    className="pr-10"
+                    onFocus={() => setIsCurrentPasswordFocused(true)}
+                    onBlur={() => setIsCurrentPasswordFocused(false)}
+                  />
+                  {passwordData.currentPassword && isCurrentPasswordFocused && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setShowCurrentPassword((prev) => !prev)}
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-2 relative">
+                  <Label htmlFor="new-password">Mật khẩu mới</Label>
+                  <Input
+                    id="new-password"
+                    type={showNewPassword ? "text" : "password"}
+                    value={passwordData.newPassword}
+                    onChange={handleInputChange}
+                    className="pr-10"
+                    onFocus={() => setIsNewPasswordFocused(true)}
+                    onBlur={() => setIsNewPasswordFocused(false)}
+                  />
+                  {passwordData.newPassword && isNewPasswordFocused && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setShowNewPassword((prev) => !prev)}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-2 relative">
+                  <Label htmlFor="confirm-password">
+                    Xác nhận mật khẩu mới
+                  </Label>
+                  <Input
+                    id="confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={passwordData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="pr-10"
+                    onFocus={() => setIsConfirmPasswordFocused(true)}
+                    onBlur={() => setIsConfirmPasswordFocused(false)}
+                  />
+                  {passwordData.confirmPassword && isConfirmPasswordFocused && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-end gap-2">
+                <Button variant="outline" onClick={resetForm}>
+                  Hủy bỏ
+                </Button>
+                <Button onClick={handleUpdatePassword} disabled={loading}>
+                  {loading ? (
+                    <>
+                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
+                      Đang cập nhật...
+                    </>
                   ) : (
-                    <Eye size={16} />
+                    "Cập nhật mật khẩu"
                   )}
                 </Button>
-              )}
-            </div>
-            <div className="space-y-2 relative">
-              <Label htmlFor="new-password">Mật khẩu mới</Label>
-              <Input
-                id="new-password"
-                type={showNewPassword ? "text" : "password"}
-                value={passwordData.newPassword}
-                onChange={handleInputChange}
-                className="pr-10"
-                onFocus={() => setIsNewPasswordFocused(true)}
-                onBlur={() => setIsNewPasswordFocused(false)}
-              />
-              {passwordData.newPassword && isNewPasswordFocused && (
+              </CardFooter>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="level2password">
+            <Card>
+              <CardHeader>
+                <CardTitle>Mật khẩu cấp 2</CardTitle>
+                <CardDescription>
+                  {hasLevel2Password
+                    ? "Cập nhật mật khẩu cấp 2 để bảo mật giao dịch của bạn"
+                    : "Thiết lập mật khẩu cấp 2 để bảo mật giao dịch của bạn"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {level2Error && (
+                  <div className="text-red-500 text-sm flex items-center gap-1 mb-4">
+                    <AlertCircle size={14} />
+                    <span>{level2Error}</span>
+                  </div>
+                )}
+
+                {!hasLevel2Password ? (
+                  // Form thiết lập mật khẩu cấp 2
+                  <>
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="current-password-level2">
+                        Mật khẩu cấp 1
+                      </Label>
+                      <Input
+                        id="current-password-level2"
+                        type={showCurrentPassword ? "text" : "password"}
+                        value={level2PasswordData.currentPassword}
+                        onChange={handleLevel2InputChange}
+                        className="pr-10"
+                        onFocus={() => setIsCurrentPasswordFocused(true)}
+                        onBlur={() => setIsCurrentPasswordFocused(false)}
+                      />
+                      {level2PasswordData.currentPassword &&
+                        isCurrentPasswordFocused && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowCurrentPassword((prev) => !prev)
+                            }
+                          >
+                            {showCurrentPassword ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        )}
+                    </div>
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="level2-password">Mật khẩu cấp 2</Label>
+                      <Input
+                        id="level2-password"
+                        type={showLevel2Password ? "text" : "password"}
+                        value={level2PasswordData.level2Password}
+                        onChange={handleLevel2InputChange}
+                        className="pr-10"
+                        onFocus={() => setIsLevel2PasswordFocused(true)}
+                        onBlur={() => setIsLevel2PasswordFocused(false)}
+                      />
+                      {level2PasswordData.level2Password &&
+                        isLevel2PasswordFocused && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowLevel2Password((prev) => !prev)
+                            }
+                          >
+                            {showLevel2Password ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        )}
+                    </div>
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="confirm-level2-password">
+                        Xác nhận mật khẩu cấp 2
+                      </Label>
+                      <Input
+                        id="confirm-level2-password"
+                        type={showConfirmLevel2Password ? "text" : "password"}
+                        value={level2PasswordData.confirmLevel2Password}
+                        onChange={handleLevel2InputChange}
+                        className="pr-10"
+                        onFocus={() => setIsConfirmLevel2PasswordFocused(true)}
+                        onBlur={() => setIsConfirmLevel2PasswordFocused(false)}
+                      />
+                      {level2PasswordData.confirmLevel2Password &&
+                        isConfirmLevel2PasswordFocused && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowConfirmLevel2Password((prev) => !prev)
+                            }
+                          >
+                            {showConfirmLevel2Password ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        )}
+                    </div>
+                  </>
+                ) : (
+                  // Form cập nhật mật khẩu cấp 2
+                  <>
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="current-level2-password">
+                        Mật khẩu cấp 2 hiện tại
+                      </Label>
+                      <Input
+                        id="current-level2-password"
+                        type={showCurrentLevel2Password ? "text" : "password"}
+                        value={level2PasswordData.currentLevel2Password}
+                        onChange={handleLevel2InputChange}
+                        className="pr-10"
+                        onFocus={() => setIsCurrentLevel2PasswordFocused(true)}
+                        onBlur={() => setIsCurrentLevel2PasswordFocused(false)}
+                      />
+                      {level2PasswordData.currentLevel2Password &&
+                        isCurrentLevel2PasswordFocused && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowCurrentLevel2Password((prev) => !prev)
+                            }
+                          >
+                            {showCurrentLevel2Password ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        )}
+                    </div>
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="new-level2-password">
+                        Mật khẩu cấp 2 mới
+                      </Label>
+                      <Input
+                        id="new-level2-password"
+                        type={showNewLevel2Password ? "text" : "password"}
+                        value={level2PasswordData.newLevel2Password}
+                        onChange={handleLevel2InputChange}
+                        className="pr-10"
+                        onFocus={() => setIsNewLevel2PasswordFocused(true)}
+                        onBlur={() => setIsNewLevel2PasswordFocused(false)}
+                      />
+                      {level2PasswordData.newLevel2Password &&
+                        isNewLevel2PasswordFocused && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowNewLevel2Password((prev) => !prev)
+                            }
+                          >
+                            {showNewLevel2Password ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        )}
+                    </div>
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="confirm-new-level2-password">
+                        Xác nhận mật khẩu cấp 2 mới
+                      </Label>
+                      <Input
+                        id="confirm-new-level2-password"
+                        type={
+                          showConfirmNewLevel2Password ? "text" : "password"
+                        }
+                        value={level2PasswordData.confirmNewLevel2Password}
+                        onChange={handleLevel2InputChange}
+                        className="pr-10"
+                        onFocus={() =>
+                          setIsConfirmNewLevel2PasswordFocused(true)
+                        }
+                        onBlur={() =>
+                          setIsConfirmNewLevel2PasswordFocused(false)
+                        }
+                      />
+                      {level2PasswordData.confirmNewLevel2Password &&
+                        isConfirmNewLevel2PasswordFocused && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowConfirmNewLevel2Password((prev) => !prev)
+                            }
+                          >
+                            {showConfirmNewLevel2Password ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        )}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-end gap-2">
+                <Button variant="outline" onClick={resetLevel2Form}>
+                  Hủy bỏ
+                </Button>
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  onClick={
+                    hasLevel2Password
+                      ? handleUpdateLevel2Password
+                      : handleSetLevel2Password
+                  }
+                  disabled={level2Loading}
                 >
-                  {showNewPassword ? (
-                    <EyeOff size={16} />
+                  {level2Loading ? (
+                    <>
+                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
+                      Đang xử lý...
+                    </>
+                  ) : hasLevel2Password ? (
+                    "Cập nhật mật khẩu cấp 2"
                   ) : (
-                    <Eye size={16} />
+                    "Thiết lập mật khẩu cấp 2"
                   )}
                 </Button>
-              )}
-            </div>
-            <div className="space-y-2 relative">
-              <Label htmlFor="confirm-password">Xác nhận mật khẩu mới</Label>
-              <Input
-                id="confirm-password"
-                type={showConfirmPassword ? "text" : "password"}
-                value={passwordData.confirmPassword}
-                onChange={handleInputChange}
-                className="pr-10"
-                onFocus={() => setIsConfirmPasswordFocused(true)}
-                onBlur={() => setIsConfirmPasswordFocused(false)}
-              />
-              {passwordData.confirmPassword && isConfirmPasswordFocused && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff size={16} />
-                  ) : (
-                    <Eye size={16} />
-                  )}
-                </Button>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end gap-2">
-            <Button variant="outline" onClick={resetForm}>
-              Hủy bỏ
-            </Button>
-            <Button onClick={handleUpdatePassword} disabled={loading}>
-              {loading ? (
-                <>
-                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
-                  Đang cập nhật...
-                </>
-              ) : (
-                "Cập nhật mật khẩu"
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </motion.div>
 
       <motion.div
@@ -898,6 +1505,30 @@ const BillingSection = () => {
       transition={{ duration: 0.4 }}
     >
       <OrderHistory />
+    </motion.div>
+  );
+};
+
+const WalletSection = () => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <WalletPage />
+    </motion.div>
+  );
+};
+
+const BankSection = () => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <BankInfo />
     </motion.div>
   );
 };

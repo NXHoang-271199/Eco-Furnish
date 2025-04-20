@@ -91,4 +91,5 @@ Bạn có thể điều chỉnh các tham số của API Gemini như temperature
 - cd socket-server
 - npm i => update thư viện chưa cài
 - node server.js => chạy realtime
-Hiển thị terminal: Socket.IO Server đang chạy trên cổng 3002 => thành công
+Thông báo terminal: Socket.IO Server đang chạy trên cổng 3002 => thành công
+

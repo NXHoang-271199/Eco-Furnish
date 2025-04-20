@@ -23,17 +23,17 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Tạo vai trò
         $adminRole = Role::create([
-            'name' => 'Admin',
+            'name' => 'Quản trị viên',
             'slug' => 'admin',
         ]);
 
         $staffRole = Role::create([
-            'name' => 'Staff',
+            'name' => 'Nhân viên',
             'slug' => 'staff',
         ]);
 
         $clientRole = Role::create([
-            'name' => 'Client',
+            'name' => 'Khách hàng',
             'slug' => 'client',
         ]);
 
@@ -102,6 +102,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Review permissions
             ['name' => 'Xem Đánh Giá Sản Phẩm', 'slug' => 'view-reviews', 'model' => 'App\Models\Review'],
+            ['name' => 'Cập Nhật Đánh Giá Sản Phẩm', 'slug' => 'update-reviews', 'model' => 'App\Models\Review'],
             
             // Comment permissions
             ['name' => 'Xem Bình Luận', 'slug' => 'view-comments', 'model' => 'App\Models\Comment'],
@@ -130,6 +131,21 @@ class RolesAndPermissionsSeeder extends Seeder
             // Order Notification permissions
             ['name' => 'Xem Thông Báo Đơn Hàng', 'slug' => 'view-order-notifications', 'model' => 'App\Models\OrderNotification'],
             ['name' => 'Cập Nhật Thông Báo Đơn Hàng', 'slug' => 'update-order-notifications', 'model' => 'App\Models\OrderNotification'],
+
+            // Wallet
+            ['name' => 'Xem Thông Tin Ví Tiền', 'slug' => 'view-wallets', 'model' => 'App\Models\Wallet'],
+            ['name' => 'Xem Lịch Sử Giao Dịch', 'slug' => 'view-wallets-transactions', 'model' => 'App\Models\Wallet'],
+            ['name' => 'Cộng Tiền Vào Ví', 'slug' => 'edit-wallets', 'model' => 'App\Models\Wallet'],
+
+            // Message permissions
+            ['name' => 'Xem Tin Nhắn', 'slug' => 'view-messages', 'model' => 'App\Models\Message'],
+            ['name' => 'Gửi Tin Nhắn', 'slug' => 'send-messages', 'model' => 'App\Models\Message'],
+
+            // Banner permissions
+            ['name' => 'Xem Banner', 'slug' => 'view-banners', 'model' => 'App\Models\Banner'],
+            ['name' => 'Thêm Banner', 'slug' => 'create-banners', 'model' => 'App\Models\Banner'],
+            ['name' => 'Cập Nhật Banner', 'slug' => 'update-banners', 'model' => 'App\Models\Banner'],
+            ['name' => 'Xóa Banner', 'slug' => 'delete-banners', 'model' => 'App\Models\Banner'],
         ];
 
         // Tạo các quyền trong database
@@ -142,12 +158,15 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Gán quyền cho Staff
         $staffPermissions = Permission::whereIn('slug', [
+            //Users
+            'view-users', 'update-users',
+
             // Dashboard
-            'view-dashboard', 'view-product-stats', 'view-order-stats',
+            'view-dashboard', 'view-revenue', 'view-user-stats', 'view-product-stats', 'view-order-stats',
 
             // Posts
             'view-posts', 'create-posts', 'update-posts',
-            'view-category-posts', 'create-category-posts', 'update-category-posts',
+            'view-category-posts', 'create-category-posts', 'update-category-posts', 'delete-category-posts',
 
             // Products
             'view-products', 'create-products', 'update-products',
@@ -156,46 +175,33 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-variant-values', 'create-variant-values', 'update-variant-values',
 
             // Comments
-            'view-comments', 'update-comments',
+            'view-comments', 'update-comments', 'delete-comments',
 
             // Vouchers
             'view-vouchers', 'create-vouchers', 'update-vouchers',
 
             // Orders
-            'view-orders', 'update-orders',
-            'view-payment-methods', 'update-payment-methods',
+            'view-orders', 'create-orders', 'update-orders', 'delete-orders',
+
+            // Order Notifications
             'view-order-notifications', 'update-order-notifications',
+
+            // Payment Methods
+            'view-payment-methods',
+
+            // Reviews
+            'view-reviews', 'update-reviews',
+
+            // Wallets
+            'view-wallets', 'view-wallets-transactions',
+
+            // Messages
+            'view-messages', 'send-messages',
+
+            // Banner
+            'view-banners', 'create-banners', 'update-banners', 'delete-banners',
         ])->get();
 
         $staffRole->givePermissionTo($staffPermissions);
-
-        // Gán quyền cho Client
-        $clientPermissions = Permission::whereIn('slug', [
-            'view-posts',
-            'view-products',
-            'view-vouchers',
-            'create-orders',
-            'view-orders',
-        ])->get();
-
-        $clientRole->givePermissionTo($clientPermissions);
-    }
-
-    private function getModelName($slug)
-    {
-        $names = [
-            'posts' => 'bài viết',
-            'products' => 'sản phẩm'
-        ];
-        return $names[$slug] ?? $slug;
-    }
-
-    private function getModelClass($slug)
-    {
-        $classes = [
-            'posts' => 'App\Models\Post',
-            'products' => 'App\Models\Product'
-        ];
-        return $classes[$slug] ?? null;
     }
 }

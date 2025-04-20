@@ -1,20 +1,22 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 use App\Traits\TokenHandler;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Laravel\Socialite\Facades\Socialite;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Validator;
 
 class UserApiController extends Controller
 {
@@ -49,7 +51,7 @@ class UserApiController extends Controller
         try {
             $user = User::findOrFail($id);
             Log::info('User avatar from DB: ' . $user->avatar);
-            
+
             $userData = [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -110,11 +112,10 @@ class UserApiController extends Controller
             'email_verification_token' => $verificationToken,
             'email_verified_at' => null
         ]);
-
         // Gửi email xác thực
         try {
-            $frontendUrl = 'http://localhost:5173'; 
-            $verificationUrl = $frontendUrl.'/auth/verify-email?'.http_build_query([
+            $frontendUrl = 'http://localhost:5173';
+            $verificationUrl = $frontendUrl . '/auth/verify-email?' . http_build_query([
                 'token' => $verificationToken,
                 'email' => urlencode($user->email)
             ]);
@@ -125,7 +126,7 @@ class UserApiController extends Controller
             Mail::send('emails.verify_email', [
                 'user' => $user,
                 'verificationUrl' => $verificationUrl
-            ], function($message) use ($user) {
+            ], function ($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Xác thực tài khoản');
             });
@@ -253,8 +254,6 @@ class UserApiController extends Controller
             'data' => [
                 'access_token' => $tokens['access_token'],
                 'refresh_token' => $tokens['refresh_token'],
-                'remember_me' => $user->remember_me,
-                'remember_me_expires_at' => $user->remember_me ? $user->remember_me_expires_at : null
             ]
         ]);
     }
@@ -475,8 +474,8 @@ class UserApiController extends Controller
         }
 
         $user = User::where('email', $request->email)
-                    ->where('email_verification_token', $request->verify_token)
-                    ->first();
+            ->where('email_verification_token', $request->verify_token)
+            ->first();
 
         if (!$user) {
             return response()->json([
@@ -499,6 +498,12 @@ class UserApiController extends Controller
             $user->email_verification_token = null;
             $user->is_active = 1;
             $user->save();
+            // 👉 Tạo ví nếu chưa có
+            if (!$user->wallet) {
+                $user->wallet()->create([
+                    'balance' => 0,
+                ]);
+            }
 
             // Tạo token sau khi xác thực thành công
             $tokens = $this->generateTokens($user);
@@ -563,14 +568,14 @@ class UserApiController extends Controller
             Mail::send('emails.verify_email', [
                 'user' => $user,
                 'verificationUrl' => $verificationUrl
-            ], function($message) use ($user) {
+            ], function ($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Xác thực tài khoản');
             });
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Đã gửi lại email xác thực'    
+                'message' => 'Đã gửi lại email xác thực'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -591,28 +596,28 @@ class UserApiController extends Controller
     {
         try {
             $user = User::findOrFail($id);
-            
+
             // Xác thực yêu cầu
             $request->validate([
                 'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
-            
+
             // Xóa avatar cũ nếu có
             if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
                 Log::info('Xóa avatar cũ: ' . $user->avatar);
                 Storage::disk('public')->delete($user->avatar);
             }
-            
+
             // Lưu avatar mới
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = $request->file('avatar')->store('uploads/avatar', 'public');
             Log::info('Đường dẫn avatar mới: ' . $path);
-            
+
             // Cập nhật trường avatar của user
             $user->avatar = $path;
             $user->save();
-            
+
             Log::info('Dữ liệu user sau khi lưu: ', $user->toArray());
-            
+
             // Trả về thông tin avatar
             return response()->json([
                 'message' => 'Avatar đã được cập nhật thành công',
@@ -644,14 +649,14 @@ class UserApiController extends Controller
         try {
             // Sử dụng stateless() để không dựa vào session sau khi callback
             $socialUser = Socialite::driver('google')->stateless()->user();
-            
+
             // Kiểm tra xem email này đã tồn tại trong DB chưa
             $user = User::where('email', $socialUser->getEmail())->first();
-            
+
             // Nếu chưa có, tạo user mới
             if (!$user) {
                 $clientRole = Role::where('slug', 'client')->first();
-                
+
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
@@ -662,16 +667,16 @@ class UserApiController extends Controller
                     'email_verified_at' => now() // Đã xác thực email
                 ]);
             }
-            
+
             // Tạo token
             $token = $user->createToken('auth_token')->plainTextToken;
             $refreshToken = Str::random(60);
-            
+
             // Lưu refresh token
             $user->update([
                 'refresh_token' => $refreshToken
             ]);
-            
+
             // Chuyển hướng về FE với token
             $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
                 'token' => $token,
@@ -683,7 +688,7 @@ class UserApiController extends Controller
                     'avatar' => $user->avatar
                 ])
             ]);
-            
+
             return redirect($redirectUrl);
         } catch (\Exception $e) {
             Log::error('Google login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
@@ -704,14 +709,14 @@ class UserApiController extends Controller
         try {
             // Sử dụng stateless() để không dựa vào session sau khi callback
             $socialUser = Socialite::driver('facebook')->stateless()->user();
-            
+
             // Kiểm tra xem email này đã tồn tại trong DB chưa
             $user = User::where('email', $socialUser->getEmail())->first();
-            
+
             // Nếu chưa có, tạo user mới
             if (!$user) {
                 $clientRole = Role::where('slug', 'client')->first();
-                
+
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
@@ -722,16 +727,16 @@ class UserApiController extends Controller
                     'email_verified_at' => now() // Đã xác thực email
                 ]);
             }
-            
+
             // Tạo token
             $token = $user->createToken('auth_token')->plainTextToken;
             $refreshToken = Str::random(60);
-            
+
             // Lưu refresh token
             $user->update([
                 'refresh_token' => $refreshToken
             ]);
-            
+
             // Chuyển hướng về FE với token
             $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
                 'token' => $token,
@@ -743,12 +748,191 @@ class UserApiController extends Controller
                     'avatar' => $user->avatar
                 ])
             ]);
-            
+
             return redirect($redirectUrl);
         } catch (\Exception $e) {
             Log::error('Facebook login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
-             // Redirect về trang sign-in với tham số lỗi cụ thể
+            // Redirect về trang sign-in với tham số lỗi cụ thể
             return redirect('http://localhost:5173/sign-in?error=facebook_callback_failed');
         }
+    }
+
+    /**
+     * Thiết lập mật khẩu cấp 2 cho người dùng
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function setLevel2Password(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string',
+            'level2_password' => 'required|string|min:5',
+            'confirm_level2_password' => 'required|string|same:level2_password'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Kiểm tra mật khẩu hiện tại
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu hiện tại không đúng'
+            ], 400);
+        }
+
+        // Kiểm tra mật khẩu cấp 2 không được giống mật khẩu cấp 1
+        if ($request->current_password === $request->level2_password) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu cấp 2 không được giống mật khẩu cấp 1'
+            ], 400);
+        }
+
+        // Kiểm tra xem người dùng đã có mật khẩu cấp 2 chưa
+        if ($user->has_level2_password) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bạn đã thiết lập mật khẩu cấp 2 trước đó. Vui lòng sử dụng chức năng cập nhật mật khẩu cấp 2.'
+            ], 400);
+        }
+
+        // Thiết lập mật khẩu cấp 2
+        $user->level2_password = Hash::make($request->level2_password);
+        $user->has_level2_password = true;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Thiết lập mật khẩu cấp 2 thành công',
+            'data' => [
+                'has_level2_password' => true
+            ]
+        ]);
+    }
+
+    /**
+     * Xác thực mật khẩu cấp 2
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function verifyLevel2Password(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'level2_password' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Kiểm tra xem người dùng đã thiết lập mật khẩu cấp 2 chưa
+        if (!$user->has_level2_password) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bạn chưa thiết lập mật khẩu cấp 2'
+            ], 400);
+        }
+
+        // Xác thực mật khẩu cấp 2
+        if (!Hash::check($request->level2_password, $user->level2_password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu cấp 2 không đúng'
+            ], 400);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Xác thực mật khẩu cấp 2 thành công'
+        ]);
+    }
+
+    /**
+     * Cập nhật mật khẩu cấp 2
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateLevel2Password(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_level2_password' => 'required|string',
+            'new_level2_password' => 'required|string|min:5',
+            'confirm_level2_password' => 'required|string|same:new_level2_password'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Kiểm tra xem người dùng đã thiết lập mật khẩu cấp 2 chưa
+        if (!$user->has_level2_password) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bạn chưa thiết lập mật khẩu cấp 2'
+            ], 400);
+        }
+
+        // Kiểm tra mật khẩu cấp 2 hiện tại
+        if (!Hash::check($request->current_level2_password, $user->level2_password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu cấp 2 hiện tại không đúng'
+            ], 400);
+        }
+
+        // Kiểm tra mật khẩu cấp 2 mới không được giống mật khẩu cấp 1
+        if (Hash::check($request->new_level2_password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu cấp 2 mới không được giống mật khẩu cấp 1'
+            ], 400);
+        }
+
+        // Cập nhật mật khẩu cấp 2
+        $user->level2_password = Hash::make($request->new_level2_password);
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Cập nhật mật khẩu cấp 2 thành công'
+        ]);
+    }
+
+    /**
+     * Kiểm tra trạng thái mật khẩu cấp 2
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkLevel2PasswordStatus(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'has_level2_password' => (bool) $user->has_level2_password
+            ]
+        ]);
     }
 }

@@ -11,6 +11,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TrashController;
 use App\Http\Controllers\BannerController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProductController;
@@ -24,11 +26,10 @@ use App\Http\Controllers\CategoryPostController;
 use App\Http\Controllers\VariantValueController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\OrderNotificationController;
 use App\Http\Controllers\Admin\AdminResetPasswordController;
 use App\Http\Controllers\Admin\AdminForgotPasswordController;
-use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\ReviewController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -44,7 +45,7 @@ use App\Http\Controllers\ReviewController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('admin.login');
 });
 
 // Đặt route upload image ở ngoài middleware group để tránh lỗi CSRF
@@ -52,7 +53,7 @@ Route::post('admin/upload-image', [ImageUploadController::class, 'upload'])->nam
 
 Route::prefix('admin')->group(function () {
 
-    Route::middleware(['guest'])->group(function () {
+    Route::middleware(['web'])->group(function () {
         Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
         Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
 
@@ -77,6 +78,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware(['permission:view-dashboard'])->group(function () {
             Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard/filter', [DashboardController::class, 'filter'])->name('dashboard.filter');
         });
 
         // Categories Management
@@ -84,8 +86,8 @@ Route::prefix('admin')->group(function () {
             Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
             Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
             Route::get('categories/{category}/data', [CategoryController::class, 'getCategoryData'])
-                 ->name('categories.data')
-                 ->middleware('permission:update-categories');
+                ->name('categories.data')
+                ->middleware('permission:update-categories');
             Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
             Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
         });
@@ -114,8 +116,10 @@ Route::prefix('admin')->group(function () {
 
         // Users Management
         Route::middleware(['permission:view-users'])->group(function () {
-            Route::resource('users', UserController::class);
-            Route::put('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])
+            Route::get('/users', [UserController::class, 'userList'])->name('users.index');
+            Route::get('/admins', [UserController::class, 'adminList'])->name('users.admins');
+            Route::resource('users', UserController::class)->except(['index']);
+            Route::post('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])
                 ->name('users.toggle-status');
         });
 
@@ -148,6 +152,8 @@ Route::prefix('admin')->group(function () {
                 Route::get('{id}/connect', [PaymentMethodController::class, 'getConnectForm'])->name('connect.form');
                 Route::post('{id}/connect', [PaymentMethodController::class, 'connect'])->name('connect');
                 Route::post('{id}/disconnect', [PaymentMethodController::class, 'disconnect'])->name('disconnect');
+                Route::get('{id}/edit-connection', [PaymentMethodController::class, 'editConnection'])->name('edit_connection.form');
+                Route::post('{id}/update-connection', [PaymentMethodController::class, 'updateConnection'])->name('update_connection');
             });
         });
 
@@ -220,4 +226,14 @@ Route::prefix('admin')->group(function () {
     Route::post('/messages/send', [MessageController::class, 'send'])->name('messages.send');
     Route::post('/admin/messages/send', [MessageController::class, 'sendByAdmin'])->name('messages.send');
 
+    // Wallet Route
+    Route::middleware(['permission:view-wallets'])->prefix('wallets')->name('wallets.')->group(function () {
+        Route::get('transactions', [WalletController::class, 'allTransactions'])->name('transactions');
+        Route::get('/', [WalletController::class, 'index'])->name('index');
+        Route::get('{id}', [WalletController::class, 'show'])->name('show');
+        Route::post('{id}/update-balance', [WalletController::class, 'updateBalance'])->name('update_balance');
+        Route::post('withdraws/approve/{id}', [WalletController::class, 'approveWithdraw'])->name('withdraws.approve');
+        Route::post('withdraws/reject/{id}', [WalletController::class, 'rejectWithdraw'])->name('withdraws.reject');
+        Route::get('withdraws/detail/{id}', [WalletController::class, 'getWithdrawDetail'])->name('withdraws.detail');
+    });
 });
