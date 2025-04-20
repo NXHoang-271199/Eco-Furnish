@@ -1277,15 +1277,17 @@ const ChatRealTime = () => {
                     }`}
             >
                 {isOpen ? <BsXLg className="text-2xl" /> : <BsChatDots className="text-2xl" />}
-                {!isOpen && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center animate-pulse shadow-lg">
-                        {unreadCount}
-                    </span>
-                )}
                 {!isConnected && !isOpen && (
                     <span className="absolute -bottom-1 -right-1 bg-yellow-500 w-4 h-4 rounded-full animate-pulse shadow-md"></span>
                 )}
             </button>
+
+            {/* Badge hiển thị số tin nhắn chưa đọc - Di chuyển ra ngoài button */}
+            {!isOpen && unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center animate-pulse shadow-lg">
+                    {unreadCount}
+                </span>
+            )}
 
             {/* Chat Box - Cải thiện với hiệu ứng glass morphism */}
             {isOpen && (
