@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -33,11 +33,18 @@ const WalletPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [filterType, setFilterType] = useState("all"); // "all", "nap_tien", "rut_tien"
+  const [isFetching, setIsFetching] = useState(false);
+  const initialFetchDone = useRef(false);
 
   // Fetch dữ liệu ví và lịch sử giao dịch
-  const fetchWalletData = async () => {
+  const fetchWalletData = async (isBackground = false) => {
+    if (isFetching) return;
+
     try {
-      setLoading(true);
+      setIsFetching(true);
+      if (!isBackground) {
+        setLoading(true);
+      }
 
       // Lấy số dư ví
       const balanceResponse = await axiosInstance.get("/wallet/balance", {
@@ -114,22 +121,64 @@ const WalletPage = () => {
       });
     } catch (error) {
       console.error("Lỗi khi tải dữ liệu ví:", error);
+      if (!isBackground) {
+        setError("Lỗi khi tải dữ liệu ví");
+        toast.error("Không thể tải dữ liệu ví");
+      }
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    // Trước khi nạp tiền, lưu số dư hiện tại để so sánh sau khi nạp thành công
-    if (
-      location.pathname === "/account/wallet" &&
-      location.state?.from?.pathname === "/account/wallet/deposit"
-    ) {
-      localStorage.setItem("previousBalance", balance.toString());
+    if (!initialFetchDone.current) {
+      fetchWalletData();
+      initialFetchDone.current = true;
     }
 
-    fetchWalletData();
-  }, [location.pathname]);
+    const handleFocus = () => {
+      console.log("Tab focused, refetching wallet data...");
+      fetchWalletData(true);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("Tab visible, refetching wallet data...");
+        fetchWalletData(true);
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (location.state && location.state.fromDepositSuccess) {
+      console.log("Returned from successful deposit, refetching data...");
+      fetchWalletData().then(() => {
+        localStorage.removeItem("previousBalance");
+        navigate(location.pathname, { replace: true, state: {} });
+      });
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const fromLevel2Setup = searchParams.get("from_level2_setup");
+    if (fromLevel2Setup === "true") {
+      console.log(
+        "Returned from level 2 setup, refetching status and maybe form data..."
+      );
+      checkLevel2PasswordStatus();
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, navigate]);
 
   // Hủy giao dịch
   const cancelTransaction = async (id) => {
