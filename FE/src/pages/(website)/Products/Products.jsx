@@ -32,6 +32,8 @@ const Products = () => {
   const [itemsPerPage] = useState(9);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // Đánh dấu lần tải đầu tiên
   const [sortOption, setSortOption] = useState("newest");
+  // Thêm state lưu trữ thông tin đánh giá
+  const [productRatings, setProductRatings] = useState({});
 
   const [searchParams] = useSearchParams();
   const spaceFilter = searchParams.get('space');
@@ -270,12 +272,8 @@ const Products = () => {
     if (priceRange[0] !== 0 || priceRange[1] !== 10000000) {
       filtered = filtered.filter((product) => {
         let price;
-        if (product.has_variants) {
-          const variantPrices = product.variants.map(
-            (v) => v.discount_price ?? v.price
-          );
-          if (variantPrices.length === 0 || variantPrices.every(p => p === null || p === undefined)) return false;
-          price = Math.min(...variantPrices.filter(p => p !== null && p !== undefined));
+        if (product.has_variants && product.variants && product.variants.length > 0) {
+          price = product.variants[0].discount_price ?? product.variants[0].price;
         } else {
           price = product.discount_price ?? product.price;
         }
@@ -290,30 +288,45 @@ const Products = () => {
         // Giả sử sản phẩm mới nhất có id cao hơn
         filtered.sort((a, b) => b.id - a.id);
         break;
+      case "oldest":
+        // Sản phẩm cũ nhất có id thấp hơn
+        filtered.sort((a, b) => a.id - b.id);
+        break;
       case "price-asc":
         filtered.sort((a, b) => {
-          const priceA = a.has_variants
-            ? Math.min(...a.variants.map(v => v.discount_price ?? v.price).filter(p => p !== null && p !== undefined))
+          const priceA = a.has_variants && a.variants && a.variants.length > 0
+            ? (a.variants[0].discount_price ?? a.variants[0].price)
             : (a.discount_price ?? a.price);
-          const priceB = b.has_variants
-            ? Math.min(...b.variants.map(v => v.discount_price ?? v.price).filter(p => p !== null && p !== undefined))
+          const priceB = b.has_variants && b.variants && b.variants.length > 0
+            ? (b.variants[0].discount_price ?? b.variants[0].price)
             : (b.discount_price ?? b.price);
+          // Nếu giá bằng nhau, sắp xếp theo tên a-z
+          if (priceA === priceB) {
+            return a.name.localeCompare(b.name);
+          }
           return priceA - priceB;
         });
         break;
       case "price-desc":
         filtered.sort((a, b) => {
-          const priceA = a.has_variants
-            ? Math.min(...a.variants.map(v => v.discount_price ?? v.price).filter(p => p !== null && p !== undefined))
+          const priceA = a.has_variants && a.variants && a.variants.length > 0
+            ? (a.variants[0].discount_price ?? a.variants[0].price)
             : (a.discount_price ?? a.price);
-          const priceB = b.has_variants
-            ? Math.min(...b.variants.map(v => v.discount_price ?? v.price).filter(p => p !== null && p !== undefined))
+          const priceB = b.has_variants && b.variants && b.variants.length > 0
+            ? (b.variants[0].discount_price ?? b.variants[0].price)
             : (b.discount_price ?? b.price);
+          // Nếu giá bằng nhau, vẫn sắp xếp theo tên a-z
+          if (priceA === priceB) {
+            return a.name.localeCompare(b.name);
+          }
           return priceB - priceA;
         });
         break;
       case "name-asc":
         filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-desc":
+        filtered.sort((a, b) => b.name.localeCompare(a.name));
         break;
       default:
         break;
@@ -472,6 +485,46 @@ const Products = () => {
     setSortOption(e.target.value);
   };
 
+  // Thêm useEffect mới để tải thông tin đánh giá cho các sản phẩm đã tải
+  useEffect(() => {
+    // Chỉ tải đánh giá khi có sản phẩm và không phải đang tìm kiếm
+    if (products.length > 0 && !isSearchLoading && !isLoading) {
+      const fetchRatings = async () => {
+        const ratingsData = {};
+
+        // Tạo mảng các promise để tải đánh giá cho tất cả sản phẩm
+        const ratingPromises = products.map(product =>
+          axios.get(`${import.meta.env.VITE_API_URL}/api/products/${product.id}/reviews`)
+            .then(response => {
+              if (response.data.success && Array.isArray(response.data.data)) {
+                const reviews = response.data.data;
+                if (reviews.length > 0) {
+                  const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+                  const avgRating = (totalRating / reviews.length).toFixed(1);
+                  ratingsData[product.id] = {
+                    average: parseFloat(avgRating),
+                    count: reviews.length
+                  };
+                } else {
+                  ratingsData[product.id] = { average: 0, count: 0 };
+                }
+              }
+            })
+            .catch(error => {
+              console.error(`Error fetching ratings for product ${product.id}:`, error);
+              ratingsData[product.id] = { average: 0, count: 0 };
+            })
+        );
+
+        // Đợi tất cả promise hoàn thành
+        await Promise.all(ratingPromises);
+        setProductRatings(ratingsData);
+      };
+
+      fetchRatings();
+    }
+  }, [products, isSearchLoading, isLoading]);
+
   return (
     <>
       {isLoading && !isSearching && <LoadingScreen />}
@@ -546,9 +599,11 @@ const Products = () => {
               onChange={handleSortOptionChange}
             >
               <option value="newest">Mới nhất</option>
+              <option value="oldest">Cũ nhất</option>
               <option value="price-asc">Giá: Thấp đến cao</option>
               <option value="price-desc">Giá: Cao đến thấp</option>
               <option value="name-asc">Tên: A-Z</option>
+              <option value="name-desc">Tên: Z-A</option>
             </select>
           </motion.div>
         </div>
@@ -791,15 +846,24 @@ const Products = () => {
                       <div className="p-5 flex flex-col flex-grow"> {/* Flex grow for content */}
                         {/* Rating */}
                         <div className="flex items-center mb-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <IoStar
-                              key={star}
-                              className={`${star <= 4 ? "text-yellow-400" : "text-gray-300" // Brighter yellow
-                                } w-4 h-4`}
-                            />
-                          ))}
+                          {[1, 2, 3, 4, 5].map((star) => {
+                            // Lấy đánh giá từ state productRatings
+                            const rating = productRatings[product.id]?.average || 0;
+                            return (
+                              <IoStar
+                                key={star}
+                                className={`${star <= Math.round(rating)
+                                  ? "text-yellow-400"
+                                  : "text-gray-300" // Brighter yellow
+                                  } w-4 h-4`}
+                              />
+                            );
+                          })}
                           <span className="text-gray-500 text-sm ml-2">
-                            (4.0) {/* Replace with dynamic rating */}
+                            {/* Hiển thị số đánh giá từ state */}
+                            {productRatings[product.id]
+                              ? productRatings[product.id].average.toFixed(1)
+                              : "0.0"}
                           </span>
                         </div>
 
@@ -822,43 +886,29 @@ const Products = () => {
                         <div className="flex justify-between items-end mt-auto pt-2 border-t border-gray-100"> {/* Align price to bottom */}
                           {product.has_variants ? (
                             <div className="flex-1">
-                              {product.price_range?.min_discount ? (
+                              {product.variants && product.variants.length > 0 ? (
                                 <div className="flex flex-col items-start">
                                   <p className="text-amber-600 font-bold text-xl"> {/* Larger, bolder price */}
                                     {new Intl.NumberFormat("vi-VN", {
                                       style: "currency",
                                       currency: "VND",
-                                    }).format(product.price_range.min_discount)}
-                                    {product.price_range.max_discount &&
-                                      product.price_range.max_discount !==
-                                      product.price_range.min_discount &&
-                                      ` - ${new Intl.NumberFormat("vi-VN", {
+                                    }).format(product.variants[0].discount_price || product.variants[0].price || 0)}
+                                  </p>
+                                  {product.variants[0].discount_price && (
+                                    <p className="text-gray-400 line-through text-sm">
+                                      {new Intl.NumberFormat("vi-VN", {
                                         style: "currency",
                                         currency: "VND",
-                                      }).format(
-                                        product.price_range.max_discount
-                                      )}`}
-                                  </p>
-                                  <p className="text-gray-400 line-through text-sm">
-                                    {new Intl.NumberFormat("vi-VN", {
-                                      style: "currency",
-                                      currency: "VND",
-                                    }).format(product.price_range.min)}
-                                  </p>
+                                      }).format(product.variants[0].price || 0)}
+                                    </p>
+                                  )}
                                 </div>
                               ) : (
                                 <p className="text-amber-600 font-bold text-xl">
                                   {new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
-                                  }).format(product.price_range?.min || 0)}
-                                  {product.price_range?.max &&
-                                    product.price_range.max !==
-                                    product.price_range.min &&
-                                    ` - ${new Intl.NumberFormat("vi-VN", {
-                                      style: "currency",
-                                      currency: "VND",
-                                    }).format(product.price_range.max)}`}
+                                  }).format(0)}
                                 </p>
                               )}
                             </div>
