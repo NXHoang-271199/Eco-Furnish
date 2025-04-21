@@ -92,6 +92,12 @@ class User extends Authenticatable implements MustVerifyEmail
             $query->where('email', 'like', '%' . $fillers['email'] . '%');
         }
 
+        if (!empty($fillers['role'])) {
+            $query->whereHas('role', function($q) use ($fillers) {
+                $q->where('slug', $fillers['role']);
+            });
+        }
+
         return $query;
     }
 

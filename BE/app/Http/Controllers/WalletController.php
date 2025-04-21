@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\DB;
 
 class WalletController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view-wallets');
+        $this->middleware('permission:view-wallets-transactions', ['only' => ['allTransactions']]);
+        $this->middleware('permission:edit-wallets', ['only' => ['updateBalance', 'approveWithdraw', 'rejectWithdraw']]);
+    }
+
     // Danh sách ví người dùng
     public function index(Request $request)
     {

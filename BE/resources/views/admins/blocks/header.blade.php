@@ -58,7 +58,7 @@
                     .dropdown-menu.show {
                         display: block;
                     }
-                    
+
                     /* Đảm bảo dropdown thông báo hiển thị trên cùng và không bị che khuất */
                     #notificationDropdown .dropdown-menu {
                         z-index: 9999;
@@ -68,7 +68,7 @@
                         transform: none !important;
                         top: 100% !important;
                     }
-                    
+
                     /* Đảm bảo nội dung thông báo hiển thị đúng */
                     #notificationItemsTabContent {
                         z-index: 9999;
@@ -242,9 +242,15 @@
                     <button type="button" class="btn shadow-none" id="page-header-user-dropdown"
                         data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span class="d-flex align-items-center">
-                            <img class="rounded-circle header-profile-user"
-                                src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : asset('assets/images/users/avatar-1.jpg') }}"
-                                alt="Header Avatar">
+                            @if(auth()->user()->avatar && Storage::exists(auth()->user()->avatar))
+                                <img class="rounded-circle header-profile-user"
+                                    src="{{ Storage::url(auth()->user()->avatar) }}"
+                                    alt="Header Avatar">
+                            @else
+                                <img class="rounded-circle header-profile-user"
+                                    src="{{ asset('assets/admins/images/users/avatarUser.png') }}"
+                                    alt="Header Avatar">
+                            @endif
                             <span class="text-start ms-xl-2">
                                 <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">
                                     @if(Auth::check())
@@ -267,19 +273,19 @@
                         <!-- item-->
                         <h6 class="dropdown-header">
                             @if(Auth::check())
-                                Welcome {{ Auth::user()->name }}!
+                                Xin chào {{ Auth::user()->name }}!
                             @else
-                                Welcome Admin!
+                                Xin chào quản trị viên
                             @endif
                         </h6>
                         @if(Auth::check())
                             <a class="dropdown-item" href="{{ route('users.show', Auth::id()) }}">
                                 <i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
-                                <span class="align-middle">Profile</span>
+                                <span class="align-middle">Thông tin tài khoản</span>
                             </a>
                             <a class="dropdown-item" href="{{ route('users.edit', Auth::id()) }}">
                                 <i class="mdi mdi-cog text-muted fs-16 align-middle me-1"></i>
-                                <span class="align-middle">Settings</span>
+                                <span class="align-middle">Cài đặt tài khoản</span>
                             </a>
                         @endif
 
@@ -288,7 +294,7 @@
                             <a class="dropdown-item" href="javascript:void(0);"
                                 onclick="document.getElementById('logout-form').submit();">
                                 <i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i>
-                                <span class="align-middle">Logout</span>
+                                <span class="align-middle">Đăng xuất</span>
                             </a>
                         </form>
                     </div>

@@ -40,27 +40,6 @@
 
 @section('content')
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
-                <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-                    <h4 class="mb-sm-0">Chỉnh sửa người dùng</h4>
-                    <div class="page-title-right">
-                        <ol class="breadcrumb m-0">
-                            @foreach ($breadcrumbs as $breadcrumb)
-                                <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
-                                    @if ($breadcrumb['url'])
-                                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
-                                    @else
-                                        {{ $breadcrumb['name'] }}
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ol>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <form action="{{ route('users.update', $singerUser->id) }}" method="POST" enctype="multipart/form-data"
             autocomplete="off" class="needs-validation" novalidate>
             @csrf
@@ -78,7 +57,7 @@
                                             alt="user-profile-image">
                                     @else
                                         <img id="preview-image"
-                                            src="{{ asset('assets/admins/images/users/user-dummy-img.jpg') }}"
+                                            src="{{ asset('assets/admins/images/users/avatarUser.png') }}"
                                             class="rounded-circle avatar-xl img-thumbnail user-profile-image"
                                             alt="user-profile-image">
                                     @endif
@@ -230,7 +209,7 @@
                                 <!-- Submit Button -->
                                 <div class="col-lg-12 text-end">
                                     <button type="submit" class="btn btn-primary">Cập nhật</button>
-                                    <a href="{{ route('users.index') }}" class="btn btn-soft-secondary">Hủy bỏ</a>
+                                    <a href="{{ route('users.admins') }}" class="btn btn-soft-secondary">Hủy bỏ</a>
                                 </div>
                             </div>
                         </div>

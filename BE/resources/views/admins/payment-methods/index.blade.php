@@ -20,7 +20,9 @@
                             <th>Hình ảnh</th>
                             <th>Tên</th>
                             <th>Trạng thái kết nối</th>
-                            <th>Hành động</th>
+                            @if (Auth::user()->hasPermission('update-payment-methods'))
+                                <th>Hành động</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -37,9 +39,9 @@
                                         <span class="badge bg-danger">Chưa kết nối</span>
                                     @endif
                                 </td>
-                                <td>
-                                    @if ($method->name !== 'Tiền mặt' && $method->name !== 'Ví' && $method->is_connected == 0)
-                                        @if (Auth::user()->hasPermission('delete-payment-methods'))
+                                @if (Auth::user()->hasPermission('update-payment-methods'))
+                                    <td>
+                                        @if ($method->name !== 'Tiền mặt' && $method->name !== 'Ví' && $method->is_connected == 0)
                                             <form action="{{ route('payment-methods.destroy', $method->id) }}"
                                                 method="POST" class="d-inline"
                                                 onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
@@ -50,54 +52,54 @@
                                                 </button>
                                             </form>
                                         @endif
-                                    @endif
 
-                                    @if ($method->is_connected == 0 && $method->name !== 'Tiền mặt' && $method->name !== 'Ví')
-                                        <!-- Nút Kết nối - Màu xanh lá -->
-                                        <button class="btn btn-success btn-sm"
-                                            onclick="openConnectModal('{{ route('payment-methods.connect', $method->id) }}')">
-                                            <i class="fas fa-plug"></i> Kết nối
-                                        </button>
-                                    @endif
-                                    <div class="btn-group">
-                                        <!-- Nút bánh răng -->
-                                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button"
-                                            id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="fas fa-cogs"></i> Cấu hình
-                                        </button>
-                                        <ul class="dropdown-menu" aria-labelledby="settingsDropdown">
-                                            @if ($method->is_connected == 1 && $method->name !== 'Tiền mặt' && $method->name !== 'Ví')
-                                                <li>
-                                                    <a class="dropdown-item" href="#"
-                                                        onclick="openEditConnectionModal('{{ route('payment-methods.edit_connection.form', $method->id) }}')">
-                                                        <i class="fas fa-wrench"></i> Sửa cấu hình
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <!-- Form Hủy kết nối -->
-                                                    <form action="{{ route('payment-methods.disconnect', $method->id) }}"
-                                                        method="POST" class="d-inline"
-                                                        onsubmit="return confirm('Bạn có chắc chắn muốn hủy kết nối?');">
-                                                        @csrf
-                                                        @method('POST')
-                                                        <button type="submit" class="dropdown-item">
-                                                            <i class="fas fa-unlink"></i> Hủy kết nối
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                            @endif
-                                            @if (Auth::user()->hasPermission('update-payment-methods'))
-                                                <li>
-                                                    <a class="dropdown-item"
-                                                        href="{{ route('payment-methods.edit', $method->id) }}">
-                                                        <i class="fas fa-edit"></i> Sửa
-                                                    </a>
-                                                </li>
-                                            @endif
-                                        </ul>
-                                    </div>
-                                </td>
-
+                                        @if ($method->is_connected == 0 && $method->name !== 'Tiền mặt' && $method->name !== 'Ví')
+                                            <!-- Nút Kết nối - Màu xanh lá -->
+                                            <button class="btn btn-success btn-sm"
+                                                onclick="openConnectModal('{{ route('payment-methods.connect', $method->id) }}')">
+                                                <i class="fas fa-plug"></i> Kết nối
+                                            </button>
+                                        @endif
+                                        <div class="btn-group">
+                                            <!-- Nút bánh răng -->
+                                            <button class="btn btn-primary btn-sm dropdown-toggle" type="button"
+                                                id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-cogs"></i> Cấu hình
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="settingsDropdown">
+                                                @if ($method->is_connected == 1 && $method->name !== 'Tiền mặt' && $method->name !== 'Ví')
+                                                    <li>
+                                                        <a class="dropdown-item" href="#"
+                                                            onclick="openEditConnectionModal('{{ route('payment-methods.edit_connection.form', $method->id) }}')">
+                                                            <i class="fas fa-wrench"></i> Sửa cấu hình
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <!-- Form Hủy kết nối -->
+                                                        <form
+                                                            action="{{ route('payment-methods.disconnect', $method->id) }}"
+                                                            method="POST" class="d-inline"
+                                                            onsubmit="return confirm('Bạn có chắc chắn muốn hủy kết nối?');">
+                                                            @csrf
+                                                            @method('POST')
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-unlink"></i> Hủy kết nối
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
+                                                @if (Auth::user()->hasPermission('update-payment-methods'))
+                                                    <li>
+                                                        <a class="dropdown-item"
+                                                            href="{{ route('payment-methods.edit', $method->id) }}">
+                                                            <i class="fas fa-edit"></i> Sửa
+                                                        </a>
+                                                    </li>
+                                                @endif
+                                            </ul>
+                                        </div>
+                                    </td>
+                                @endif
                             </tr>
                         @endforeach
                     </tbody>

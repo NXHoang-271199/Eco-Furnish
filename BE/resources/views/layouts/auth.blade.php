@@ -55,6 +55,13 @@
     
     @stack('scripts')
 
+    {{-- <!-- particles js -->
+    <script src="{{asset('admins/libs/particles.js/particles.js')}}"></script>
+    <!-- particles app js -->
+    <script src="{{asset('admins/js/pages/particles.app.js')}}"></script>
+    <!-- password-addon init --> --}}
+
+    <script src="{{asset('assets/admins/js/pages/password-addon.init.js') }}"></script>
 </body>
 
 </html>

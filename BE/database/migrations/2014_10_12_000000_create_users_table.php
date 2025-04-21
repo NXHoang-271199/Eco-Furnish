@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('email_verification_token', 255)->nullable();
             $table->string('remember_token', 255)->nullable();
             $table->string('access_token', 255)->nullable();
+            $table->timestamp('token_expires_at')->nullable();
             $table->string('refresh_token', 255)->nullable();
             $table->boolean('remember_me')->default(false);
             $table->timestamp('remember_me_expires_at')->nullable();

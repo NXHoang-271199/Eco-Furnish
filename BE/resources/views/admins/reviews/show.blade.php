@@ -133,13 +133,16 @@
                     <!-- /.card-body -->
                     <div class="card-footer">
                         <div class="btn-group">
-                            <button type="button"
-                                class="btn {{ $review->is_hidden ? 'btn-success' : 'btn-warning' }} toggle-review-btn"
-                                data-review-id="{{ $review->id }}" data-is-hidden="{{ $review->is_hidden ? '1' : '0' }}"
-                                {{ !$review->is_hidden ? 'onclick="openHideReviewModal(' . $review->id . ')"' : '' }}>
-                                <i class="fas {{ $review->is_hidden ? 'fa-eye' : 'fa-eye-slash' }}"></i>
-                                {{ $review->is_hidden ? 'Hiển thị đánh giá' : 'Ẩn đánh giá' }}
-                            </button>
+                            @if (Auth::user()->hasPermission('update-reviews'))
+                                <button type="button"
+                                    class="btn {{ $review->is_hidden ? 'btn-success' : 'btn-warning' }} toggle-review-btn"
+                                    data-review-id="{{ $review->id }}"
+                                    data-is-hidden="{{ $review->is_hidden ? '1' : '0' }}"
+                                    {{ !$review->is_hidden ? 'onclick="openHideReviewModal(' . $review->id . ')"' : '' }}>
+                                    <i class="fas {{ $review->is_hidden ? 'fa-eye' : 'fa-eye-slash' }}"></i>
+                                    {{ $review->is_hidden ? 'Hiển thị đánh giá' : 'Ẩn đánh giá' }}
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -150,28 +153,28 @@
 
     {{-- Model điền lí do ẩn --}}
     <div class="modal fade" id="hideReviewModal" tabindex="-1" role="dialog" aria-labelledby="hideReviewModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="hideReviewModalLabel">Lý do ẩn đánh giá</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="hideReviewForm" onsubmit="return false;">
-                    <input type="hidden" id="reviewId" name="reviewId">
-                    <div class="mb-3">
-                        <label for="note" class="form-label">Vui lòng nhập lý do ẩn đánh giá:</label>
-                        <input type="text" class="form-control" id="note" name="note" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-success" id="submitHideReview">Xác nhận</button>
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="hideReviewModalLabel">Lý do ẩn đánh giá</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="hideReviewForm" onsubmit="return false;">
+                        <input type="hidden" id="reviewId" name="reviewId">
+                        <div class="mb-3">
+                            <label for="note" class="form-label">Vui lòng nhập lý do ẩn đánh giá:</label>
+                            <input type="text" class="form-control" id="note" name="note" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="submitHideReview">Xác nhận</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 @endsection
 @section('JS')
     <script>
@@ -229,19 +232,19 @@
         // Hàm gửi request
         function sendRequest(url, token, data) {
             return fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': token,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(res => res.json())
-            .catch(error => {
-                console.error('Lỗi:', error);
-                throw new Error('Không thể kết nối đến máy chủ!');
-            });
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(res => res.json())
+                .catch(error => {
+                    console.error('Lỗi:', error);
+                    throw new Error('Không thể kết nối đến máy chủ!');
+                });
         }
 
         // Xử lý sự kiện click nút ẩn/hiển thị
@@ -305,7 +308,9 @@
                 const url = routeTemplate.replace('REVIEW_ID', reviewId);
                 const token = document.querySelector('input[name=_token]').value;
 
-                sendRequest(url, token, { note })
+                sendRequest(url, token, {
+                        note
+                    })
                     .then(data => {
                         if (data.success) {
                             bootstrap.Modal.getInstance(document.getElementById('hideReviewModal')).hide();

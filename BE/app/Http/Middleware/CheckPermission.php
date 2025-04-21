@@ -17,7 +17,7 @@ class CheckPermission
     public function handle(Request $request, Closure $next, string $permission): Response
     {
         if (!Auth::check()) {
-            return redirect()->route('login');
+            return redirect()->route('admin.login');
         }
 
         $permissions = is_array($permission)
