@@ -24,6 +24,7 @@ import {
   FaFire,
   FaLightbulb,
 } from "react-icons/fa";
+import axios from "axios";
 
 // Helper function để theo dõi hoạt động khi ChatBot chưa tải
 const trackActivity = (type, data) => {
@@ -53,6 +54,8 @@ const Homes = () => {
   const [hasActivityData, setHasActivityData] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const dataFetchedRef = useRef(false);
+  // Thêm state lưu trữ thông tin đánh giá
+  const [productRatings, setProductRatings] = useState({});
 
   const bannerRef = useRef(null);
   const bannerInView = useInView(bannerRef, { once: false, amount: 0.5 });
@@ -335,9 +338,9 @@ const Homes = () => {
             // Chuẩn hóa has_variants thành boolean
             newProduct.has_variants = Boolean(
               newProduct.has_variants === 1 ||
-                newProduct.has_variants === true ||
-                newProduct.has_variants === "1" ||
-                newProduct.has_variants === "true"
+              newProduct.has_variants === true ||
+              newProduct.has_variants === "1" ||
+              newProduct.has_variants === "true"
             );
 
             // Đảm bảo variants là một mảng
@@ -439,9 +442,9 @@ const Homes = () => {
               // Chuẩn hóa has_variants thành boolean
               newProduct.has_variants = Boolean(
                 newProduct.has_variants === 1 ||
-                  newProduct.has_variants === true ||
-                  newProduct.has_variants === "1" ||
-                  newProduct.has_variants === "true"
+                newProduct.has_variants === true ||
+                newProduct.has_variants === "1" ||
+                newProduct.has_variants === "true"
               );
 
               // Đảm bảo variants là một mảng
@@ -558,16 +561,15 @@ const Homes = () => {
   useEffect(() => {
     if (
       products.length > 0 &&
-      aiRecommendations.length === 0 &&
-      hasActivityData === false
+      aiRecommendations.length === 0
     ) {
-      // Chỉ tạo gợi ý mặc định nếu chưa có hoạt động
+      // Tạo gợi ý ngẫu nhiên từ các sản phẩm
       const randomRecommendations = [...products]
         .sort(() => 0.5 - Math.random())
         .slice(0, 4);
       setAiRecommendations(randomRecommendations);
     }
-  }, [products, aiRecommendations, hasActivityData]); // Thêm dependency hasActivityData
+  }, [products, aiRecommendations]); // Bỏ dependency hasActivityData
 
   // Animation variants
   const fadeInUp = {
@@ -657,6 +659,54 @@ const Homes = () => {
 
     return <div className="flex space-x-1">{stars}</div>;
   };
+
+  // Thêm useEffect để tải thông tin đánh giá cho sản phẩm
+  useEffect(() => {
+    const fetchRatings = async (productList) => {
+      if (!productList || productList.length === 0) return;
+
+      const ratingsData = { ...productRatings }; // Copy state hiện tại
+
+      // Lọc ra các sản phẩm chưa có đánh giá
+      const productsToFetch = productList.filter(p => !ratingsData[p.id]);
+
+      if (productsToFetch.length === 0) return; // Không có sản phẩm mới cần tải
+
+      // Tạo mảng các promise để tải đánh giá
+      const ratingPromises = productsToFetch.map(product =>
+        axios.get(`http://localhost:8000/api/products/${product.id}/reviews`)
+          .then(response => {
+            if (response.data.success && Array.isArray(response.data.data)) {
+              const reviews = response.data.data;
+              if (reviews.length > 0) {
+                const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+                const avgRating = (totalRating / reviews.length).toFixed(1);
+                ratingsData[product.id] = {
+                  average: parseFloat(avgRating),
+                  count: reviews.length
+                };
+              } else {
+                ratingsData[product.id] = { average: 0, count: 0 };
+              }
+            }
+          })
+          .catch(error => {
+            console.error(`Error fetching ratings for product ${product.id}:`, error);
+            ratingsData[product.id] = { average: 0, count: 0 };
+          })
+      );
+
+      // Đợi tất cả promise hoàn thành
+      await Promise.all(ratingPromises);
+      setProductRatings(ratingsData);
+    };
+
+    // Tải đánh giá cho tất cả các loại sản phẩm
+    if (products.length > 0) fetchRatings(products);
+    if (bestSellers.length > 0) fetchRatings(bestSellers);
+    if (aiRecommendations.length > 0) fetchRatings(aiRecommendations);
+
+  }, [products, bestSellers, aiRecommendations]);
 
   return (
     <>
@@ -755,7 +805,7 @@ const Homes = () => {
         </div>
       </motion.section>
       {/* Sản phẩm được AI gợi ý */}
-      {hasActivityData && aiRecommendations.length > 0 && (
+      {aiRecommendations.length > 0 && (
         <motion.section
           initial="hidden"
           whileInView="visible"
@@ -923,16 +973,23 @@ const Homes = () => {
                     <div className="p-5">
                       {/* Sao đánh giá */}
                       <div className="flex items-center mb-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <IoStar
-                            key={star}
-                            className={`${
-                              star <= 4 ? "text-blue-400" : "text-gray-300"
-                            } w-4 h-4`}
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          // Lấy đánh giá từ state productRatings
+                          const rating = productRatings[product.id]?.average || 0;
+                          return (
+                            <IoStar
+                              key={star}
+                              className={`${star <= Math.round(rating)
+                                ? "text-blue-400" : "text-gray-300"
+                                } w-4 h-4`}
+                            />
+                          );
+                        })}
                         <span className="text-gray-500 text-sm ml-2">
-                          (4.0)
+                          {/* Hiển thị số đánh giá từ state */}
+                          {productRatings[product.id]
+                            ? productRatings[product.id].average.toFixed(1)
+                            : "0.0"}
                         </span>
                       </div>
 
@@ -948,7 +1005,7 @@ const Homes = () => {
                         // Sản phẩm có biến thể
                         <div className="relative">
                           {product.price_range &&
-                          product.price_range.min_discount > 0 ? (
+                            product.price_range.min_discount > 0 ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-amber-600 text-lg">
@@ -958,7 +1015,7 @@ const Homes = () => {
                                 }).format(product.price_range.min_discount)}
                                 {product.price_range.max_discount > 0 &&
                                   product.price_range.max_discount !==
-                                    product.price_range.min_discount &&
+                                  product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
@@ -986,7 +1043,7 @@ const Homes = () => {
                                 product.price_range.max &&
                                 product.price_range.min &&
                                 product.price_range.max !==
-                                  product.price_range.min &&
+                                product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
@@ -1216,16 +1273,23 @@ const Homes = () => {
                     <div className="p-5">
                       {/* Sao đánh giá */}
                       <div className="flex items-center mb-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <IoStar
-                            key={star}
-                            className={`${
-                              star <= 4 ? "text-rose-400" : "text-gray-300"
-                            } w-4 h-4`}
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          // Lấy đánh giá từ state productRatings
+                          const rating = productRatings[product.id]?.average || 0;
+                          return (
+                            <IoStar
+                              key={star}
+                              className={`${star <= Math.round(rating)
+                                ? "text-rose-400" : "text-gray-300"
+                                } w-4 h-4`}
+                            />
+                          );
+                        })}
                         <span className="text-gray-500 text-sm ml-2">
-                          (4.0)
+                          {/* Hiển thị số đánh giá từ state */}
+                          {productRatings[product.id]
+                            ? productRatings[product.id].average.toFixed(1)
+                            : "0.0"}
                         </span>
                       </div>
 
@@ -1241,7 +1305,7 @@ const Homes = () => {
                         // Sản phẩm có biến thể
                         <div className="relative">
                           {product.price_range &&
-                          product.price_range.min_discount > 0 ? (
+                            product.price_range.min_discount > 0 ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-rose-600 text-lg">
@@ -1251,7 +1315,7 @@ const Homes = () => {
                                 }).format(product.price_range.min_discount)}
                                 {product.price_range.max_discount > 0 &&
                                   product.price_range.max_discount !==
-                                    product.price_range.min_discount &&
+                                  product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
@@ -1279,7 +1343,7 @@ const Homes = () => {
                                 product.price_range.max &&
                                 product.price_range.min &&
                                 product.price_range.max !==
-                                  product.price_range.min &&
+                                product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
@@ -1515,16 +1579,23 @@ const Homes = () => {
                     <div className="p-5">
                       {/* Sao đánh giá */}
                       <div className="flex items-center mb-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <IoStar
-                            key={star}
-                            className={`${
-                              star <= 4 ? "text-amber-400" : "text-gray-300"
-                            } w-4 h-4`}
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          // Lấy đánh giá từ state productRatings
+                          const rating = productRatings[product.id]?.average || 0;
+                          return (
+                            <IoStar
+                              key={star}
+                              className={`${star <= Math.round(rating)
+                                ? "text-amber-400" : "text-gray-300"
+                                } w-4 h-4`}
+                            />
+                          );
+                        })}
                         <span className="text-gray-500 text-sm ml-2">
-                          (4.0)
+                          {/* Hiển thị số đánh giá từ state */}
+                          {productRatings[product.id]
+                            ? productRatings[product.id].average.toFixed(1)
+                            : "0.0"}
                         </span>
                       </div>
 
@@ -1540,7 +1611,7 @@ const Homes = () => {
                         // Sản phẩm có biến thể
                         <div className="relative">
                           {product.price_range &&
-                          product.price_range.min_discount > 0 ? (
+                            product.price_range.min_discount > 0 ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-amber-600 text-lg">
@@ -1550,7 +1621,7 @@ const Homes = () => {
                                 }).format(product.price_range.min_discount)}
                                 {product.price_range.max_discount > 0 &&
                                   product.price_range.max_discount !==
-                                    product.price_range.min_discount &&
+                                  product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
@@ -1578,7 +1649,7 @@ const Homes = () => {
                                 product.price_range.max &&
                                 product.price_range.min &&
                                 product.price_range.max !==
-                                  product.price_range.min &&
+                                product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
@@ -1902,8 +1973,8 @@ const Homes = () => {
                               ? post.thumbnail.startsWith("http")
                                 ? post.thumbnail
                                 : post.thumbnail.startsWith("/")
-                                ? `http://localhost:8000${post.thumbnail}`
-                                : `http://localhost:8000/${post.thumbnail}`
+                                  ? `http://localhost:8000${post.thumbnail}`
+                                  : `http://localhost:8000/${post.thumbnail}`
                               : "http://localhost:5173/src/assets/img/blog/blog-1.jpg"
                           }
                           alt={post.title}

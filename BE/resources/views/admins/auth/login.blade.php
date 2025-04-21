@@ -249,6 +249,18 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <!-- <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="remember" value="1"
+                                                    id="auth-remember-check">
+                                                <label class="form-check-label" for="auth-remember-check">Nhớ đăng nhập</label>
+                                            </div>
+                                            <div>
+                                                <a href="{{ route('admin.password.request') }}" class="text-primary">Quên mật khẩu?</a>
+                                            </div>
+                                        </div> -->
+
                                         <div class="mt-4">
                                             <button class="btn btn-success w-100" type="submit" id="loginButton">
                                                 <span id="loadingSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
