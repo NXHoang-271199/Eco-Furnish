@@ -31,6 +31,7 @@ const Products = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage] = useState(9);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // Đánh dấu lần tải đầu tiên
+  const [sortOption, setSortOption] = useState("newest");
 
   const [searchParams] = useSearchParams();
   const spaceFilter = searchParams.get('space');
@@ -283,8 +284,43 @@ const Products = () => {
       });
     }
 
+    // Thêm logic sắp xếp sản phẩm theo tùy chọn đã chọn
+    switch (sortOption) {
+      case "newest":
+        // Giả sử sản phẩm mới nhất có id cao hơn
+        filtered.sort((a, b) => b.id - a.id);
+        break;
+      case "price-asc":
+        filtered.sort((a, b) => {
+          const priceA = a.has_variants
+            ? Math.min(...a.variants.map(v => v.discount_price ?? v.price).filter(p => p !== null && p !== undefined))
+            : (a.discount_price ?? a.price);
+          const priceB = b.has_variants
+            ? Math.min(...b.variants.map(v => v.discount_price ?? v.price).filter(p => p !== null && p !== undefined))
+            : (b.discount_price ?? b.price);
+          return priceA - priceB;
+        });
+        break;
+      case "price-desc":
+        filtered.sort((a, b) => {
+          const priceA = a.has_variants
+            ? Math.min(...a.variants.map(v => v.discount_price ?? v.price).filter(p => p !== null && p !== undefined))
+            : (a.discount_price ?? a.price);
+          const priceB = b.has_variants
+            ? Math.min(...b.variants.map(v => v.discount_price ?? v.price).filter(p => p !== null && p !== undefined))
+            : (b.discount_price ?? b.price);
+          return priceB - priceA;
+        });
+        break;
+      case "name-asc":
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      default:
+        break;
+    }
+
     return filtered;
-  }, [products, selectedCategories, selectedVariants, priceRange, variants, isLoading]);
+  }, [products, selectedCategories, selectedVariants, priceRange, variants, isLoading, sortOption]);
 
   const handleCategoryChange = (categoryId) => {
     setSelectedCategories((prev) =>
@@ -431,6 +467,11 @@ const Products = () => {
     }
   }, [currentPage, spaceFilter, debouncedSearchTerm, isSearching]);
 
+  // Thêm hàm xử lý thay đổi tùy chọn sắp xếp
+  const handleSortOptionChange = (e) => {
+    setSortOption(e.target.value);
+  };
+
   return (
     <>
       {isLoading && !isSearching && <LoadingScreen />}
@@ -499,7 +540,11 @@ const Products = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <select className="bg-white border-2 border-gray-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <select
+              className="bg-white border-2 border-gray-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              value={sortOption}
+              onChange={handleSortOptionChange}
+            >
               <option value="newest">Mới nhất</option>
               <option value="price-asc">Giá: Thấp đến cao</option>
               <option value="price-desc">Giá: Cao đến thấp</option>
