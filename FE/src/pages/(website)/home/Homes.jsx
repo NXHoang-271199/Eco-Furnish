@@ -561,16 +561,15 @@ const Homes = () => {
   useEffect(() => {
     if (
       products.length > 0 &&
-      aiRecommendations.length === 0 &&
-      hasActivityData === false
+      aiRecommendations.length === 0
     ) {
-      // Chỉ tạo gợi ý mặc định nếu chưa có hoạt động
+      // Tạo gợi ý ngẫu nhiên từ các sản phẩm
       const randomRecommendations = [...products]
         .sort(() => 0.5 - Math.random())
         .slice(0, 4);
       setAiRecommendations(randomRecommendations);
     }
-  }, [products, aiRecommendations, hasActivityData]); // Thêm dependency hasActivityData
+  }, [products, aiRecommendations]); // Bỏ dependency hasActivityData
 
   // Animation variants
   const fadeInUp = {
@@ -806,7 +805,7 @@ const Homes = () => {
         </div>
       </motion.section>
       {/* Sản phẩm được AI gợi ý */}
-      {hasActivityData && aiRecommendations.length > 0 && (
+      {aiRecommendations.length > 0 && (
         <motion.section
           initial="hidden"
           whileInView="visible"
