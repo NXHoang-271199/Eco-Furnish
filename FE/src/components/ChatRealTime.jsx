@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { BsChatDots, BsXLg } from "react-icons/bs";
+import { BsChatDots, BsXLg, BsEmojiSmile } from "react-icons/bs";
 import { IoMdSend } from "react-icons/io";
 import { MdImage } from "react-icons/md";
 import { getSocket, closeSocket, resetSocket } from "../utils/socketConfig";
@@ -8,6 +8,7 @@ import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import { toast } from "react-hot-toast";
 import "../styles/chat.css";
+import EmojiPicker from 'emoji-picker-react';
 
 // Tạo audio elements toàn cục để khởi tạo sớm
 const messageAudio = new Audio('/sounds/notification-sound.mp3');
@@ -88,6 +89,24 @@ const playNotificationSound = (soundPath) => {
     }
 };
 
+// Hàm thay thế emoji từ text (vd: ":)" thành "🙂")
+const replaceTextWithEmojis = (text) => {
+    if (!text) return text;
+
+    return text
+        .replace(/:D/g, '😃')
+        .replace(/:\)/g, '🙂')
+        .replace(/:\(/g, '😔')
+        .replace(/<3/g, '❤️')
+        .replace(/:P/g, '😛')
+        .replace(/;\)/g, '😉')
+        .replace(/:\|/g, '😐')
+        .replace(/:o/g, '😮')
+        .replace(/:O/g, '😮')
+        .replace(/8\)/g, '😎')
+        .replace(/:'\(/g, '😢');
+};
+
 const ChatRealTime = () => {
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
@@ -110,6 +129,8 @@ const ChatRealTime = () => {
     const [socketStatus, setSocketStatus] = useState("disconnected");
     // Thêm state để lưu URL socket server
     const [socketServerUrl] = useState(import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3002");
+    // Thêm state cho emoji picker
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
@@ -1288,6 +1309,28 @@ const ChatRealTime = () => {
         }
     }, [messages, isAuthenticated, userData, isOpen]);
 
+    // Thêm hàm xử lý khi chọn emoji
+    const handleEmojiClick = (emojiData) => {
+        const emoji = emojiData.emoji;
+        setMessage(prev => prev + emoji);
+    };
+
+    // Thêm hàm ẩn emoji picker khi click bên ngoài
+    const emojiPickerRef = useRef(null);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+                setShowEmojiPicker(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     // Nếu không đăng nhập, không hiển thị box chat
     if (!isAuthenticated) {
         return null;
@@ -1566,7 +1609,7 @@ const ChatRealTime = () => {
                                             )}
 
                                             {/* Hiển thị text nếu có */}
-                                            {msg.text && <p className="text-sm">{msg.text}</p>}
+                                            {msg.text && <p className="text-sm">{replaceTextWithEmojis(msg.text)}</p>}
 
                                             <div className="flex justify-between items-center mt-1">
                                                 <span className="text-xs opacity-70">
@@ -1615,6 +1658,22 @@ const ChatRealTime = () => {
                         </div>
                     )}
 
+                    {/* Emoji Picker */}
+                    {showEmojiPicker && (
+                        <div
+                            ref={emojiPickerRef}
+                            className="absolute bottom-20 left-4 z-10 animate__animated animate__fadeIn"
+                        >
+                            <EmojiPicker
+                                onEmojiClick={handleEmojiClick}
+                                skinTonesDisabled
+                                searchDisabled={false}
+                                width={320}
+                                height={350}
+                            />
+                        </div>
+                    )}
+
                     {/* Input Area - Cải thiện với thiết kế hiện đại */}
                     <div className="p-4 bg-white border-t border-gray-100">
                         <div className="flex items-center gap-2">
@@ -1627,6 +1686,18 @@ const ChatRealTime = () => {
                                 rows="1"
                                 disabled={!isConnected || isUploading}
                             />
+
+                            {/* Nút Emoji - Mới thêm */}
+                            <button
+                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                disabled={!isConnected || isUploading}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg ${isConnected && !isUploading
+                                    ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-white hover:scale-110"
+                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                    }`}
+                            >
+                                <BsEmojiSmile className="text-xl" />
+                            </button>
 
                             {/* Nút chọn ảnh - Cải thiện với hiệu ứng */}
                             <button
