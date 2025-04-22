@@ -839,6 +839,56 @@ io.on("connection", (socket) => {
 
             console.log(`📸 Nhận ${data.images.length} ảnh từ client: ${socket.user.name} (${socket.id})`);
 
+            // Lưu tin nhắn văn bản trước nếu có
+            if (data.text) {
+                console.log(`💬 Client ${socket.user.name} gửi kèm tin nhắn văn bản: "${data.text.substring(0, 30)}${data.text.length > 30 ? '...' : ''}"`);
+
+                // Tạo dữ liệu tin nhắn văn bản để lưu vào DB
+                const textMessageData = {
+                    text: data.text,
+                    image: null,
+                    sender_id: socket.user.id,
+                    receiver_id: null, // Mặc định là null, admin sẽ nhận
+                    sent_at: new Date()
+                };
+
+                try {
+                    // Gọi API để lưu tin nhắn văn bản
+                    const textResponse = await fetch(`${API_URL}/api/messages`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                            "Authorization": `Bearer ${socket.handshake.auth.token}`
+                        },
+                        body: JSON.stringify(textMessageData)
+                    });
+
+                    if (!textResponse.ok) {
+                        throw new Error(`API error: ${textResponse.status}`);
+                    }
+
+                    const savedTextMessage = await textResponse.json();
+                    console.log("✅ Tin nhắn văn bản client đã được lưu vào DB:", savedTextMessage.id);
+
+                    // Đảm bảo trạng thái is_read luôn là false cho tin nhắn mới
+                    savedTextMessage.is_read = false;
+
+                    // Chuẩn bị dữ liệu tin nhắn văn bản để gửi cho admin
+                    const textMessageForAdmin = {
+                        ...savedTextMessage,
+                        senderName: socket.user.name,
+                        is_read: false
+                    };
+
+                    // Gửi tin nhắn văn bản đến admin
+                    io.to("admin_room").emit("newClientMessage", textMessageForAdmin);
+                    console.log("📣 Đã gửi tin nhắn văn bản đến admin_room");
+                } catch (error) {
+                    console.error("❌ Lỗi khi lưu tin nhắn văn bản client:", error);
+                }
+            }
+
             // Tạo dữ liệu tin nhắn riêng cho mỗi ảnh
             const savedMessages = [];
 

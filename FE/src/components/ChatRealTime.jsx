@@ -922,12 +922,15 @@ const ChatRealTime = () => {
     };
 
     // Hàm upload nhiều ảnh và gửi tin nhắn
-    const uploadAndSendMultipleImages = async () => {
+    const uploadAndSendMultipleImages = async (textMessage = null) => {
         if (selectedImages.length === 0 || !isAuthenticated || !socket || !isConnected) {
             console.error("❌ Không thể gửi ảnh: Chưa chọn ảnh, chưa đăng nhập hoặc mất kết nối");
             setLastError("Không thể gửi ảnh: Chưa chọn ảnh, chưa đăng nhập hoặc mất kết nối");
             return;
         }
+
+        // Kiểm tra xem có tin nhắn văn bản kèm theo không
+        const hasText = textMessage && textMessage.trim() !== '';
 
         try {
             setIsUploading(true);
@@ -948,6 +951,19 @@ const ChatRealTime = () => {
                 isCurrentUser: true,
                 is_read: false
             }]);
+
+            // Nếu có văn bản, hiển thị tin nhắn văn bản ngay lập tức
+            if (hasText) {
+                const textDisplayMessage = {
+                    text: textMessage,
+                    sender_id: userData?.id,
+                    sent_at: new Date().toISOString(),
+                    isCurrentUser: true,
+                    is_read: false
+                };
+
+                setMessages(prev => [...prev, textDisplayMessage]);
+            }
 
             // Tạo mảng promises cho việc upload từng ảnh
             const uploadPromises = selectedImages.map((file, index) => {
@@ -1044,9 +1060,18 @@ const ChatRealTime = () => {
 
                     if (successfulUrls.length > 0) {
                         // Gửi tất cả URL ảnh thành công qua socket
-                        socket.emit("clientMultipleImagesUpload", { images: successfulUrls }, (socketResponse) => {
+                        const sendData = {
+                            images: successfulUrls,
+                            text: hasText ? textMessage : null
+                        };
+
+                        // Log data trước khi gửi để debug
+                        console.log("🚀 Dữ liệu gửi đi:", sendData);
+
+                        socket.emit("clientMultipleImagesUpload", sendData, (socketResponse) => {
                             if (socketResponse.success) {
                                 console.log("✅ Tất cả ảnh đã được gửi thành công");
+                                console.log("✅ Tin nhắn văn bản kèm theo:", hasText ? textMessage : "không có");
 
                                 // Cập nhật tin nhắn tạm thời thành tin nhắn thật với URLs từ server
                                 setMessages(prev => prev.map(msg => {
@@ -1096,6 +1121,11 @@ const ChatRealTime = () => {
                         imageInputRef.current.value = "";
                     }
                     setIsUploading(false);
+
+                    // Xóa nội dung tin nhắn văn bản nếu có
+                    if (hasText) {
+                        setMessage("");
+                    }
                 });
 
         } catch (uploadError) {
@@ -1112,15 +1142,19 @@ const ChatRealTime = () => {
             return;
         }
 
-        // Nếu có ảnh được chọn, ưu tiên gửi ảnh
+        const currentMessage = message.trim();
+        const hasTextMessage = currentMessage !== "";
+
+        // Nếu có ảnh được chọn, gửi cả ảnh và văn bản (nếu có)
         if (selectedImages.length > 0) {
-            uploadAndSendMultipleImages();
+            uploadAndSendMultipleImages(hasTextMessage ? currentMessage : null);
             return;
         }
 
-        if (message.trim() !== "") {
+        // Nếu chỉ có văn bản (không có ảnh), gửi tin nhắn văn bản thông thường
+        if (hasTextMessage) {
             const messageData = {
-                text: message
+                text: currentMessage
             };
 
             // Phân biệt giữa admin và client
@@ -1145,7 +1179,7 @@ const ChatRealTime = () => {
 
             // Hiển thị tin nhắn ngay lập tức ở UI
             const displayMessage = {
-                text: message,
+                text: currentMessage,
                 sender_id: userData?.id,
                 sent_at: new Date().toISOString(),
                 isCurrentUser: true,
