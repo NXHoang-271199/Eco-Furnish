@@ -917,6 +917,51 @@ io.on("connection", (socket) => {
 
             console.log(`📸 Admin ${socket.user.name} gửi ${data.images.length} ảnh đến user ${data.userId}`);
 
+            // Lưu tin nhắn văn bản nếu có
+            if (data.text) {
+                console.log(`💬 Admin gửi kèm tin nhắn văn bản: "${data.text.substring(0, 30)}${data.text.length > 30 ? '...' : ''}"`);
+
+                // Tạo dữ liệu tin nhắn văn bản
+                const textMessageData = {
+                    text: data.text,
+                    image: null,
+                    sender_id: socket.user.id,
+                    receiver_id: data.userId,
+                    sent_at: new Date()
+                };
+
+                try {
+                    // Gọi API để lưu tin nhắn văn bản
+                    const textResponse = await fetch(`${API_URL}/api/messages`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                            "Authorization": `Bearer ${socket.handshake.auth.token}`
+                        },
+                        body: JSON.stringify(textMessageData)
+                    });
+
+                    if (!textResponse.ok) {
+                        throw new Error(`API error: ${textResponse.status}`);
+                    }
+
+                    const savedTextMessage = await textResponse.json();
+                    console.log("✅ Tin nhắn văn bản admin đã được lưu vào DB:", savedTextMessage.id);
+
+                    // Gửi tin nhắn văn bản đến client
+                    const textMessageForClient = {
+                        ...savedTextMessage,
+                        senderName: socket.user.name,
+                        is_read: false
+                    };
+
+                    io.to(`user_${data.userId}`).emit("adminResponse", textMessageForClient);
+                } catch (error) {
+                    console.error("❌ Lỗi khi lưu tin nhắn văn bản admin:", error);
+                }
+            }
+
             // Lưu từng ảnh vào database và tạo tin nhắn riêng
             const savedMessages = [];
 

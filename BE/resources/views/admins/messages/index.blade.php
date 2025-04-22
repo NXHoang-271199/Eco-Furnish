@@ -1111,9 +1111,9 @@ document.addEventListener('DOMContentLoaded', function() {
             sendMessageBtn.classList.remove('animate__animated', 'animate__pulse');
         }, 300);
 
-        // Ưu tiên gửi ảnh nếu có
+        // Gửi ảnh và/hoặc văn bản
         if (hasImages) {
-            uploadAndSendAdminImages();
+            uploadAndSendAdminImages(text); // Truyền text vào hàm uploadAndSendAdminImages
         } else if (text) {
             // Gửi tin nhắn văn bản
             const messageData = {
@@ -1166,10 +1166,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Hàm upload và gửi nhiều ảnh từ Admin
-    async function uploadAndSendAdminImages() {
+    async function uploadAndSendAdminImages(textMessage = '') {
         if (selectedImageFiles.length === 0 || !currentUserId || !socket?.connected) {
             return;
         }
+
+        // Lưu tin nhắn văn bản (nếu có)
+        const hasText = textMessage && textMessage.trim() !== '';
 
         // Disable nút gửi và upload
         sendMessageBtn.disabled = true;
@@ -1250,27 +1253,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Gửi sự kiện adminMultipleImagesUpload qua socket
                 const messageData = {
                     userId: currentUserId, // ID người nhận
-                    images: uploadedUrls
+                    images: uploadedUrls,
+                    text: hasText ? textMessage : null // Thêm text vào messageData nếu có
                 };
 
                 socket.emit('adminMultipleImagesUpload', messageData, (response) => {
                     if (response.success) {
                         console.log('✅ Nhóm ảnh đã được gửi thành công qua socket');
                         
+                        // Nếu có cả tin nhắn văn bản
+                        if (hasText) {
+                            // Hiển thị tin nhắn văn bản
+                            addMessageToChat({ text: textMessage, sent_at: new Date() }, 'admin');
+                            console.log('✅ Tin nhắn văn bản kèm theo đã được gửi thành công');
+                        }
+                        
                         // Hiển thị nhóm ảnh đã gửi trong chat của admin
-                        // Truyền đối tượng Date() mới
                         addImageGroupToChat(uploadedUrls, new Date(), 'admin', { name: 'Admin' });
                         
+                        // Xóa nội dung input sau khi gửi thành công
+                        messageInput.value = '';
+                        
                         // Hiển thị thông báo thành công
-                Toastify({
-                            text: `Đã gửi ${uploadedUrls.length} ảnh thành công!`,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
-                    stopOnFocus: true
-                }).showToast();
+                        Toastify({
+                            text: `Đã gửi ${uploadedUrls.length} ảnh${hasText ? ' và tin nhắn văn bản' : ''} thành công!`,
+                            duration: 3000,
+                            close: true,
+                            gravity: "top",
+                            position: "right",
+                            backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+                            stopOnFocus: true
+                        }).showToast();
 
                         if (failedUploads > 0) {
                             // Thông báo về ảnh thất bại
