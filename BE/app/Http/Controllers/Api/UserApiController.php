@@ -674,6 +674,7 @@ class UserApiController extends Controller
 
             // Lưu refresh token
             $user->update([
+                'access_token' => $accessToken,
                 'refresh_token' => $refreshToken
             ]);
 
@@ -713,6 +714,32 @@ class UserApiController extends Controller
             // Kiểm tra xem email này đã tồn tại trong DB chưa
             $user = User::where('email', $socialUser->getEmail())->first();
 
+            // Tạo access token và refresh token
+            $accessToken = $socialUser->token;
+            $refreshToken = Str::random(60);
+
+            // Xử lý avatar từ Facebook - Thêm kích thước ảnh lớn
+            $avatarPath = null;
+            if ($socialUser->getAvatar()) {
+                try {
+                    $avatarUrl = $socialUser->getAvatar() . '&width=200&height=200';
+                    $avatarContent = file_get_contents($avatarUrl);
+                    if ($avatarContent) {
+                        $avatarName = 'avatar_fb_' . time() . '.jpg';
+                        $avatarPath = 'uploads/avatars/' . $avatarName;
+                        Storage::disk('public')->put($avatarPath, $avatarContent);
+                        
+                        // Log để debug
+                        Log::info('Avatar saved successfully', [
+                            'path' => $avatarPath,
+                            'url' => $avatarUrl
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Error saving Facebook avatar: ' . $e->getMessage());
+                }
+            }
+
             // Nếu chưa có, tạo user mới
             if (!$user) {
                 $clientRole = Role::where('slug', 'client')->first();
@@ -720,22 +747,56 @@ class UserApiController extends Controller
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
-                    'password' => Hash::make(Str::random(24)), // Tạo password ngẫu nhiên
+                    'password' => Hash::make(Str::random(24)),
                     'role_id' => $clientRole->id,
-                    'avatar' => $socialUser->getAvatar(),
-                    'is_active' => 1, // Đã active sẵn
-                    'email_verified_at' => now() // Đã xác thực email
+                    'avatar' => $avatarPath,
+                    'is_active' => 1,
+                    'email_verified_at' => now(),
+                    'access_token' => $accessToken,
+                    'refresh_token' => $refreshToken
+                ]);
+
+                // Log thông tin user mới
+                Log::info('New user created from Facebook', [
+                    'user_id' => $user->id,
+                    'avatar_path' => $avatarPath
+                ]);
+            } else {
+                // Cập nhật thông tin cho user đã tồn tại
+                $updateData = [
+                    'access_token' => $accessToken,
+                    'refresh_token' => $refreshToken
+                ];
+
+                // Chỉ cập nhật avatar nếu lấy được avatar mới từ Facebook
+                if ($avatarPath) {
+                    $updateData['avatar'] = $avatarPath;
+                    
+                    // Xóa avatar cũ nếu có
+                    if ($user->avatar) {
+                        Storage::disk('public')->delete($user->avatar);
+                    }
+                }
+
+                $user->update($updateData);
+
+                // Log cập nhật user
+                Log::info('Existing user updated from Facebook', [
+                    'user_id' => $user->id,
+                    'avatar_path' => $avatarPath
                 ]);
             }
 
-            // Tạo token
+            // Tạo token cho authentication
             $token = $user->createToken('auth_token')->plainTextToken;
-            $refreshToken = Str::random(60);
 
-            // Lưu refresh token
-            $user->update([
-                'refresh_token' => $refreshToken
-            ]);
+            // Đảm bảo URL avatar đầy đủ
+            $avatarUrl = null;
+            if ($user->avatar) {
+                $avatarUrl = asset('storage/' . $user->avatar);
+                // Log URL avatar cuối cùng
+                Log::info('Final avatar URL', ['url' => $avatarUrl]);
+            }
 
             // Chuyển hướng về FE với token
             $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
@@ -745,14 +806,13 @@ class UserApiController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar' => $user->avatar
+                    'avatar' => $avatarUrl
                 ])
             ]);
 
             return redirect($redirectUrl);
         } catch (\Exception $e) {
             Log::error('Facebook login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
-            // Redirect về trang sign-in với tham số lỗi cụ thể
             return redirect('http://localhost:5173/sign-in?error=facebook_callback_failed');
         }
     }
