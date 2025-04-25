@@ -66,5 +66,6 @@ class Kernel extends HttpKernel
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'admin.only' => \App\Http\Middleware\AdminOnlyMiddleware::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
+        'active.status' => \App\Http\Middleware\CheckActiveStatus::class,
     ];
 }

@@ -19,6 +19,48 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+// Hàm xử lý logout
+const handleLogout = () => {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userData");
+  window.location.href = "/sign-in?message=account_disabled";
+};
+
+// Hàm kiểm tra trạng thái tài khoản
+const checkAccountStatus = async () => {
+  try {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      const response = await axiosInstance.get("/auth/check");
+      if (!response.data.user.is_active) {
+        handleLogout();
+      }
+    }
+  } catch (error) {
+    if (error.response?.status === 403) {
+      handleLogout();
+    }
+  }
+};
+
+// Thiết lập interval và event listeners để kiểm tra trạng thái tài khoản
+if (typeof window !== "undefined") {
+  // Kiểm tra khi load trang
+  window.addEventListener("load", checkAccountStatus);
+  
+  // Kiểm tra khi focus vào tab
+  window.addEventListener("focus", checkAccountStatus);
+  
+  // Kiểm tra định kỳ mỗi 30 giây
+  const statusCheckInterval = setInterval(checkAccountStatus, 30000);
+  
+  // Cleanup interval khi component unmount
+  window.addEventListener("unload", () => {
+    clearInterval(statusCheckInterval);
+  });
+}
+
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("authToken");
@@ -35,6 +77,17 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Xử lý lỗi 403 khi tài khoản bị vô hiệu hóa
+    if (error.response && error.response.status === 403) {
+      // Kiểm tra nếu là lỗi tài khoản bị vô hiệu hóa
+      if (error.response.data?.message?.includes('vô hiệu hóa')) {
+        handleLogout();
+        return Promise.reject(new Error("Tài khoản của bạn đã bị vô hiệu hóa."));
+      }
+      // Nếu là lỗi khác (như chưa xác thực email), để component xử lý
+      return Promise.reject(error);
+    }
+
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -49,12 +102,10 @@ axiosInstance.interceptors.response.use(
 
       originalRequest._retry = true;
       isRefreshing = true;
-      console.log("axiosConfig: Attempting to refresh token...");
 
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) {
-          console.error("axiosConfig: No refresh token found in localStorage.");
           throw new Error("No refresh token available");
         }
 
@@ -78,9 +129,7 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         isRefreshing = false;
         processQueue(refreshError);
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("userData");
+        handleLogout();
         return Promise.reject(new Error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại"));
       }
     }

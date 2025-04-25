@@ -41,8 +41,9 @@ return [
             'provider' => 'users',
         ],
         'api' => [
-            'driver' => 'sanctum', // hoặc 'passport' tùy theo bạn đang sử dụng
+            'driver' => 'token',
             'provider' => 'users',
+            'hash' => false,
         ],
     ],
 
@@ -100,6 +101,7 @@ return [
             'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
+            'reset_url' => env('PASSWORD_RESET_URL', '/reset-password'),
         ],
     ],
 
