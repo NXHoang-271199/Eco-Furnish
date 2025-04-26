@@ -700,6 +700,14 @@ class UserApiController extends Controller
                     'provider' => 'google',
                     'provider_id' => $socialUser->getId()
                 ]);
+                
+                // Tạo ví cho người dùng mới đăng ký qua Google
+                if (!$user->wallet) {
+                    $user->wallet()->create([
+                        'balance' => 0,
+                    ]);
+                    Log::info('Wallet created for new Google user', ['user_id' => $user->id]);
+                }
             } else {
                 // Cập nhật avatar nếu user đã tồn tại
                 if ($socialUser->getAvatar()) {
@@ -734,6 +742,14 @@ class UserApiController extends Controller
                     } catch (\Exception $e) {
                         Log::error('Error updating Google avatar: ' . $e->getMessage());
                     }
+                }
+                
+                // Kiểm tra và tạo ví nếu chưa có
+                if (!$user->wallet) {
+                    $user->wallet()->create([
+                        'balance' => 0,
+                    ]);
+                    Log::info('Wallet created for existing Google user', ['user_id' => $user->id]);
                 }
             }
 
@@ -900,6 +916,14 @@ class UserApiController extends Controller
                     'user_id' => $user->id,
                     'avatar_path' => $avatarPath
                 ]);
+                
+                // Tạo ví cho người dùng mới đăng ký qua Facebook
+                if (!$user->wallet) {
+                    $user->wallet()->create([
+                        'balance' => 0,
+                    ]);
+                    Log::info('Wallet created for new Facebook user', ['user_id' => $user->id]);
+                }
             } else {
                 // Cập nhật thông tin cho user đã tồn tại
                 $updateData = [
@@ -924,6 +948,14 @@ class UserApiController extends Controller
                     'user_id' => $user->id,
                     'avatar_path' => $avatarPath
                 ]);
+                
+                // Kiểm tra và tạo ví nếu chưa có
+                if (!$user->wallet) {
+                    $user->wallet()->create([
+                        'balance' => 0,
+                    ]);
+                    Log::info('Wallet created for existing Facebook user', ['user_id' => $user->id]);
+                }
             }
 
             // Tạo token cho authentication
