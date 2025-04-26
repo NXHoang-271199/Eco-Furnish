@@ -93,6 +93,8 @@ Route::prefix('users')->group(function () {
         Route::post('/level2-password/verify', [UserApiController::class, 'verifyLevel2Password']);
         Route::put('/level2-password/update', [UserApiController::class, 'updateLevel2Password']);
         Route::get('/level2-password/status', [UserApiController::class, 'checkLevel2PasswordStatus']);
+        Route::post('/level2-password/forgot', [UserApiController::class, 'forgotLevel2Password']);
+        Route::post('/level2-password/reset', [UserApiController::class, 'resetLevel2Password']);
 
         Route::post('/upload-avatar/{id}', [UserApiController::class, 'uploadAvatar']);
         Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);

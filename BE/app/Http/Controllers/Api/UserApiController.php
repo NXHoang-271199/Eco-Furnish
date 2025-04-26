@@ -1174,4 +1174,137 @@ class UserApiController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Quên mật khẩu cấp 2
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function forgotLevel2Password(Request $request)
+    {
+        $user = $request->user();
+        $isOAuth = $this->isOAuthUser($user);
+
+        // Kiểm tra xem người dùng đã thiết lập mật khẩu cấp 2 chưa
+        if (!$user->has_level2_password) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bạn chưa thiết lập mật khẩu cấp 2'
+            ], 400);
+        }
+
+        // Xử lý khác nhau dựa trên loại tài khoản
+        if ($isOAuth || $request->has('is_oauth')) {
+            // Xử lý cho tài khoản OAuth - không cần xác thực mật khẩu cấp 1
+            Log::info('Xử lý quên mật khẩu cấp 2 cho tài khoản OAuth');
+        } else {
+            // Validate cho tài khoản thông thường
+            $validator = Validator::make($request->all(), [
+                'current_password' => 'required|string',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $validator->errors()
+                ], 422);
+            }
+
+            // Kiểm tra mật khẩu cấp 1 cho tài khoản thông thường
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Mật khẩu cấp 1 không đúng'
+                ], 400);
+            }
+        }
+
+        // Tạo token đặt lại mật khẩu cấp 2
+        $token = Str::random(60);
+        $user->level2_password_reset_token = $token;
+        $user->level2_password_reset_at = now();
+        $user->save();
+
+        // Tạo URL đặt lại mật khẩu cấp 2
+        $resetUrl = config('app.frontend_url', 'http://localhost:5173') . '/account?tab=level2password&action=reset&token=' . $token;
+
+        // Gửi email với link đặt lại mật khẩu cấp 2
+        try {
+            Mail::send('emails.reset_level2_password', ['resetUrl' => $resetUrl, 'user' => $user], function ($message) use ($user) {
+                $message->to($user->email);
+                $message->subject('Đặt lại mật khẩu cấp 2');
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Đã gửi email hướng dẫn đặt lại mật khẩu cấp 2'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi gửi email đặt lại mật khẩu cấp 2: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Không thể gửi email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Đặt lại mật khẩu cấp 2
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function resetLevel2Password(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+            'new_level2_password' => 'required|string|min:5',
+            'confirm_level2_password' => 'required|string|same:new_level2_password',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Kiểm tra token
+        if ($user->level2_password_reset_token !== $request->token) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token không hợp lệ'
+            ], 400);
+        }
+
+        // Kiểm tra thời gian token (hết hạn sau 60 phút)
+        if (!$user->level2_password_reset_at || now()->diffInMinutes($user->level2_password_reset_at) > 60) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token đã hết hạn'
+            ], 400);
+        }
+
+        // Kiểm tra mật khẩu cấp 2 mới không được giống mật khẩu cấp 1
+        if (Hash::check($request->new_level2_password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mật khẩu cấp 2 mới không được giống mật khẩu cấp 1'
+            ], 400);
+        }
+
+        // Cập nhật mật khẩu cấp 2
+        $user->level2_password = Hash::make($request->new_level2_password);
+        $user->level2_password_reset_token = null;
+        $user->level2_password_reset_at = null;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Đặt lại mật khẩu cấp 2 thành công'
+        ]);
+    }
 }
