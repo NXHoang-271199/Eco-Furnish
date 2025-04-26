@@ -39,7 +39,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'access_token',
         'refresh_token',
         'remember_me',
-        'remember_me_expires_at'
+        'remember_me_expires_at',
+        'is_oauth',
+        'provider',
+        'provider_id'
     ];
 
     public function role()
@@ -124,7 +127,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'password' => 'hashed',
         'level2_password' => 'hashed',
         'has_level2_password' => 'boolean',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'is_oauth' => 'boolean'
     ];
 
     public function posts()

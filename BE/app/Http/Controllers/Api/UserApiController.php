@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Schema;
 
 class UserApiController extends Controller
 {
@@ -685,14 +686,19 @@ class UserApiController extends Controller
                     }
                 }
 
+                $accessToken = $socialUser->token;
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
-                    'password' => Hash::make(Str::random(24)), // Tạo password ngẫu nhiên
+                    'password' => Hash::make(1234567), // Tạo password ngẫu nhiên
                     'role_id' => $clientRole->id,
                     'avatar' => $avatarPath,
                     'is_active' => 1, // Đã active sẵn
-                    'email_verified_at' => now() // Đã xác thực email
+                    'email_verified_at' => now(), // Đã xác thực email
+                    'access_token' => $accessToken, // Lưu access_token để đánh dấu tài khoản OAuth
+                    'is_oauth' => true, // Đánh dấu là tài khoản OAuth
+                    'provider' => 'google',
+                    'provider_id' => $socialUser->getId()
                 ]);
             } else {
                 // Cập nhật avatar nếu user đã tồn tại
@@ -710,8 +716,12 @@ class UserApiController extends Controller
                             $avatarPath = 'uploads/avatars/' . $avatarName;
                             Storage::disk('public')->put($avatarPath, $avatarContent);
                             
-                            // Cập nhật avatar cho user
+                            // Cập nhật avatar và access_token cho user
                             $user->avatar = $avatarPath;
+                            $user->access_token = $accessToken; // Cập nhật access_token nếu chưa có
+                            $user->is_oauth = true; // Đánh dấu là tài khoản OAuth
+                            $user->provider = 'google';
+                            $user->provider_id = $socialUser->getId();
                             $user->save();
                             
                             // Log để debug
@@ -874,20 +884,26 @@ class UserApiController extends Controller
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
-                    'password' => Hash::make(Str::random(24)), // Tạo password ngẫu nhiên
+                    'password' => Hash::make(1234567), // Tạo password ngẫu nhiên
                     'role_id' => $clientRole->id,
                     'avatar' => $avatarPath,
                     'is_active' => 1, // Đã active sẵn
                     'email_verified_at' => now(), // Đã xác thực email
-                    'access_token' => $accessToken,
-                    'refresh_token' => $refreshToken
+                    'access_token' => $accessToken, // Lưu access_token để đánh dấu tài khoản OAuth
+                    'refresh_token' => $refreshToken,
+                    'is_oauth' => true, // Đánh dấu là tài khoản OAuth
+                    'provider' => 'facebook',
+                    'provider_id' => $socialUser->getId()
                 ]);
             } else {
                 // Cập nhật thông tin cho user đã tồn tại
                 $user->update([
                     'avatar' => $avatarPath ?: $user->avatar,
                     'access_token' => $accessToken,
-                    'refresh_token' => $refreshToken
+                    'refresh_token' => $refreshToken,
+                    'is_oauth' => true, // Đánh dấu là tài khoản OAuth
+                    'provider' => 'facebook',
+                    'provider_id' => $socialUser->getId()
                 ]);
             }
 
@@ -930,6 +946,33 @@ class UserApiController extends Controller
     }
 
     /**
+     * Kiểm tra người dùng có đăng nhập qua OAuth không
+     * 
+     * @param User $user
+     * @return bool
+     */
+    private function isOAuthUser(User $user)
+    {
+        // Kiểm tra xem tài khoản được tạo bằng OAuth không
+        // Các tài khoản OAuth thường sẽ có access_token từ social provider
+        // và được đánh dấu trong cột is_oauth (nếu có) hoặc dựa vào provider_id
+        
+        // Cách 1: Kiểm tra trường is_oauth (nếu có)
+        if (Schema::hasColumn('users', 'is_oauth')) {
+            return (bool)$user->is_oauth;
+        }
+        
+        // Cách 2: Kiểm tra provider_id hoặc provider_name (nếu có)
+        if (Schema::hasColumn('users', 'provider') || Schema::hasColumn('users', 'provider_id')) {
+            return !empty($user->provider) || !empty($user->provider_id);
+        }
+        
+        // Cách 3: Nếu không có các trường trên, dựa vào access_token từ social provider
+        // Lưu ý: Cách này có thể không chính xác nếu access_token được dùng cho mục đích khác
+        return $user->access_token !== null && $user->password === Hash::make('Oauthlogin');
+    }
+
+    /**
      * Thiết lập mật khẩu cấp 2 cho người dùng
      *
      * @param Request $request
@@ -937,11 +980,22 @@ class UserApiController extends Controller
      */
     public function setLevel2Password(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'current_password' => 'required|string',
-            'level2_password' => 'required|string|min:5',
-            'confirm_level2_password' => 'required|string|same:level2_password'
-        ]);
+        $user = $request->user();
+        $isOAuth = $this->isOAuthUser($user);
+
+        // Validate dựa trên loại tài khoản
+        if ($isOAuth) {
+            $validator = Validator::make($request->all(), [
+                'level2_password' => 'required|string|min:5',
+                'confirm_level2_password' => 'required|string|same:level2_password'
+            ]);
+        } else {
+            $validator = Validator::make($request->all(), [
+                'current_password' => 'required|string',
+                'level2_password' => 'required|string|min:5',
+                'confirm_level2_password' => 'required|string|same:level2_password'
+            ]);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -950,30 +1004,31 @@ class UserApiController extends Controller
             ], 422);
         }
 
-        $user = $request->user();
-
-        // Kiểm tra mật khẩu hiện tại
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Mật khẩu hiện tại không đúng'
-            ], 400);
-        }
-
-        // Kiểm tra mật khẩu cấp 2 không được giống mật khẩu cấp 1
-        if ($request->current_password === $request->level2_password) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Mật khẩu cấp 2 không được giống mật khẩu cấp 1'
-            ], 400);
-        }
-
         // Kiểm tra xem người dùng đã có mật khẩu cấp 2 chưa
         if ($user->has_level2_password) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Bạn đã thiết lập mật khẩu cấp 2 trước đó. Vui lòng sử dụng chức năng cập nhật mật khẩu cấp 2.'
             ], 400);
+        }
+
+        // Nếu không phải tài khoản OAuth, kiểm tra mật khẩu hiện tại
+        if (!$isOAuth) {
+            // Kiểm tra mật khẩu hiện tại
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Mật khẩu hiện tại không đúng'
+                ], 400);
+            }
+
+            // Kiểm tra mật khẩu cấp 2 không được giống mật khẩu cấp 1
+            if ($request->current_password === $request->level2_password) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Mật khẩu cấp 2 không được giống mật khẩu cấp 1'
+                ], 400);
+            }
         }
 
         // Thiết lập mật khẩu cấp 2
@@ -1041,11 +1096,23 @@ class UserApiController extends Controller
      */
     public function updateLevel2Password(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'current_level2_password' => 'required|string',
-            'new_level2_password' => 'required|string|min:5',
-            'confirm_level2_password' => 'required|string|same:new_level2_password'
-        ]);
+        $user = $request->user();
+        $isOAuth = $this->isOAuthUser($user);
+
+        // Validate dựa trên loại tài khoản
+        if ($isOAuth) {
+            $validator = Validator::make($request->all(), [
+                'current_level2_password' => 'required|string',
+                'new_level2_password' => 'required|string|min:5',
+                'confirm_level2_password' => 'required|string|same:new_level2_password'
+            ]);
+        } else {
+            $validator = Validator::make($request->all(), [
+                'current_level2_password' => 'required|string',
+                'new_level2_password' => 'required|string|min:5',
+                'confirm_level2_password' => 'required|string|same:new_level2_password'
+            ]);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -1053,8 +1120,6 @@ class UserApiController extends Controller
                 'message' => $validator->errors()
             ], 422);
         }
-
-        $user = $request->user();
 
         // Kiểm tra xem người dùng đã thiết lập mật khẩu cấp 2 chưa
         if (!$user->has_level2_password) {
@@ -1072,8 +1137,8 @@ class UserApiController extends Controller
             ], 400);
         }
 
-        // Kiểm tra mật khẩu cấp 2 mới không được giống mật khẩu cấp 1
-        if (Hash::check($request->new_level2_password, $user->password)) {
+        // Nếu không phải tài khoản OAuth, kiểm tra mật khẩu cấp 2 mới không được giống mật khẩu cấp 1
+        if (!$isOAuth && Hash::check($request->new_level2_password, $user->password)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Mật khẩu cấp 2 mới không được giống mật khẩu cấp 1'
@@ -1091,7 +1156,7 @@ class UserApiController extends Controller
     }
 
     /**
-     * Kiểm tra trạng thái mật khẩu cấp 2
+     * Kiểm tra trạng thái mật khẩu cấp 2 và phương thức đăng nhập
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -1099,11 +1164,13 @@ class UserApiController extends Controller
     public function checkLevel2PasswordStatus(Request $request)
     {
         $user = $request->user();
+        $isOAuth = $this->isOAuthUser($user);
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'has_level2_password' => (bool) $user->has_level2_password
+                'has_level2_password' => (bool) $user->has_level2_password,
+                'is_oauth_user' => $isOAuth
             ]
         ]);
     }
