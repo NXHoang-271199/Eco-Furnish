@@ -24,7 +24,7 @@ const handleLogout = () => {
   localStorage.removeItem("authToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("userData");
-  window.location.href = "/sign-in?message=account_disabled";
+  window.location.href = "/sign-in";
 };
 
 // Hàm kiểm tra trạng thái tài khoản
