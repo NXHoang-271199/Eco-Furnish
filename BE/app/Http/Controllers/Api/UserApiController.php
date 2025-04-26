@@ -674,7 +674,7 @@ class UserApiController extends Controller
                             $avatarName = 'avatar_google_' . time() . '.jpg';
                             $avatarPath = 'uploads/avatars/' . $avatarName;
                             Storage::disk('public')->put($avatarPath, $avatarContent);
-                            
+
                             // Log để debug
                             Log::info('Google avatar saved successfully', [
                                 'path' => $avatarPath,
@@ -711,11 +711,11 @@ class UserApiController extends Controller
                             if ($user->avatar) {
                                 Storage::disk('public')->delete($user->avatar);
                             }
-                            
+
                             $avatarName = 'avatar_google_' . time() . '.jpg';
                             $avatarPath = 'uploads/avatars/' . $avatarName;
                             Storage::disk('public')->put($avatarPath, $avatarContent);
-                            
+
                             // Cập nhật avatar và access_token cho user
                             $user->avatar = $avatarPath;
                             $user->access_token = $accessToken; // Cập nhật access_token nếu chưa có
@@ -723,7 +723,7 @@ class UserApiController extends Controller
                             $user->provider = 'google';
                             $user->provider_id = $socialUser->getId();
                             $user->save();
-                            
+
                             // Log để debug
                             Log::info('Google avatar updated successfully', [
                                 'user_id' => $user->id,
@@ -740,7 +740,7 @@ class UserApiController extends Controller
             // Tạo token
             $token = $user->createToken('auth_token')->plainTextToken;
             $refreshToken = Str::random(60);
-            
+
             // Lấy access token từ social user
             $accessToken = $socialUser->token;
 
@@ -804,45 +804,45 @@ class UserApiController extends Controller
             $accessToken = $socialUser->token;
             $refreshToken = Str::random(60);
 
-            // Xử lý avatar từ Facebook
+            // Xử lý avatar từ Facebook - Thêm kích thước ảnh lớn
             $avatarPath = null;
             $originalAvatarUrl = $socialUser->getAvatar(); // Lưu URL gốc từ Facebook
-            
+
             // Đảm bảo URL Facebook có tham số kích thước
             if (!strpos($originalAvatarUrl, '?')) {
                 $originalAvatarUrl .= '?width=500&height=500';
             } else if (!strpos($originalAvatarUrl, 'width=')) {
                 $originalAvatarUrl .= '&width=500&height=500';
             }
-            
+
             // Log URL đã được cải thiện
             Log::info('Enhanced Facebook avatar URL', [
                 'enhanced_url' => $originalAvatarUrl
             ]);
-            
+
             if ($socialUser->getAvatar()) {
                 try {
                     // Sử dụng URL avatar Facebook có kích thước lớn hơn
                     $avatarUrl = $socialUser->getAvatar();
-                    
+
                     // Đảm bảo URL có dấu ? trước khi thêm tham số
                     if (strpos($avatarUrl, '?') === false) {
                         $avatarUrl .= '?width=500&height=500&access_token=' . $accessToken;
                     } else {
                         $avatarUrl .= '&width=500&height=500&access_token=' . $accessToken;
                     }
-                    
+
                     // Log URL avatar để debug
                     Log::info('Facebook avatar URL', [
                         'url' => $avatarUrl
                     ]);
-                    
+
                     $avatarContent = file_get_contents($avatarUrl);
                     if ($avatarContent) {
                         $avatarName = 'avatar_fb_' . time() . '.jpg';
                         $avatarPath = 'uploads/avatars/' . $avatarName;
                         Storage::disk('public')->put($avatarPath, $avatarContent);
-                        
+
                         // Log để debug
                         Log::info('Facebook avatar saved successfully', [
                             'path' => $avatarPath,
@@ -854,13 +854,13 @@ class UserApiController extends Controller
                         Log::info('Trying simple Facebook avatar URL', [
                             'simple_url' => $simpleUrl
                         ]);
-                        
+
                         $simpleContent = file_get_contents($simpleUrl);
                         if ($simpleContent) {
                             $avatarName = 'avatar_fb_simple_' . time() . '.jpg';
                             $avatarPath = 'uploads/avatars/' . $avatarName;
                             Storage::disk('public')->put($avatarPath, $simpleContent);
-                            
+
                             Log::info('Facebook simple avatar saved successfully', [
                                 'path' => $avatarPath,
                                 'url' => $simpleUrl
@@ -884,26 +884,45 @@ class UserApiController extends Controller
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
-                    'password' => Hash::make(1234567), // Tạo password ngẫu nhiên
+                    'password' => Hash::make(1234567),
                     'role_id' => $clientRole->id,
                     'avatar' => $avatarPath,
-                    'is_active' => 1, // Đã active sẵn
-                    'email_verified_at' => now(), // Đã xác thực email
+                    'is_active' => 1,
+                    'email_verified_at' => now(),
                     'access_token' => $accessToken, // Lưu access_token để đánh dấu tài khoản OAuth
-                    'refresh_token' => $refreshToken,
                     'is_oauth' => true, // Đánh dấu là tài khoản OAuth
                     'provider' => 'facebook',
                     'provider_id' => $socialUser->getId()
                 ]);
+
+                // Log thông tin user mới
+                Log::info('New user created from Facebook', [
+                    'user_id' => $user->id,
+                    'avatar_path' => $avatarPath
+                ]);
             } else {
                 // Cập nhật thông tin cho user đã tồn tại
-                $user->update([
-                    'avatar' => $avatarPath ?: $user->avatar,
+                $updateData = [
                     'access_token' => $accessToken,
-                    'refresh_token' => $refreshToken,
-                    'is_oauth' => true, // Đánh dấu là tài khoản OAuth
-                    'provider' => 'facebook',
-                    'provider_id' => $socialUser->getId()
+                    'refresh_token' => $refreshToken
+                ];
+
+                // Chỉ cập nhật avatar nếu lấy được avatar mới từ Facebook
+                if ($avatarPath) {
+                    $updateData['avatar'] = $avatarPath;
+
+                    // Xóa avatar cũ nếu có
+                    if ($user->avatar) {
+                        Storage::disk('public')->delete($user->avatar);
+                    }
+                }
+
+                $user->update($updateData);
+
+                // Log cập nhật user
+                Log::info('Existing user updated from Facebook', [
+                    'user_id' => $user->id,
+                    'avatar_path' => $avatarPath
                 ]);
             }
 
@@ -940,7 +959,6 @@ class UserApiController extends Controller
             return redirect($redirectUrl);
         } catch (\Exception $e) {
             Log::error('Facebook login error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
-            // Redirect về trang sign-in với tham số lỗi cụ thể
             return redirect('http://localhost:5173/sign-in?error=facebook_callback_failed');
         }
     }
@@ -956,17 +974,17 @@ class UserApiController extends Controller
         // Kiểm tra xem tài khoản được tạo bằng OAuth không
         // Các tài khoản OAuth thường sẽ có access_token từ social provider
         // và được đánh dấu trong cột is_oauth (nếu có) hoặc dựa vào provider_id
-        
+
         // Cách 1: Kiểm tra trường is_oauth (nếu có)
         if (Schema::hasColumn('users', 'is_oauth')) {
             return (bool)$user->is_oauth;
         }
-        
+
         // Cách 2: Kiểm tra provider_id hoặc provider_name (nếu có)
         if (Schema::hasColumn('users', 'provider') || Schema::hasColumn('users', 'provider_id')) {
             return !empty($user->provider) || !empty($user->provider_id);
         }
-        
+
         // Cách 3: Nếu không có các trường trên, dựa vào access_token từ social provider
         // Lưu ý: Cách này có thể không chính xác nếu access_token được dùng cho mục đích khác
         return $user->access_token !== null && $user->password === Hash::make('Oauthlogin');
