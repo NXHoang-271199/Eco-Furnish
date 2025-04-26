@@ -258,6 +258,55 @@ const Header = () => {
     };
   }, [closeTimeout, userCloseTimeout]);
 
+  // Thêm hàm xử lý avatar URL
+  const processAvatarUrl = (avatarUrl) => {
+    if (!avatarUrl) return '/images/avatarEmpty/avatarUser.png';
+
+    console.log('Header - Processing avatar URL:', avatarUrl);
+
+    // Sửa lỗi URL Facebook - Vấn đề với dấu & trong URL
+    if (avatarUrl.includes('facebook.com/v3.3') && avatarUrl.includes('picture')) {
+      // Đảm bảo phân tách đúng các tham số trong URL Facebook
+      let fixedUrl = avatarUrl;
+      // Kiểm tra xem URL đã có dấu ? chưa
+      if (avatarUrl.indexOf('?') === -1 && avatarUrl.indexOf('&') !== -1) {
+        // Thay thế & đầu tiên thành ? nếu URL chưa có dấu ?
+        fixedUrl = avatarUrl.replace('&', '?');
+      }
+      console.log('Header - Fixed Facebook avatar URL:', fixedUrl);
+      return fixedUrl;
+    }
+
+    // Nếu là URL trực tiếp từ Facebook hoặc Google, sử dụng trực tiếp
+    if (
+      avatarUrl.includes('facebook.com') ||
+      avatarUrl.includes('google') ||
+      (avatarUrl.startsWith('http') && avatarUrl.includes('picture'))
+    ) {
+      console.log('Header - Using external avatar:', avatarUrl);
+      return avatarUrl;
+    }
+
+    // Nếu đã là URL đầy đủ (http/https), trả về trực tiếp
+    if (avatarUrl.startsWith('http')) {
+      return avatarUrl;
+    }
+
+    // Xử lý các đường dẫn storage
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+    if (avatarUrl.startsWith('/storage/')) {
+      return `${apiUrl}${avatarUrl}`;
+    }
+
+    if (avatarUrl.startsWith('storage/')) {
+      return `${apiUrl}/${avatarUrl}`;
+    }
+
+    // Trường hợp còn lại
+    return avatarUrl;
+  };
+
   return (
     <>
       {isLoggedIn && <PaymentReminder />}
@@ -399,11 +448,15 @@ const Header = () => {
                   <Avatar className="h-8 w-8 border-2 border-primary/10 group-hover:border-primary/30 transition-all">
                     <AvatarImage
                       src={
-                        userData.avatar && !userData.avatar.includes("placeholder.com")
-                          ? userData.avatar
+                        userData.avatar
+                          ? processAvatarUrl(userData.avatar)
                           : "/images/avatarEmpty/avatarUser.png"
                       }
                       alt={userData.name}
+                      onError={(e) => {
+                        console.error('Header - Avatar load error:', e);
+                        e.target.src = '/images/avatarEmpty/avatarUser.png';
+                      }}
                     />
                     <AvatarFallback>
                       {userData.name ? userData.name.charAt(0) : "U"}
@@ -429,14 +482,18 @@ const Header = () => {
                     <div className="flex items-start gap-3 p-3 border-b">
                       <img
                         src={
-                          userData.avatar && !userData.avatar.includes("placeholder.com")
-                            ? userData.avatar
+                          userData.avatar
+                            ? processAvatarUrl(userData.avatar)
                             : "/images/avatarEmpty/avatarUser.png"
                         }
                         alt="Avatar"
                         width={32}
                         height={32}
                         className="shrink-0 rounded-full"
+                        onError={(e) => {
+                          console.error('Header - Dropdown avatar load error:', e);
+                          e.target.src = '/images/avatarEmpty/avatarUser.png';
+                        }}
                       />
                       <div className="flex min-w-0 flex-col">
                         <span className="truncate text-sm font-medium">
