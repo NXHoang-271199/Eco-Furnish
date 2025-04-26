@@ -66,7 +66,7 @@ const SignIn = () => {
       }
     } catch (error) {
       if (error.response?.status === 403) {
-        setAuthError("Tài khoản của bạn đã bị vô hiệu hóa hoặc chưa xác thực email. Vui lòng kiểm tra email hoặc liên hệ hỗ trợ.");
+        setAuthError("Tài khoản của bạn đã bị vô hiệu hóa.");
       } else if (error.response?.data?.message) {
         setAuthError(error.response.data.message);
       } else {
