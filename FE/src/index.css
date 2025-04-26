@@ -98,3 +98,34 @@ input[type="password"] {
     padding-right: 2.5rem;
     /* Giữ nguyên padding cho icon tùy chỉnh của chúng ta */
 }
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    /* Width of the scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    /* Background of the track */
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e0a82e;
+    /* Color of the scroll thumb (amber-500) */
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #ca8a04;
+    /* Darker amber on hover (amber-600) */
+}
+
+/* For Firefox */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    /* "auto" or "thin" */
+    scrollbar-color: #e0a82e #f1f1f1;
+    /* thumb and track color */
+}

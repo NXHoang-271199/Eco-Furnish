@@ -11,25 +11,46 @@
     /* Base styles */
     body, html {
         overflow-x: hidden !important;
+        overflow-y: auto !important;
     }
 
     .container-fluid {
-        overflow-x: hidden !important;
+        overflow: hidden !important;
+        position: relative;
+        width: 100%;
     }
 
     .dashboard-container {
         padding-top: 60px !important;
         margin-top: 30px;
-        overflow-x: hidden !important;
+        overflow: hidden !important;
+        position: relative;
+        width: 100%;
     }
     .page-content {
         padding-top: 10px !important;
-        overflow-x: hidden !important;
+        overflow: hidden !important;
+        position: relative;
+        width: 100%;
     }
     @media (max-width: 768px) {
         .dashboard-container {
             padding-top: 80px !important;
         }
+    }
+
+    /* AOS animation container fix */
+    [data-aos] {
+        pointer-events: none;
+    }
+    [data-aos].aos-animate {
+        pointer-events: auto;
+    }
+
+    /* Prevent horizontal scrollbar */
+    .row {
+        margin-right: 0;
+        margin-left: 0;
     }
 
     /* Chart container styles */
