@@ -38,7 +38,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'access_token',
         'refresh_token',
         'remember_me',
-        'remember_me_expires_at'
+        'remember_me_expires_at',
+        'level2_password_reset_token',
+        'level2_password_reset_at',
     ];
 
     public function role()

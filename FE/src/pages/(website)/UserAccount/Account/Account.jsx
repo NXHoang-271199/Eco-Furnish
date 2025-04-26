@@ -653,12 +653,25 @@ const SecuritySection = () => {
     newLevel2Password: "",
     confirmNewLevel2Password: "",
   });
+  const [forgotLevel2Data, setForgotLevel2Data] = useState({
+    currentPassword: "",
+  });
+  const [resetLevel2Data, setResetLevel2Data] = useState({
+    newLevel2Password: "",
+    confirmLevel2Password: "",
+  });
   const [loading, setLoading] = useState(false);
   const [level2Loading, setLevel2Loading] = useState(false);
+  const [forgotLevel2Loading, setForgotLevel2Loading] = useState(false);
+  const [resetLevel2Loading, setResetLevel2Loading] = useState(false);
   const [error, setError] = useState(null);
   const [level2Error, setLevel2Error] = useState(null);
+  const [forgotLevel2Error, setForgotLevel2Error] = useState(null);
+  const [resetLevel2Error, setResetLevel2Error] = useState(null);
   const [success, setSuccess] = useState(false);
   const [level2Success, setLevel2Success] = useState(false);
+  const [forgotLevel2Success, setForgotLevel2Success] = useState(false);
+  const [resetLevel2Success, setResetLevel2Success] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -670,6 +683,9 @@ const SecuritySection = () => {
   const [showNewLevel2Password, setShowNewLevel2Password] = useState(false);
   const [showConfirmNewLevel2Password, setShowConfirmNewLevel2Password] =
     useState(false);
+  const [showForgotLevel2Password, setShowForgotLevel2Password] = useState(false);
+  const [showResetNewLevel2Password, setShowResetNewLevel2Password] = useState(false);
+  const [showResetConfirmLevel2Password, setShowResetConfirmLevel2Password] = useState(false);
   const [isCurrentPasswordFocused, setIsCurrentPasswordFocused] =
     useState(false);
   const [isNewPasswordFocused, setIsNewPasswordFocused] = useState(false);
@@ -686,8 +702,17 @@ const SecuritySection = () => {
     isConfirmNewLevel2PasswordFocused,
     setIsConfirmNewLevel2PasswordFocused,
   ] = useState(false);
+  const [isForgotLevel2PasswordFocused, setIsForgotLevel2PasswordFocused] =
+    useState(false);
+  const [isResetNewLevel2PasswordFocused, setIsResetNewLevel2PasswordFocused] =
+    useState(false);
+  const [isResetConfirmLevel2PasswordFocused, setIsResetConfirmLevel2PasswordFocused] =
+    useState(false);
   const [hasLevel2Password, setHasLevel2Password] = useState(false);
   const [activeTab, setActiveTab] = useState("password");
+  const [showForgotLevel2Form, setShowForgotLevel2Form] = useState(false);
+  const [showResetLevel2Form, setShowResetLevel2Form] = useState(false);
+  const [resetToken, setResetToken] = useState(null);
   const location = window.location;
   const navigate = useNavigate();
 
@@ -711,11 +736,20 @@ const SecuritySection = () => {
 
     checkLevel2PasswordStatus();
 
-    // Kiểm tra URL query parameter để mở tab mật khẩu cấp 2 nếu cần
+    // Kiểm tra URL query parameter để xử lý
     const searchParams = new URLSearchParams(location.search);
     const tab = searchParams.get("tab");
+    const action = searchParams.get("action");
+    const token = searchParams.get("token");
+
     if (tab === "level2password") {
       setActiveTab("level2password");
+
+      // Xử lý trường hợp reset mật khẩu cấp 2
+      if (action === "reset" && token) {
+        setShowResetLevel2Form(true);
+        setResetToken(token);
+      }
     }
   }, [location.search]);
 
@@ -1092,6 +1126,177 @@ const SecuritySection = () => {
     }
   };
 
+  const handleForgotLevel2InputChange = (e) => {
+    const { id, value } = e.target;
+    setForgotLevel2Data((prev) => ({
+      ...prev,
+      [id === "forgot-level2-password" ? "currentPassword" : id]: value,
+    }));
+  };
+
+  const resetForgotLevel2Form = () => {
+    setForgotLevel2Data({
+      currentPassword: "",
+    });
+    setForgotLevel2Error(null);
+    setForgotLevel2Success(false);
+  };
+
+  const handleForgotLevel2Password = async () => {
+    // Xác thực dữ liệu
+    if (!forgotLevel2Data.currentPassword) {
+      setForgotLevel2Error("Vui lòng nhập mật khẩu cấp 1");
+      return;
+    }
+
+    setForgotLevel2Loading(true);
+    setForgotLevel2Error(null);
+    setForgotLevel2Success(false);
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("Bạn cần đăng nhập để thực hiện chức năng này");
+      }
+
+      // Gọi API quên mật khẩu cấp 2
+      const response = await axiosInstance.post(
+        "/users/level2-password/forgot",
+        {
+          current_password: forgotLevel2Data.currentPassword,
+        }
+      );
+
+      console.log("Phản hồi API quên mật khẩu cấp 2:", response.data);
+
+      // Cập nhật trạng thái thành công và hiển thị thông báo
+      setForgotLevel2Success(true);
+      toast.success("Đã gửi email đặt lại mật khẩu cấp 2. Vui lòng kiểm tra hộp thư của bạn!");
+      resetForgotLevel2Form();
+      setShowForgotLevel2Form(false);
+    } catch (error) {
+      console.error("Lỗi khi yêu cầu quên mật khẩu cấp 2:", error);
+
+      if (error.response && error.response.status === 400) {
+        setForgotLevel2Error(
+          error.response.data.message || "Mật khẩu cấp 1 không đúng"
+        );
+      } else {
+        setForgotLevel2Error(
+          error.response?.data?.message ||
+          "Không thể xử lý yêu cầu quên mật khẩu cấp 2. Vui lòng thử lại sau."
+        );
+      }
+
+      toast.error("Không thể xử lý yêu cầu quên mật khẩu cấp 2");
+    } finally {
+      setForgotLevel2Loading(false);
+    }
+  };
+
+  const handleResetLevel2InputChange = (e) => {
+    const { id, value } = e.target;
+    setResetLevel2Data((prev) => ({
+      ...prev,
+      [id === "reset-new-level2-password"
+        ? "newLevel2Password"
+        : id === "reset-confirm-level2-password"
+          ? "confirmLevel2Password"
+          : id]: value,
+    }));
+  };
+
+  const resetResetLevel2Form = () => {
+    setResetLevel2Data({
+      newLevel2Password: "",
+      confirmLevel2Password: "",
+    });
+    setResetLevel2Error(null);
+    setResetLevel2Success(false);
+  };
+
+  const handleResetLevel2Password = async () => {
+    // Xác thực dữ liệu
+    if (!resetLevel2Data.newLevel2Password) {
+      setResetLevel2Error("Vui lòng nhập mật khẩu cấp 2 mới");
+      return;
+    }
+
+    if (resetLevel2Data.newLevel2Password.length < 5) {
+      setResetLevel2Error("Mật khẩu cấp 2 mới phải có ít nhất 5 ký tự");
+      return;
+    }
+
+    if (
+      resetLevel2Data.newLevel2Password !==
+      resetLevel2Data.confirmLevel2Password
+    ) {
+      setResetLevel2Error(
+        "Mật khẩu cấp 2 mới và xác nhận mật khẩu cấp 2 không khớp"
+      );
+      return;
+    }
+
+    setResetLevel2Loading(true);
+    setResetLevel2Error(null);
+    setResetLevel2Success(false);
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("Bạn cần đăng nhập để thực hiện chức năng này");
+      }
+
+      // Gọi API đặt lại mật khẩu cấp 2
+      const response = await axiosInstance.post(
+        "/users/level2-password/reset",
+        {
+          token: resetToken,
+          new_level2_password: resetLevel2Data.newLevel2Password,
+          confirm_level2_password: resetLevel2Data.confirmLevel2Password,
+        }
+      );
+
+      console.log("Phản hồi API đặt lại mật khẩu cấp 2:", response.data);
+
+      // Cập nhật trạng thái thành công và hiển thị thông báo
+      setResetLevel2Success(true);
+      toast.success("Đặt lại mật khẩu cấp 2 thành công!");
+      resetResetLevel2Form();
+      setShowResetLevel2Form(false);
+
+      // Cập nhật trạng thái mật khẩu cấp 2
+      setHasLevel2Password(true);
+
+      // Xóa query params khỏi URL
+      navigate('/account?tab=level2password', { replace: true });
+
+      // Phát sự kiện để cập nhật trạng thái mật khẩu cấp 2 trong Header
+      window.dispatchEvent(
+        new CustomEvent("level2password-updated", {
+          detail: { hasLevel2Password: true },
+        })
+      );
+    } catch (error) {
+      console.error("Lỗi khi đặt lại mật khẩu cấp 2:", error);
+
+      if (error.response && error.response.status === 400) {
+        setResetLevel2Error(
+          error.response.data.message || "Token không hợp lệ hoặc đã hết hạn"
+        );
+      } else {
+        setResetLevel2Error(
+          error.response?.data?.message ||
+          "Không thể đặt lại mật khẩu cấp 2. Vui lòng thử lại sau."
+        );
+      }
+
+      toast.error("Không thể đặt lại mật khẩu cấp 2");
+    } finally {
+      setResetLevel2Loading(false);
+    }
+  };
+
   return (
     <>
       <motion.div
@@ -1234,9 +1439,11 @@ const SecuritySection = () => {
               <CardHeader>
                 <CardTitle>Mật khẩu cấp 2</CardTitle>
                 <CardDescription>
-                  {hasLevel2Password
-                    ? "Cập nhật mật khẩu cấp 2 để bảo mật giao dịch của bạn"
-                    : "Thiết lập mật khẩu cấp 2 để bảo mật giao dịch của bạn"}
+                  {showResetLevel2Form
+                    ? "Đặt lại mật khẩu cấp 2 của bạn"
+                    : hasLevel2Password
+                      ? "Cập nhật mật khẩu cấp 2 để bảo mật giao dịch của bạn"
+                      : "Thiết lập mật khẩu cấp 2 để bảo mật giao dịch của bạn"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1247,7 +1454,129 @@ const SecuritySection = () => {
                   </div>
                 )}
 
-                {!hasLevel2Password ? (
+                {showResetLevel2Form ? (
+                  // Form đặt lại mật khẩu cấp 2
+                  <>
+                    {resetLevel2Error && (
+                      <div className="text-red-500 text-sm flex items-center gap-1 mb-4">
+                        <AlertCircle size={14} />
+                        <span>{resetLevel2Error}</span>
+                      </div>
+                    )}
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="reset-new-level2-password">
+                        Mật khẩu cấp 2 mới
+                      </Label>
+                      <Input
+                        id="reset-new-level2-password"
+                        type={showResetNewLevel2Password ? "text" : "password"}
+                        value={resetLevel2Data.newLevel2Password}
+                        onChange={handleResetLevel2InputChange}
+                        className="pr-10"
+                        onFocus={() => setIsResetNewLevel2PasswordFocused(true)}
+                        onBlur={() => setIsResetNewLevel2PasswordFocused(false)}
+                      />
+                      {resetLevel2Data.newLevel2Password &&
+                        isResetNewLevel2PasswordFocused && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowResetNewLevel2Password((prev) => !prev)
+                            }
+                          >
+                            {showResetNewLevel2Password ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        )}
+                    </div>
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="reset-confirm-level2-password">
+                        Xác nhận mật khẩu cấp 2 mới
+                      </Label>
+                      <Input
+                        id="reset-confirm-level2-password"
+                        type={showResetConfirmLevel2Password ? "text" : "password"}
+                        value={resetLevel2Data.confirmLevel2Password}
+                        onChange={handleResetLevel2InputChange}
+                        className="pr-10"
+                        onFocus={() => setIsResetConfirmLevel2PasswordFocused(true)}
+                        onBlur={() => setIsResetConfirmLevel2PasswordFocused(false)}
+                      />
+                      {resetLevel2Data.confirmLevel2Password &&
+                        isResetConfirmLevel2PasswordFocused && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowResetConfirmLevel2Password((prev) => !prev)
+                            }
+                          >
+                            {showResetConfirmLevel2Password ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        )}
+                    </div>
+                  </>
+                ) : showForgotLevel2Form ? (
+                  // Form quên mật khẩu cấp 2
+                  <>
+                    {forgotLevel2Error && (
+                      <div className="text-red-500 text-sm flex items-center gap-1 mb-4">
+                        <AlertCircle size={14} />
+                        <span>{forgotLevel2Error}</span>
+                      </div>
+                    )}
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="forgot-level2-password">
+                        Nhập mật khẩu cấp 1 để xác nhận
+                      </Label>
+                      <Input
+                        id="forgot-level2-password"
+                        type={showForgotLevel2Password ? "text" : "password"}
+                        value={forgotLevel2Data.currentPassword}
+                        onChange={handleForgotLevel2InputChange}
+                        className="pr-10"
+                        onFocus={() => setIsForgotLevel2PasswordFocused(true)}
+                        onBlur={() => setIsForgotLevel2PasswordFocused(false)}
+                      />
+                      {forgotLevel2Data.currentPassword &&
+                        isForgotLevel2PasswordFocused && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-[2.1rem] h-7 w-7 px-0"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() =>
+                              setShowForgotLevel2Password((prev) => !prev)
+                            }
+                          >
+                            {showForgotLevel2Password ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                        )}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-2">
+                      Chúng tôi sẽ gửi link đặt lại mật khẩu cấp 2 qua email của bạn
+                    </div>
+                  </>
+                ) : !hasLevel2Password ? (
                   // Form thiết lập mật khẩu cấp 2
                   <>
                     <div className="space-y-2 relative">
@@ -1459,34 +1788,100 @@ const SecuritySection = () => {
                   </>
                 )}
               </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Button variant="outline" onClick={resetLevel2Form}>
-                  Hủy bỏ
-                </Button>
-                <Button
-                  onClick={
-                    hasLevel2Password
-                      ? handleUpdateLevel2Password
-                      : handleSetLevel2Password
-                  }
-                  disabled={level2Loading}
-                >
-                  {level2Loading ? (
-                    <>
-                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
-                      Đang xử lý...
-                    </>
-                  ) : hasLevel2Password ? (
-                    "Cập nhật mật khẩu cấp 2"
-                  ) : (
-                    "Thiết lập mật khẩu cấp 2"
-                  )}
-                </Button>
+              <CardFooter className={`flex ${showForgotLevel2Form || !hasLevel2Password || showResetLevel2Form ? 'justify-end' : 'justify-between'} gap-2`}>
+                {hasLevel2Password && !showForgotLevel2Form && !showResetLevel2Form && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowForgotLevel2Form(true)}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    Quên mật khẩu cấp 2?
+                  </Button>
+                )}
+
+                {showResetLevel2Form ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowResetLevel2Form(false);
+                        resetResetLevel2Form();
+                        // Xóa query params khỏi URL
+                        navigate('/account?tab=level2password', { replace: true });
+                      }}
+                    >
+                      Hủy bỏ
+                    </Button>
+                    <Button
+                      onClick={handleResetLevel2Password}
+                      disabled={resetLevel2Loading}
+                    >
+                      {resetLevel2Loading ? (
+                        <>
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        "Đặt lại mật khẩu cấp 2"
+                      )}
+                    </Button>
+                  </>
+                ) : showForgotLevel2Form ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowForgotLevel2Form(false);
+                        resetForgotLevel2Form();
+                      }}
+                    >
+                      Hủy bỏ
+                    </Button>
+                    <Button
+                      onClick={handleForgotLevel2Password}
+                      disabled={forgotLevel2Loading}
+                    >
+                      {forgotLevel2Loading ? (
+                        <>
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        "Gửi yêu cầu"
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {/* <Button variant="outline" onClick={resetLevel2Form}>
+                      Hủy bỏ
+                    </Button> */}
+                    <Button
+                      onClick={
+                        hasLevel2Password
+                          ? handleUpdateLevel2Password
+                          : handleSetLevel2Password
+                      }
+                      disabled={level2Loading}
+                    >
+                      {level2Loading ? (
+                        <>
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
+                          Đang xử lý...
+                        </>
+                      ) : hasLevel2Password ? (
+                        "Cập nhật mật khẩu cấp 2"
+                      ) : (
+                        "Thiết lập mật khẩu cấp 2"
+                      )}
+                    </Button>
+                  </>
+                )}
               </CardFooter>
             </Card>
           </TabsContent>
-        </Tabs>
-      </motion.div>
+        </Tabs >
+      </motion.div >
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -1534,3 +1929,4 @@ const BankSection = () => {
 };
 
 export default Account;
+
