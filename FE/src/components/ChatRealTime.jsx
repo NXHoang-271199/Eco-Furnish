@@ -377,7 +377,7 @@ const ChatRealTime = () => {
                     if (error.message.includes("Authentication error") || error.message.includes("Invalid token")) {
                         console.log("Lỗi xác thực, có thể token đã hết hạn. Thử làm mới token...");
 
-                        // Thử làm mới token
+                        // Làm mới token
                         tryRefreshToken();
                     } else {
                         setLastError("Lỗi kết nối: " + error.message);
@@ -411,7 +411,7 @@ const ChatRealTime = () => {
             }
         } catch (error) {
             setLastError(error.message);
-            console.error("❌ Lỗi khi kết nối socket:", error);
+            console.error("Lỗi khi kết nối socket:", error);
             return null;
         }
     };
