@@ -227,9 +227,9 @@ const ChatRealTime = () => {
                         id: groupId,
                         sender_id: senderID,
                         isCurrentUser: isCurrentUser,
-                        isAdmin: isAdmin, // Thêm thuộc tính isAdmin
+                        isAdmin: isAdmin, // Xác định admin cho nhóm
                         sent_at: currentMsg.sent_at, // Giữ thời gian của tin nhắn đầu tiên
-                        is_read: isRead, // Có thể cần logic phức tạp hơn để xác định is_read cho nhóm
+                        is_read: isRead, // Xác định is_read cho nhóm
                         imageGroup: {
                             urls: imageInfo.map(info => info.url),
                             groupId: groupId
