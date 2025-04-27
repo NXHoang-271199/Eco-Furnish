@@ -134,6 +134,8 @@ Social OAuth Routes: Các route để tích hợp đăng nhập qua Google và F
 Social OAuth Routes: Các route để tích hợp đăng nhập qua Google và Facebook.
    - `/auth/google/redirect`: Redirect người dùng đến Google để đăng nhập.
    - `/auth/facebook/redirect`: Redirect người dùng đến Facebook để đăng nhập.
-
+Route bài viết (posts): Định nghĩa các route để hiển thị bài viết, bao gồm bài viết theo danh mục.
+   - `/posts`: Lấy tất cả các bài viết.
+   - `/posts/{slug}`: Lấy bài viết theo `slug`.
 
 
