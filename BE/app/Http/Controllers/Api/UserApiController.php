@@ -724,6 +724,7 @@ class UserApiController extends Controller
                             $avatarPath = 'uploads/avatars/' . $avatarName;
                             Storage::disk('public')->put($avatarPath, $avatarContent);
 
+                            $accessToken = $socialUser->token;
                             // Cập nhật avatar và access_token cho user
                             $user->avatar = $avatarPath;
                             $user->access_token = $accessToken; // Cập nhật access_token nếu chưa có
