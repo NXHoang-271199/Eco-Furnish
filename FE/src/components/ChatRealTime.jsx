@@ -254,7 +254,7 @@ const ChatRealTime = () => {
         return processedMessages;
     };
 
-    // Refs cho cơ chế đệm ảnh từ admin (GIỮ LẠI KHAI BÁO NÀY)
+    // Refs cho cơ chế đệm ảnh từ admin
     const pendingAdminImagesRef = useRef([]);
     const imageBufferTimeoutRef = useRef(null);
 
@@ -266,8 +266,8 @@ const ChatRealTime = () => {
             setIsLoading(true);
             const token = localStorage.getItem("authToken");
 
-            console.log("🔍 Đang tải lịch sử cho user:", userId);
-            console.log("🔑 Token:", token?.substring(0, 15) + "...");
+            console.log("Đang tải lịch sử cho user:", userId);
+            console.log("Token:", token?.substring(0, 15) + "...");
 
             // Gọi API lấy lịch sử tin nhắn
             const response = await axios.get(
@@ -281,10 +281,10 @@ const ChatRealTime = () => {
                 }
             );
 
-            console.log("✅ Phản hồi API:", response.status, response.statusText);
+            console.log("Phản hồi API:", response.status, response.statusText);
 
             if (response.data && Array.isArray(response.data)) {
-                console.log("📜 Lịch sử tin nhắn:", response.data);
+                console.log("Lịch sử tin nhắn:", response.data);
 
                 // Đảm bảo tất cả tin nhắn có trạng thái is_read và isCurrentUser
                 const messagesWithStatus = response.data.map(msg => ({
