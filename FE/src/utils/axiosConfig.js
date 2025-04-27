@@ -35,7 +35,11 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      !originalRequest._retry
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -58,9 +62,12 @@ axiosInstance.interceptors.response.use(
           throw new Error("No refresh token available");
         }
 
-        const res = await axios.post("http://localhost:8000/api/users/refresh-token", {
-          refresh_token: refreshToken,
-        });
+        const res = await axios.post(
+          "http://localhost:8000/api/users/refresh-token",
+          {
+            refresh_token: refreshToken,
+          }
+        );
 
         if (res.data.status === "success") {
           const newToken = res.data.data.access_token;
@@ -81,7 +88,9 @@ axiosInstance.interceptors.response.use(
         localStorage.removeItem("authToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("userData");
-        return Promise.reject(new Error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại"));
+        return Promise.reject(
+          new Error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại")
+        );
       }
     }
 

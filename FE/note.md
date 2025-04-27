@@ -18,7 +18,6 @@ http://localhost:8000/api/users/login -> Login
 - Lấy danh sách các danh mục bài viết
   http://localhost:8000/api/vouchers/ -> Vouchers
 
-
 - /{code}
 
 # Lưu ý khi lọc bài viết theo danh mục
@@ -103,9 +102,35 @@ currency: 'VND'
 export default Detail;
 
 # test MoMo account
-NGUYEN VAN A 
+
+NGUYEN VAN A
 9704 0000 0000 0018
 03/07
 OTP
 Card Successful
+
+//
+
+Route sản phẩm: Cung cấp các route để lấy danh sách sản phẩm, tìm kiếm và hiển thị chi tiết sản phẩm.
+
+- `/products`: Lấy tất cả sản phẩm.
+- `/products/{id}`: Lấy thông tin sản phẩm theo ID.
+  Route lấy sản phẩm bán chạy: Thêm route `/best-sellers` để lấy các sản phẩm bán chạy nhất.
+  Route danh mục sản phẩm: Các route `/categories` giúp lấy thông tin về danh mục sản phẩm.
+- `/categories/all`: Lấy tất cả các danh mục.
+- `/categories/{slug}`: Lấy danh mục cụ thể theo `slug`.
+  Route biến thể sản phẩm: Cung cấp thông tin về các biến thể của sản phẩm thông qua route `/variants`.
+Route trò chuyện (chat): Các route để gửi và nhận tin nhắn trong hệ thống chat.
+   - `/chat`: Gửi tin nhắn từ người dùng.
+   - `/chat/order-success`: Gửi tin nhắn thông báo thành công đơn hàng.
+Route quản lý người dùng: Định nghĩa các route liên quan đến người dùng như đăng ký, đăng nhập, đổi mật khẩu, v.v.
+   - `/users/register`: Route đăng ký người dùng mới.
+   - `/users/login`: Route đăng nhập người dùng.
+   - `/users/logout`: Route đăng xuất người dùng.
+   - `/users/profile`:Route profile
+Social OAuth Routes: Các route để tích hợp đăng nhập qua Google và Facebook.
+   - `/auth/google/redirect`: Redirect người dùng đến Google để đăng nhập.
+   - `/auth/facebook/redirect`: Redirect người dùng đến Facebook để đăng nhập.
+
+
 
