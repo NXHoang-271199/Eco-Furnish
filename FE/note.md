@@ -137,5 +137,8 @@ Social OAuth Routes: Các route để tích hợp đăng nhập qua Google và F
 Route bài viết (posts): Định nghĩa các route để hiển thị bài viết, bao gồm bài viết theo danh mục.
    - `/posts`: Lấy tất cả các bài viết.
    - `/posts/{slug}`: Lấy bài viết theo `slug`.
+Voucher Routes: Các route để lấy voucher và kiểm tra tính hợp lệ của voucher.
+    - `/vouchers`: Lấy tất cả voucher.
+    - `/check-voucher`: Kiểm tra tính hợp lệ của voucher.
 
 
