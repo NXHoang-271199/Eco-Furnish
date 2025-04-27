@@ -115,4 +115,7 @@ Card Successful
 Route sản phẩm: Cung cấp các route để lấy danh sách sản phẩm, tìm kiếm và hiển thị chi tiết sản phẩm.
    - `/products`: Lấy tất cả sản phẩm.
    - `/products/{id}`: Lấy thông tin sản phẩm theo ID.
-  Route lấy sản phẩm bán chạy: Thêm route `/best-sellers` để lấy các sản phẩm bán chạy nhất.
+Route lấy sản phẩm bán chạy: Thêm route `/best-sellers` để lấy các sản phẩm bán chạy nhất.
+Route danh mục sản phẩm: Các route `/categories` giúp lấy thông tin về danh mục sản phẩm.
+   - `/categories/all`: Lấy tất cả các danh mục.
+   - `/categories/{slug}`: Lấy danh mục cụ thể theo `slug`.
