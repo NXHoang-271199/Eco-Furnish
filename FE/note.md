@@ -120,3 +120,6 @@ Route sản phẩm: Cung cấp các route để lấy danh sách sản phẩm, t
 - `/categories/all`: Lấy tất cả các danh mục.
 - `/categories/{slug}`: Lấy danh mục cụ thể theo `slug`.
   Route biến thể sản phẩm: Cung cấp thông tin về các biến thể của sản phẩm thông qua route `/variants`.
+Route trò chuyện (chat): Các route để gửi và nhận tin nhắn trong hệ thống chat.
+   - `/chat`: Gửi tin nhắn từ người dùng.
+   - `/chat/order-success`: Gửi tin nhắn thông báo thành công đơn hàng.
