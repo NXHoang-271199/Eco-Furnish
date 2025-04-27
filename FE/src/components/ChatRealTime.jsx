@@ -27,7 +27,7 @@ document.addEventListener('touchstart', handleUserInteraction, { once: false });
 function handleUserInteraction() {
     if (!userHasInteracted) {
         userHasInteracted = true;
-        console.log("✅ Người dùng đã tương tác với trang, có thể phát âm thanh");
+        console.log("Người dùng đã tương tác với trang, có thể phát âm thanh");
 
         // Kích hoạt audio trước
         messageAudio.play()
@@ -36,7 +36,7 @@ function handleUserInteraction() {
                 messageAudio.currentTime = 0;
                 console.log("✓ Đã kích hoạt audio");
             })
-            .catch(err => console.log("⚠️ Không thể kích hoạt audio:", err));
+            .catch(err => console.log("Không thể kích hoạt audio:", err));
     }
 }
 
@@ -51,7 +51,7 @@ const playNotificationSound = (soundPath) => {
             messageAudio.play()
                 .then(() => console.log("✓ Âm thanh thông báo được phát thành công"))
                 .catch(err => {
-                    console.log("⚠️ Không thể phát âm thanh, lỗi:", err);
+                    console.log("Không thể phát âm thanh, lỗi:", err);
 
                     // Thử lại với tương tác người dùng nếu lỗi
                     const unblockAudio = () => {
@@ -60,20 +60,20 @@ const playNotificationSound = (soundPath) => {
                                 console.log("✓ Đã phát âm thanh sau tương tác");
                                 document.removeEventListener('click', unblockAudio);
                             })
-                            .catch(e => console.log("⚠️ Vẫn không thể phát âm thanh:", e));
+                            .catch(e => console.log("Vẫn không thể phát âm thanh:", e));
                     };
 
                     document.addEventListener('click', unblockAudio, { once: true });
                 });
         } else {
-            console.log("⚠️ Người dùng chưa tương tác, đang chờ tương tác để phát âm thanh");
+            console.log("Người dùng chưa tương tác, đang chờ tương tác để phát âm thanh");
 
             // Đăng ký phát âm thanh sau tương tác đầu tiên
             const playAfterInteraction = () => {
                 userHasInteracted = true;
                 messageAudio.play()
-                    .then(() => console.log("✓ Đã phát âm thanh sau tương tác đầu tiên"))
-                    .catch(e => console.log("⚠️ Không thể phát âm thanh sau tương tác:", e));
+                    .then(() => console.log("Đã phát âm thanh sau tương tác đầu tiên"))
+                    .catch(e => console.log("Không thể phát âm thanh sau tương tác:", e));
 
                 document.removeEventListener('click', playAfterInteraction);
                 document.removeEventListener('keydown', playAfterInteraction);
@@ -85,7 +85,7 @@ const playNotificationSound = (soundPath) => {
             document.addEventListener('touchstart', playAfterInteraction, { once: true });
         }
     } catch (error) {
-        console.error("❌ Lỗi khi phát âm thanh:", error);
+        console.error("Lỗi khi phát âm thanh:", error);
     }
 };
 
