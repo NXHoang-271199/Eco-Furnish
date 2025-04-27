@@ -18,8 +18,6 @@ http://localhost:8000/api/users/login -> Login
 - Lấy danh sách các danh mục bài viết
   http://localhost:8000/api/vouchers/ -> Vouchers
 
-
-
 - /{code}
 
 # Lưu ý khi lọc bài viết theo danh mục
@@ -104,18 +102,21 @@ currency: 'VND'
 export default Detail;
 
 # test MoMo account
-NGUYEN VAN A 
+
+NGUYEN VAN A
 9704 0000 0000 0018
 03/07
 OTP
 Card Successful
 
-// 
+//
 
 Route sản phẩm: Cung cấp các route để lấy danh sách sản phẩm, tìm kiếm và hiển thị chi tiết sản phẩm.
-   - `/products`: Lấy tất cả sản phẩm.
-   - `/products/{id}`: Lấy thông tin sản phẩm theo ID.
-Route lấy sản phẩm bán chạy: Thêm route `/best-sellers` để lấy các sản phẩm bán chạy nhất.
-Route danh mục sản phẩm: Các route `/categories` giúp lấy thông tin về danh mục sản phẩm.
-   - `/categories/all`: Lấy tất cả các danh mục.
-   - `/categories/{slug}`: Lấy danh mục cụ thể theo `slug`.
+
+- `/products`: Lấy tất cả sản phẩm.
+- `/products/{id}`: Lấy thông tin sản phẩm theo ID.
+  Route lấy sản phẩm bán chạy: Thêm route `/best-sellers` để lấy các sản phẩm bán chạy nhất.
+  Route danh mục sản phẩm: Các route `/categories` giúp lấy thông tin về danh mục sản phẩm.
+- `/categories/all`: Lấy tất cả các danh mục.
+- `/categories/{slug}`: Lấy danh mục cụ thể theo `slug`.
+  Route biến thể sản phẩm: Cung cấp thông tin về các biến thể của sản phẩm thông qua route `/variants`.
