@@ -19,6 +19,7 @@ http://localhost:8000/api/users/login -> Login
   http://localhost:8000/api/vouchers/ -> Vouchers
 
 
+
 - /{code}
 
 # Lưu ý khi lọc bài viết theo danh mục
@@ -109,3 +110,8 @@ NGUYEN VAN A
 OTP
 Card Successful
 
+// 
+
+Route sản phẩm: Cung cấp các route để lấy danh sách sản phẩm, tìm kiếm và hiển thị chi tiết sản phẩm.
+   - `/products`: Lấy tất cả sản phẩm.
+   - `/products/{id}`: Lấy thông tin sản phẩm theo ID.
