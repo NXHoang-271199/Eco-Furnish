@@ -128,3 +128,9 @@ Route quản lý người dùng: Định nghĩa các route liên quan đến ng�
    - `/users/login`: Route đăng nhập người dùng.
    - `/users/logout`: Route đăng xuất người dùng.
    - `/users/profile`:Route profile
+Social OAuth Routes: Các route để tích hợp đăng nhập qua Google và Facebook.
+   - `/auth/google/redirect`: Redirect người dùng đến Google để đăng nhập.
+   - `/auth/facebook/redirect`: Redirect người dùng đến Facebook để đăng nhập.
+
+
+
