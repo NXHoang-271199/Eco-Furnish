@@ -363,7 +363,7 @@ const ChatRealTime = () => {
 
                 // Thiết lập sự kiện ngắt kết nối
                 socketConnection.on("disconnect", (reason) => {
-                    console.log("❌ Socket ngắt kết nối, lý do:", reason);
+                    console.log("Socket ngắt kết nối, lý do:", reason);
                     setIsConnected(false);
                     setLastError(`Mất kết nối với server: ${reason}`);
                 });
@@ -375,7 +375,7 @@ const ChatRealTime = () => {
 
                     // Xử lý lỗi xác thực đặc biệt
                     if (error.message.includes("Authentication error") || error.message.includes("Invalid token")) {
-                        console.log("🔑 Lỗi xác thực, có thể token đã hết hạn. Thử làm mới token...");
+                        console.log("Lỗi xác thực, có thể token đã hết hạn. Thử làm mới token...");
 
                         // Thử làm mới token
                         tryRefreshToken();
