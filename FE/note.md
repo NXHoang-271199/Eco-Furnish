@@ -123,3 +123,8 @@ Route sản phẩm: Cung cấp các route để lấy danh sách sản phẩm, t
 Route trò chuyện (chat): Các route để gửi và nhận tin nhắn trong hệ thống chat.
    - `/chat`: Gửi tin nhắn từ người dùng.
    - `/chat/order-success`: Gửi tin nhắn thông báo thành công đơn hàng.
+Route quản lý người dùng: Định nghĩa các route liên quan đến người dùng như đăng ký, đăng nhập, đổi mật khẩu, v.v.
+   - `/users/register`: Route đăng ký người dùng mới.
+   - `/users/login`: Route đăng nhập người dùng.
+   - `/users/logout`: Route đăng xuất người dùng.
+   - `/users/profile`:Route profile
