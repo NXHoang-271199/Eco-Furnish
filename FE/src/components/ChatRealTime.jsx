@@ -391,7 +391,7 @@ const ChatRealTime = () => {
                             if (response && response.success) {
                                 // Cập nhật trạng thái kết nối
                                 if (!isConnected) {
-                                    console.log("✅ Kết nối đã được khôi phục");
+                                    console.log("Kết nối đã được khôi phục");
                                     setIsConnected(true);
                                     setLastError("");
                                 }
