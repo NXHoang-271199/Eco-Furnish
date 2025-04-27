@@ -95,8 +95,14 @@ class ProductSeeder extends Seeder
                         'price' => 5000000,
                         'quantity' => 20,
                         'variant_details' => [
-                            'color' => 'Nâu gỗ',
-                            'size' => '1.2m x 0.6m'
+                            [
+                                'name' => 'Màu sắc',
+                                'value' => 'Nâu gỗ'
+                            ],
+                            [
+                                'name' => 'Kích thước',
+                                'value' => '1.2m x 0.6m'
+                            ]
                         ]
                     ],
                     [
@@ -104,8 +110,14 @@ class ProductSeeder extends Seeder
                         'price' => 6000000,
                         'quantity' => 15,
                         'variant_details' => [
-                            'color' => 'Nâu gỗ',
-                            'size' => '1.6m x 0.8m'
+                            [
+                                'name' => 'Màu sắc',
+                                'value' => 'Nâu gỗ'
+                            ],
+                            [
+                                'name' => 'Kích thước',
+                                'value' => '1.6m x 0.8m'
+                            ]
                         ]
                     ],
                     [
@@ -113,8 +125,14 @@ class ProductSeeder extends Seeder
                         'price' => 7500000,
                         'quantity' => 10,
                         'variant_details' => [
-                            'color' => 'Nâu gỗ',
-                            'size' => '2.0m x 1.0m'
+                            [
+                                'name' => 'Màu sắc',
+                                'value' => 'Nâu gỗ'
+                            ],
+                            [
+                                'name' => 'Kích thước',
+                                'value' => '2.0m x 1.0m'
+                            ]
                         ]
                     ],
                 ]
@@ -133,8 +151,14 @@ class ProductSeeder extends Seeder
                         'price' => 3000000,
                         'quantity' => 25,
                         'variant_details' => [
-                            'color' => 'Trắng',
-                            'size' => '1.2m x 0.6m'
+                            [
+                                'name' => 'Màu sắc',
+                                'value' => 'Trắng'
+                            ],
+                            [
+                                'name' => 'Kích thước',
+                                'value' => '1.2m x 0.6m'
+                            ]
                         ]
                     ],
                     [
@@ -142,8 +166,14 @@ class ProductSeeder extends Seeder
                         'price' => 3000000,
                         'quantity' => 25,
                         'variant_details' => [
-                            'color' => 'Đen',
-                            'size' => '1.2m x 0.6m'
+                            [
+                                'name' => 'Màu sắc',
+                                'value' => 'Đen'
+                            ],
+                            [
+                                'name' => 'Kích thước',
+                                'value' => '1.2m x 0.6m'
+                            ]
                         ]
                     ],
                 ]
@@ -162,8 +192,14 @@ class ProductSeeder extends Seeder
                         'price' => 8000000,
                         'quantity' => 10,
                         'variant_details' => [
-                            'color' => 'Nâu gỗ',
-                            'size' => '0.8m x 1.9m'
+                            [
+                                'name' => 'Màu sắc',
+                                'value' => 'Nâu gỗ'
+                            ],
+                            [
+                                'name' => 'Kích thước',
+                                'value' => '0.8m x 1.9m'
+                            ]
                         ]
                     ],
                     [
@@ -171,8 +207,14 @@ class ProductSeeder extends Seeder
                         'price' => 12000000,
                         'quantity' => 8,
                         'variant_details' => [
-                            'color' => 'Nâu gỗ',
-                            'size' => '1.6m x 2.0m'
+                            [
+                                'name' => 'Màu sắc',
+                                'value' => 'Nâu gỗ'
+                            ],
+                            [
+                                'name' => 'Kích thước',
+                                'value' => '1.6m x 2.0m'
+                            ]
                         ]
                     ],
                     [
@@ -180,8 +222,14 @@ class ProductSeeder extends Seeder
                         'price' => 14000000,
                         'quantity' => 5,
                         'variant_details' => [
-                            'color' => 'Nâu gỗ',
-                            'size' => '1.8m x 2.0m'
+                            [
+                                'name' => 'Màu sắc',
+                                'value' => 'Nâu gỗ'
+                            ],
+                            [
+                                'name' => 'Kích thước',
+                                'value' => '1.8m x 2.0m'
+                            ]
                         ]
                     ],
                     [
@@ -189,8 +237,14 @@ class ProductSeeder extends Seeder
                         'price' => 16000000,
                         'quantity' => 3,
                         'variant_details' => [
-                            'color' => 'Nâu gỗ',
-                            'size' => '2.0m x 2.2m'
+                            [
+                                'name' => 'Màu sắc',
+                                'value' => 'Nâu gỗ'
+                            ],
+                            [
+                                'name' => 'Kích thước',
+                                'value' => '2.0m x 2.2m'
+                            ]
                         ]
                     ],
                 ]

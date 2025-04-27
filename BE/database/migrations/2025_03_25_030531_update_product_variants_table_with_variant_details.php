@@ -17,7 +17,7 @@ return new class extends Migration
             
             // Bỏ các khóa ngoại nếu có
             if (Schema::hasColumn('product_variants', 'variant_id')) {
-                $table->dropForeign(['variant_id']);
+                $table->dropForeign(['variant_id']); 
                 $table->dropColumn('variant_id');
             }
             

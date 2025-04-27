@@ -56,12 +56,75 @@
                                         type="button" disabled>
                                     <i class="fas fa-image"></i>
                                 </button>
+                                <!-- Thêm nút emoji picker -->
+                                <button id="emojiBtn" class="btn btn-outline-secondary border-start-0 border-end-0" 
+                                        type="button" disabled>
+                                    <i class="fas fa-smile"></i>
+                                </button>
                                 <button id="sendMessageBtn" class="btn btn-primary px-4" disabled>
                                     <i class="fas fa-paper-plane me-1"></i> Gửi
                                 </button>
 
                                 <!-- Thêm input ẩn để upload ảnh -->
                                 <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                            </div>
+
+                            <!-- Thêm container emoji picker -->
+                            <div id="emoji-picker-container" class="mt-2 animate__animated animate__fadeIn" style="display: none;">
+                                <div class="card border">
+                                    <div class="card-body p-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="m-0">Emoji</h6>
+                                            <button id="close-emoji" class="btn btn-sm btn-light">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <div class="emoji-grid">
+                                            <!-- Emoji phổ biến -->
+                                            <button class="emoji-btn" data-emoji="😊">😊</button>
+                                            <button class="emoji-btn" data-emoji="😃">😃</button>
+                                            <button class="emoji-btn" data-emoji="😍">😍</button>
+                                            <button class="emoji-btn" data-emoji="😘">😘</button>
+                                            <button class="emoji-btn" data-emoji="🙂">🙂</button>
+                                            <button class="emoji-btn" data-emoji="😉">😉</button>
+                                            <button class="emoji-btn" data-emoji="😁">😁</button>
+                                            <button class="emoji-btn" data-emoji="😎">😎</button>
+                                            <button class="emoji-btn" data-emoji="😢">😢</button>
+                                            <button class="emoji-btn" data-emoji="😔">😔</button>
+                                            <button class="emoji-btn" data-emoji="❤️">❤️</button>
+                                            <button class="emoji-btn" data-emoji="👍">👍</button>
+                                            <button class="emoji-btn" data-emoji="👋">👋</button>
+                                            <button class="emoji-btn" data-emoji="🎉">🎉</button>
+                                            <button class="emoji-btn" data-emoji="✅">✅</button>
+                                            <button class="emoji-btn" data-emoji="⭐">⭐</button>
+                                            <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                                            <button class="emoji-btn" data-emoji="👌">👌</button>
+                                            <button class="emoji-btn" data-emoji="🤔">🤔</button>
+                                            <button class="emoji-btn" data-emoji="😴">😴</button>
+                                            <!-- Thêm emoji mới -->
+                                            <button class="emoji-btn" data-emoji="😂">😂</button>
+                                            <button class="emoji-btn" data-emoji="🤣">🤣</button>
+                                            <button class="emoji-btn" data-emoji="😅">😅</button>
+                                            <button class="emoji-btn" data-emoji="😆">😆</button>
+                                            <button class="emoji-btn" data-emoji="🥰">🥰</button>
+                                            <button class="emoji-btn" data-emoji="😇">😇</button>
+                                            <button class="emoji-btn" data-emoji="😋">😋</button>
+                                            <button class="emoji-btn" data-emoji="😜">😜</button>
+                                            <button class="emoji-btn" data-emoji="🤪">🤪</button>
+                                            <button class="emoji-btn" data-emoji="😝">😝</button>
+                                            <button class="emoji-btn" data-emoji="🤩">🤩</button>
+                                            <button class="emoji-btn" data-emoji="😡">😡</button>
+                                            <button class="emoji-btn" data-emoji="🥺">🥺</button>
+                                            <button class="emoji-btn" data-emoji="😭">😭</button>
+                                            <button class="emoji-btn" data-emoji="😤">😤</button>
+                                            <button class="emoji-btn" data-emoji="🙏">🙏</button>
+                                            <button class="emoji-btn" data-emoji="👏">👏</button>
+                                            <button class="emoji-btn" data-emoji="💪">💪</button>
+                                            <button class="emoji-btn" data-emoji="🤝">🤝</button>
+                                            <button class="emoji-btn" data-emoji="💯">💯</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Thêm phần hiển thị trạng thái upload -->
@@ -154,6 +217,32 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     position: relative;
     transition: all 0.3s ease;
+}
+
+/* Emoji grid styling */
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 5px;
+}
+
+.emoji-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.emoji-btn:hover {
+    background-color: #f1f1f1;
+    transform: scale(1.2);
 }
 
 .client-message .message-bubble {
@@ -262,6 +351,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewList = document.getElementById('preview-list');
     const cancelUpload = document.getElementById('cancel-upload');
     const selectedCountSpan = document.getElementById('selected-count');
+
+    // Elements for emoji picker
+    const emojiBtn = document.getElementById('emojiBtn');
+    const emojiPickerContainer = document.getElementById('emoji-picker-container');
+    const closeEmojiBtn = document.getElementById('close-emoji');
+    const emojiButtons = document.querySelectorAll('.emoji-btn');
 
     let currentUserId = null;
     let socket = null;
@@ -948,12 +1043,31 @@ document.addEventListener('DOMContentLoaded', function() {
         // Sử dụng senderInfo để lấy tên, fallback về 'Khách hàng' nếu không có hoặc là admin
         const senderName = senderType === 'client' ? (senderInfo?.name || 'Khách hàng') : 'Admin';
 
+        // Thêm xử lý emoji cho text nếu có kèm theo tin nhắn văn bản
+        let textMessage = '';
+        if (senderInfo && senderInfo.text) {
+            const textWithEmojis = senderInfo.text
+                .replace(/:D/g, '😃')
+                .replace(/:\)/g, '🙂')
+                .replace(/:\(/g, '😔')
+                .replace(/<3/g, '❤️')
+                .replace(/:P/g, '😛')
+                .replace(/;\)/g, '😉')
+                .replace(/:\|/g, '😐')
+                .replace(/:o/g, '😮')
+                .replace(/:O/g, '😮')
+                .replace(/8\)/g, '😎')
+                .replace(/:'\(/g, '😢');
+            textMessage = `<div class="message-text mb-2">${textWithEmojis}</div>`;
+        }
+
         // Sử dụng senderType để quyết định layout với kiểu dáng mới
         if (senderType === 'client') {
             messageDiv.innerHTML = `
                 <div class="d-flex">
                     <div class="message-bubble bg-light p-2 rounded">
                         <div class="message-sender text-primary fw-semibold small mb-1">${senderName}</div>
+                        ${textMessage}
                         ${imagesContent}
                         <div class="message-time text-muted small mt-1">${formattedTime}</div>
                     </div>
@@ -964,6 +1078,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="d-flex justify-content-end">
                     <div class="message-bubble bg-primary text-white p-2 rounded">
                         <div class="message-sender text-white-50 small mb-1">${senderName}</div>
+                        ${textMessage}
                         ${imagesContent}
                         <div class="message-time text-white-50 small mt-1">${formattedTime}</div>
                     </div>
@@ -1072,6 +1187,7 @@ document.addEventListener('DOMContentLoaded', function() {
         messageInput.disabled = false;
         sendMessageBtn.disabled = false;
         imageUploadBtn.disabled = false;
+        emojiBtn.disabled = false; // Thêm dòng này để bật nút emoji
         
         // Thêm hiệu ứng focus cho input
         messageInput.classList.add('animate__animated', 'animate__fadeIn');
@@ -1094,6 +1210,7 @@ document.addEventListener('DOMContentLoaded', function() {
         messageInput.disabled = true;
         sendMessageBtn.disabled = true;
         imageUploadBtn.disabled = true;
+        emojiBtn.disabled = true; // Thêm dòng này để tắt nút emoji
         currentUserId = null;
         chattingWith.innerHTML = '<i class="fas fa-user me-1"></i> Chưa chọn người dùng';
     }
@@ -1111,9 +1228,9 @@ document.addEventListener('DOMContentLoaded', function() {
             sendMessageBtn.classList.remove('animate__animated', 'animate__pulse');
         }, 300);
 
-        // Ưu tiên gửi ảnh nếu có
+        // Gửi ảnh và/hoặc văn bản
         if (hasImages) {
-            uploadAndSendAdminImages();
+            uploadAndSendAdminImages(text); // Truyền text vào hàm uploadAndSendAdminImages
         } else if (text) {
             // Gửi tin nhắn văn bản
             const messageData = {
@@ -1166,10 +1283,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Hàm upload và gửi nhiều ảnh từ Admin
-    async function uploadAndSendAdminImages() {
+    async function uploadAndSendAdminImages(textMessage = '') {
         if (selectedImageFiles.length === 0 || !currentUserId || !socket?.connected) {
             return;
         }
+
+        // Lưu tin nhắn văn bản (nếu có)
+        const hasText = textMessage && textMessage.trim() !== '';
 
         // Disable nút gửi và upload
         sendMessageBtn.disabled = true;
@@ -1250,27 +1370,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Gửi sự kiện adminMultipleImagesUpload qua socket
                 const messageData = {
                     userId: currentUserId, // ID người nhận
-                    images: uploadedUrls
+                    images: uploadedUrls,
+                    text: hasText ? textMessage : null // Thêm text vào messageData nếu có
                 };
 
                 socket.emit('adminMultipleImagesUpload', messageData, (response) => {
                     if (response.success) {
                         console.log('✅ Nhóm ảnh đã được gửi thành công qua socket');
                         
+                        // Nếu có cả tin nhắn văn bản
+                        if (hasText) {
+                            // Hiển thị tin nhắn văn bản
+                            addMessageToChat({ text: textMessage, sent_at: new Date() }, 'admin');
+                            console.log('✅ Tin nhắn văn bản kèm theo đã được gửi thành công');
+                        }
+                        
                         // Hiển thị nhóm ảnh đã gửi trong chat của admin
-                        // Truyền đối tượng Date() mới
                         addImageGroupToChat(uploadedUrls, new Date(), 'admin', { name: 'Admin' });
                         
+                        // Xóa nội dung input sau khi gửi thành công
+                        messageInput.value = '';
+                        
                         // Hiển thị thông báo thành công
-                Toastify({
-                            text: `Đã gửi ${uploadedUrls.length} ảnh thành công!`,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
-                    stopOnFocus: true
-                }).showToast();
+                        Toastify({
+                            text: `Đã gửi ${uploadedUrls.length} ảnh${hasText ? ' và tin nhắn văn bản' : ''} thành công!`,
+                            duration: 3000,
+                            close: true,
+                            gravity: "top",
+                            position: "right",
+                            backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+                            stopOnFocus: true
+                        }).showToast();
 
                         if (failedUploads > 0) {
                             // Thông báo về ảnh thất bại
@@ -1498,6 +1628,59 @@ document.addEventListener('DOMContentLoaded', function() {
             return new Date(timestamp).toLocaleString('vi-VN'); // Thử fallback
         }
     }
+
+    // Xử lý sự kiện hiển thị/ẩn emoji picker
+    emojiBtn.addEventListener('click', function() {
+        emojiPickerContainer.style.display = emojiPickerContainer.style.display === 'none' ? 'block' : 'none';
+        
+        // Thêm hiệu ứng fade in nếu hiển thị
+        if (emojiPickerContainer.style.display === 'block') {
+            emojiPickerContainer.classList.add('animate__fadeIn');
+            setTimeout(() => {
+                emojiPickerContainer.classList.remove('animate__fadeIn');
+            }, 500);
+        }
+    });
+
+    // Xử lý sự kiện đóng emoji picker
+    closeEmojiBtn.addEventListener('click', function() {
+        emojiPickerContainer.style.display = 'none';
+    });
+
+    // Xử lý sự kiện chọn emoji
+    emojiButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const emoji = this.getAttribute('data-emoji');
+            
+            // Thêm emoji vào vị trí con trỏ hiện tại
+            const cursorPosition = messageInput.selectionStart;
+            const textBeforeCursor = messageInput.value.substring(0, cursorPosition);
+            const textAfterCursor = messageInput.value.substring(cursorPosition);
+            
+            messageInput.value = textBeforeCursor + emoji + textAfterCursor;
+            
+            // Di chuyển con trỏ sau emoji vừa chèn
+            messageInput.selectionStart = cursorPosition + emoji.length;
+            messageInput.selectionEnd = cursorPosition + emoji.length;
+            
+            // Focus lại vào input
+            messageInput.focus();
+            
+            // Ẩn emoji picker sau khi chọn
+            emojiPickerContainer.style.display = 'none';
+        });
+    });
+
+    // Xử lý đóng emoji picker khi click ra ngoài
+    document.addEventListener('click', function(event) {
+        // Kiểm tra nếu click bên ngoài cả emoji picker và nút emoji
+        if (emojiPickerContainer.style.display === 'block' &&
+            !emojiPickerContainer.contains(event.target) &&
+            event.target !== emojiBtn &&
+            !emojiBtn.contains(event.target)) {
+            emojiPickerContainer.style.display = 'none';
+        }
+    });
 
     // Kết nối đến socket khi trang load xong
     connectToSocket();
