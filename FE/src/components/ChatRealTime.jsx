@@ -291,7 +291,7 @@ const ChatRealTime = () => {
                     ...msg,
                     is_read: typeof msg.is_read === 'boolean' ? msg.is_read : false,
                     isCurrentUser: userData && msg.sender_id === userData.id,
-                    isAdmin: !msg.sender_id || (userData && msg.sender_id !== userData.id) // Thêm logic xác định admin
+                    isAdmin: !msg.sender_id || (userData && msg.sender_id !== userData.id) // logic xác định admin
                 }));
 
                 // Xử lý nhóm ảnh trước khi set messages
@@ -304,7 +304,7 @@ const ChatRealTime = () => {
                 ).length;
 
                 setUnreadCount(unread);
-                console.log("📬 Số tin nhắn chưa đọc:", unread);
+                console.log("Số tin nhắn chưa đọc:", unread);
 
                 // Cuộn xuống cuối sau khi load xong
                 setTimeout(() => {
@@ -343,7 +343,6 @@ const ChatRealTime = () => {
                     setLastError("");
                 } else {
                     console.log("Socket đã khởi tạo nhưng đang kết nối...");
-                    // Không cập nhật trạng thái kết nối ở đây, để khi connect event được kích hoạt
                 }
 
                 // Thiết lập sự kiện kết nối
