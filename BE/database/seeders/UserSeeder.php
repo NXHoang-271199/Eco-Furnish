@@ -25,10 +25,10 @@ class UserSeeder extends Seeder
                 'name' => $faker->name,
                 'age' => $faker->numberBetween(18, 60),
                 'email' => $faker->unique()->safeEmail,
-                'password' => Hash::make('password123'), // mật khẩu mặc định
+                'password' => Hash::make('1'),
                 'address' => $faker->address,
-                'role_id' => $faker->randomElement($roleIds),
-                'avatar' => "https://picsum.photos/200/200?random=" . $faker->unique()->randomNumber(),
+                'role_id' => $faker->numberBetween(2, 3),
+                'avatar' => null,
                 'email_verified_at' => $faker->dateTimeThisYear(),
                 'is_active' => 1,
                 'access_token' => $faker->uuid,

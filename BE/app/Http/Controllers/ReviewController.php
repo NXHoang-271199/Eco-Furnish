@@ -14,6 +14,7 @@ class ReviewController extends Controller
     public function __construct()
     {
         $this->middleware('permission:view-reviews');
+        $this->middleware('permission:update-reviews', ['only' => ['toggleReviewVisibility']]);
     }
     /**
      * Display a listing of the resource.

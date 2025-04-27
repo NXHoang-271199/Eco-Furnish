@@ -15,20 +15,27 @@ class CategoryPostSeeder extends Seeder
     {
         CategoryPost::insert([
             [
-                'title' => 'Category 1',
+                'title' => 'Trang trí nội thất',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'title' => 'Category 2',
+                'title' => 'Cẩm nang nội thất',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'title' => 'Category 3',
+                'title' => 'Ý tưởng không gian sống',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
+            [
+                'title' => 'Xu hướng thiết kế',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            
         ]);
     }
 }

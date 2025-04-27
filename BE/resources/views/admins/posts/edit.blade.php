@@ -15,7 +15,7 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         }
                     }
-                })s
+                })
                 .then(editor => {
                     window.editor = editor;
                 })
@@ -24,61 +24,97 @@
                 });
         });
 
-        // Hàm hiển thị ảnh preview
+        // Hàm preview ảnh thumbnail
         function previewImage(event) {
-            var input = event.target;
-            var preview = document.getElementById('thumbnail-preview');
+            const file = event.target.files[0];
+            const preview = document.getElementById('thumbnail-preview');
+            const previewWrapper = document.getElementById('thumbnail-preview-wrapper');
 
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
+            if (file) {
+                const reader = new FileReader();
                 reader.onload = function(e) {
                     preview.src = e.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(input.files[0]);
+                    previewWrapper.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
             }
         }
 
-        document.getElementById('project-thumbnail-img').addEventListener('change', function(event) {
-            var input = event.target;
-            var preview = document.querySelector('.image-container img'); // Ảnh hiển thị
-
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        });
+        // Hàm xóa ảnh preview và reset về ảnh cũ
+        function removePreview() {
+            const input = document.getElementById('project-thumbnail-img');
+            const preview = document.getElementById('thumbnail-preview');
+            const originalImage = '{{ Storage::url($singerPost->image_thumbnail) }}';
+            
+            input.value = '';
+            preview.src = originalImage;
+        }
     </script>
 @endsection
 @section('CSS')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .quill-editor {
-            height: 450px;
+        /* Style cho preview ảnh */
+        #thumbnail-preview-wrapper {
+            margin-top: 15px;
+            position: relative;
+        }
+
+        #thumbnail-preview {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .remove-preview {
+            position: absolute;
+            top: -10px;
+            right: -10px;
             background: #fff;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .remove-preview:hover {
+            background: #dc3545;
+            color: #fff;
         }
 
         .file-upload-wrapper {
             position: relative;
-        }
-
-        .file-upload-wrapper input[type="file"] {
-            display: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            width: 100%;
+            background-color: #f8f9fa;
+            border: 1px solid #dce0e3;
+            border-radius: 8px;
+            padding: 20px;
         }
 
         .custom-file-upload {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background-color: #f8f9fa;
-            border: 1px solid #dce0e3;
-            border-radius: 6px;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1rem;
+            color: #0d6efd;
             cursor: pointer;
             transition: all 0.3s ease;
+        }
+
+        .custom-file-upload i {
+            font-size: 1.5rem;
         }
 
         .custom-file-upload:hover {
@@ -86,82 +122,14 @@
             border-color: #0d6efd;
         }
 
-        .custom-file-upload i {
-            font-size: 1.2rem;
-            color: #0d6efd;
-        }
-
-        .custom-file-upload span {
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-
-        .file-upload-wrapper {
-            position: relative;
-        }
-
-        .image-container {
-            position: relative;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .image-container img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-        }
-
-        .custom-file-upload-small {
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #f8f9fa;
-            border: 1px solid #dce0e3;
-            border-radius: 50%;
-            padding: 8px;
-            font-size: 1.2rem;
-            color: #0d6efd;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .custom-file-upload-small:hover {
-            background-color: #e9ecef;
-        }
-
-        .custom-file-upload-small i {
-            font-size: 1.5rem;
+        .file-upload-wrapper input[type="file"] {
+            display: none;
         }
     </style>
 @endsection
 
 @section('content')
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
-                <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-                    <h4 class="mb-sm-0">Chỉnh sửa bài viết</h4>
-                    <div class="page-title-right">
-                        <ol class="breadcrumb m-0">
-                            @foreach ($breadcrumbs as $breadcrumb)
-                                <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
-                                    @if ($breadcrumb['url'])
-                                        <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
-                                    @else
-                                        {{ $breadcrumb['name'] }}
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ol>
-                    </div>
-                </div>
-            </div>
-        </div>
         <div class="row">
             <form action="{{ route('posts.update', $singerPost->id) }}" method="POST" enctype="multipart/form-data"
                 class="d-flex needs-validation" novalidate id="postForm">
@@ -301,20 +269,27 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <div class="file-upload-wrapper">
-                                    <div class="col-lg-12 mb-3">
-                                        <!-- Phần hiển thị ảnh -->
-                                        <div class="image-container position-relative">
-                                            <img src="{{ Storage::url($singerPost->image_thumbnail) }}" alt="Ảnh bìa"
-                                                class="img-fluid rounded">
-
-                                            <!-- Nút chọn ảnh nhỏ ở dưới -->
-                                            <label for="project-thumbnail-img" class="custom-file-upload-small">
-                                                <i class="fas fa-cloud-upload-alt"></i>
-                                            </label>
-                                        </div>
-
-                                        <input class="form-control" id="project-thumbnail-img" type="file"
-                                            accept="image/png, image/gif, image/jpeg" name="image_thumbnail">
+                                    <label for="project-thumbnail-img" class="custom-file-upload">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Thay đổi ảnh bìa</span>
+                                    </label>
+                                    <input class="form-control @error('image_thumbnail') is-invalid @enderror"
+                                        id="project-thumbnail-img" type="file" accept="image/png, image/gif, image/jpeg"
+                                        name="image_thumbnail" onchange="previewImage(event)">
+                                    <div class="invalid-feedback">
+                                        @error('image_thumbnail')
+                                            {{ $message }}
+                                        @else
+                                            Chọn ảnh bìa hợp lệ (JPEG, PNG, JPG, GIF, tối đa 2MB).
+                                        @enderror
+                                    </div>
+                                </div>
+                                <!-- Hiển thị ảnh bìa -->
+                                <div id="thumbnail-preview-wrapper" style="display: block;">
+                                    <img id="thumbnail-preview" src="{{ Storage::url($singerPost->image_thumbnail) }}" 
+                                         alt="Ảnh bìa">
+                                    <div class="remove-preview" onclick="removePreview()">
+                                        <i class="ri-close-line"></i>
                                     </div>
                                 </div>
                             </div>

@@ -82,11 +82,12 @@
                                         <a href="{{ route('wallets.show', $wallet->id) }}" class="btn btn-info btn-sm">
                                             <i class="ri-eye-line align-middle"></i> Chi tiết
                                         </a>
-                                        <a href="javascript:void(0);" class="btn btn-primary btn-sm"
-                                            onclick="openBalanceModal({{ $wallet->id }}, '{{ $wallet->user->name }}')">
-                                            <i class="ri-wallet-3-line align-middle"></i> Cộng số dư
-                                        </a>
-
+                                        @if (Auth::user()->hasPermission('edit-wallets'))
+                                            <a href="javascript:void(0);" class="btn btn-primary btn-sm"
+                                                onclick="openBalanceModal({{ $wallet->id }}, '{{ $wallet->user->name }}')">
+                                                <i class="ri-wallet-3-line align-middle"></i> Cộng số dư
+                                            </a>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

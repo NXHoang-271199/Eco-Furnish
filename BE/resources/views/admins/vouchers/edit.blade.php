@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title')
-    Sửa Voucher {{ $voucher->code }}
+    Sửa khuyến mãi {{ $voucher->code }}
 @endsection
 
 @section('content')
@@ -10,22 +10,6 @@
             <div class="col-12">
                 <!-- Bọc toàn bộ nội dung vào một div có nền trắng -->
                 <div class="p-4 bg-white rounded shadow-sm">
-                    <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
-                        <h4 class="mb-sm-0">Sửa Voucher</h4>
-                        <div class="page-title-right">
-                            <ol class="breadcrumb m-0">
-                                @foreach ($breadcrumbs as $breadcrumb)
-                                    <li class="breadcrumb-item {{ $loop->last ? 'active' : '' }}">
-                                        @if ($breadcrumb['url'])
-                                            <a href="{{ $breadcrumb['url'] }}">{{ $breadcrumb['name'] }}</a>
-                                        @else
-                                            {{ $breadcrumb['name'] }}
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ol>
-                        </div>
-                    </div>
                     <form action="{{ route('vouchers.update', $voucher->id) }}" method="POST"
                         enctype="multipart/form-data">
                         @csrf
@@ -33,7 +17,7 @@
 
                         <!-- Mã Voucher -->
                         <div class="mb-4">
-                            <label for="code" class="form-label fw-bold">Mã Voucher</label>
+                            <label for="code" class="form-label fw-bold">Mã Khuyến mãi</label>
                             <input type="text" class="form-control shadow-sm" name="code"
                                 value="{{ old('code', $voucher->code) }}" required>
                             @error('code')
