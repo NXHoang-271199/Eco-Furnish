@@ -131,31 +131,25 @@ const ChatRealTime = () => {
     const [socketServerUrl] = useState(import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3002");
     // Thêm state cho emoji picker
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
-    const imageInputRef = useRef(null);
 
+    const imageInputRef = useRef(null);
     // Ref để theo dõi tin nhắn đã xử lý
     const processedImageIds = useRef(new Set());
-
     // Cải thiện hàm phân tích tin nhắn từ admin
     const analyzeAdminMessages = (message) => {
         // Kiểm tra nếu tin nhắn có chứa "admin" trong ID hoặc từ admin
         return message &&
-            (!message.isCurrentUser && userData && // Thêm kiểm tra userData tồn tại
+            (!message.isCurrentUser && userData && // Kiểm tra nếu userData tồn tại
                 (message.sender_id.toString() !== userData.id?.toString()));
     };
 
-    // Thêm hàm xử lý và nhóm các tin nhắn ảnh liên tiếp
+    // Hàm xử lý và nhóm các tin nhắn ảnh liên tiếp
     const processMessagesWithImageGroups = (messagesArray) => {
         if (!messagesArray || !Array.isArray(messagesArray) || messagesArray.length === 0) {
             return [];
         }
-
-        // Lưu trữ tin nhắn gốc để tham chiếu sau này
-        // originalMessages.current = messagesArray; // Tạm thời comment out nếu không dùng
-
         // Clone mảng tin nhắn để không ảnh hưởng đến mảng gốc
         const messages = [...messagesArray];
         const processedMessages = [];
