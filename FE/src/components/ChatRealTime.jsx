@@ -406,7 +406,7 @@ const ChatRealTime = () => {
                 return socketConnection;
             } else {
                 setLastError("Không thể khởi tạo kết nối socket");
-                console.error("❌ Không thể khởi tạo kết nối socket");
+                console.error("Không thể khởi tạo kết nối socket");
                 return null;
             }
         } catch (error) {
