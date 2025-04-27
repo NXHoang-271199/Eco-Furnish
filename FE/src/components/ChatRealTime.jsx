@@ -311,16 +311,16 @@ const ChatRealTime = () => {
                     scrollToBottom();
                 }, 100);
             } else {
-                console.warn("⚠️ Dữ liệu không đúng định dạng:", response.data);
+                console.warn("Dữ liệu không đúng định dạng:", response.data);
             }
         } catch (error) {
-            console.error("❌ Lỗi khi tải lịch sử tin nhắn:", error.message);
+            console.error("Lỗi khi tải lịch sử tin nhắn:", error.message);
             if (error.response) {
-                console.error("📌 Chi tiết lỗi:", error.response.data);
-                console.error("📌 Status:", error.response.status);
-                console.error("📌 Headers:", error.response.headers);
+                console.error("Chi tiết lỗi:", error.response.data);
+                console.error("Status:", error.response.status);
+                console.error("Headers:", error.response.headers);
             } else if (error.request) {
-                console.error("📌 Không nhận được phản hồi:", error.request);
+                console.error("Không nhận được phản hồi:", error.request);
             }
         } finally {
             setIsLoading(false);
@@ -330,7 +330,7 @@ const ChatRealTime = () => {
     // Hàm kiểm tra và kết nối socket 
     const connectSocket = () => {
         try {
-            console.log("🔌 Đang kiểm tra kết nối socket...");
+            console.log("Đang kiểm tra kết nối socket...");
             const socketConnection = getSocket();
 
             if (socketConnection) {
@@ -338,17 +338,17 @@ const ChatRealTime = () => {
 
                 // Kiểm tra nếu socket đã kết nối
                 if (socketConnection.connected) {
-                    console.log("✅ Socket đã được kết nối sẵn:", socketConnection.id);
+                    console.log("Socket đã được kết nối sẵn:", socketConnection.id);
                     setIsConnected(true);
                     setLastError("");
                 } else {
-                    console.log("⏳ Socket đã khởi tạo nhưng đang kết nối...");
+                    console.log("Socket đã khởi tạo nhưng đang kết nối...");
                     // Không cập nhật trạng thái kết nối ở đây, để khi connect event được kích hoạt
                 }
 
                 // Thiết lập sự kiện kết nối
                 socketConnection.on("connect", () => {
-                    console.log("✅ Socket kết nối thành công:", socketConnection.id);
+                    console.log("Socket kết nối thành công:", socketConnection.id);
                     setIsConnected(true);
                     setLastError("");
 
