@@ -178,9 +178,6 @@ const ChatRealTime = () => {
 
             // Kiểm tra xem tin nhắn hiện tại có phải là ảnh không
             if (currentMsg.image && !currentMsg.text) {
-                // Tạo ID duy nhất cho tin nhắn này nếu chưa có
-                // const msgId = currentMsg.id || `msg-${currentMsg.sender_id}-${currentMsg.sent_at}-${Math.random()}`; // Đã có ở trên
-
                 // Bắt đầu một nhóm ảnh mới
                 const imageInfo = [{ url: currentMsg.image, msg: currentMsg }]; // Lưu cả msg gốc
                 const senderID = currentMsg.sender_id;
