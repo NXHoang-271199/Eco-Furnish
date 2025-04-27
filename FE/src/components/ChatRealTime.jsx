@@ -353,7 +353,7 @@ const ChatRealTime = () => {
 
                     // Thông báo server rằng client đã kết nối
                     socketConnection.emit("clientConnect");
-                    console.log("📣 Đã gửi sự kiện clientConnect");
+                    console.log("Đã gửi sự kiện clientConnect");
 
                     // Tải lịch sử tin nhắn khi kết nối thành công
                     if (userData && userData.id) {
@@ -370,7 +370,7 @@ const ChatRealTime = () => {
 
                 // Thiết lập sự kiện lỗi kết nối
                 socketConnection.on("connect_error", (error) => {
-                    console.error("❌ Lỗi kết nối socket:", error.message);
+                    console.error("Lỗi kết nối socket:", error.message);
                     setIsConnected(false);
 
                     // Xử lý lỗi xác thực đặc biệt
