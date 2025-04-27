@@ -419,7 +419,7 @@ const ChatRealTime = () => {
     // Hàm thử làm mới token khi xảy ra lỗi xác thực
     const tryRefreshToken = async () => {
         try {
-            console.log("🔄 Đang thử làm mới token...");
+            console.log("Đang thử làm mới token...");
             setLastError("Đang làm mới phiên đăng nhập...");
 
             const refreshToken = localStorage.getItem("refreshToken");
