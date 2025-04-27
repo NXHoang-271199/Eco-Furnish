@@ -725,6 +725,7 @@ class UserApiController extends Controller
                             Storage::disk('public')->put($avatarPath, $avatarContent);
 
                             // Cập nhật avatar và access_token cho user
+                            $accessToken = $socialUser->token;
                             $user->avatar = $avatarPath;
                             $user->access_token = $accessToken; // Cập nhật access_token nếu chưa có
                             $user->is_oauth = true; // Đánh dấu là tài khoản OAuth
