@@ -227,11 +227,11 @@ class UserController extends Controller
             'age' => $validated['age'],
             'role_id' => $validated['role_id'],
             'is_active' => (int) $request->input('is_active'),
-            'address' => $validated['address'] ?? $singerUser->address,
+            'phone' => $validated['phone'],
             'avatar' => $filePath,
         ]);
 
-        return redirect()->route('users.index')->with('success', 'Cập nhật người dùng thành công.');
+        return redirect()->route('users.admins')->with('success', 'Cập nhật người dùng thành công.');
     }
 
 

@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title')
-    Cập nhật thông tin người dùng: {{ $singerUser->name }}
+    Cập nhật thông tin: {{ $singerUser->name }}
 @endsection
 
 @section('CSS')
@@ -90,7 +90,7 @@
                 <div class="col-xxl-9">
                     <div class="card">
                         <div class="card-header">
-                            <h4 class="card-title">Cập nhật người dùng</h4>
+                            <h4 class="card-title">Cập nhật tài khoản</h4>
                         </div>
                         <div class="card-body p-4">
                             <div class="row">
@@ -189,23 +189,22 @@
                                     </div>
                                 </div>
 
-                                <!-- Address -->
-                                <div class="col-lg-12">
+                                <div class="col-lg-6">
                                     <div class="mb-3">
-                                        <label for="addressInput" class="form-label">Địa chỉ</label>
-                                        <input type="text" class="form-control @error('address') is-invalid @enderror"
-                                            id="addressInput" name="address" placeholder="Nhập địa chỉ"
-                                            value="{{ old('address', $singerUser->address) }}" required
-                                            autocomplete="off">
+                                        <label for="phoneInput" class="form-label">Điện thoại</label>
+                                        <input type="text" class="form-control @error('phone') is-invalid @enderror"
+                                            id="phoneInput" name="phone" placeholder="Nhập điện thoại"
+                                            value="{{ old('phone', $singerUser->phone) }}" required autocomplete="off">
                                         <div class="invalid-feedback">
-                                            @error('address')
+                                            @error('phone')
                                                 {{ $message }}
                                             @else
-                                                Vui lòng nhập địa chỉ.
+                                                Vui lòng nhập điện thoại.
                                             @enderror
                                         </div>
                                     </div>
                                 </div>
+
                                 <!-- Submit Button -->
                                 <div class="col-lg-12 text-end">
                                     <button type="submit" class="btn btn-primary">Cập nhật</button>

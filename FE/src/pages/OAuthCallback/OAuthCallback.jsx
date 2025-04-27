@@ -11,8 +11,15 @@ function OAuthCallback() {
     const refreshToken = params.get("refresh_token");
     const userJson = params.get("user");
 
+    console.log("OAuth Callback - Raw user JSON:", userJson);
+
     if (token && refreshToken && userJson) {
       try {
+        // Parse userJson để debug
+        const userData = JSON.parse(userJson);
+        console.log("OAuth Callback - Parsed user data:", userData);
+        console.log("OAuth Callback - Avatar URL:", userData.avatar);
+
         // Lưu vào localStorage
         localStorage.setItem("authToken", token);
         localStorage.setItem("refreshToken", refreshToken);
