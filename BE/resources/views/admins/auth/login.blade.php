@@ -12,18 +12,18 @@
         background-size: cover;
         position: relative;
     }
-    
+
     .auth-one-bg .bg-overlay {
         background: linear-gradient(to right, rgba(0, 158, 139, 0.6), rgba(0, 80, 140, 0.6));
         opacity: 0.7;
     }
-    
+
     .login-background-container {
         position: relative;
         overflow: hidden;
         height: 100%;
     }
-    
+
     .login-background {
         position: absolute;
         top: 0;
@@ -35,104 +35,104 @@
         transition: transform 8s ease-in-out;
         transform-origin: center;
     }
-    
+
     .login-content {
         position: relative;
         z-index: 1;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
-    
+
     .card {
         border-radius: 15px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
         overflow: hidden;
     }
-    
+
     .card:hover {
         transform: translateY(-5px);
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
     }
-    
+
     .carousel-item p {
         opacity: 0;
         transform: translateY(20px);
         transition: all 0.5s ease;
     }
-    
+
     .carousel-item.active p {
         opacity: 1;
         transform: translateY(0);
     }
-    
+
     .btn-success {
         background: linear-gradient(to right, #009e8b, #1a8cff);
         border: none;
         transition: all 0.3s ease;
     }
-    
+
     .btn-success:hover {
         background: linear-gradient(to right, #008c7a, #0072e6);
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0, 158, 139, 0.3);
     }
-    
+
     .form-control {
         border-radius: 8px;
         padding: 10px 15px;
         border: 1px solid #e2e8f0;
         transition: all 0.3s ease;
     }
-    
+
     .form-control:focus {
         border-color: #009e8b;
         box-shadow: 0 0 0 3px rgba(0, 158, 139, 0.1);
     }
-    
+
     .text-primary {
         color: #009e8b !important;
     }
-    
+
     .form-label {
         font-weight: 500;
     }
-    
+
     .auth-logo {
         height: 50px;
         transition: all 0.3s ease;
     }
-    
+
     .auth-logo:hover {
         transform: scale(1.05);
     }
-    
+
     .auth-one-bg .quotes-icon {
         font-size: 40px;
         animation: float 3s ease-in-out infinite;
     }
-    
+
     @keyframes float {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-10px); }
     }
-    
+
     @keyframes zoom {
         0% { transform: scale(1); }
         50% { transform: scale(1.05); }
         100% { transform: scale(1); }
     }
-    
+
     .alert {
         border-radius: 10px;
         border: none;
     }
-    
+
     .password-addon {
         background: transparent;
         border: none;
         color: #6c757d;
     }
-    
+
     .carousel-indicators button {
         width: 10px;
         height: 10px;
@@ -141,14 +141,14 @@
         opacity: 0.5;
         transition: all 0.3s ease;
     }
-    
+
     .carousel-indicators button.active {
         width: 12px;
         height: 12px;
         opacity: 1;
         background-color: #fff;
     }
-    
+
     .carousel-text-shadow {
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
@@ -191,7 +191,7 @@
                                                 </div>
                                                 <div class="carousel-item">
                                                     <p class="fs-15 fst-italic">" Eco Furnish - Nơi mang đến những sản phẩm nội thất thân thiện với môi trường và thiết kế hiện đại cho không gian sống của bạn "</p>
-                                                </div>  
+                                                </div>
                                                 <div class="carousel-item">
                                                     <p class="fs-15 fst-italic">" Chúc bạn có một ngày làm việc hiệu quả và thành công "</p>
                                                 </div>
@@ -296,7 +296,7 @@
             easing: 'ease-in-out',
             once: true
         });
-        
+
         // Password show & hide
         $("#password-addon").on('click', function() {
             var $input = $(".password-input");
@@ -308,46 +308,46 @@
                 $(this).find('i').removeClass('ri-eye-off-fill').addClass('ri-eye-fill');
             }
         });
-        
+
         // Hiệu ứng khi submit form
         $("#loginForm").on('submit', function() {
             $("#loadingSpinner").removeClass('d-none');
             $("#loginButton").attr('disabled', true);
-            
+
             // Form sẽ tự submit sau khi hiển thị hiệu ứng
             return true;
         });
-        
+
         // Hiệu ứng focus input
         $(".form-control").on('focus', function() {
             $(this).parent().addClass('focused');
         }).on('blur', function() {
             $(this).parent().removeClass('focused');
         });
-        
+
         // Hiệu ứng ripple cho nút
         $(".btn").on('click', function(e) {
             var x = e.pageX - $(this).offset().left;
             var y = e.pageY - $(this).offset().top;
-            
+
             var $ripple = $("<span class='ripple'></span>");
             $ripple.css({
                 top: y + 'px',
                 left: x + 'px'
             });
-            
+
             $(this).append($ripple);
-            
+
             setTimeout(function() {
                 $ripple.remove();
             }, 700);
         });
-        
+
         // Hiệu ứng zoom cho hình nền
         function startZoomEffect() {
             $('.auth-one-bg').css('animation', 'zoom 20s infinite alternate');
         }
-        
+
         // Bắt đầu hiệu ứng sau khi trang đã tải xong
         setTimeout(startZoomEffect, 1000);
     });
@@ -359,7 +359,7 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .ripple {
         position: absolute;
         border-radius: 50%;
@@ -372,31 +372,31 @@
         margin-top: -50px;
         margin-left: -50px;
     }
-    
+
     @keyframes ripple {
         to {
             transform: scale(3);
             opacity: 0;
         }
     }
-    
+
     /* Hiệu ứng focus cho input */
     .input-group.focused {
         box-shadow: 0 0 0 3px rgba(0, 158, 139, 0.1);
     }
-    
+
     /* Hiệu ứng loading */
     .spinner-border {
         width: 1rem;
         height: 1rem;
     }
-    
+
     /* Hiệu ứng zoom cho hình nền */
     .auth-one-bg {
         animation: zoom 20s infinite alternate;
         animation-timing-function: ease-in-out;
     }
-    
+
     @keyframes zoom {
         0% {
             background-size: 100% auto;

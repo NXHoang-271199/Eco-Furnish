@@ -657,26 +657,97 @@ class UserApiController extends Controller
             if (!$user) {
                 $clientRole = Role::where('slug', 'client')->first();
 
+                // Xử lý avatar từ Google - Tải về và lưu vào storage
+                $avatarPath = null;
+                if ($socialUser->getAvatar()) {
+                    try {
+                        $avatarUrl = $socialUser->getAvatar();
+                        $avatarContent = file_get_contents($avatarUrl);
+                        if ($avatarContent) {
+                            $avatarName = 'avatar_google_' . time() . '.jpg';
+                            $avatarPath = 'uploads/avatars/' . $avatarName;
+                            Storage::disk('public')->put($avatarPath, $avatarContent);
+                            
+                            // Log để debug
+                            Log::info('Google avatar saved successfully', [
+                                'path' => $avatarPath,
+                                'url' => $avatarUrl
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Error saving Google avatar: ' . $e->getMessage());
+                    }
+                }
+
                 $user = User::create([
                     'name' => $socialUser->getName(),
                     'email' => $socialUser->getEmail(),
                     'password' => Hash::make(Str::random(24)), // Tạo password ngẫu nhiên
                     'role_id' => $clientRole->id,
-                    'avatar' => $socialUser->getAvatar(),
+                    'avatar' => $avatarPath,
                     'is_active' => 1, // Đã active sẵn
                     'email_verified_at' => now() // Đã xác thực email
                 ]);
+            } else {
+                // Cập nhật avatar nếu user đã tồn tại
+                if ($socialUser->getAvatar()) {
+                    try {
+                        $avatarUrl = $socialUser->getAvatar();
+                        $avatarContent = file_get_contents($avatarUrl);
+                        if ($avatarContent) {
+                            // Xóa avatar cũ nếu có
+                            if ($user->avatar) {
+                                Storage::disk('public')->delete($user->avatar);
+                            }
+                            
+                            $avatarName = 'avatar_google_' . time() . '.jpg';
+                            $avatarPath = 'uploads/avatars/' . $avatarName;
+                            Storage::disk('public')->put($avatarPath, $avatarContent);
+                            
+                            // Cập nhật avatar cho user
+                            $user->avatar = $avatarPath;
+                            $user->save();
+                            
+                            // Log để debug
+                            Log::info('Google avatar updated successfully', [
+                                'user_id' => $user->id,
+                                'path' => $avatarPath,
+                                'url' => $avatarUrl
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Error updating Google avatar: ' . $e->getMessage());
+                    }
+                }
             }
 
             // Tạo token
             $token = $user->createToken('auth_token')->plainTextToken;
             $refreshToken = Str::random(60);
+            
+            // Lấy access token từ social user
+            $accessToken = $socialUser->token;
 
             // Lưu refresh token
             $user->update([
                 'access_token' => $accessToken,
                 'refresh_token' => $refreshToken
             ]);
+
+            // Đảm bảo URL avatar đầy đủ
+            $avatarUrl = null;
+            if ($user->avatar) {
+                // Kiểm tra nếu avatar là URL đầy đủ (bắt đầu bằng http)
+                if (strpos($user->avatar, 'http') === 0) {
+                    $avatarUrl = $user->avatar;
+                    Log::info('Using direct avatar URL', ['url' => $avatarUrl]);
+                } else {
+                    $avatarUrl = asset('storage/' . $user->avatar);
+                    Log::info('Using storage avatar URL', ['url' => $avatarUrl]);
+                }
+                // Log URL avatar cuối cùng
+                Log::info('Final avatar URL', ['url' => $avatarUrl]);
+            }
 
             // Chuyển hướng về FE với token
             $redirectUrl = 'http://localhost:5173/oauth-callback?' . http_build_query([
@@ -686,7 +757,7 @@ class UserApiController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar' => $user->avatar
+                    'avatar' => $avatarUrl // Sử dụng avatarUrl đã xử lý ở trên
                 ])
             ]);
 
@@ -720,9 +791,37 @@ class UserApiController extends Controller
 
             // Xử lý avatar từ Facebook - Thêm kích thước ảnh lớn
             $avatarPath = null;
+            $originalAvatarUrl = $socialUser->getAvatar(); // Lưu URL gốc từ Facebook
+            
+            // Đảm bảo URL Facebook có tham số kích thước
+            if (!strpos($originalAvatarUrl, '?')) {
+                $originalAvatarUrl .= '?width=500&height=500';
+            } else if (!strpos($originalAvatarUrl, 'width=')) {
+                $originalAvatarUrl .= '&width=500&height=500';
+            }
+            
+            // Log URL đã được cải thiện
+            Log::info('Enhanced Facebook avatar URL', [
+                'enhanced_url' => $originalAvatarUrl
+            ]);
+            
             if ($socialUser->getAvatar()) {
                 try {
-                    $avatarUrl = $socialUser->getAvatar() . '&width=200&height=200';
+                    // Sử dụng URL avatar Facebook có kích thước lớn hơn
+                    $avatarUrl = $socialUser->getAvatar();
+                    
+                    // Đảm bảo URL có dấu ? trước khi thêm tham số
+                    if (strpos($avatarUrl, '?') === false) {
+                        $avatarUrl .= '?width=500&height=500&access_token=' . $accessToken;
+                    } else {
+                        $avatarUrl .= '&width=500&height=500&access_token=' . $accessToken;
+                    }
+                    
+                    // Log URL avatar để debug
+                    Log::info('Facebook avatar URL', [
+                        'url' => $avatarUrl
+                    ]);
+                    
                     $avatarContent = file_get_contents($avatarUrl);
                     if ($avatarContent) {
                         $avatarName = 'avatar_fb_' . time() . '.jpg';
@@ -730,13 +829,36 @@ class UserApiController extends Controller
                         Storage::disk('public')->put($avatarPath, $avatarContent);
                         
                         // Log để debug
-                        Log::info('Avatar saved successfully', [
+                        Log::info('Facebook avatar saved successfully', [
                             'path' => $avatarPath,
                             'url' => $avatarUrl
                         ]);
+                    } else {
+                        // Nếu không lấy được nội dung từ URL, thử lại với URL không có tham số
+                        $simpleUrl = $socialUser->getAvatar();
+                        Log::info('Trying simple Facebook avatar URL', [
+                            'simple_url' => $simpleUrl
+                        ]);
+                        
+                        $simpleContent = file_get_contents($simpleUrl);
+                        if ($simpleContent) {
+                            $avatarName = 'avatar_fb_simple_' . time() . '.jpg';
+                            $avatarPath = 'uploads/avatars/' . $avatarName;
+                            Storage::disk('public')->put($avatarPath, $simpleContent);
+                            
+                            Log::info('Facebook simple avatar saved successfully', [
+                                'path' => $avatarPath,
+                                'url' => $simpleUrl
+                            ]);
+                        }
                     }
                 } catch (\Exception $e) {
-                    Log::error('Error saving Facebook avatar: ' . $e->getMessage());
+                    Log::error('Error saving Facebook avatar: ' . $e->getMessage() . ' - ' . $e->getTraceAsString());
+                    // Sử dụng URL đã cải thiện làm dự phòng
+                    $avatarPath = $originalAvatarUrl;
+                    Log::info('Using enhanced Facebook avatar URL as fallback', [
+                        'enhanced_url' => $originalAvatarUrl
+                    ]);
                 }
             }
 
@@ -793,7 +915,14 @@ class UserApiController extends Controller
             // Đảm bảo URL avatar đầy đủ
             $avatarUrl = null;
             if ($user->avatar) {
-                $avatarUrl = asset('storage/' . $user->avatar);
+                // Kiểm tra nếu avatar là URL đầy đủ (bắt đầu bằng http)
+                if (strpos($user->avatar, 'http') === 0) {
+                    $avatarUrl = $user->avatar;
+                    Log::info('Using direct avatar URL', ['url' => $avatarUrl]);
+                } else {
+                    $avatarUrl = asset('storage/' . $user->avatar);
+                    Log::info('Using storage avatar URL', ['url' => $avatarUrl]);
+                }
                 // Log URL avatar cuối cùng
                 Log::info('Final avatar URL', ['url' => $avatarUrl]);
             }
@@ -806,7 +935,7 @@ class UserApiController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar' => $avatarUrl
+                    'avatar' => $avatarUrl // Sử dụng avatarUrl đã xử lý ở trên
                 ])
             ]);
 

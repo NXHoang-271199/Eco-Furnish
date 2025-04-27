@@ -17,6 +17,7 @@ const BankInfo = () => {
     account_holder_name: "",
     is_default: false,
     acq_id: "",
+    bank_logo_url: "",
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -88,6 +89,7 @@ const BankInfo = () => {
       bank_code: bank.code,
       bank_name: bank.name,
       acq_id: bank.bin,
+      bank_logo_url: bank.logo,
     }));
     setIsDropdownOpen(false);
     lookupAccountHolder();
@@ -96,7 +98,18 @@ const BankInfo = () => {
   // Handle form input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "bank_code") {
+      const selectedBank = banks.find((bank) => bank.code === value);
+      setFormData((prev) => ({
+        ...prev,
+        bank_code: value,
+        bank_name: selectedBank ? selectedBank.name : "",
+        acq_id: selectedBank ? selectedBank.id : "",
+        bank_logo_url: selectedBank ? selectedBank.logo : "",
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   // Lookup account holder name
@@ -164,6 +177,7 @@ const BankInfo = () => {
       account_holder_name: account.account_holder_name,
       is_default: account.is_default,
       acq_id: account.acq_id,
+      bank_logo_url: account.bank_logo_url || "",
     });
   };
 
@@ -172,6 +186,17 @@ const BankInfo = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("authToken");
+
+      // Nếu đang chỉnh sửa và chưa có logo, thử lấy từ danh sách banks
+      if (!formData.bank_logo_url && formData.bank_code) {
+        const selectedBank = banks.find(
+          (bank) => bank.code === formData.bank_code
+        );
+        if (selectedBank && selectedBank.logo) {
+          formData.bank_logo_url = selectedBank.logo;
+        }
+      }
+
       const response = await axiosInstance.put(
         `/bank-accounts/${editingAccount.id}`,
         formData,
@@ -193,6 +218,7 @@ const BankInfo = () => {
         account_holder_name: "",
         is_default: false,
         acq_id: "",
+        bank_logo_url: "",
       });
       toast.success("Cập nhật tài khoản ngân hàng thành công!");
     } catch (err) {
@@ -232,17 +258,25 @@ const BankInfo = () => {
         !formData.bank_code ||
         !formData.bank_name ||
         !formData.bank_account_number ||
-        !formData.account_holder_name ||
-        !formData.acq_id
+        !formData.account_holder_name
       ) {
         toast.error("Vui lòng điền đầy đủ thông tin");
         return;
       }
 
+      // Nếu chưa có logo, thử lấy từ danh sách banks
+      if (!formData.bank_logo_url && formData.bank_code) {
+        const selectedBank = banks.find(
+          (bank) => bank.code === formData.bank_code
+        );
+        if (selectedBank && selectedBank.logo) {
+          formData.bank_logo_url = selectedBank.logo;
+        }
+      }
+
       const token = localStorage.getItem("authToken");
       const response = await axiosInstance.post("/bank-accounts", formData, {
         headers: { Authorization: `Bearer ${token}` },
-        timeout: 5000,
       });
 
       setBankAccounts((prev) => [...prev, response.data.data]);
@@ -253,6 +287,7 @@ const BankInfo = () => {
         account_holder_name: "",
         is_default: false,
         acq_id: "",
+        bank_logo_url: "",
       });
       toast.success("Thêm tài khoản ngân hàng thành công!");
     } catch (err) {
@@ -542,6 +577,7 @@ const BankInfo = () => {
                       account_holder_name: "",
                       is_default: false,
                       acq_id: "",
+                      bank_logo_url: "",
                     });
                   }}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"

@@ -262,7 +262,7 @@ class PaymentMethodController extends Controller
         $amount = $request->amount;
         $orderId = $request->wallet_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5173/account/wallet/deposit-success";
-        $ipnUrl = $request->notify_url ?? "https://695c-116-104-67-184.ngrok-free.app/api/momo/ipn";
+        $ipnUrl = $request->notify_url ?? "https://fbdb-42-1-77-118.ngrok-free.app/api/momo/ipn";
 
         $extraData = '';
 
