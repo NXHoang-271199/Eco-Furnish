@@ -156,5 +156,8 @@ Route kiểm tra token: Kiểm tra tính hợp lệ của token đang sử dụn
 
  Test xác thực: API để kiểm tra việc xác thực người dùng qua token.
     - `/auth/check`: API kiểm tra thông tin người dùng đã đăng nhập.
+API lấy thông tin người dùng theo ID: Cung cấp API để lấy thông tin người dùng qua ID.
+    - `/users/{id}`: Lấy thông tin người dùng theo ID.
+
 
 
