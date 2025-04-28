@@ -140,5 +140,10 @@ Route bài viết (posts): Định nghĩa các route để hiển thị bài vi�
 Voucher Routes: Các route để lấy voucher và kiểm tra tính hợp lệ của voucher.
     - `/vouchers`: Lấy tất cả voucher.
     - `/check-voucher`: Kiểm tra tính hợp lệ của voucher.
+Banner Routes: Cung cấp các route để lấy danh sách banner cho website.
+    - `/banners`: Lấy tất cả các banner.
+Route gửi tin nhắn: Cung cấp API để gửi tin nhắn qua sự kiện.
+    - `/send-message`: Gửi tin nhắn thông qua sự kiện `MessageSent`.
+
 
 
