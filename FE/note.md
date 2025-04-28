@@ -169,5 +169,8 @@ Route giỏ hàng (cart): Cung cấp API để quản lý giỏ hàng của ngư
 Route phương thức thanh toán (payment methods): API để lấy danh sách phương thức thanh toán.
     - `/payment-methods`: Lấy tất cả phương thức thanh toán.
     - `/payment-methods/deposit`: Lấy các phương thức thanh toán cho việc nạp tiền vào ví.
-
+Route đơn hàng (orders): Các route quản lý đơn hàng.
+    - `/orders`: Lấy danh sách đơn hàng.
+    - `/orders/{id}`: Lấy chi tiết đơn hàng.
+    - `/orders/create`: Tạo đơn hàng mới. 
 
