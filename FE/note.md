@@ -166,6 +166,8 @@ Route giỏ hàng (cart): Cung cấp API để quản lý giỏ hàng của ngư
     - `/cart/add`: Thêm sản phẩm vào giỏ hàng.
     - `/cart/update`: Cập nhật số lượng sản phẩm trong giỏ hàng.
     - `/cart/remove`: Xóa sản phẩm khỏi giỏ hàng.
-
+Route phương thức thanh toán (payment methods): API để lấy danh sách phương thức thanh toán.
+    - `/payment-methods`: Lấy tất cả phương thức thanh toán.
+    - `/payment-methods/deposit`: Lấy các phương thức thanh toán cho việc nạp tiền vào ví.
 
 
