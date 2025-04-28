@@ -161,6 +161,11 @@ API lấy thông tin người dùng theo ID: Cung cấp API để lấy thông t
 User Notification Routes: Các route để quản lý thông báo người dùng.
     - `/user/notifications`: Lấy tất cả thông báo của người dùng.
     - `/user/notifications/{id}/read`: Đánh dấu thông báo là đã đọc.
+Route giỏ hàng (cart): Cung cấp API để quản lý giỏ hàng của người dùng.
+    - `/cart`: Lấy giỏ hàng của người dùng.
+    - `/cart/add`: Thêm sản phẩm vào giỏ hàng.
+    - `/cart/update`: Cập nhật số lượng sản phẩm trong giỏ hàng.
+    - `/cart/remove`: Xóa sản phẩm khỏi giỏ hàng.
 
 
 
