@@ -144,6 +144,17 @@ Banner Routes: Cung cấp các route để lấy danh sách banner cho website.
     - `/banners`: Lấy tất cả các banner.
 Route gửi tin nhắn: Cung cấp API để gửi tin nhắn qua sự kiện.
     - `/send-message`: Gửi tin nhắn thông qua sự kiện `MessageSent`.
+Route tin nhắn (messages): Các route để quản lý tin nhắn của người dùng.
+    - `/messages/user/{userId}`: Lấy tin nhắn theo ID người dùng.
+    - `/messages/unread`: Lấy tin nhắn chưa đọc.
 
+Quản lý token xác thực: Cung cấp API xác thực token người dùng cho Socket server.
+    - `/auth/verify-token`: Xác thực token người dùng.
+
+Route kiểm tra token: Kiểm tra tính hợp lệ của token đang sử dụng.
+    - `/auth/check-token`: Kiểm tra token người dùng.
+
+ Test xác thực: API để kiểm tra việc xác thực người dùng qua token.
+    - `/auth/check`: API kiểm tra thông tin người dùng đã đăng nhập.
 
 
