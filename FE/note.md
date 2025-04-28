@@ -179,4 +179,16 @@ Route đánh giá sản phẩm (reviews): Các route để quản lý đánh gi�
 Wallet Routes: Các route quản lý ví người dùng.
     - `/wallet/balance`: Lấy số dư ví của người dùng.
     - `/wallet/transactions`: Lấy lịch sử giao dịch của ví.
+Tài khoản ngân hàng: API để quản lý tài khoản ngân hàng của người dùng.
+    - `/bank-accounts`: Lấy danh sách tài khoản ngân hàng.
+    - `/bank-accounts/{accountId}`: Cập nhật thông tin tài khoản ngân hàng.
+
+MoMo IPN: Route xử lý thông báo IPN từ MoMo cho thanh toán.
+    - `/momo/ipn`: Xử lý IPN từ MoMo khi thanh toán thành công.
+
+VNPAY IPN: Route xử lý thông báo IPN từ VNPAY cho thanh toán.
+    - `/vnpay/ipn`: Xử lý IPN từ VNPAY khi thanh toán thành công.
+
+Route hủy giao dịch ví: Cung cấp API để hủy một giao dịch ví.
+    - `/wallet/transactions/{id}/cancel`: Hủy giao dịch ví theo ID.
 
