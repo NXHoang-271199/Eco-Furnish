@@ -173,4 +173,10 @@ Route đơn hàng (orders): Các route quản lý đơn hàng.
     - `/orders`: Lấy danh sách đơn hàng.
     - `/orders/{id}`: Lấy chi tiết đơn hàng.
     - `/orders/create`: Tạo đơn hàng mới. 
+Route đánh giá sản phẩm (reviews): Các route để quản lý đánh giá sản phẩm.
+    - `/reviews`: Thêm đánh giá sản phẩm mới.
+    - `/products/{productId}/reviews`: Lấy danh sách đánh giá của sản phẩm.
+Wallet Routes: Các route quản lý ví người dùng.
+    - `/wallet/balance`: Lấy số dư ví của người dùng.
+    - `/wallet/transactions`: Lấy lịch sử giao dịch của ví.
 
