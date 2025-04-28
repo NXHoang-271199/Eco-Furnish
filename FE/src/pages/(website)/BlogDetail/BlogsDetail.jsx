@@ -92,9 +92,9 @@ const BlogsDetail = () => {
     <div className="font-roboto">
       <div className="bg-blue-100 text-center py-2 px-4">
         <p className="text-blue-600 text-sm md:text-base">
-          Chúc mừng giáng sinh! – Chúc bạn một mùa sinh an lành{" "}
+          Chào mừng ngày Giải phóng miền nam thống nhất đất nước–30/04/1975 30/04/2025{" "}
           <a className="text-blue-800 underline ml-1" href="#">
-            Mua Đồ Ngay
+            Xem Ngay
           </a>
         </p>
       </div>

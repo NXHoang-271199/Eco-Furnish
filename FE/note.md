@@ -191,4 +191,7 @@ VNPAY IPN: Route xử lý thông báo IPN từ VNPAY cho thanh toán.
 
 Route hủy giao dịch ví: Cung cấp API để hủy một giao dịch ví.
     - `/wallet/transactions/{id}/cancel`: Hủy giao dịch ví theo ID.
-
+Rút tiền từ ví: API để tạo yêu cầu rút tiền từ ví.
+    - `/wallet/withdraw-requests`: Tạo yêu cầu rút tiền.
+Route tạo mã QR: API tạo mã QR cho việc thanh toán hoặc nạp tiền.
+    - `/wallet/generate-qr-preview`: Tạo preview mã QR cho ví.

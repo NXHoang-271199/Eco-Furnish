@@ -127,7 +127,7 @@ const Blogs = () => {
     <div className="bg-gray-100 mt-10">
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="mt-10 mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-4">Blog Nội Thất</h1>
+          <h1 className="text-3xl font-bold mb-4">Bài viết Nội Thất</h1>
           <p className="text-gray-600 max-w-3xl mx-auto">
             {activeCategory === "all" &&
               "Khám phá những ý tưởng và xu hướng mới nhất về thiết kế nội thất cho ngôi nhà của bạn."}
