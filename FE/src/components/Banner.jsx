@@ -21,7 +21,7 @@ const Banner = () => {
           const activeBanners = response.data.data.filter(
             (banner) => banner.status
           );
-          console.log("Active banners:", activeBanners);
+          console.log("Danh sách banners:", activeBanners);
           setBanners(activeBanners);
         }
       } catch (error) {
