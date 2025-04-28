@@ -3,10 +3,6 @@ import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 
 const API_URL = "http://localhost:8000/api";
-
-// add to cart_items
-
-
 const BlogsDetail = () => {
   const { slug } = useParams();
   const [post, setPost] = useState(null);
@@ -18,14 +14,11 @@ const BlogsDetail = () => {
     const fetchPostDetail = async () => {
       try {
         setLoading(true);
-        // Lấy thông tin chi tiết bài viết từ API
         const response = await axios.get(`${API_URL}/posts/${slug}`);
         console.log("Chi tiết bài viết:", response.data);
 
         if (response.data && response.data.status === "success") {
           setPost(response.data.data);
-
-          // Sau khi có thông tin bài viết, lấy các bài viết liên quan
           if (response.data.data && response.data.data.category_id) {
             const relatedResponse = await axios.get(
               `${API_URL}/posts/category/${response.data.data.category_id}`
@@ -36,11 +29,9 @@ const BlogsDetail = () => {
               relatedResponse.data &&
               relatedResponse.data.status === "success"
             ) {
-              // Lọc bỏ bài viết hiện tại khỏi danh sách liên quan
               const filteredRelatedPosts = relatedResponse.data.data.filter(
                 (relatedPost) => relatedPost.id !== response.data.data.id
               );
-              // Giới hạn số lượng bài viết liên quan hiển thị
               setRelatedPosts(filteredRelatedPosts.slice(0, 5));
             }
           }
@@ -62,8 +53,6 @@ const BlogsDetail = () => {
       setLoading(false);
     }
   }, [slug]);
-
-  // Hàm format ngày tháng
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const options = {
@@ -101,7 +90,6 @@ const BlogsDetail = () => {
 
   return (
     <div className="font-roboto">
-      {/* Announcement */}
       <div className="bg-blue-100 text-center py-2 px-4">
         <p className="text-blue-600 text-sm md:text-base">
           Chúc mừng giáng sinh! – Chúc bạn một mùa sinh an lành{" "}
@@ -110,8 +98,6 @@ const BlogsDetail = () => {
           </a>
         </p>
       </div>
-
-      {/* Breadcrumb */}
       <div className="container mt-4 md:mt-10 mx-auto px-4 py-2 md:py-4 overflow-x-auto">
         <nav className="text-gray-600 text-xs md:text-sm whitespace-nowrap">
           <Link className="hover:underline" to="/">
@@ -125,8 +111,6 @@ const BlogsDetail = () => {
           <span className="text-gray-800">{post.title}</span>
         </nav>
       </div>
-
-      {/* Main Content */}
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <h1 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">
           {post.title}
@@ -179,8 +163,6 @@ const BlogsDetail = () => {
           Xem thêm bài viết
         </Link>
       </div>
-
-      {/* Related Posts */}
       {relatedPosts.length > 0 && (
         <div className="bg-gray-50 py-8">
           <div className="container mx-auto px-4 md:px-6 lg:px-8">
@@ -233,8 +215,6 @@ const BlogsDetail = () => {
           </div>
         </div>
       )}
-
-      {/* Newsletter */}
       <div className="bg-gray-100 py-8">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">
