@@ -158,6 +158,9 @@ Route kiểm tra token: Kiểm tra tính hợp lệ của token đang sử dụn
     - `/auth/check`: API kiểm tra thông tin người dùng đã đăng nhập.
 API lấy thông tin người dùng theo ID: Cung cấp API để lấy thông tin người dùng qua ID.
     - `/users/{id}`: Lấy thông tin người dùng theo ID.
+User Notification Routes: Các route để quản lý thông báo người dùng.
+    - `/user/notifications`: Lấy tất cả thông báo của người dùng.
+    - `/user/notifications/{id}/read`: Đánh dấu thông báo là đã đọc.
 
 
 
