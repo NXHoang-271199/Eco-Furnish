@@ -141,7 +141,7 @@ class WalletController extends Controller
 
                 if ($trx->type === 'rut_tien' && $trx->withdrawRequest) {
                     $data['withdraw_request'] = [
-                        'bank_name' => $trx->withdrawRequest->bank_name,
+                       'bank_name' => $trx->withdrawRequest->bank_name,
                         'bank_account_number' => $trx->withdrawRequest->bank_account_number,
                         'account_holder_name' => $trx->withdrawRequest->account_holder_name,
                         'bank_code' => $trx->withdrawRequest->bank_code,

@@ -30,7 +30,7 @@ const Popup = () => {
 
           return () => clearInterval(checkLoadingInterval);
         }
-      }, 2000); // Tăng thời gian lên 2 giây để đảm bảo loading đã kết thúc
+      }, 2500); // Tăng thời gian lên 2.5 giây để đảm bảo loading đã kết thúc
 
       return () => clearTimeout(timeout);
     }

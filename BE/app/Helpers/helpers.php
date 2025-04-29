@@ -171,9 +171,8 @@ function createVietQrCode($bankAccount, $amount, $userId)
         'accountNo' => $bankAccount->bank_account_number, // Số tài khoản
         'accountName' => $bankAccount->account_holder_name	, // Tên tài khoản
         'acqId' => $bankAccount->acq_id, // Mã ngân hàng (acqId) bạn cần cung cấp
-        'addInfo' => 'Eco-Furnish gửi tiền rút cho khách hàng ' . $user->name, // Thông tin bổ sung
         'amount' => $amount, // Số tiền cần thanh toán
-        'template' => 'Print', // Kiểu mã QR, ví dụ 'compact'
+        'template' => 'print', // Kiểu mã QR, ví dụ 'compact'
     ];
 
     // Gửi request đến API VietQR

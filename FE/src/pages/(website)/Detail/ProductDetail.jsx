@@ -353,22 +353,41 @@ const ProductDetail = () => {
     }).format(date);
   };
 
-  // Hàm xử lý avatar đồng nhất với các trường hợp khác nhau
-  const processAvatar = (avatarPath) => {
-    if (!avatarPath) return null;
+  // Function để xử lý avatar link
+  const processAvatar = (avatarUrl) => {
+    if (!avatarUrl) return '/images/avatarEmpty/avatarUser.png';
 
-    // Nếu avatar đã là URL đầy đủ (bắt đầu bằng http hoặc https)
-    if (avatarPath.startsWith('http')) {
-      return avatarPath;
+    console.log('Processing avatar URL:', avatarUrl);
+
+    // Nếu là URL trực tiếp từ Facebook hoặc Google, sử dụng trực tiếp
+    if (avatarUrl.includes('facebook.com') || avatarUrl.includes('google')) {
+      console.log('Detected external avatar:', avatarUrl);
+      return avatarUrl;
     }
 
-    // Nếu avatar bắt đầu bằng /storage/ (từ localStorage)
-    if (avatarPath.startsWith('/storage/')) {
-      return `http://localhost:8000${avatarPath}`;
+    // Nếu đã là URL đầy đủ (http/https), trả về trực tiếp
+    if (avatarUrl.startsWith('http')) {
+      console.log('Using direct URL:', avatarUrl);
+      return avatarUrl;
     }
 
-    // Nếu avatar là đường dẫn tương đối (không bắt đầu bằng /)
-    return `http://localhost:8000/storage/${avatarPath}`;
+    // Nếu là đường dẫn storage, thêm base URL nếu cần
+    if (avatarUrl.startsWith('/storage/')) {
+      const storageUrl = import.meta.env.VITE_API_URL + avatarUrl;
+      console.log('Created storage URL:', storageUrl);
+      return storageUrl;
+    }
+
+    // Nếu là đường dẫn storage nhưng không có dấu / ở đầu
+    if (avatarUrl.startsWith('storage/')) {
+      const storageUrl = import.meta.env.VITE_API_URL + '/' + avatarUrl;
+      console.log('Created storage URL with prefix:', storageUrl);
+      return storageUrl;
+    }
+
+    // Trường hợp khác, trả về URL gốc
+    console.log('Using original URL:', avatarUrl);
+    return avatarUrl;
   };
 
   // Hiển thị số sao đánh giá
@@ -460,6 +479,9 @@ const ProductDetail = () => {
         setSelectedVariantId(matchingVariant.id);
       }
     }
+
+    // Reset số lượng về 1 khi thay đổi biến thể
+    setQuantity(1);
   };
 
   const getCurrentPrice = () => {

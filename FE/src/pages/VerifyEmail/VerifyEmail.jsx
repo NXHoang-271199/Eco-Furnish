@@ -14,7 +14,7 @@ const VerifyEmail = () => {
         <h2 className="text-2xl font-bold mb-4">Xác Minh Email</h2>
         <p className="text-gray-600">Vui lòng kiểm tra email để xác minh tài khoản.</p>
         {resent && <p className="text-green-500 mt-4">Một email xác minh mới đã được gửi!</p>}
-        <button 
+        <button
           onClick={handleResend}
           className="w-full bg-blue-600 text-white py-2 rounded-md mt-6 hover:bg-blue-700"
         >

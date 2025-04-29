@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { clearSelectedItems } from "../../../store/cartSlice";
 import axios from "axios";
-import { useLocation } from "react-router-dom";
 import axiosInstance from "../../../utils/axiosConfig";
 import addressService from "../../../service/addressService";
 import { toast } from "react-toastify";
@@ -70,6 +69,13 @@ const PaymentBuyNow = () => {
   const [walletBalance, setWalletBalance] = useState(0);
   const [loadingWallet, setLoadingWallet] = useState(false);
 
+  // Thêm các state cho mật khẩu cấp 2
+  const [hasLevel2Password, setHasLevel2Password] = useState(false);
+  const [showLevel2PasswordModal, setShowLevel2PasswordModal] = useState(false);
+  const [level2Password, setLevel2Password] = useState("");
+  const [level2PasswordError, setLevel2PasswordError] = useState("");
+  const [checkingLevel2Password, setCheckingLevel2Password] = useState(false);
+
   useEffect(() => {
     // Lấy địa chỉ từ localStorage khi component mount
     const savedAddress = JSON.parse(localStorage.getItem("userAddress")) || {};
@@ -87,12 +93,13 @@ const PaymentBuyNow = () => {
 
     // Kiểm tra nếu không có sản phẩm được chọn
     if (!selectedProducts || selectedProducts.length === 0) {
-      navigate("/products");
+      navigate("/cart");
     }
 
     getPaymentMethod();
     fetchProvinces();
     getWalletBalance(); // Thêm gọi hàm lấy số dư ví
+    checkLevel2PasswordStatus(); // Thêm gọi hàm kiểm tra trạng thái mật khẩu cấp 2
   }, [selectedProducts, navigate, state]);
 
   // Lấy danh sách tỉnh/thành phố
@@ -575,11 +582,54 @@ const PaymentBuyNow = () => {
       return;
     }
 
+    // Xử lý thanh toán bằng ví
+    const selectedMethodObj = paymentMethods.find((method) => method.id === Number(paymentMethod));
+    if (selectedMethodObj && selectedMethodObj.name === "Ví") {
+      // Kiểm tra nếu chưa có mật khẩu cấp 2
+      if (!hasLevel2Password) {
+        // Chuyển hướng đến trang thiết lập mật khẩu cấp 2 với tham số redirect để quay lại
+        // Lưu trạng thái hiện tại vào localStorage để có thể khôi phục sau khi thiết lập mật khẩu cấp 2
+        localStorage.setItem("pendingPaymentState", JSON.stringify({
+          product_id: selectedProducts[0].product.id,
+          product_variant_id: selectedProducts[0].product_variant?.id || null,
+          quantity: selectedProducts[0].quantity,
+          selectedAddress: selectedAddress?.id,
+          paymentMethod,
+          voucherId,
+          discountAmount,
+          type: "buy_now",
+          // Thêm thông tin chi tiết về sản phẩm
+          product_name: selectedProducts[0].product.name,
+          product_price: selectedProducts[0].product.price,
+          product_discount_price: selectedProducts[0].product.discount_price,
+          product_image_thumbnail: selectedProducts[0].product.image_thumbnail,
+          // Thêm thông tin chi tiết về biến thể nếu có
+          variant_price: selectedProducts[0].product_variant?.price,
+          variant_discount_price: selectedProducts[0].product_variant?.discount_price,
+          // Thêm thông tin tổng giá trị sản phẩm
+          total_price: calculateSubtotal()
+        }));
+
+        navigate("/account?tab=level2password&redirect=payment_buy_now");
+        toast.info("Vui lòng thiết lập mật khẩu cấp 2 để thanh toán bằng ví.");
+        return;
+      }
+
+      // Nếu đã có mật khẩu cấp 2, hiển thị modal xác nhận
+      setShowLevel2PasswordModal(true);
+      setLevel2Password("");
+      setLevel2PasswordError("");
+      return;
+    }
+
+    // Tiếp tục xử lý đặt hàng nếu không phải thanh toán bằng ví
+    processOrder();
+  };
+
+  // Tách logic xử lý đặt hàng
+  const processOrder = async (level2PasswordInput = "") => {
     setLoading(true);
     setError("");
-
-    // Không cần lưu address vào localStorage nữa
-    // localStorage.setItem("userAddress", JSON.stringify(address));
 
     try {
       const token = localStorage.getItem("authToken");
@@ -607,9 +657,10 @@ const PaymentBuyNow = () => {
         voucher_id: voucherId && discountAmount > 0 ? voucherId : null,
       };
 
-      // Thêm voucher_id nếu đã áp dụng mã giảm giá
-      if (voucherId && discountAmount > 0) {
-        orderData.voucher_id = voucherId;
+      // Thêm mật khẩu cấp 2 nếu thanh toán bằng ví
+      const selectedMethod = paymentMethods.find((method) => method.id === Number(paymentMethod));
+      if (selectedMethod && selectedMethod.name === "Ví" && level2PasswordInput) {
+        orderData.level2_password = level2PasswordInput;
       }
 
       // Gọi API orders/buy-now
@@ -634,9 +685,6 @@ const PaymentBuyNow = () => {
       setOrderCode(newOrderCode);
 
       if (response.status === 200 || response.status === 201) {
-        const selectedMethod = paymentMethods.find(
-          (method) => method.id === Number(paymentMethod)
-        );
         if (selectedMethod.name === "MoMo") {
           if (response.data && response.data.payUrl) {
             window.location.href = response.data.payUrl;
@@ -664,11 +712,60 @@ const PaymentBuyNow = () => {
       }
     } catch (err) {
       console.error("Lỗi khi gọi API:", err);
-      setError(
-        err.response?.data?.message || "Có lỗi xảy ra khi xử lý đơn hàng"
-      );
+
+      // Kiểm tra xem có phải lỗi mật khẩu cấp 2 không chính xác không
+      if (err.response?.data?.message === "Mật khẩu cấp 2 không chính xác") {
+        toast.error("Mật khẩu cấp 2 không chính xác");
+        // Reset lại trạng thái kiểm tra mật khẩu cấp 2 để có thể thử lại
+        setCheckingLevel2Password(false);
+        // Giữ modal mở để người dùng có thể nhập lại
+      } else {
+        // Các lỗi khác vẫn hiển thị như cũ
+        setError(
+          err.response?.data?.message || "Có lỗi xảy ra khi xử lý đơn hàng"
+        );
+        // Đóng modal cho lỗi không phải mật khẩu cấp 2
+        setShowLevel2PasswordModal(false);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Hàm xử lý khi nhấn nút xác nhận mật khẩu cấp 2
+  const handleConfirmLevel2Password = () => {
+    // Kiểm tra xem đã nhập mật khẩu cấp 2 chưa
+    if (!level2Password) {
+      setLevel2PasswordError("Vui lòng nhập mật khẩu cấp 2");
+      return;
+    }
+
+    // Xóa lỗi cũ nếu có
+    setLevel2PasswordError("");
+    setError("");
+
+    // Gọi hàm xử lý đặt hàng với mật khẩu cấp 2
+    setCheckingLevel2Password(true);
+    processOrder(level2Password);
+  };
+
+  // Thêm hàm kiểm tra trạng thái mật khẩu cấp 2
+  const checkLevel2PasswordStatus = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
+
+      const response = await axiosInstance.get("/users/level2-password/status", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.status === "success") {
+        setHasLevel2Password(response.data.data.has_level2_password);
+      }
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra trạng thái mật khẩu cấp 2:", error);
     }
   };
 
@@ -1179,6 +1276,65 @@ const PaymentBuyNow = () => {
             )}
           </div> {/* Đóng thẻ div cho modal content */}
         </div> // Đóng thẻ div cho modal overlay
+      )}
+
+      {/* Modal xác nhận mật khẩu cấp 2 */}
+      {showLevel2PasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Xác nhận thanh toán</h2>
+              <button
+                onClick={() => setShowLevel2PasswordModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+                disabled={checkingLevel2Password}
+              >
+                &times;
+              </button>
+            </div>
+
+            <p className="mb-4 text-gray-700">Để bảo mật giao dịch, vui lòng nhập mật khẩu cấp 2 của bạn.</p>
+
+            <div className="mb-4">
+              <input
+                type="password"
+                value={level2Password}
+                onChange={(e) => setLevel2Password(e.target.value)}
+                placeholder="Nhập mật khẩu cấp 2"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={checkingLevel2Password}
+              />
+              {level2PasswordError && (
+                <p className="mt-1 text-red-500 text-sm">{level2PasswordError}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLevel2PasswordModal(false)}
+                className="px-4 py-2 border rounded-md"
+                disabled={checkingLevel2Password}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmLevel2Password}
+                className="px-4 py-2 bg-black text-white rounded-md"
+                disabled={checkingLevel2Password}
+              >
+                {checkingLevel2Password ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Đang xác thực
+                  </span>
+                ) : "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

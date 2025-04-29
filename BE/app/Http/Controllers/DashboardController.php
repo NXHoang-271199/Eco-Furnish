@@ -15,6 +15,11 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view-dashboard');
+    }
+
     public function index()
     {
         // Lấy thời gian hiện tại và thời gian tháng trước để so sánh

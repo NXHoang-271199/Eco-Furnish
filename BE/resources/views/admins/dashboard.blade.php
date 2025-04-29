@@ -9,12 +9,29 @@
 @section('CSS')
 <style>
     /* Base styles */
+    body, html {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+    }
+
+    .container-fluid {
+        overflow: hidden !important;
+        position: relative;
+        width: 100%;
+    }
+
     .dashboard-container {
         padding-top: 60px !important;
         margin-top: 30px;
+        overflow: hidden !important;
+        position: relative;
+        width: 100%;
     }
     .page-content {
         padding-top: 10px !important;
+        overflow: hidden !important;
+        position: relative;
+        width: 100%;
     }
     @media (max-width: 768px) {
         .dashboard-container {
@@ -22,11 +39,25 @@
         }
     }
 
+    /* AOS animation container fix */
+    [data-aos] {
+        pointer-events: none;
+    }
+    [data-aos].aos-animate {
+        pointer-events: auto;
+    }
+
+    /* Prevent horizontal scrollbar */
+    .row {
+        margin-right: 0;
+        margin-left: 0;
+    }
+
     /* Chart container styles */
     .chart-container {
         position: relative;
     }
-    
+
     .chart-no-data-overlay {
         position: absolute;
         top: 0;
@@ -42,12 +73,12 @@
         visibility: hidden;
         transition: all 0.3s ease;
     }
-    
+
     .chart-no-data-overlay.active {
         opacity: 1;
         visibility: visible;
     }
-    
+
     .no-data-message {
         font-size: 20px;
         font-weight: 500;
@@ -58,7 +89,7 @@
         border-radius: 10px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     }
-    
+
     .no-data-message i {
         font-size: 40px;
         color: #8E54E9;
@@ -74,17 +105,17 @@
         border-radius: 12px !important;
         overflow: hidden;
     }
-    
+
     .card:hover {
         transform: translateY(-5px);
         box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
     }
-    
+
     .card-animate {
         position: relative;
         overflow: hidden;
     }
-    
+
     .card-animate::after {
         content: '';
         position: absolute;
@@ -96,16 +127,16 @@
         border-top-right-radius: 12px;
         border-bottom-right-radius: 12px;
     }
-    
+
     /* Modern Stats Cards */
     .avatar-title {
         transition: all 0.3s ease;
     }
-    
+
     .card-animate:hover .avatar-title {
         transform: scale(1.1);
     }
-    
+
     .counter-value {
         background: linear-gradient(45deg, #8E54E9, #4776E6);
         -webkit-background-clip: text;
@@ -113,12 +144,12 @@
         font-weight: 700;
         position: relative;
     }
-    
+
     /* Counter completion animation */
     .counter-complete {
         animation: counterPulse 0.6s ease;
     }
-    
+
     @keyframes counterPulse {
         0% {
             transform: scale(1);
@@ -133,7 +164,7 @@
             text-shadow: 0 0 0 rgba(71, 118, 230, 0);
         }
     }
-    
+
     /* Date Picker Styles */
     .date-picker-wrapper {
         position: relative;
@@ -157,7 +188,7 @@
         transition: all 0.3s ease;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    
+
     .date-picker-display:hover {
         background-color: #f8f9fa;
     }
@@ -172,13 +203,13 @@
         transition: all 0.3s ease;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    
+
     .date-picker-icon:hover {
         background: linear-gradient(45deg, #4776E6, #8E54E9);
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         transform: translateY(-2px);
     }
-    
+
     /* Ẩn input gốc mà Flatpickr sử dụng */
     input#dateRangePicker.flatpickr-input {
         display: none !important;
@@ -197,7 +228,7 @@
         padding: 10px;
         animation: flatpickrFadeInDown 0.3s cubic-bezier(0, 1, 0.5, 1);
     }
-    
+
     @keyframes flatpickrFadeInDown {
         from {
             opacity: 0;
@@ -208,7 +239,7 @@
             transform: translateY(0);
         }
     }
-    
+
     .flatpickr-day {
         height: 38px;
         line-height: 38px;
@@ -216,28 +247,28 @@
         border-radius: 8px !important;
         transition: all 0.2s ease;
     }
-    
+
     .flatpickr-day:hover {
         background-color: #f0f7ff !important;
         border-color: #f0f7ff !important;
     }
-    
+
     .flatpickr-day.selected {
         background: linear-gradient(45deg, #4776E6, #8E54E9) !important;
         border-color: transparent !important;
         box-shadow: 0 4px 10px rgba(71, 118, 230, 0.3) !important;
     }
-    
+
     .flatpickr-day.selected.startRange, .flatpickr-day.selected.endRange {
         background: linear-gradient(45deg, #4776E6, #8E54E9) !important;
         border-color: transparent !important;
     }
-    
+
     .flatpickr-day.inRange {
         background-color: rgba(71, 118, 230, 0.15) !important;
         border-color: transparent !important;
     }
-    
+
     .flatpickr-months .flatpickr-month {
         background: linear-gradient(45deg, #4776E6, #8E54E9) !important;
         color: white !important;
@@ -245,24 +276,24 @@
         border-top-right-radius: 10px;
         padding-top: 5px;
     }
-    
+
     .flatpickr-current-month {
         padding-top: 8px !important;
     }
-    
+
     .flatpickr-current-month .flatpickr-monthDropdown-months {
         background-color: transparent !important;
         color: white !important;
         font-weight: 600;
     }
-    
+
     .flatpickr-weekday {
         background-color: transparent;
         color: #555;
         font-weight: 600;
         padding: 5px 0;
     }
-    
+
     /* Button styles */
     .btn-primary {
         background: linear-gradient(45deg, #4776E6, #8E54E9);
@@ -270,38 +301,38 @@
         box-shadow: 0 4px 10px rgba(71, 118, 230, 0.3);
         transition: all 0.3s ease;
     }
-    
+
     .btn-primary:hover {
         background: linear-gradient(45deg, #3d6ad5, #7d44d5);
         box-shadow: 0 6px 15px rgba(71, 118, 230, 0.4);
         transform: translateY(-2px);
     }
-    
+
     .btn-light {
         background: #f8f9fa;
         border: none;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         transition: all 0.3s ease;
     }
-    
+
     .btn-light:hover {
         background: #e9ecef;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         transform: translateY(-2px);
     }
-    
+
     .btn-soft-info {
         background: rgba(71, 118, 230, 0.15);
         color: #4776E6;
         border: none;
         transition: all 0.3s ease;
     }
-    
+
     .btn-soft-info:hover {
         background: rgba(71, 118, 230, 0.25);
         transform: translateY(-2px);
     }
-    
+
     /* Greeting Section */
     .greeting-section {
         position: relative;
@@ -311,7 +342,7 @@
         margin-bottom: 20px;
         background: linear-gradient(120deg, #f6f9ff, #f0f7ff);
     }
-    
+
     .greeting-section::before {
         content: '';
         position: absolute;
@@ -324,50 +355,50 @@
         z-index: 0;
         border-radius: 50%;
     }
-    
+
     .greeting-text {
         position: relative;
         z-index: 1;
     }
-    
+
     /* Statistics Cards */
     .card-body {
         padding: 1.5rem;
     }
-    
+
     .avatar-sm {
         border-radius: 10px;
     }
-    
+
     .avatar-title.bg-success-subtle {
         background: linear-gradient(45deg, rgba(82, 182, 172, 0.15), rgba(124, 207, 158, 0.15)) !important;
     }
-    
+
     .avatar-title.bg-info-subtle {
         background: linear-gradient(45deg, rgba(71, 118, 230, 0.15), rgba(142, 84, 233, 0.15)) !important;
     }
-    
+
     .avatar-title.bg-warning-subtle {
         background: linear-gradient(45deg, rgba(245, 186, 88, 0.15), rgba(255, 161, 91, 0.15)) !important;
     }
-    
+
     .text-success {
         color: #52b6ac !important;
     }
-    
+
     .text-info {
         color: #4776E6 !important;
     }
-    
+
     .text-warning {
         color: #f5ba58 !important;
     }
-    
+
     /* Glowing effect for icons */
     .bx-dollar-circle, .bx-shopping-bag, .bx-user-circle {
         position: relative;
     }
-    
+
     .bx-dollar-circle::after, .bx-shopping-bag::after, .bx-user-circle::after {
         content: '';
         position: absolute;
@@ -380,22 +411,22 @@
         opacity: 0;
         transition: all 0.5s ease;
     }
-    
+
     .card-animate:hover .bx-dollar-circle::after {
         box-shadow: 0 0 20px rgba(82, 182, 172, 0.5);
         opacity: 1;
     }
-    
+
     .card-animate:hover .bx-shopping-bag::after {
         box-shadow: 0 0 20px rgba(71, 118, 230, 0.5);
         opacity: 1;
     }
-    
+
     .card-animate:hover .bx-user-circle::after {
         box-shadow: 0 0 20px rgba(245, 186, 88, 0.5);
         opacity: 1;
     }
-    
+
     /* Alert styles */
     .alert-info {
         background: linear-gradient(45deg, rgba(71, 118, 230, 0.12), rgba(142, 84, 233, 0.12));
@@ -403,42 +434,42 @@
         border-radius: 12px;
         box-shadow: 0 4px 15px rgba(71, 118, 230, 0.1);
     }
-    
+
     /* Modern Data Cards */
     .bg-light-subtle {
         background: linear-gradient(120deg, #f6f9ff, #f0f7ff) !important;
     }
-    
+
     .border-dashed {
         border-style: dashed !important;
         border-color: rgba(71, 118, 230, 0.2) !important;
     }
-    
+
     /* Table styling */
     .table-card {
         border-radius: 10px;
         overflow: hidden;
     }
-    
+
     .table th, .table td {
         padding: 1rem;
         vertical-align: middle;
     }
-    
+
     .table-hover tbody tr {
         transition: all 0.2s ease;
     }
-    
+
     .table-hover tbody tr:hover {
         background-color: rgba(71, 118, 230, 0.05);
         transform: translateY(-2px);
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
     }
-    
+
     .table-centered th, .table-centered td {
         text-align: center;
     }
-    
+
     .avatar-xs {
         width: 2rem;
         height: 2rem;
@@ -447,34 +478,34 @@
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         transition: all 0.3s ease;
     }
-    
+
     tr:hover .avatar-xs {
         transform: scale(1.15);
     }
-    
+
     .badge {
         padding: 0.4rem 0.8rem;
         font-weight: 500;
         border-radius: 6px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
-    
+
     .bg-success-subtle {
         background: rgba(82, 182, 172, 0.15) !important;
     }
-    
+
     .bg-warning-subtle {
         background: rgba(245, 186, 88, 0.15) !important;
     }
-    
+
     .bg-info-subtle {
         background: rgba(71, 118, 230, 0.15) !important;
     }
-    
+
     .bg-danger-subtle {
         background: rgba(243, 78, 78, 0.15) !important;
     }
-    
+
     /* Progress bar animation */
     .progress-bar {
         position: relative;
@@ -482,7 +513,7 @@
         border-radius: 8px;
         z-index: 1;
     }
-    
+
     .progress-bar::after {
         content: '';
         position: absolute;
@@ -499,7 +530,7 @@
         z-index: 9;
         animation: progressShine 2s infinite;
     }
-    
+
     @keyframes progressShine {
         0% {
             transform: translateX(-100%);
@@ -508,17 +539,17 @@
             transform: translateX(100%);
         }
     }
-    
+
     /* Star rating animation */
     .text-warning i {
         margin-right: 1px;
         position: relative;
     }
-    
+
     tr:hover .text-warning i {
         animation: starPulse 0.5s ease-in-out;
     }
-    
+
     @keyframes starPulse {
         0% {
             transform: scale(1);
@@ -530,12 +561,12 @@
             transform: scale(1);
         }
     }
-    
+
     /* Pagination styling */
     .pagination {
         margin-bottom: 0;
     }
-    
+
     .page-link {
         width: 32px;
         height: 32px;
@@ -552,42 +583,42 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         transition: all 0.3s ease;
     }
-    
+
     .page-link:hover {
         transform: translateY(-2px);
         background: rgba(71, 118, 230, 0.1);
         color: #4776E6;
     }
-    
+
     .page-item.active .page-link {
         background: linear-gradient(45deg, #4776E6, #8E54E9);
         color: white;
         box-shadow: 0 4px 8px rgba(71, 118, 230, 0.3);
         z-index: 1;
     }
-    
+
     .page-item.disabled .page-link {
         color: #adb5bd;
         background-color: #f8f9fa;
         box-shadow: none;
     }
-    
+
     /* Scrollbar styling */
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
     }
-    
+
     ::-webkit-scrollbar-track {
         background: #f1f1f1;
         border-radius: 10px;
     }
-    
+
     ::-webkit-scrollbar-thumb {
         background: linear-gradient(45deg, #4776E6, #8E54E9);
         border-radius: 10px;
     }
-    
+
     ::-webkit-scrollbar-thumb:hover {
         background: linear-gradient(45deg, #3d6ad5, #7d44d5);
     }
@@ -622,7 +653,7 @@
                                             <div class="input-group date-picker-wrapper">
                                                 <!-- Ẩn input chứa giá trị khoảng ngày -->
                                                 <input type="hidden" id="dateRangePicker" name="date_range" value="{{ request('date_range') }}">
-                                                
+
                                                 <!-- Hiển thị khoảng ngày đã chọn -->
                                                 <span id="dateRangeText" class="date-picker-display">
                                                     @if(!empty(request('date_range')))
@@ -631,12 +662,12 @@
                                                         Chọn khoảng ngày
                                                     @endif
                                                 </span>
-                                                
+
                                                 <!-- Icon calendar -->
                                                 <button type="button" class="btn btn-primary date-picker-icon" id="datePickerToggle">
                                                     <i class="ri-calendar-2-line"></i>
                                                 </button>
-                                                
+
                                                 <button type="submit" class="btn btn-primary ms-2">Áp dụng</button>
                                                 <button type="button" id="resetDateFilter" class="btn btn-light ms-2">Đặt lại</button>
                                             </div>
@@ -897,27 +928,27 @@
                                                         // Lưu giá trị từ dữ liệu gốc
                                                         $originalTotalSold = $product->total_sold ?? 0;
                                                         $originalTotalAmount = $product->total_amount ?? 0;
-                                                        
+
                                                         // Kiểm tra xem sản phẩm có biến thể không
                                                         $hasVariants = false;
                                                         $priceRange = '';
                                                         $productStock = 0;
-                                                        
+
                                                         try {
                                                             // Lưu ý rằng dòng này sẽ ghi đè biến $product gốc
                                                             $productDetails = App\Models\Product::withTrashed()->with(['variants' => function($query) {
                                                                 $query->withTrashed();
                                                             }])->find($product->id);
-                                                            
+
                                                             if ($productDetails) {
                                                                 $variants = $productDetails->variants;
                                                                 $hasVariants = $variants->count() > 0;
-                                                                
+
                                                                 if ($hasVariants) {
                                                                     $minPrice = $variants->min('price');
                                                                     $maxPrice = $variants->max('price');
                                                                     $productStock = $variants->sum('quantity');
-                                                                    
+
                                                                     if ($minPrice != $maxPrice) {
                                                                         $priceRange = number_format($minPrice, 0, ',', '.') . ' - ' . number_format($maxPrice, 0, ',', '.');
                                                                     } else {
@@ -1045,6 +1076,17 @@
                                                     <h5 class="fs-14 mb-0">{{ number_format($buyer->total_spent, 0, ',', '.') }} ₫</h5>
                                                 </td>
                                                 <td>
+                                                    @php
+                                                        $totalStock = 0;
+                                                        if ($buyer->orders_count > 0) {
+                                                            $totalStock = $buyer->total_spent / $buyer->orders_count;
+                                                        }
+                                                        $statusClass = $totalStock > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+                                                        $statusText = $totalStock > 0 ? 'Còn hàng' : 'Hết hàng';
+                                                    @endphp
+                                                    <span class="badge {{ $statusClass }}">{{ $statusText }}</span>
+                                                </td>
+                                                <td>
                                                     <div class="d-flex align-items-center gap-2">
                                                         @php
                                                             $percent = min(round(($buyer->orders_count / ($topBuyerStats->max_orders ?: 1)) * 100), 100);
@@ -1095,14 +1137,14 @@
                                                     </a>
                                                 </li>
                                             @endif
-                                            
+
                                             {{-- Các nút số trang --}}
                                             @for($i = 1; $i <= $topBuyers->lastPage(); $i++)
                                                 <li class="page-item {{ $i == $topBuyers->currentPage() ? 'active' : '' }}">
                                                     <a class="page-link" href="{{ $topBuyers->url($i) }}">{{ $i }}</a>
                                                 </li>
                                             @endfor
-                                            
+
                                             {{-- Nút trang sau --}}
                                             @if($topBuyers->hasMorePages())
                                                 <li class="page-item">
@@ -1128,9 +1170,9 @@
                     <div class="col">
                         <div class="card" data-aos="fade-up" data-aos-duration="800" data-aos-delay="200">
                             <div class="card-header align-items-center d-flex">
-                                <h4 class="card-title mb-0 flex-grow-1">Đơn hàng gần đây</h4>
+                                <h4 class="card-title mb-0 flex-grow-1">Top 5 sản phẩm có lượt đánh giá cao nhất</h4>
                                 <div class="flex-shrink-0">
-                                    <button type="button" class="btn btn-soft-info btn-sm" id="createOrderReport" data-report-type="orders" data-report-title="Báo cáo đơn hàng">
+                                    <button type="button" class="btn btn-soft-info btn-sm" id="createTopRatedReport" data-report-type="toprated" data-report-title="Sản phẩm đánh giá cao">
                                         <i class="ri-file-list-3-line align-middle"></i> Tạo báo cáo
                                     </button>
                                 </div>
@@ -1141,79 +1183,97 @@
                                     <table class="table table-borderless table-centered align-middle table-nowrap mb-0">
                                         <thead class="text-muted table-light">
                                             <tr>
-                                                <th scope="col">Mã đơn hàng</th>
-                                                <th scope="col">Khách hàng</th>
                                                 <th scope="col">Sản phẩm</th>
-                                                <th scope="col">Số tiền</th>
-                                                <th scope="col">Nhà cung cấp</th>
+                                                <th scope="col">Giá</th>
+                                                <th scope="col">Tổng đánh giá</th>
+                                                <th scope="col">Xếp hạng trung bình</th>
                                                 <th scope="col">Trạng thái</th>
-                                                <th scope="col">Đánh giá</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse($recentOrders as $order)
+                                            @php
+                                                $topRatedProducts = App\Models\Product::withReviewStats()
+                                                    ->has('reviews')
+                                                    ->take(5)
+                                                    ->get();
+                                            @endphp
+                                            @forelse($topRatedProducts as $product)
                                             <tr data-aos="fade-up" data-aos-duration="800" data-aos-delay="{{ 100 + $loop->index * 50 }}">
                                                 <td>
-                                                    <a href="{{ route('orders.detail', $order->id) }}" class="fw-medium link-primary">{{ $order->order_code }}</a>
-                                                </td>
-                                                <td>
                                                     <div class="d-flex align-items-center">
-                                                        <div class="flex-shrink-0 me-2">
-                                                            <img src="{{ $order->user && $order->user->avatar ? asset('storage/' . $order->user->avatar) : asset('assets/admins/images/users/avatar-' . (($loop->iteration % 5) + 1) . '.jpg') }}" alt="" class="avatar-xs rounded-circle" />
+                                                        <div class="flex-shrink-0 me-3">
+                                                            <div class="avatar-sm bg-light rounded p-1">
+                                                                <img src="{{ asset('storage/'.$product->image_thumnail) }}" alt="{{ $product->name }}" class="img-fluid d-block">
+                                                            </div>
                                                         </div>
-                                                        <div class="flex-grow-1">{{ $order->user_name ?? ($order->user->name ?? 'N/A') }}</div>
+                                                        <div class="flex-grow-1">
+                                                            <h5 class="fs-14 mb-1">
+                                                                <a href="{{ route('products.show', $product->id) }}" class="text-dark">{{ $product->name }}</a>
+                                                            </h5>
+                                                            <p class="text-muted mb-0">Danh mục: <span class="fw-medium">{{ $product->category->name ?? 'N/A' }}</span></p>
+                                                        </div>
                                                     </div>
-                                                </td>
-                                                <td>{{ $order->orderItems->first()->product->name ?? 'Multiple Products' }}</td>
-                                                <td>
-                                                    <span class="text-success">{{ number_format($order->orderItems->sum(function($item) { return $item->price * $item->quantity; }), 0, ',', '.') }} ₫</span>
-                                                </td>
-                                                <td>{{ $order->paymentMethod->name ?? 'N/A' }}</td>
-                                                <td>
-                                                    @php
-                                                        $statusClass = [
-                                                            'pending' => 'bg-warning-subtle text-warning',
-                                                            'processing' => 'bg-info-subtle text-info',
-                                                            'completed' => 'bg-success-subtle text-success',
-                                                            'cancelled' => 'bg-danger-subtle text-danger',
-                                                            'paid' => 'bg-success-subtle text-success',
-                                                            'unpaid' => 'bg-danger-subtle text-danger',
-                                                        ];
-                                                        $orderStatusClass = $statusClass[$order->order_status] ?? 'bg-secondary-subtle text-secondary';
-                                                        $paymentStatusClass = $statusClass[$order->payment_status] ?? 'bg-secondary-subtle text-secondary';
-                                                    @endphp
-                                                    <span class="badge {{ $orderStatusClass }}">{{ ucfirst($order->order_status) }}</span>
                                                 </td>
                                                 <td>
                                                     @php
-                                                        $rating = $order->avg_rating ?? 0;
-                                                        $starCount = (int)$rating;
-                                                        $hasHalfStar = $rating - $starCount >= 0.5;
-                                                        $emptyStarCount = 5 - $starCount - ($hasHalfStar ? 1 : 0);
+                                                        // Kiểm tra sản phẩm có biến thể không
+                                                        $variants = $product->variants;
+                                                        $hasVariants = $variants->count() > 0;
+
+                                                        if ($hasVariants) {
+                                                            $minPrice = $variants->min('price');
+                                                            $maxPrice = $variants->max('price');
+
+                                                            if ($minPrice != $maxPrice) {
+                                                                echo number_format($minPrice, 0, ',', '.') . ' - ' . number_format($maxPrice, 0, ',', '.') . ' ₫';
+                                                            } else {
+                                                                echo number_format($minPrice, 0, ',', '.') . ' ₫';
+                                                            }
+                                                        } else {
+                                                            echo number_format($product->price, 0, ',', '.') . ' ₫';
+                                                        }
                                                     @endphp
-                                                    
-                                                    <div>
-                                                        <span class="fs-14 fw-medium">{{ $rating }}</span>
-                                                        <span class="text-warning align-middle fs-11 ms-1">
-                                                            @for($i = 0; $i < $starCount; $i++)
-                                                                <i class="ri-star-fill"></i>
-                                                            @endfor
-                                                            
-                                                            @if($hasHalfStar)
-                                                                <i class="ri-star-half-fill"></i>
-                                                            @endif
-                                                            
-                                                            @for($i = 0; $i < $emptyStarCount; $i++)
-                                                                <i class="ri-star-line"></i>
-                                                            @endfor
-                                                        </span>
-                                                        <span class="text-muted fs-11 ms-1">({{ $order->ratings_count ?? 0 }})</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info-subtle text-info fs-12">{{ $product->total_reviews }} đánh giá</span>
+                                                </td>
+                                                <td>
+                                                    <div class="text-warning fs-14 mb-0">
+                                                        @php
+                                                            $avgRating = $product->average_rating;
+                                                            $fullStars = floor($avgRating);
+                                                            $hasHalfStar = $avgRating - $fullStars >= 0.5;
+                                                            $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
+                                                        @endphp
+
+                                                        @for($i = 0; $i < $fullStars; $i++)
+                                                            <i class="ri-star-fill"></i>
+                                                        @endfor
+
+                                                        @if($hasHalfStar)
+                                                            <i class="ri-star-half-fill"></i>
+                                                        @endif
+
+                                                        @for($i = 0; $i < $emptyStars; $i++)
+                                                            <i class="ri-star-line"></i>
+                                                        @endfor
+
+                                                        <span class="ms-1">({{ number_format($avgRating, 1) }})</span>
                                                     </div>
+                                                </td>
+                                                <td>
+                                                    @php
+                                                        // Sử dụng phương thức getTotalQuantityAttribute() có sẵn trong model Product
+                                                        $totalStock = $product->total_quantity;
+                                                        $statusClass = $totalStock > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+                                                        $statusText = $totalStock > 0 ? 'Còn hàng' : 'Hết hàng';
+                                                    @endphp
+                                                    <span class="badge {{ $statusClass }}">{{ $statusText }}</span>
                                                 </td>
                                             </tr>
                                             @empty
                                             <tr>
-                                                <td colspan="7" class="text-center">No recent orders available</td>
+                                                <td colspan="5" class="text-center">Không có sản phẩm nào có đánh giá</td>
                                             </tr>
                                             @endforelse
                                         </tbody>
@@ -1455,7 +1515,7 @@
         const datePickerInput = document.getElementById('dateRangePicker'); // Input ẩn
         const dateRangeText = document.getElementById('dateRangeText'); // Span hiển thị
         const datePickerToggle = document.getElementById('datePickerToggle'); // Button icon lịch
-        
+
         if (!datePickerInput || !dateRangeText || !datePickerToggle) {
             console.error('Không tìm thấy các phần tử cần thiết cho date picker');
         } else {
@@ -1469,7 +1529,7 @@
                 showMonths: 1, // Chỉ hiển thị 1 tháng
                 static: true,
                 disableMobile: true,
-                position: "auto", 
+                position: "auto",
                 appendTo: document.body, // Đính kèm vào body thay vì element
                 onOpen: function() {
                     console.log('Date picker đã mở');
@@ -1479,11 +1539,11 @@
                 },
                 onChange: function(selectedDates, dateStr, instance) {
                     console.log('Ngày đã chọn:', dateStr);
-                    
+
                     // Cập nhật text hiển thị với định dạng tiếng Việt
                     if (dateStr && selectedDates.length > 0) {
                         let formattedText = '';
-                        
+
                         if (selectedDates.length === 1) {
                             // Nếu chỉ chọn 1 ngày
                             const day = selectedDates[0].getDate().toString().padStart(2, '0');
@@ -1495,31 +1555,31 @@
                             const startDay = selectedDates[0].getDate().toString().padStart(2, '0');
                             const startMonth = (selectedDates[0].getMonth() + 1).toString().padStart(2, '0');
                             const startYear = selectedDates[0].getFullYear();
-                            
+
                             const endDay = selectedDates[1].getDate().toString().padStart(2, '0');
                             const endMonth = (selectedDates[1].getMonth() + 1).toString().padStart(2, '0');
                             const endYear = selectedDates[1].getFullYear();
-                            
+
                             formattedText = `${startDay}/${startMonth}/${startYear} - ${endDay}/${endMonth}/${endYear}`;
                         }
-                        
+
                         dateRangeText.textContent = formattedText;
                     } else {
                         dateRangeText.textContent = 'Chọn khoảng ngày';
                     }
                 }
             });
-            
+
             // Thêm sự kiện click vào button icon để mở date picker
             datePickerToggle.addEventListener('click', function() {
                 fp.open();
             });
-            
+
             // Thêm sự kiện click vào span text để mở date picker
             dateRangeText.addEventListener('click', function() {
                 fp.open();
             });
-            
+
             // Xử lý sự kiện nút Reset
             document.getElementById('resetDateFilter').addEventListener('click', function() {
                 fp.clear();
@@ -1531,10 +1591,10 @@
 
         // Khởi tạo biểu đồ doanh thu
         initRevenueChart();
-        
+
         // Khởi tạo counter cho các số liệu thống kê
         initCounters();
-        
+
         // Xử lý nút tạo báo cáo đơn hàng
         document.getElementById('createOrderReport').addEventListener('click', function () {
             const reportType = this.getAttribute('data-report-type');
@@ -1562,31 +1622,31 @@
             const reportTitle = this.getAttribute('data-report-title');
             exportToExcel(reportType, reportTitle);
         });
-        
+
         // Hàm khởi tạo counter với animation
         function initCounters() {
             const counterElements = document.querySelectorAll('.counter-value');
-            
+
             counterElements.forEach(function(element) {
                 const target = parseInt(element.getAttribute('data-target')) || 0;
                 const duration = 2000; // Thời gian hiệu ứng (ms)
                 const frameRate = 30; // Số lần cập nhật mỗi giây
                 const increment = target / (duration / 1000 * frameRate);
-                
+
                 let current = 0;
                 const timer = setInterval(function() {
                     current += increment;
-                    
+
                     // Cập nhật giá trị hiển thị
                     if (current >= target) {
                         // Định dạng số với dấu phân cách hàng nghìn khi đạt giá trị mục tiêu
                         const formattedValue = formatNumberWithCommas(target);
                         element.textContent = formattedValue;
-                        
+
                         // Thêm hiệu ứng nhấp nháy khi hoàn thành
                         element.classList.add('counter-complete');
                         setTimeout(() => element.classList.remove('counter-complete'), 600);
-                        
+
                         clearInterval(timer);
                     } else {
                         // Hiển thị số nguyên trong quá trình đếm
@@ -1595,47 +1655,47 @@
                 }, 1000 / frameRate);
             });
         }
-        
+
         // Hàm định dạng số với dấu phân cách hàng nghìn theo chuẩn Việt Nam
         function formatNumberWithCommas(number) {
             return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
-        
+
         // Hàm khởi tạo biểu đồ doanh thu
         function initRevenueChart() {
             try {
                 // Lấy dữ liệu cho biểu đồ từ backend
                 const chartData = @json($chartData ?? null);
-                
+
                 if (!chartData || !chartData.months || !chartData.series) {
                     console.error('Không có dữ liệu biểu đồ');
                     return;
                 }
 
                 console.log('Dữ liệu biểu đồ:', chartData);
-                
+
                 // Tạo một biến để lưu trữ các dữ liệu đã lọc
                 let filteredData = {
                     months: [...chartData.months],
                     series: JSON.parse(JSON.stringify(chartData.series)),
                     rawData: {...chartData.rawData}
                 };
-                
+
                 // Hàm lọc dữ liệu theo thời gian
                 function filterChartData(period) {
                     const dateRangeInput = document.getElementById('dateRangePicker');
                     const dateRange = dateRangeInput ? dateRangeInput.value : '';
-                    
+
                     // Nếu có khoảng ngày được chọn, sử dụng khoảng ngày đó
                     if (dateRange) {
                         const rangeParts = dateRange.split(' đến ');
                         const startDate = new Date(rangeParts[0]);
                         const endDate = rangeParts.length > 1 ? new Date(rangeParts[1]) : new Date(rangeParts[0]);
-                        
+
                         // Lấy dữ liệu gốc từ biểu đồ
                         const chartData = @json($chartData ?? null);
                         if (!chartData || !chartData.rawData) return { months: [], series: [] };
-                        
+
                         const filteredData = {
                             months: [],
                             series: [
@@ -1660,14 +1720,14 @@
                                 }
                             ]
                         };
-                        
+
                         // Xử lý dữ liệu từng tháng
                         chartData.months.forEach((month, index) => {
                             // Giả sử tháng có định dạng "Th1", "Th2", etc.
                             const monthNumber = parseInt(month.replace('Th', ''));
                             const year = new Date().getFullYear(); // Hoặc lấy năm từ dữ liệu nếu có
                             const monthDate = new Date(year, monthNumber - 1, 15); // ngày 15 của tháng
-                            
+
                             // Kiểm tra nếu tháng này nằm trong khoảng ngày được chọn
                             if (monthDate >= startDate && monthDate <= endDate) {
                                 filteredData.months.push(month);
@@ -1676,12 +1736,12 @@
                                 filteredData.series[2].data.push(chartData.rawData.refunds[index]);
                             }
                         });
-                        
+
                         // Nếu không tìm thấy dữ liệu nào trong khoảng thời gian, hiển thị dữ liệu từ backend đã được lọc
                         if (filteredData.months.length === 0) {
                             @if(isset($isFiltered) && $isFiltered && isset($formattedDateRange))
                                 filteredData.months = ['{{ $formattedDateRange }}'];
-                                
+
                                 @if(isset($hasData) && $hasData && isset($totalOrders) && isset($totalEarnings) && $totalOrders > 0)
                                     filteredData.series[0].data = [{{ $totalOrders ?? 0 }}];
                                     filteredData.series[1].data = [{{ $totalEarnings ?? 0 }}];
@@ -1703,10 +1763,10 @@
                                 filteredData.noData = true; // Đánh dấu là không có dữ liệu
                             @endif
                         }
-                        
+
                         return filteredData;
                     }
-                    
+
                     // Nếu không có khoảng ngày, trả về dữ liệu gốc
                     const chartData = @json($chartData ?? null);
                     return chartData ? {
@@ -1714,11 +1774,11 @@
                         series: chartData.series
                     } : { months: [], series: [] };
                 }
-                
+
                 // Tạo biểu đồ với dữ liệu ban đầu
                 // Nếu đang có bộ lọc được áp dụng, sử dụng dữ liệu đã lọc
                 let initialChartData;
-                
+
                 @if(isset($isFiltered) && $isFiltered)
                     initialChartData = filterChartData();
                 @else
@@ -1727,26 +1787,26 @@
                         series: chartData.series
                     };
                 @endif
-                
+
                 // Kiểm tra nếu không có dữ liệu và cập nhật trạng thái overlay
                 function updateNoDataOverlay(chartData) {
                     const chartNoDataOverlay = document.getElementById('chartNoDataOverlay');
                     if (!chartNoDataOverlay) return;
-                    
-                    if (chartData.noData || 
-                        (chartData.series[0].data.length === 1 && 
-                         chartData.series[0].data[0] === 0 && 
-                         chartData.series[1].data[0] === 0 && 
+
+                    if (chartData.noData ||
+                        (chartData.series[0].data.length === 1 &&
+                         chartData.series[0].data[0] === 0 &&
+                         chartData.series[1].data[0] === 0 &&
                          chartData.series[2].data[0] === 0)) {
                         chartNoDataOverlay.classList.add('active');
                     } else {
                         chartNoDataOverlay.classList.remove('active');
                     }
                 }
-                
+
                 // Cập nhật trạng thái ban đầu của overlay
                 updateNoDataOverlay(initialChartData);
-                
+
                 // Cấu hình cho biểu đồ
                 const options = {
                     series: initialChartData.series,
@@ -1947,7 +2007,7 @@
                         y: {
                             formatter: function (value, { seriesIndex, dataPointIndex, w }) {
                                 const seriesName = w.config.series[seriesIndex].name;
-                                
+
                                 if (seriesName === 'Doanh thu') {
                                     return formatCurrency(value);
                                 } else if (seriesName === 'Đơn hàng') {
@@ -1974,21 +2034,21 @@
                         }
                     }
                 };
-                
+
                 // Khởi tạo biểu đồ
                 const chart = new ApexCharts(document.querySelector("#customer_impression_charts"), options);
                 chart.render();
-                
+
                 // Hàm cập nhật thống kê tổng hợp khi lọc
                 function updateStatistics(period) {
                     // Lấy khoảng ngày từ input date picker
                     const dateRangeInput = document.getElementById('dateRangePicker');
                     const dateRange = dateRangeInput ? dateRangeInput.value : '';
-                    
+
                     let totalOrders = 0;
                     let totalRevenue = 0;
                     let totalRefunds = 0;
-                    
+
                     // Nếu đang xem dữ liệu đã lọc, lấy thông tin từ backend
                     @if(isset($isFiltered) && $isFiltered)
                         @if(isset($hasData) && !$hasData)
@@ -2006,32 +2066,32 @@
                         totalRevenue = {{ array_sum($chartData['rawData']['revenue'] ?? [0]) }};
                         totalRefunds = {{ array_sum($chartData['rawData']['refunds'] ?? [0]) }};
                     @endif
-                    
+
                     // Cập nhật giá trị hiển thị trên giao diện
                     const orderCounter = document.getElementById('chart-orders-counter');
                     if (orderCounter) {
                         orderCounter.setAttribute('data-target', totalOrders);
                         orderCounter.textContent = '0';
                     }
-                    
+
                     // Cập nhật doanh thu
                     const revenueCounter = document.getElementById('chart-revenue-counter');
                     if (revenueCounter) {
                         revenueCounter.setAttribute('data-target', totalRevenue);
                         revenueCounter.textContent = '0';
                     }
-                    
+
                     // Cập nhật hoàn tiền
                     const refundCounter = document.getElementById('chart-refunds-counter');
                     if (refundCounter) {
                         refundCounter.setAttribute('data-target', totalRefunds);
                         refundCounter.textContent = '0';
                     }
-                    
+
                     // Khởi động lại counter animation
                     initCounters();
                 }
-                
+
                 console.log('Biểu đồ đã được khởi tạo');
             } catch (error) {
                 console.error('Lỗi khởi tạo biểu đồ:', error);
@@ -2049,12 +2109,12 @@
             // Tạo mảng dữ liệu và định nghĩa tiêu đề cho các cột
             let headers = [];
             let data = [];
-            
+
             // Lấy giá trị khoảng ngày từ date picker
             const dateRangeInput = document.getElementById('dateRangePicker');
             const dateRange = dateRangeInput ? dateRangeInput.value : '';
             console.log('Khoảng ngày đã chọn:', dateRange);
-            
+
             // Tạo text thông báo khoảng ngày đã lọc
             let dateRangeInfo = '';
             if (dateRange) {
@@ -2063,16 +2123,16 @@
                     const startDate = new Date(rangeParts[0]);
                     const endDate = new Date(rangeParts[1]);
                     const formatDate = (date) => {
-                        return date.getDate().toString().padStart(2, '0') + '/' + 
-                               (date.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                        return date.getDate().toString().padStart(2, '0') + '/' +
+                               (date.getMonth() + 1).toString().padStart(2, '0') + '/' +
                                date.getFullYear();
                     };
                     dateRangeInfo = `Khoảng ngày: ${formatDate(startDate)} - ${formatDate(endDate)}`;
                 } else if (rangeParts.length === 1) {
                     const singleDate = new Date(rangeParts[0]);
                     const formatDate = (date) => {
-                        return date.getDate().toString().padStart(2, '0') + '/' + 
-                               (date.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                        return date.getDate().toString().padStart(2, '0') + '/' +
+                               (date.getMonth() + 1).toString().padStart(2, '0') + '/' +
                                date.getFullYear();
                     };
                     dateRangeInfo = `Ngày: ${formatDate(singleDate)}`;
@@ -2080,12 +2140,12 @@
             } else {
                 dateRangeInfo = 'Tất cả dữ liệu';
             }
-            
+
             // Thu thập dữ liệu dựa vào loại báo cáo
             if (reportType === 'buyers') {
                 // Thu thập dữ liệu từ bảng người mua hàng nhiều nhất
                 headers = ['Khách hàng', 'Email', 'Loại', 'Đơn hàng', 'Chi tiêu', 'Tỷ lệ'];
-                
+
                 // Tìm bảng người mua hàng
                 const titles = document.querySelectorAll('.card-title');
                 let buyerTable = null;
@@ -2138,11 +2198,11 @@
             } else if (reportType === 'products') {
                 // Thu thập dữ liệu từ bảng sản phẩm bán chạy
                 headers = ['Sản phẩm', 'Giá', 'Đơn hàng', 'Tồn kho', 'Tổng tiền', 'Ngày tạo'];
-                
+
                 // Tìm bảng sản phẩm bán chạy
                 const titles = document.querySelectorAll('.card-title');
                 let productTable = null;
-                
+
                 for (let i = 0; i < titles.length; i++) {
                     if (titles[i].textContent.includes('Sản phẩm bán chạy nhất')) {
                         const productCard = titles[i].closest('.card');
@@ -2152,41 +2212,41 @@
                         }
                     }
                 }
-                
+
                 if (productTable) {
                     const rows = productTable.querySelectorAll('tbody tr');
-                    
+
                     rows.forEach(row => {
                         const nameElement = row.querySelector('.fs-14.my-1 a');
                         const dateElement = row.querySelector('.text-muted');
-                        
+
                         // Lấy dữ liệu từ các ô
                         const cells = row.querySelectorAll('td');
                         const productName = nameElement ? nameElement.textContent.trim() : '';
                         const createdDate = dateElement ? dateElement.textContent.trim() : '';
-                        
+
                         let price = '', orders = '', stock = '', totalAmount = '';
-                        
+
                         if (cells.length >= 2) {
                             const priceElement = cells[1].querySelector('.fs-14.my-1.fw-normal');
                             price = priceElement ? priceElement.textContent.trim() : '';
                         }
-                        
+
                         if (cells.length >= 3) {
                             const ordersElement = cells[2].querySelector('.fs-14.my-1.fw-normal');
                             orders = ordersElement ? ordersElement.textContent.trim() : '';
                         }
-                        
+
                         if (cells.length >= 4) {
                             const stockElement = cells[3].querySelector('.fs-14.my-1.fw-normal');
                             stock = stockElement ? stockElement.textContent.trim() : '';
                         }
-                        
+
                         if (cells.length >= 5) {
                             const amountElement = cells[4].querySelector('.fs-14.my-1.fw-normal');
                             totalAmount = amountElement ? amountElement.textContent.trim() : '';
                         }
-                        
+
                         data.push([productName, price, orders, stock, totalAmount, createdDate]);
                     });
                 }
@@ -2196,14 +2256,14 @@
 
                 // Lấy dữ liệu từ biểu đồ (dùng dữ liệu mẫu nếu không có dữ liệu thực)
                 const monthlyData = @json($monthlyData ?? []);
-                
+
                 if (monthlyData && monthlyData.length > 0) {
                     // Dữ liệu thực từ backend
                     monthlyData.forEach(item => {
                         data.push([
-                            item.month, 
-                            item.orders.toString(), 
-                            item.revenue.toLocaleString('vi-VN') + ' ₫', 
+                            item.month,
+                            item.orders.toString(),
+                            item.revenue.toLocaleString('vi-VN') + ' ₫',
                             item.refunds.toString(),
                             '15%' // Giá trị mẫu cho tỷ lệ chuyển đổi
                         ]);
@@ -2229,12 +2289,12 @@
             // Thu thập dữ liệu sản phẩm bán chạy riêng cho báo cáo doanh thu
             let productHeaders = ['Sản phẩm', 'Giá', 'Đơn hàng', 'Tồn kho', 'Tổng tiền', 'Ngày tạo'];
             let productData = [];
-            
+
             if (reportType === 'revenue') {
                 // Tìm bảng sản phẩm bán chạy
                 const titles = document.querySelectorAll('.card-title');
                 let productTable = null;
-                
+
                 for (let i = 0; i < titles.length; i++) {
                     if (titles[i].textContent.includes('Sản phẩm bán chạy nhất')) {
                         const productCard = titles[i].closest('.card');
@@ -2244,41 +2304,41 @@
                         }
                     }
                 }
-                
+
                 if (productTable) {
                     const rows = productTable.querySelectorAll('tbody tr');
-                    
+
                     rows.forEach(row => {
                         const nameElement = row.querySelector('.fs-14.my-1 a');
                         const dateElement = row.querySelector('.text-muted');
-                        
+
                         // Lấy dữ liệu từ các ô
                         const cells = row.querySelectorAll('td');
                         const productName = nameElement ? nameElement.textContent.trim() : '';
                         const createdDate = dateElement ? dateElement.textContent.trim() : '';
-                        
+
                         let price = '', orders = '', stock = '', totalAmount = '';
-                        
+
                         if (cells.length >= 2) {
                             const priceElement = cells[1].querySelector('.fs-14.my-1.fw-normal');
                             price = priceElement ? priceElement.textContent.trim() : '';
                         }
-                        
+
                         if (cells.length >= 3) {
                             const ordersElement = cells[2].querySelector('.fs-14.my-1.fw-normal');
                             orders = ordersElement ? ordersElement.textContent.trim() : '';
                         }
-                        
+
                         if (cells.length >= 4) {
                             const stockElement = cells[3].querySelector('.fs-14.my-1.fw-normal');
                             stock = stockElement ? stockElement.textContent.trim() : '';
                         }
-                        
+
                         if (cells.length >= 5) {
                             const amountElement = cells[4].querySelector('.fs-14.my-1.fw-normal');
                             totalAmount = amountElement ? amountElement.textContent.trim() : '';
                         }
-                        
+
                         productData.push([productName, price, orders, stock, totalAmount, createdDate]);
                     });
                 }
@@ -2323,7 +2383,7 @@
                     infoSheet.mergeCells('A4:D4');
                     infoSheet.getCell('A4').value = 'Người xuất báo cáo: {{ Auth::user()->name }}';
                     infoSheet.getCell('A4').font = { size: 11 };
-                    
+
                     // Thêm thông tin về khoảng ngày đã lọc
                     infoSheet.mergeCells('A5:D5');
                     infoSheet.getCell('A5').value = dateRangeInfo;
@@ -2362,7 +2422,7 @@
                         };
                     });
                     };
-                    
+
                     // Hàm tạo style dữ liệu
                     const createDataStyle = (row, index) => {
                         const isAlternateRow = index % 2 === 1;
@@ -2401,26 +2461,26 @@
                         const row = dataSheet.addRow(rowData);
                         createDataStyle(row, index);
                     });
-                    
+
                     // Thiết lập độ rộng cột cho sheet dữ liệu
                     setColumnWidth(dataSheet, headers);
-                    
+
                     // Nếu báo cáo là báo cáo doanh thu, thêm sheet sản phẩm
                     if (reportType === 'revenue' && productData.length > 0) {
                         // Tạo sheet sản phẩm
                         const productSheet = workbook.addWorksheet('Sản phẩm');
-                        
+
                         // Thêm headers cho sheet sản phẩm
                         const productHeaderRow = productSheet.addRow(productHeaders);
                         createHeaderStyle(productHeaderRow);
                         productHeaderRow.height = 30;
-                        
+
                         // Thêm dữ liệu cho sheet sản phẩm
                         productData.forEach((rowData, index) => {
                             const row = productSheet.addRow(rowData);
                             createDataStyle(row, index);
                         });
-                        
+
                         // Thiết lập độ rộng cột cho sheet sản phẩm
                         setColumnWidth(productSheet, productHeaders);
                     }
@@ -2428,7 +2488,7 @@
                     // Xuất file Excel
                     const buffer = await workbook.xlsx.writeBuffer();
                     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                    
+
                     // Thêm khoảng ngày vào tên file nếu có
                     let fileName = `${reportTitle}_`;
                     if (dateRange) {
@@ -2441,7 +2501,7 @@
                         }
                     }
                     fileName += `${new Date().toISOString().slice(0, 10)}.xlsx`;
-                    
+
                     saveAs(blob, fileName);
 
                     // Hiển thị thông báo
@@ -2556,10 +2616,10 @@
         document.getElementById('dateFilterForm').addEventListener('submit', function(e) {
             // Ngăn form submit mặc định vì ta sẽ xử lý AJAX
             e.preventDefault();
-            
+
             // Lấy giá trị ngày đã chọn
             const dateRange = document.getElementById('dateRangePicker').value;
-            
+
             if (dateRange) {
                 // Chuyển hướng đến URL với tham số date_range
                 window.location.href = "{{ route('dashboard.filter') }}?date_range=" + encodeURIComponent(dateRange);
@@ -2568,7 +2628,7 @@
                 window.location.href = "{{ route('dashboard') }}";
             }
         });
-        
+
         // Chạy updateStatistics khi trang được tải
         document.addEventListener('DOMContentLoaded', function() {
             // Nếu có khoảng ngày trong url, áp dụng cho thống kê ngay khi tải trang
@@ -2576,13 +2636,13 @@
             if (urlParams.has('date_range')) {
                 updateStatistics();
             }
-            
+
             // Refresh AOS animations sau khi trang đã tải hoàn toàn
             setTimeout(function() {
                 AOS.refresh();
             }, 500);
         });
-        
+
         // Sự kiện khi tab hoặc cửa sổ được kích hoạt lại
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible') {
@@ -2594,7 +2654,7 @@
         // Khởi tạo biểu đồ
         const chart = new ApexCharts(document.querySelector("#customer_impression_charts"), options);
         chart.render();
-        
+
         // Hàm cập nhật biểu đồ khi dữ liệu thay đổi
         function updateChart(newData) {
             chart.updateOptions({
@@ -2604,11 +2664,11 @@
                 }
             });
             chart.updateSeries(newData.series);
-            
+
             // Cập nhật trạng thái overlay "Không có dữ liệu"
             updateNoDataOverlay(newData);
         }
-        
+
         console.log('Biểu đồ đã được khởi tạo');
     });
 </script>
