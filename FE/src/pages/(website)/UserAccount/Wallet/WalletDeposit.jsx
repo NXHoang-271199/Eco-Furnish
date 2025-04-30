@@ -115,7 +115,8 @@ const WalletDeposit = () => {
     } catch (error) {
       console.error("Lỗi khi nạp tiền:", error);
       setError(
-        error.response?.data?.message || "Có lỗi xảy ra. Vui lòng thử lại sau."
+        error.response?.data?.errors?.amount ||
+          "Có lỗi xảy ra. Vui lòng thử lại sau."
       );
     } finally {
       setLoading(false);
@@ -198,10 +199,11 @@ const WalletDeposit = () => {
                   key={presetAmount}
                   type="button"
                   onClick={() => setAmount(presetAmount.toString())}
-                  className={`px-2 py-2 border ${amount === presetAmount.toString()
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                    : "border-gray-300 hover:bg-gray-100"
-                    } rounded-md text-sm`}
+                  className={`px-2 py-2 border ${
+                    amount === presetAmount.toString()
+                      ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                      : "border-gray-300 hover:bg-gray-100"
+                  } rounded-md text-sm`}
                 >
                   {formatMoney(presetAmount)}
                 </button>
@@ -229,10 +231,11 @@ const WalletDeposit = () => {
                   <div
                     key={method.id}
                     onClick={() => handlePaymentMethodChange(method.id)}
-                    className={`flex items-center p-3 border rounded-lg cursor-pointer ${selectedPaymentMethod === method.id
-                      ? "border-indigo-500 bg-indigo-50"
-                      : "border-gray-300 hover:bg-gray-50"
-                      }`}
+                    className={`flex items-center p-3 border rounded-lg cursor-pointer ${
+                      selectedPaymentMethod === method.id
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-gray-300 hover:bg-gray-50"
+                    }`}
                   >
                     <div className="mr-3">
                       {method.image ? (
@@ -260,10 +263,11 @@ const WalletDeposit = () => {
           <button
             onClick={handleDeposit}
             disabled={loading || !amount || !selectedPaymentMethod}
-            className={`w-full py-3 px-4 rounded-lg flex items-center justify-center ${loading || !amount || !selectedPaymentMethod
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700 text-white"
-              }`}
+            className={`w-full py-3 px-4 rounded-lg flex items-center justify-center ${
+              loading || !amount || !selectedPaymentMethod
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white"
+            }`}
           >
             {loading ? (
               <>

@@ -195,8 +195,8 @@ class BankAccountController extends Controller
 		try {
 			// URL và thông tin API Key, Secret
 			$apiUrl = 'https://api.banklookup.net/api/bank/id-lookup-prod';
-			$apiKey = 'ba48b53a-fc0f-4df4-815a-5e90bbc0b37ekey';  // API Key
-			$apiSecret = '85d1fa56-106e-46e9-b4e3-7633ec76661dsecret';  // API Secret
+			$apiKey = 'd37b1a18-722f-40a8-aa18-b5e2c3cb8531key';  // API Key
+			$apiSecret = '09c07207-c7d7-4a23-9ab9-d6d81dc31cfbsecret';  // API Secret
 
 			// Gửi yêu cầu tới API
 			$response = Http::withHeaders([

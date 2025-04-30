@@ -5,18 +5,11 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-let isRefreshing = false;
-let failedQueue = [];
+let sessionExpiredCallback = null;
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach((promise) => {
-    if (error) {
-      promise.reject(error);
-    } else {
-      promise.resolve(token);
-    }
-  });
-  failedQueue = [];
+// Hàm đăng ký callback xử lý khi phiên hết hạn
+export const registerSessionExpiredCallback = (callback) => {
+  sessionExpiredCallback = callback;
 };
 
 // Hàm xử lý logout
@@ -89,17 +82,6 @@ axiosInstance.interceptors.response.use(
     }
 
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return axiosInstance(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
       originalRequest._retry = true;
       isRefreshing = true;
 
@@ -132,6 +114,12 @@ axiosInstance.interceptors.response.use(
         handleLogout();
         return Promise.reject(new Error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại"));
       }
+
+      // Nếu không có callback, xử lý như cũ
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("userData");
+      return Promise.reject(new Error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại"));
     }
 
     return Promise.reject(error);

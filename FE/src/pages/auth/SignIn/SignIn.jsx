@@ -57,11 +57,11 @@ const SignIn = () => {
         localStorage.setItem("authToken", response.data.data.access_token);
         localStorage.setItem("refreshToken", response.data.data.refresh_token);
         localStorage.setItem("userData", JSON.stringify(response.data.data));
-        
+
         // Khởi tạo kết nối socket mới và phát sự kiện auth-change
         resetSocket();
         window.dispatchEvent(new Event("auth-change"));
-        
+
         navigate("/");
       }
     } catch (error) {
@@ -287,8 +287,8 @@ const SignIn = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() =>
-                (window.location.href =
-                  "http://localhost:8000/api/auth/google/redirect")
+                  (window.location.href =
+                    "http://localhost:8000/api/auth/google/redirect")
                 }
               >
                 <FcGoogle className="mr-3" size={20} />
@@ -301,8 +301,8 @@ const SignIn = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() =>
-                (window.location.href =
-                  "http://localhost:8000/api/auth/facebook/redirect")
+                  (window.location.href =
+                    "http://localhost:8000/api/auth/facebook/redirect")
                 }
               >
                 <FiFacebook className="mr-3 text-blue-600" size={20} />
