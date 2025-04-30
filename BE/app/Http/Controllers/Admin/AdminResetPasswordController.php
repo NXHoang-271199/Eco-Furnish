@@ -27,7 +27,7 @@ class AdminResetPasswordController extends Controller
             'password' => 'required|min:8|confirmed',
         ]);
 
-        $status = Password::reset(
+        $status = Password::broker('users')->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill([
@@ -43,5 +43,10 @@ class AdminResetPasswordController extends Controller
         return $status === Password::PASSWORD_RESET
             ? redirect()->route('admin.login')->with('status', __($status))
             : back()->withErrors(['email' => [__($status)]]);
+    }
+
+    protected function broker()
+    {
+        return Password::broker('users');
     }
 }

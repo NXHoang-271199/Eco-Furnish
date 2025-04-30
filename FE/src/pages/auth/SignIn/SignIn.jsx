@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { FaRegEyeSlash, FaEye } from "react-icons/fa";
-import { FiMail, FiLock, FiFacebook, FiGithub } from "react-icons/fi";
+import { FiMail, FiLock, FiFacebook } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../../utils/axiosConfig";
 import { resetSocket } from "../../../utils/socketConfig";
 
 const SignIn = () => {
@@ -25,6 +25,8 @@ const SignIn = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const errorParam = params.get("error");
+    const messageParam = params.get("message");
+
     if (errorParam) {
       let errorMessage = "Đã có lỗi xảy ra trong quá trình đăng nhập.";
       if (errorParam === "google_callback_failed") {
@@ -34,22 +36,19 @@ const SignIn = () => {
       }
       setAuthError(errorMessage);
       navigate(location.pathname, { replace: true });
+    } else if (messageParam === "account_disabled") {
+      setAuthError("Tài khoản của bạn đã bị vô hiệu hóa.");
+      navigate(location.pathname, { replace: true });
     }
   }, [location, navigate]);
 
   const onSubmit = async (data) => {
     try {
-      const response = await axios.post(
-        `http://localhost:8000/api/users/login`,
+      const response = await axiosInstance.post(
+        `/users/login`,
         {
           ...data,
           remember_me: data.remember_me || false,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
         }
       );
 
@@ -58,47 +57,21 @@ const SignIn = () => {
         localStorage.setItem("authToken", response.data.data.access_token);
         localStorage.setItem("refreshToken", response.data.data.refresh_token);
         localStorage.setItem("userData", JSON.stringify(response.data.data));
-        
+
         // Khởi tạo kết nối socket mới và phát sự kiện auth-change
         resetSocket();
         window.dispatchEvent(new Event("auth-change"));
-        
+
         navigate("/");
       }
     } catch (error) {
       if (error.response?.status === 403) {
-        alert("Vui lòng xác thực email trước khi đăng nhập");
+        setAuthError("Tài khoản của bạn đã bị vô hiệu hóa.");
       } else if (error.response?.data?.message) {
-        alert(error.response.data.message);
+        setAuthError(error.response.data.message);
       } else {
-        alert("Đã có lỗi xảy ra khi đăng nhập");
+        setAuthError("Đã có lỗi xảy ra khi đăng nhập");
       }
-    }
-  };
-
-  // phải thông qua email-vẻ
-  const refreshToken = async () => {
-    try {
-      const response = await axios.post(
-        `http://localhost:8000/api/users/refresh-token`,
-        {
-          refresh_token: localStorage.getItem("refreshToken"), // Lưu refresh token trong localStorage
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
-
-      if (response.data.status === "success") {
-        localStorage.setItem("authToken", response.data.data.access_token);
-        console.log("Token đã được làm mới:", response.data.data.access_token);
-        return response.data.data.access_token;
-      }
-    } catch (error) {
-      console.error("Lỗi làm mới token:", error);
     }
   };
 
@@ -314,8 +287,8 @@ const SignIn = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() =>
-                (window.location.href =
-                  "http://localhost:8000/api/auth/google/redirect")
+                  (window.location.href =
+                    "http://localhost:8000/api/auth/google/redirect")
                 }
               >
                 <FcGoogle className="mr-3" size={20} />
@@ -328,8 +301,8 @@ const SignIn = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() =>
-                (window.location.href =
-                  "http://localhost:8000/api/auth/facebook/redirect")
+                  (window.location.href =
+                    "http://localhost:8000/api/auth/facebook/redirect")
                 }
               >
                 <FiFacebook className="mr-3 text-blue-600" size={20} />

@@ -43,6 +43,8 @@ import { LoadingProvider, useLoading } from "./context/LoadingContext";
 import LoadingScreen from "./components/LoadingScreen";
 import BankInfo from "./pages/(website)/UserAccount/Bank/BankInfo";
 import WalletWithdraw from "./pages/(website)/UserAccount/Wallet/WalletWithdraw";
+import { AuthProvider } from "./context/AuthContext";
+
 // Component bọc để sử dụng hook useLoading
 const AppContent = () => {
   const { isLoading } = useLoading();
@@ -119,7 +121,9 @@ const AppContent = () => {
 function App() {
   return (
     <LoadingProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </LoadingProvider>
   );
 }

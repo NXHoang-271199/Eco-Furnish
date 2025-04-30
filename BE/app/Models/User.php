@@ -11,10 +11,11 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Auth\Passwords\CanResetPassword;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, CanResetPassword;
 
     /**
      * The attributes that are mass assignable.
@@ -38,7 +39,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'access_token',
         'refresh_token',
         'remember_me',
-        'remember_me_expires_at'
+        'remember_me_expires_at',
+        'is_oauth',
+        'provider',
+        'provider_id',
+        'level2_password_reset_token',
+        'level2_password_reset_at',
     ];
 
     public function role()
@@ -123,7 +129,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'password' => 'hashed',
         'level2_password' => 'hashed',
         'has_level2_password' => 'boolean',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'is_oauth' => 'boolean'
     ];
 
     public function posts()

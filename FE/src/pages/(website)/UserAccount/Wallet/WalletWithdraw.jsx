@@ -347,12 +347,6 @@ const WalletWithdraw = () => {
         setTimeout(() => {
           setProcessing(false);
           setCompleted(true);
-
-          // Tự động chuyển hướng sau 2 giây khi hiển thị nút tích xanh
-          setTimeout(() => {
-            setShowProcessingPopup(false);
-            navigate("/account/wallet");
-          }, 2000);
         }, 3000);
       } else {
         toast.error(
@@ -718,13 +712,13 @@ const WalletWithdraw = () => {
           exit="exit"
         >
           <motion.div className="bg-white rounded-lg p-6 max-w-md w-full text-center shadow-lg border border-blue-500 relative">
-            <div className="absolute top-4 right-4">
+            {/* <div className="absolute top-4 right-4">
               <img
                 src="https://via.placeholder.com/60x20?text=VietQR"
                 alt="VietQR Logo"
                 className="h-5"
               />
-            </div>
+            </div> */}
 
             {processing ? (
               <>
@@ -806,10 +800,11 @@ const WalletWithdraw = () => {
                   onClick={handleComplete}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="mb-4"
+                  className="mb-4 text-green-500 hover:text-green-600"
+                  aria-label="Xác nhận thành công"
                 >
                   <svg
-                    className="h-16 w-16 text-green-500"
+                    className="h-16 w-16"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -818,7 +813,7 @@ const WalletWithdraw = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M5 13l4 4L19 7"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
                 </motion.button>
@@ -826,7 +821,7 @@ const WalletWithdraw = () => {
                   className="text-lg font-semibold text-gray-800 mb-2"
                   variants={childVariants}
                 >
-                  Rút tiền thành công!
+                  Yêu cầu rút tiền được gửi thành công!
                 </motion.h3>
                 <motion.p
                   className="text-gray-600 mb-4"
@@ -863,6 +858,15 @@ const WalletWithdraw = () => {
                     </span>
                   </p>
                 </motion.div>
+                <motion.button
+                  onClick={handleComplete}
+                  className="mt-6 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-150 ease-in-out"
+                  variants={childVariants}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Quay về Ví
+                </motion.button>
               </motion.div>
             ) : null}
           </motion.div>

@@ -12,7 +12,7 @@ trait TokenHandler
         $user->tokens()->delete();
 
         // Tạo access token mới và lấy thời gian hết hạn
-        $accessTokenExpiresAt = now()->addHours(24);
+        $accessTokenExpiresAt = now()->addDays(1);
         $accessTokenInstance = $user->createToken('access_token', ['*'], $accessTokenExpiresAt);
         $accessToken = $accessTokenInstance->plainTextToken;
 
