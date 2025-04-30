@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { AiOutlineClose } from 'react-icons/ai';
 import { FaShoppingCart } from 'react-icons/fa';
 import { formatCurrency } from '../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const VariantSelectionModal = ({
     isOpen,
@@ -25,24 +26,24 @@ const VariantSelectionModal = ({
 
             // Debug để kiểm tra dữ liệu sản phẩm
             console.log('Product data in modal:', product);
-            
+
             try {
                 // Kiểm tra và xử lý dữ liệu biến thể
                 if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
                     console.log('Variants data:', product.variants);
-                    
+
                     // Đảm bảo tất cả các biến thể đều có quantity là số
                     const processedVariants = product.variants.map(variant => {
                         // Tạo bản sao của variant
-                        const variantCopy = {...variant};
-                        
+                        const variantCopy = { ...variant };
+
                         // Đảm bảo quantity là số
                         if (variantCopy.quantity === undefined || variantCopy.quantity === null) {
                             variantCopy.quantity = 0;
                         } else if (typeof variantCopy.quantity === 'string') {
                             variantCopy.quantity = parseInt(variantCopy.quantity) || 0;
                         }
-                        
+
                         // Đảm bảo variant_details là array
                         if (!Array.isArray(variantCopy.variant_details)) {
                             // Nếu là object, chuyển thành array của object
@@ -55,23 +56,23 @@ const VariantSelectionModal = ({
                                 variantCopy.variant_details = [];
                             }
                         }
-                        
+
                         return variantCopy;
                     });
-                    
+
                     console.log('Processed variants:', processedVariants);
-                    
+
                     // Tìm biến thể đầu tiên có số lượng > 0
-                    const availableVariant = processedVariants.find(variant => 
-                        variant && 
+                    const availableVariant = processedVariants.find(variant =>
+                        variant &&
                         variant.quantity > 0 &&
-                        variant.variant_details && 
-                        Array.isArray(variant.variant_details) && 
+                        variant.variant_details &&
+                        Array.isArray(variant.variant_details) &&
                         variant.variant_details.length > 0
                     );
-                    
+
                     console.log('Available variant:', availableVariant);
-                    
+
                     // Nếu có biến thể khả dụng, chọn nó
                     if (availableVariant) {
                         const initialAttributes = {};
@@ -80,7 +81,7 @@ const VariantSelectionModal = ({
                                 initialAttributes[detail.name] = detail.value;
                             }
                         });
-                        
+
                         // Cập nhật state với biến thể có sẵn
                         if (Object.keys(initialAttributes).length > 0) {
                             console.log('Setting initial attributes:', initialAttributes);
@@ -98,7 +99,7 @@ const VariantSelectionModal = ({
                                     initialAttributes[detail.name] = detail.value;
                                 }
                             });
-                            
+
                             if (Object.keys(initialAttributes).length > 0) {
                                 console.log('Setting initial attributes for first variant:', initialAttributes);
                                 setSelectedVariantAttributes(initialAttributes);
@@ -181,11 +182,11 @@ const VariantSelectionModal = ({
         try {
             if (selectedVariantId && product.variants && Array.isArray(product.variants)) {
                 const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
-                
+
                 if (selectedVariant) {
                     // Debug
                     console.log('Selected variant stock check:', selectedVariant.id, selectedVariant.quantity);
-                    
+
                     // Đảm bảo quantity là số
                     let quantity = 0;
                     if (selectedVariant.quantity === undefined || selectedVariant.quantity === null) {
@@ -198,7 +199,7 @@ const VariantSelectionModal = ({
                         quantity = selectedVariant.quantity;
                         console.log('Using original number quantity:', quantity);
                     }
-                    
+
                     // Đảm bảo luôn trả về số nguyên không âm
                     const stockQty = Math.max(0, Math.floor(quantity));
                     console.log('Final stock quantity:', stockQty);
@@ -222,7 +223,7 @@ const VariantSelectionModal = ({
                 } else {
                     productQty = product.quantity;
                 }
-                
+
                 // Đảm bảo luôn trả về số nguyên không âm
                 const finalQty = Math.max(0, Math.floor(productQty));
                 console.log('Using product quantity:', finalQty);
@@ -333,16 +334,18 @@ const VariantSelectionModal = ({
                             </label>
                             <div className="flex flex-wrap gap-2">
                                 {Array.from(values).map((value) => (
-                                    <button
+                                    <motion.button
                                         key={value}
                                         onClick={() => handleVariantAttributeChange(variantName, value)}
-                                        className={`px-3 py-1 rounded-md text-sm font-medium ${selectedVariantAttributes[variantName] === value
-                                            ? "bg-blue-500 text-white"
-                                            : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-all duration-300 ${selectedVariantAttributes[variantName] === value
+                                                ? "bg-amber-500 text-white shadow-md"
+                                                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                                             }`}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
                                     >
                                         {value}
-                                    </button>
+                                    </motion.button>
                                 ))}
                             </div>
                         </div>
@@ -358,128 +361,166 @@ const VariantSelectionModal = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-                {/* Header */}
-                <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-white">Chọn biến thể sản phẩm</h3>
-                    <button
-                        onClick={onClose}
-                        className="text-white hover:text-gray-200 transition-colors"
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                >
+                    <motion.div
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                        initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                        animate={{ scale: 1, y: 0, opacity: 1 }}
+                        exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     >
-                        <AiOutlineClose size={24} />
-                    </button>
-                </div>
+                        {/* Header */}
+                        <div className="px-6 py-4 bg-gradient-to-r from-amber-500 to-amber-600 flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-white">Chọn biến thể sản phẩm</h3>
+                            <motion.button
+                                onClick={onClose}
+                                className="text-white hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-amber-600/50"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                            >
+                                <AiOutlineClose size={20} />
+                            </motion.button>
+                        </div>
 
-                {/* Content */}
-                <div className="p-4">
-                    {product && (
-                        <>
-                            {/* Product info */}
-                            <div className="flex items-center mb-4">
-                                <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                                    {product.image_thumnail || product.image ? (
-                                        <img
-                                            src={product.image_thumnail ? `/storage/${product.image_thumnail}` : `/storage/${product.image}`}
-                                            alt={product.name}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                console.log("Lỗi tải ảnh:", e.target.src);
-                                                e.target.onerror = null;
-                                                e.target.src = "https://via.placeholder.com/150?text=Hình+ảnh";
-                                            }}
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500">
-                                            Không có ảnh
+                        {/* Content */}
+                        <div className="p-6">
+                            {product && (
+                                <>
+                                    {/* Product info */}
+                                    <div className="flex items-center mb-6 bg-amber-50 p-4 rounded-xl">
+                                        <div className="w-20 h-20 bg-white rounded-lg overflow-hidden flex-shrink-0 shadow-md">
+                                            {product.image_thumnail || product.image ? (
+                                                <img
+                                                    src={
+                                                        product.image_thumnail
+                                                            ? product.image_thumnail.startsWith("http")
+                                                                ? product.image_thumnail
+                                                                : `${import.meta.env.VITE_API_URL}/storage/${product.image_thumnail}`
+                                                            : product.image.startsWith("http")
+                                                                ? product.image
+                                                                : `${import.meta.env.VITE_API_URL}/storage/${product.image}`
+                                                    }
+                                                    alt={product.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        console.log("Lỗi tải ảnh:", e.target.src);
+                                                        e.target.onerror = null;
+                                                        e.target.src = "https://via.placeholder.com/150?text=Hình+ảnh";
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500">
+                                                    Không có ảnh
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                                <div className="ml-4">
-                                    <h4 className="font-medium text-gray-800">{product.name}</h4>
-                                    <div className="flex items-center mt-1">
-                                        <p className="text-blue-600 font-bold">
-                                            {formatCurrency(getCurrentPrice())}
-                                        </p>
-                                        {product.discount_price && product.price !== product.discount_price && (
-                                            <p className="ml-2 text-gray-400 line-through text-sm">
-                                                {formatCurrency(product.price)}
-                                            </p>
-                                        )}
+                                        <div className="ml-4">
+                                            <h4 className="font-semibold text-gray-800 text-lg">{product.name}</h4>
+                                            <div className="flex items-center mt-1">
+                                                <p className="text-amber-600 font-bold text-xl">
+                                                    {formatCurrency(getCurrentPrice())}
+                                                </p>
+                                                {product.discount_price && product.price !== product.discount_price && (
+                                                    <p className="ml-2 text-gray-400 line-through text-sm">
+                                                        {formatCurrency(product.price)}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            {/* Variant selection */}
-                            <div className="mb-4">
-                                <h5 className="font-medium text-gray-700 mb-2">Lựa chọn biến thể:</h5>
-                                {renderVariants()}
-                            </div>
+                                    {/* Variant selection */}
+                                    <div className="mb-6">
+                                        <h5 className="font-medium text-gray-700 mb-3 flex items-center">
+                                            <span className="w-1 h-5 bg-amber-500 rounded-full mr-2 inline-block"></span>
+                                            Lựa chọn biến thể
+                                        </h5>
+                                        {renderVariants()}
+                                    </div>
 
-                            {/* Quantity */}
-                            <div className="mb-6">
-                                <h5 className="font-medium text-gray-700 mb-2">Số lượng:</h5>
-                                <div className="flex items-center">
-                                    <button
-                                        onClick={decreaseQuantity}
-                                        className="w-8 h-8 flex items-center justify-center rounded-l border border-gray-300 bg-gray-100 text-gray-600"
-                                        disabled={quantity <= 1}
-                                    >
-                                        -
-                                    </button>
-                                    <input
-                                        type="number"
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                                        className="w-16 h-8 border-t border-b border-gray-300 text-center"
-                                    />
-                                    <button
-                                        onClick={increaseQuantity}
-                                        className="w-8 h-8 flex items-center justify-center rounded-r border border-gray-300 bg-gray-100 text-gray-600"
-                                        disabled={quantity >= getStockQuantity()}
-                                    >
-                                        +
-                                    </button>
-                                    <span className="ml-3 text-sm text-gray-500">
-                                        Còn {getStockQuantity()} sản phẩm
-                                    </span>
-                                </div>
-                            </div>
+                                    {/* Quantity with improved styling */}
+                                    <div className="mb-8">
+                                        <h5 className="font-medium text-gray-700 mb-3 flex items-center">
+                                            <span className="w-1 h-5 bg-amber-500 rounded-full mr-2 inline-block"></span>
+                                            Số lượng
+                                        </h5>
+                                        <div className="flex items-center">
+                                            <motion.button
+                                                onClick={decreaseQuantity}
+                                                className={`w-10 h-10 flex items-center justify-center rounded-l-lg border border-gray-300 ${quantity <= 1 ? 'bg-gray-100 text-gray-400' : 'bg-amber-50 text-amber-600 hover:bg-amber-100'}`}
+                                                disabled={quantity <= 1}
+                                                whileTap={quantity > 1 ? { scale: 0.95 } : {}}
+                                            >
+                                                -
+                                            </motion.button>
+                                            <input
+                                                type="number"
+                                                value={quantity}
+                                                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                                className="w-16 h-10 border-t border-b border-gray-300 text-center outline-none text-gray-700"
+                                                min="1"
+                                                max={getStockQuantity()}
+                                            />
+                                            <motion.button
+                                                onClick={increaseQuantity}
+                                                className={`w-10 h-10 flex items-center justify-center rounded-r-lg border border-gray-300 ${quantity >= getStockQuantity() ? 'bg-gray-100 text-gray-400' : 'bg-amber-50 text-amber-600 hover:bg-amber-100'}`}
+                                                disabled={quantity >= getStockQuantity()}
+                                                whileTap={quantity < getStockQuantity() ? { scale: 0.95 } : {}}
+                                            >
+                                                +
+                                            </motion.button>
+                                            <span className="ml-4 text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
+                                                Còn <span className="font-medium text-amber-600">{getStockQuantity()}</span> sản phẩm
+                                            </span>
+                                        </div>
+                                    </div>
 
-                            {/* Actions */}
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={onClose}
-                                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 mr-2"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    onClick={handleAddToCart}
-                                    disabled={loading || (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0)}
-                                    className={`px-4 py-2 rounded-md text-white flex items-center ${
-                                        loading ? 
-                                            "bg-gray-400 cursor-not-allowed" : 
-                                        (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0) ? 
-                                            "bg-gray-400 cursor-not-allowed" : 
-                                            "bg-blue-600 hover:bg-blue-700"
-                                    }`}
-                                >
-                                    <FaShoppingCart className="mr-2" />
-                                    {loading ? 
-                                        "Đang xử lý..." : 
-                                        (selectedVariantId && getStockQuantity() <= 0) ? 
-                                            "Hết hàng" : 
-                                            "Thêm vào giỏ hàng"
-                                    }
-                                </button>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </div>
-        </div>
+                                    {/* Actions */}
+                                    <div className="flex justify-end gap-3 mt-6">
+                                        <motion.button
+                                            onClick={onClose}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                                            whileHover={{ scale: 1.02, boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
+                                            Hủy
+                                        </motion.button>
+                                        <motion.button
+                                            onClick={handleAddToCart}
+                                            disabled={loading || (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0)}
+                                            className={`px-5 py-2 rounded-lg text-white font-medium flex items-center ${loading ?
+                                                    "bg-gray-400 cursor-not-allowed" :
+                                                    (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0) ?
+                                                        "bg-gray-400 cursor-not-allowed" :
+                                                        "bg-amber-500 hover:bg-amber-600"
+                                                }`}
+                                            whileHover={!(loading || (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0)) ? { scale: 1.02, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" } : {}}
+                                            whileTap={!(loading || (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0)) ? { scale: 0.98 } : {}}
+                                        >
+                                            <FaShoppingCart className="mr-2" />
+                                            {loading ?
+                                                "Đang xử lý..." :
+                                                (selectedVariantId && getStockQuantity() <= 0) ?
+                                                    "Hết hàng" :
+                                                    "Thêm vào giỏ hàng"
+                                            }
+                                        </motion.button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 };
 
-export default VariantSelectionModal; 
+export default VariantSelectionModal;
