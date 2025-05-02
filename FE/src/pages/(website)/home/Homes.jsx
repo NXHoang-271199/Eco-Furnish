@@ -24,6 +24,9 @@ import {
   FaFire,
   FaLightbulb,
 } from "react-icons/fa";
+import axios from "axios";
+import { toast } from "react-toastify";
+import VariantSelectionModal from "../../../components/VariantSelectionModal";
 
 // Helper function để theo dõi hoạt động khi ChatBot chưa tải
 const trackActivity = (type, data) => {
@@ -52,7 +55,16 @@ const Homes = () => {
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [hasActivityData, setHasActivityData] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [imagesLoaded, setImagesLoaded] = useState(false); // Thêm state mới
+  const [totalImages, setTotalImages] = useState(0); // Thêm state để đếm tổng số ảnh
+  const [loadedImages, setLoadedImages] = useState(0); // Thêm state để đếm số ảnh đã tải
   const dataFetchedRef = useRef(false);
+  // Thêm state lưu trữ thông tin đánh giá
+  const [productRatings, setProductRatings] = useState({});
+
+  // Thêm state để quản lý modal chọn biến thể
+  const [variantModalOpen, setVariantModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const bannerRef = useRef(null);
   const bannerInView = useInView(bannerRef, { once: false, amount: 0.5 });
@@ -306,7 +318,10 @@ const Homes = () => {
     if (dataFetchedRef.current) return;
 
     const fetchAllData = async () => {
-      setIsLoading(true);
+      setIsLoading(true); // Bắt đầu loading
+      setImagesLoaded(false); // Reset trạng thái tải ảnh
+      setLoadedImages(0); // Reset số ảnh đã tải
+
       try {
         dataFetchedRef.current = true;
         const [productsResponse, bestSellersResponse, postsResponse] =
@@ -326,9 +341,9 @@ const Homes = () => {
             const newProduct = JSON.parse(JSON.stringify(product));
             newProduct.has_variants = Boolean(
               newProduct.has_variants === 1 ||
-                newProduct.has_variants === true ||
-                newProduct.has_variants === "1" ||
-                newProduct.has_variants === "true"
+              newProduct.has_variants === true ||
+              newProduct.has_variants === "1" ||
+              newProduct.has_variants === "true"
             );
             if (!Array.isArray(newProduct.variants)) {
               newProduct.variants = [];
@@ -423,9 +438,9 @@ const Homes = () => {
               // Chuẩn hóa has_variants thành boolean
               newProduct.has_variants = Boolean(
                 newProduct.has_variants === 1 ||
-                  newProduct.has_variants === true ||
-                  newProduct.has_variants === "1" ||
-                  newProduct.has_variants === "true"
+                newProduct.has_variants === true ||
+                newProduct.has_variants === "1" ||
+                newProduct.has_variants === "true"
               );
 
               // Đảm bảo variants là một mảng
@@ -542,16 +557,15 @@ const Homes = () => {
   useEffect(() => {
     if (
       products.length > 0 &&
-      aiRecommendations.length === 0 &&
-      hasActivityData === false
+      aiRecommendations.length === 0
     ) {
-      // Chỉ tạo gợi ý mặc định nếu chưa có hoạt động
+      // Tạo gợi ý ngẫu nhiên từ các sản phẩm
       const randomRecommendations = [...products]
         .sort(() => 0.5 - Math.random())
         .slice(0, 4);
       setAiRecommendations(randomRecommendations);
     }
-  }, [products, aiRecommendations, hasActivityData]); // Thêm dependency hasActivityData
+  }, [products, aiRecommendations]); // Bỏ dependency hasActivityData
 
   // Animation variants
   const fadeInUp = {
@@ -640,6 +654,146 @@ const Homes = () => {
     }
 
     return <div className="flex space-x-1">{stars}</div>;
+  };
+
+  // Thêm useEffect để tải thông tin đánh giá cho sản phẩm
+  useEffect(() => {
+    const fetchRatings = async (productList) => {
+      if (!productList || productList.length === 0) return;
+
+      const ratingsData = { ...productRatings }; // Copy state hiện tại
+
+      // Lọc ra các sản phẩm chưa có đánh giá
+      const productsToFetch = productList.filter(p => !ratingsData[p.id]);
+
+      if (productsToFetch.length === 0) return; // Không có sản phẩm mới cần tải
+
+      // Tạo mảng các promise để tải đánh giá
+      const ratingPromises = productsToFetch.map(product =>
+        axios.get(`http://localhost:8000/api/products/${product.id}/reviews`)
+          .then(response => {
+            if (response.data.success && Array.isArray(response.data.data)) {
+              const reviews = response.data.data;
+              if (reviews.length > 0) {
+                const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+                const avgRating = (totalRating / reviews.length).toFixed(1);
+                ratingsData[product.id] = {
+                  average: parseFloat(avgRating),
+                  count: reviews.length
+                };
+              } else {
+                ratingsData[product.id] = { average: 0, count: 0 };
+              }
+            }
+          })
+          .catch(error => {
+            console.error(`Error fetching ratings for product ${product.id}:`, error);
+            ratingsData[product.id] = { average: 0, count: 0 };
+          })
+      );
+
+      // Đợi tất cả promise hoàn thành
+      await Promise.all(ratingPromises);
+      setProductRatings(ratingsData);
+    };
+
+    // Tải đánh giá cho tất cả các loại sản phẩm
+    if (products.length > 0) fetchRatings(products);
+    if (bestSellers.length > 0) fetchRatings(bestSellers);
+    if (aiRecommendations.length > 0) fetchRatings(aiRecommendations);
+
+  }, [products, bestSellers, aiRecommendations]);
+
+  // Thêm hàm kiểm tra khi một ảnh tải xong
+  const handleImageLoad = () => {
+    setLoadedImages(prev => {
+      const newCount = prev + 1;
+      if (newCount === totalImages) {
+        setImagesLoaded(true);
+      }
+      return newCount;
+    });
+  };
+
+  // Thêm useEffect để đếm tổng số ảnh cần tải
+  useEffect(() => {
+    const countImages = () => {
+      let count = 0;
+      // Đếm ảnh từ products
+      count += products.length;
+      // Đếm ảnh từ bestSellers
+      count += bestSellers.length;
+      // Đếm ảnh từ aiRecommendations
+      count += aiRecommendations.length;
+      // Đếm ảnh từ posts
+      count += posts.length;
+      setTotalImages(count);
+    };
+
+    countImages();
+  }, [products, bestSellers, aiRecommendations, posts]);
+
+  // Sửa useEffect fetch data để kết hợp với trạng thái tải ảnh
+  useEffect(() => {
+    if (dataFetchedRef.current) return;
+
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      setImagesLoaded(false); // Reset trạng thái tải ảnh
+      setLoadedImages(0); // Reset số ảnh đã tải
+      try {
+        // ... existing fetch code ...
+      } catch (error) {
+        dataFetchedRef.current = false;
+        console.error("Lỗi nghiêm trọng khi tải dữ liệu trang chủ:", error);
+        setProducts([]);
+        setBestSellers([]);
+        setPosts([]);
+      }
+    };
+
+    fetchAllData();
+  }, []);
+
+  // Thêm useEffect để kiểm tra khi nào tắt loading
+  useEffect(() => {
+    if (!isLoading || imagesLoaded) {
+      setIsLoading(false);
+    }
+  }, [isLoading, imagesLoaded]);
+
+  // Tìm và thay thế tất cả các trường hợp chuyển hướng đến /cart/add/{id}
+  // Thay đổi chức năng thêm vào giỏ hàng cho sản phẩm bán chạy
+  const handleAddToCart = async (product) => {
+    // Kiểm tra xem sản phẩm có biến thể hay không
+    if (product.has_variants) {
+      // Nếu có, mở modal chọn biến thể
+      setSelectedProduct(product);
+      setVariantModalOpen(true);
+    } else {
+      // Nếu không, thêm trực tiếp vào giỏ hàng
+      try {
+        const response = await axiosInstance.post("/cart/add", {
+          product_id: product.id,
+          quantity: 1
+        });
+
+        if (response.status === 200 || response.status === 201) {
+          toast.success("Đã thêm sản phẩm vào giỏ hàng!");
+          // Có thể thêm logic để cập nhật số lượng giỏ hàng ở đây nếu cần
+        }
+      } catch (error) {
+        console.error("Lỗi khi thêm vào giỏ hàng:", error);
+        toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng!");
+      }
+    }
+  };
+
+  // Hàm xử lý sau khi thêm sản phẩm vào giỏ hàng từ modal
+  const handleVariantAddedToCart = () => {
+    // Đóng modal sau khi thêm vào giỏ hàng
+    setVariantModalOpen(false);
+    setSelectedProduct(null);
   };
 
   return (
@@ -739,7 +893,7 @@ const Homes = () => {
         </div>
       </motion.section>
       {/* Sản phẩm được AI gợi ý */}
-      {hasActivityData && aiRecommendations.length > 0 && (
+      {aiRecommendations.length > 0 && (
         <motion.section
           initial="hidden"
           whileInView="visible"
@@ -849,9 +1003,11 @@ const Homes = () => {
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700 bg-gray-100"
                           loading="lazy"
+                          onLoad={handleImageLoad}
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = "/images/no-image.png";
+                            handleImageLoad(); // Vẫn đếm khi ảnh lỗi
                           }}
                           initial={{ scale: 1.2, y: 20 }}
                           animate={{ scale: 1, y: 0 }}
@@ -896,7 +1052,7 @@ const Homes = () => {
                                 category: product.category,
                               });
                             }
-                            window.location.href = `/cart/add/${product.id}`;
+                            handleAddToCart(product);
                           }}
                         >
                           <IoCartOutline className="text-xl" />
@@ -907,16 +1063,23 @@ const Homes = () => {
                     <div className="p-5">
                       {/* Sao đánh giá */}
                       <div className="flex items-center mb-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <IoStar
-                            key={star}
-                            className={`${
-                              star <= 4 ? "text-blue-400" : "text-gray-300"
-                            } w-4 h-4`}
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          // Lấy đánh giá từ state productRatings
+                          const rating = productRatings[product.id]?.average || 0;
+                          return (
+                            <IoStar
+                              key={star}
+                              className={`${star <= Math.round(rating)
+                                ? "text-blue-400" : "text-gray-300"
+                                } w-4 h-4`}
+                            />
+                          );
+                        })}
                         <span className="text-gray-500 text-sm ml-2">
-                          (4.0)
+                          {/* Hiển thị số đánh giá từ state */}
+                          {productRatings[product.id]
+                            ? productRatings[product.id].average.toFixed(1)
+                            : "0.0"}
                         </span>
                       </div>
 
@@ -932,7 +1095,7 @@ const Homes = () => {
                         // Sản phẩm có biến thể
                         <div className="relative">
                           {product.price_range &&
-                          product.price_range.min_discount > 0 ? (
+                            product.price_range.min_discount > 0 ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-amber-600 text-lg">
@@ -942,7 +1105,7 @@ const Homes = () => {
                                 }).format(product.price_range.min_discount)}
                                 {product.price_range.max_discount > 0 &&
                                   product.price_range.max_discount !==
-                                    product.price_range.min_discount &&
+                                  product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
@@ -970,7 +1133,7 @@ const Homes = () => {
                                 product.price_range.max &&
                                 product.price_range.min &&
                                 product.price_range.max !==
-                                  product.price_range.min &&
+                                product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
@@ -1128,9 +1291,11 @@ const Homes = () => {
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700 bg-gray-100"
                           loading="lazy"
+                          onLoad={handleImageLoad}
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = "/images/no-image.png";
+                            handleImageLoad(); // Vẫn đếm khi ảnh lỗi
                           }}
                           initial={{ scale: 1.2, y: 20 }}
                           animate={{ scale: 1, y: 0 }}
@@ -1189,7 +1354,7 @@ const Homes = () => {
                                 category: product.category,
                               });
                             }
-                            window.location.href = `/cart/add/${product.id}`;
+                            handleAddToCart(product);
                           }}
                         >
                           <IoCartOutline className="text-xl" />
@@ -1200,16 +1365,23 @@ const Homes = () => {
                     <div className="p-5">
                       {/* Sao đánh giá */}
                       <div className="flex items-center mb-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <IoStar
-                            key={star}
-                            className={`${
-                              star <= 4 ? "text-rose-400" : "text-gray-300"
-                            } w-4 h-4`}
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          // Lấy đánh giá từ state productRatings
+                          const rating = productRatings[product.id]?.average || 0;
+                          return (
+                            <IoStar
+                              key={star}
+                              className={`${star <= Math.round(rating)
+                                ? "text-rose-400" : "text-gray-300"
+                                } w-4 h-4`}
+                            />
+                          );
+                        })}
                         <span className="text-gray-500 text-sm ml-2">
-                          (4.0)
+                          {/* Hiển thị số đánh giá từ state */}
+                          {productRatings[product.id]
+                            ? productRatings[product.id].average.toFixed(1)
+                            : "0.0"}
                         </span>
                       </div>
 
@@ -1225,7 +1397,7 @@ const Homes = () => {
                         // Sản phẩm có biến thể
                         <div className="relative">
                           {product.price_range &&
-                          product.price_range.min_discount > 0 ? (
+                            product.price_range.min_discount > 0 ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-rose-600 text-lg">
@@ -1235,7 +1407,7 @@ const Homes = () => {
                                 }).format(product.price_range.min_discount)}
                                 {product.price_range.max_discount > 0 &&
                                   product.price_range.max_discount !==
-                                    product.price_range.min_discount &&
+                                  product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
@@ -1263,7 +1435,7 @@ const Homes = () => {
                                 product.price_range.max &&
                                 product.price_range.min &&
                                 product.price_range.max !==
-                                  product.price_range.min &&
+                                product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
@@ -1441,9 +1613,11 @@ const Homes = () => {
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700 bg-gray-100"
                           loading="lazy"
+                          onLoad={handleImageLoad}
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = "/images/no-image.png";
+                            handleImageLoad(); // Vẫn đếm khi ảnh lỗi
                           }}
                           initial={{ scale: 1.2, y: 20 }}
                           animate={{ scale: 1, y: 0 }}
@@ -1488,7 +1662,7 @@ const Homes = () => {
                                 category: product.category,
                               });
                             }
-                            window.location.href = `/cart/add/${product.id}`;
+                            handleAddToCart(product);
                           }}
                         >
                           <IoCartOutline className="text-xl" />
@@ -1499,16 +1673,23 @@ const Homes = () => {
                     <div className="p-5">
                       {/* Sao đánh giá */}
                       <div className="flex items-center mb-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <IoStar
-                            key={star}
-                            className={`${
-                              star <= 4 ? "text-amber-400" : "text-gray-300"
-                            } w-4 h-4`}
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          // Lấy đánh giá từ state productRatings
+                          const rating = productRatings[product.id]?.average || 0;
+                          return (
+                            <IoStar
+                              key={star}
+                              className={`${star <= Math.round(rating)
+                                ? "text-amber-400" : "text-gray-300"
+                                } w-4 h-4`}
+                            />
+                          );
+                        })}
                         <span className="text-gray-500 text-sm ml-2">
-                          (4.0)
+                          {/* Hiển thị số đánh giá từ state */}
+                          {productRatings[product.id]
+                            ? productRatings[product.id].average.toFixed(1)
+                            : "0.0"}
                         </span>
                       </div>
 
@@ -1524,7 +1705,7 @@ const Homes = () => {
                         // Sản phẩm có biến thể
                         <div className="relative">
                           {product.price_range &&
-                          product.price_range.min_discount > 0 ? (
+                            product.price_range.min_discount > 0 ? (
                             // Có giá khuyến mãi
                             <div className="flex flex-col">
                               <span className="font-semibold text-amber-600 text-lg">
@@ -1534,7 +1715,7 @@ const Homes = () => {
                                 }).format(product.price_range.min_discount)}
                                 {product.price_range.max_discount > 0 &&
                                   product.price_range.max_discount !==
-                                    product.price_range.min_discount &&
+                                  product.price_range.min_discount &&
                                   ` - ${new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
@@ -1562,7 +1743,7 @@ const Homes = () => {
                                 product.price_range.max &&
                                 product.price_range.min &&
                                 product.price_range.max !==
-                                  product.price_range.min &&
+                                product.price_range.min &&
                                 ` - ${new Intl.NumberFormat("vi-VN", {
                                   style: "currency",
                                   currency: "VND",
@@ -1886,8 +2067,8 @@ const Homes = () => {
                               ? post.thumbnail.startsWith("http")
                                 ? post.thumbnail
                                 : post.thumbnail.startsWith("/")
-                                ? `http://localhost:8000${post.thumbnail}`
-                                : `http://localhost:8000/${post.thumbnail}`
+                                  ? `http://localhost:8000${post.thumbnail}`
+                                  : `http://localhost:8000/${post.thumbnail}`
                               : "http://localhost:5173/src/assets/img/blog/blog-1.jpg"
                           }
                           alt={post.title}
@@ -2150,6 +2331,18 @@ const Homes = () => {
         </div>
       </motion.section>
       <Popup />
+      {/* Thêm modal chọn biến thể vào cuối component */}
+      {variantModalOpen && selectedProduct && (
+        <VariantSelectionModal
+          isOpen={variantModalOpen}
+          onClose={() => {
+            setVariantModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          product={selectedProduct}
+          onAddToCart={handleVariantAddedToCart}
+        />
+      )}
     </>
   );
 };

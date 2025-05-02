@@ -21,6 +21,14 @@
     <link href="{{ asset('assets/admins/css/app.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- custom Css-->
     <link href="{{ asset('assets/admins/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
+    
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    @stack('styles')
 
 </head>
 
@@ -30,7 +38,7 @@
     <div class="auth-page-wrapper auth-bg-cover py-5 d-flex justify-content-center align-items-center min-vh-100">
         <div class="bg-overlay"></div>
         <!-- auth-page content -->
-            <div class="auth-page-content overflow-hidden pt-lg-5">
+            <div class="auth-page-content overflow-hidden pt-lg-5 animate__animated animate__fadeIn">
                 @yield('content')
             </div>
         <!-- end auth page content -->
@@ -44,6 +52,8 @@
     <script src="{{ asset('assets/admins/libs/feather-icons/feather.min.js') }}"></script>
     <script src="{{ asset('assets/admins/js/pages/plugins/lord-icon-2.1.0.js') }}"></script>
     <script src="{{ asset('assets/admins/js/plugins.js') }}"></script>
+    
+    @stack('scripts')
 
     {{-- <!-- particles js -->
     <script src="{{asset('admins/libs/particles.js/particles.js')}}"></script>

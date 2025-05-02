@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { BsChatDots, BsXLg } from "react-icons/bs";
+import { BsChatDots, BsXLg, BsEmojiSmile } from "react-icons/bs";
 import { IoMdSend } from "react-icons/io";
 import { MdImage } from "react-icons/md";
 import { getSocket, closeSocket, resetSocket } from "../utils/socketConfig";
@@ -8,6 +8,7 @@ import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import { toast } from "react-hot-toast";
 import "../styles/chat.css";
+import EmojiPicker from 'emoji-picker-react';
 
 // Tạo audio elements toàn cục để khởi tạo sớm
 const messageAudio = new Audio('/sounds/notification-sound.mp3');
@@ -26,7 +27,7 @@ document.addEventListener('touchstart', handleUserInteraction, { once: false });
 function handleUserInteraction() {
     if (!userHasInteracted) {
         userHasInteracted = true;
-        console.log("✅ Người dùng đã tương tác với trang, có thể phát âm thanh");
+        console.log("Người dùng đã tương tác với trang, có thể phát âm thanh");
 
         // Kích hoạt audio trước
         messageAudio.play()
@@ -35,7 +36,7 @@ function handleUserInteraction() {
                 messageAudio.currentTime = 0;
                 console.log("✓ Đã kích hoạt audio");
             })
-            .catch(err => console.log("⚠️ Không thể kích hoạt audio:", err));
+            .catch(err => console.log("Không thể kích hoạt audio:", err));
     }
 }
 
@@ -50,7 +51,7 @@ const playNotificationSound = (soundPath) => {
             messageAudio.play()
                 .then(() => console.log("✓ Âm thanh thông báo được phát thành công"))
                 .catch(err => {
-                    console.log("⚠️ Không thể phát âm thanh, lỗi:", err);
+                    console.log("Không thể phát âm thanh, lỗi:", err);
 
                     // Thử lại với tương tác người dùng nếu lỗi
                     const unblockAudio = () => {
@@ -59,20 +60,20 @@ const playNotificationSound = (soundPath) => {
                                 console.log("✓ Đã phát âm thanh sau tương tác");
                                 document.removeEventListener('click', unblockAudio);
                             })
-                            .catch(e => console.log("⚠️ Vẫn không thể phát âm thanh:", e));
+                            .catch(e => console.log("Vẫn không thể phát âm thanh:", e));
                     };
 
                     document.addEventListener('click', unblockAudio, { once: true });
                 });
         } else {
-            console.log("⚠️ Người dùng chưa tương tác, đang chờ tương tác để phát âm thanh");
+            console.log("Người dùng chưa tương tác, đang chờ tương tác để phát âm thanh");
 
             // Đăng ký phát âm thanh sau tương tác đầu tiên
             const playAfterInteraction = () => {
                 userHasInteracted = true;
                 messageAudio.play()
-                    .then(() => console.log("✓ Đã phát âm thanh sau tương tác đầu tiên"))
-                    .catch(e => console.log("⚠️ Không thể phát âm thanh sau tương tác:", e));
+                    .then(() => console.log("Đã phát âm thanh sau tương tác đầu tiên"))
+                    .catch(e => console.log("Không thể phát âm thanh sau tương tác:", e));
 
                 document.removeEventListener('click', playAfterInteraction);
                 document.removeEventListener('keydown', playAfterInteraction);
@@ -84,8 +85,26 @@ const playNotificationSound = (soundPath) => {
             document.addEventListener('touchstart', playAfterInteraction, { once: true });
         }
     } catch (error) {
-        console.error("❌ Lỗi khi phát âm thanh:", error);
+        console.error("Lỗi khi phát âm thanh:", error);
     }
+};
+
+// Hàm thay thế emoji từ text (vd: ":)" thành "🙂")
+const replaceTextWithEmojis = (text) => {
+    if (!text) return text;
+
+    return text
+        .replace(/:D/g, '😃')
+        .replace(/:\)/g, '🙂')
+        .replace(/:\(/g, '😔')
+        .replace(/<3/g, '❤️')
+        .replace(/:P/g, '😛')
+        .replace(/;\)/g, '😉')
+        .replace(/:\|/g, '😐')
+        .replace(/:o/g, '😮')
+        .replace(/:O/g, '😮')
+        .replace(/8\)/g, '😎')
+        .replace(/:'\(/g, '😢');
 };
 
 const ChatRealTime = () => {
@@ -110,31 +129,27 @@ const ChatRealTime = () => {
     const [socketStatus, setSocketStatus] = useState("disconnected");
     // Thêm state để lưu URL socket server
     const [socketServerUrl] = useState(import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3002");
-
+    // Thêm state cho emoji picker
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
-    const imageInputRef = useRef(null);
 
+    const imageInputRef = useRef(null);
     // Ref để theo dõi tin nhắn đã xử lý
     const processedImageIds = useRef(new Set());
-
     // Cải thiện hàm phân tích tin nhắn từ admin
     const analyzeAdminMessages = (message) => {
         // Kiểm tra nếu tin nhắn có chứa "admin" trong ID hoặc từ admin
         return message &&
-            (!message.isCurrentUser && userData && // Thêm kiểm tra userData tồn tại
+            (!message.isCurrentUser && userData && // Kiểm tra nếu userData tồn tại
                 (message.sender_id.toString() !== userData.id?.toString()));
     };
 
-    // Thêm hàm xử lý và nhóm các tin nhắn ảnh liên tiếp
+    // Hàm xử lý và nhóm các tin nhắn ảnh liên tiếp
     const processMessagesWithImageGroups = (messagesArray) => {
         if (!messagesArray || !Array.isArray(messagesArray) || messagesArray.length === 0) {
             return [];
         }
-
-        // Lưu trữ tin nhắn gốc để tham chiếu sau này
-        // originalMessages.current = messagesArray; // Tạm thời comment out nếu không dùng
-
         // Clone mảng tin nhắn để không ảnh hưởng đến mảng gốc
         const messages = [...messagesArray];
         const processedMessages = [];
@@ -163,9 +178,6 @@ const ChatRealTime = () => {
 
             // Kiểm tra xem tin nhắn hiện tại có phải là ảnh không
             if (currentMsg.image && !currentMsg.text) {
-                // Tạo ID duy nhất cho tin nhắn này nếu chưa có
-                // const msgId = currentMsg.id || `msg-${currentMsg.sender_id}-${currentMsg.sent_at}-${Math.random()}`; // Đã có ở trên
-
                 // Bắt đầu một nhóm ảnh mới
                 const imageInfo = [{ url: currentMsg.image, msg: currentMsg }]; // Lưu cả msg gốc
                 const senderID = currentMsg.sender_id;
@@ -215,9 +227,9 @@ const ChatRealTime = () => {
                         id: groupId,
                         sender_id: senderID,
                         isCurrentUser: isCurrentUser,
-                        isAdmin: isAdmin, // Thêm thuộc tính isAdmin
+                        isAdmin: isAdmin, // Xác định admin cho nhóm
                         sent_at: currentMsg.sent_at, // Giữ thời gian của tin nhắn đầu tiên
-                        is_read: isRead, // Có thể cần logic phức tạp hơn để xác định is_read cho nhóm
+                        is_read: isRead, // Xác định is_read cho nhóm
                         imageGroup: {
                             urls: imageInfo.map(info => info.url),
                             groupId: groupId
@@ -242,7 +254,7 @@ const ChatRealTime = () => {
         return processedMessages;
     };
 
-    // Refs cho cơ chế đệm ảnh từ admin (GIỮ LẠI KHAI BÁO NÀY)
+    // Refs cho cơ chế đệm ảnh từ admin
     const pendingAdminImagesRef = useRef([]);
     const imageBufferTimeoutRef = useRef(null);
 
@@ -254,8 +266,8 @@ const ChatRealTime = () => {
             setIsLoading(true);
             const token = localStorage.getItem("authToken");
 
-            console.log("🔍 Đang tải lịch sử cho user:", userId);
-            console.log("🔑 Token:", token?.substring(0, 15) + "...");
+            console.log("Đang tải lịch sử cho user:", userId);
+            console.log("Token:", token?.substring(0, 15) + "...");
 
             // Gọi API lấy lịch sử tin nhắn
             const response = await axios.get(
@@ -269,10 +281,10 @@ const ChatRealTime = () => {
                 }
             );
 
-            console.log("✅ Phản hồi API:", response.status, response.statusText);
+            console.log("Phản hồi API:", response.status, response.statusText);
 
             if (response.data && Array.isArray(response.data)) {
-                console.log("📜 Lịch sử tin nhắn:", response.data);
+                console.log("Lịch sử tin nhắn:", response.data);
 
                 // Đảm bảo tất cả tin nhắn có trạng thái is_read và isCurrentUser
                 const messagesWithStatus = response.data.map(msg => ({
@@ -299,16 +311,16 @@ const ChatRealTime = () => {
                     scrollToBottom();
                 }, 100);
             } else {
-                console.warn("⚠️ Dữ liệu không đúng định dạng:", response.data);
+                console.warn("Dữ liệu không đúng định dạng:", response.data);
             }
         } catch (error) {
-            console.error("❌ Lỗi khi tải lịch sử tin nhắn:", error.message);
+            console.error("Lỗi khi tải lịch sử tin nhắn:", error.message);
             if (error.response) {
-                console.error("📌 Chi tiết lỗi:", error.response.data);
-                console.error("📌 Status:", error.response.status);
-                console.error("📌 Headers:", error.response.headers);
+                console.error("Chi tiết lỗi:", error.response.data);
+                console.error("Status:", error.response.status);
+                console.error("Headers:", error.response.headers);
             } else if (error.request) {
-                console.error("📌 Không nhận được phản hồi:", error.request);
+                console.error("Không nhận được phản hồi:", error.request);
             }
         } finally {
             setIsLoading(false);
@@ -318,7 +330,7 @@ const ChatRealTime = () => {
     // Hàm kiểm tra và kết nối socket 
     const connectSocket = () => {
         try {
-            console.log("🔌 Đang kiểm tra kết nối socket...");
+            console.log("Đang kiểm tra kết nối socket...");
             const socketConnection = getSocket();
 
             if (socketConnection) {
@@ -326,17 +338,17 @@ const ChatRealTime = () => {
 
                 // Kiểm tra nếu socket đã kết nối
                 if (socketConnection.connected) {
-                    console.log("✅ Socket đã được kết nối sẵn:", socketConnection.id);
+                    console.log("Socket đã được kết nối sẵn:", socketConnection.id);
                     setIsConnected(true);
                     setLastError("");
                 } else {
-                    console.log("⏳ Socket đã khởi tạo nhưng đang kết nối...");
+                    console.log("Socket đã khởi tạo nhưng đang kết nối...");
                     // Không cập nhật trạng thái kết nối ở đây, để khi connect event được kích hoạt
                 }
 
                 // Thiết lập sự kiện kết nối
                 socketConnection.on("connect", () => {
-                    console.log("✅ Socket kết nối thành công:", socketConnection.id);
+                    console.log("Socket kết nối thành công:", socketConnection.id);
                     setIsConnected(true);
                     setLastError("");
 
@@ -922,12 +934,15 @@ const ChatRealTime = () => {
     };
 
     // Hàm upload nhiều ảnh và gửi tin nhắn
-    const uploadAndSendMultipleImages = async () => {
+    const uploadAndSendMultipleImages = async (textMessage = null) => {
         if (selectedImages.length === 0 || !isAuthenticated || !socket || !isConnected) {
             console.error("❌ Không thể gửi ảnh: Chưa chọn ảnh, chưa đăng nhập hoặc mất kết nối");
             setLastError("Không thể gửi ảnh: Chưa chọn ảnh, chưa đăng nhập hoặc mất kết nối");
             return;
         }
+
+        // Kiểm tra xem có tin nhắn văn bản kèm theo không
+        const hasText = textMessage && textMessage.trim() !== '';
 
         try {
             setIsUploading(true);
@@ -948,6 +963,19 @@ const ChatRealTime = () => {
                 isCurrentUser: true,
                 is_read: false
             }]);
+
+            // Nếu có văn bản, hiển thị tin nhắn văn bản ngay lập tức
+            if (hasText) {
+                const textDisplayMessage = {
+                    text: textMessage,
+                    sender_id: userData?.id,
+                    sent_at: new Date().toISOString(),
+                    isCurrentUser: true,
+                    is_read: false
+                };
+
+                setMessages(prev => [...prev, textDisplayMessage]);
+            }
 
             // Tạo mảng promises cho việc upload từng ảnh
             const uploadPromises = selectedImages.map((file, index) => {
@@ -1044,9 +1072,18 @@ const ChatRealTime = () => {
 
                     if (successfulUrls.length > 0) {
                         // Gửi tất cả URL ảnh thành công qua socket
-                        socket.emit("clientMultipleImagesUpload", { images: successfulUrls }, (socketResponse) => {
+                        const sendData = {
+                            images: successfulUrls,
+                            text: hasText ? textMessage : null
+                        };
+
+                        // Log data trước khi gửi để debug
+                        console.log("🚀 Dữ liệu gửi đi:", sendData);
+
+                        socket.emit("clientMultipleImagesUpload", sendData, (socketResponse) => {
                             if (socketResponse.success) {
                                 console.log("✅ Tất cả ảnh đã được gửi thành công");
+                                console.log("✅ Tin nhắn văn bản kèm theo:", hasText ? textMessage : "không có");
 
                                 // Cập nhật tin nhắn tạm thời thành tin nhắn thật với URLs từ server
                                 setMessages(prev => prev.map(msg => {
@@ -1096,6 +1133,11 @@ const ChatRealTime = () => {
                         imageInputRef.current.value = "";
                     }
                     setIsUploading(false);
+
+                    // Xóa nội dung tin nhắn văn bản nếu có
+                    if (hasText) {
+                        setMessage("");
+                    }
                 });
 
         } catch (uploadError) {
@@ -1112,15 +1154,19 @@ const ChatRealTime = () => {
             return;
         }
 
-        // Nếu có ảnh được chọn, ưu tiên gửi ảnh
+        const currentMessage = message.trim();
+        const hasTextMessage = currentMessage !== "";
+
+        // Nếu có ảnh được chọn, gửi cả ảnh và văn bản (nếu có)
         if (selectedImages.length > 0) {
-            uploadAndSendMultipleImages();
+            uploadAndSendMultipleImages(hasTextMessage ? currentMessage : null);
             return;
         }
 
-        if (message.trim() !== "") {
+        // Nếu chỉ có văn bản (không có ảnh), gửi tin nhắn văn bản thông thường
+        if (hasTextMessage) {
             const messageData = {
-                text: message
+                text: currentMessage
             };
 
             // Phân biệt giữa admin và client
@@ -1145,7 +1191,7 @@ const ChatRealTime = () => {
 
             // Hiển thị tin nhắn ngay lập tức ở UI
             const displayMessage = {
-                text: message,
+                text: currentMessage,
                 sender_id: userData?.id,
                 sent_at: new Date().toISOString(),
                 isCurrentUser: true,
@@ -1254,6 +1300,28 @@ const ChatRealTime = () => {
         }
     }, [messages, isAuthenticated, userData, isOpen]);
 
+    // Thêm hàm xử lý khi chọn emoji
+    const handleEmojiClick = (emojiData) => {
+        const emoji = emojiData.emoji;
+        setMessage(prev => prev + emoji);
+    };
+
+    // Thêm hàm ẩn emoji picker khi click bên ngoài
+    const emojiPickerRef = useRef(null);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+                setShowEmojiPicker(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     // Nếu không đăng nhập, không hiển thị box chat
     if (!isAuthenticated) {
         return null;
@@ -1277,15 +1345,17 @@ const ChatRealTime = () => {
                     }`}
             >
                 {isOpen ? <BsXLg className="text-2xl" /> : <BsChatDots className="text-2xl" />}
-                {!isOpen && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center animate-pulse shadow-lg">
-                        {unreadCount}
-                    </span>
-                )}
                 {!isConnected && !isOpen && (
                     <span className="absolute -bottom-1 -right-1 bg-yellow-500 w-4 h-4 rounded-full animate-pulse shadow-md"></span>
                 )}
             </button>
+
+            {/* Badge hiển thị số tin nhắn chưa đọc - Di chuyển ra ngoài button */}
+            {!isOpen && unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs flex items-center justify-center animate-pulse shadow-lg">
+                    {unreadCount}
+                </span>
+            )}
 
             {/* Chat Box - Cải thiện với hiệu ứng glass morphism */}
             {isOpen && (
@@ -1530,7 +1600,7 @@ const ChatRealTime = () => {
                                             )}
 
                                             {/* Hiển thị text nếu có */}
-                                            {msg.text && <p className="text-sm">{msg.text}</p>}
+                                            {msg.text && <p className="text-sm">{replaceTextWithEmojis(msg.text)}</p>}
 
                                             <div className="flex justify-between items-center mt-1">
                                                 <span className="text-xs opacity-70">
@@ -1579,6 +1649,22 @@ const ChatRealTime = () => {
                         </div>
                     )}
 
+                    {/* Emoji Picker */}
+                    {showEmojiPicker && (
+                        <div
+                            ref={emojiPickerRef}
+                            className="absolute bottom-20 left-4 z-10 animate__animated animate__fadeIn"
+                        >
+                            <EmojiPicker
+                                onEmojiClick={handleEmojiClick}
+                                skinTonesDisabled
+                                searchDisabled={false}
+                                width={320}
+                                height={350}
+                            />
+                        </div>
+                    )}
+
                     {/* Input Area - Cải thiện với thiết kế hiện đại */}
                     <div className="p-4 bg-white border-t border-gray-100">
                         <div className="flex items-center gap-2">
@@ -1591,6 +1677,18 @@ const ChatRealTime = () => {
                                 rows="1"
                                 disabled={!isConnected || isUploading}
                             />
+
+                            {/* Nút Emoji - Mới thêm */}
+                            <button
+                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                disabled={!isConnected || isUploading}
+                                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg ${isConnected && !isUploading
+                                    ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-white hover:scale-110"
+                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                    }`}
+                            >
+                                <BsEmojiSmile className="text-xl" />
+                            </button>
 
                             {/* Nút chọn ảnh - Cải thiện với hiệu ứng */}
                             <button

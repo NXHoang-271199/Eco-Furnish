@@ -35,7 +35,7 @@ class UserRequest extends FormRequest
             'age' => 'required|integer|max:90',
             'password' => $userId ? 'nullable' : 'required',
             'role_id' => 'required|exists:roles,id',
-            'address' => 'required|max:255',
+            'phone' => 'required|string|max:255',
             'avatar' => $this->hasFile('avatar') ? 'image|mimes:jpeg,png,jpg,gif|max:2048' : 'nullable',
 
         ];
@@ -59,11 +59,12 @@ class UserRequest extends FormRequest
 
             'password.required' => 'Mật khâu không được để trống!',
 
+            'phone.required' => 'Điện thoại không được để trống!',
+            'phone.string' => 'Điện thoại phải là chuỗi ký tự!',
+            'phone.max' => 'Điện thoại không được dài hơn 12 ký tự!',
+
             'role_id.required' => 'Vai trò không được để trống!',
             'role_id.exists' => 'Vai trò không hợp lệ!',
-
-            'address.required' => 'Địa chỉ không được để trống!',
-            'address.max' => 'Địa chỉ không được dài hơn 255 ký tự!',
 
             'avatar.image' => 'Ảnh đại diện phải là tệp hình ảnh!',
             'avatar.mimes' => 'Ảnh đại diện phải có định dạng jpeg, png, jpg, gif, webp!',
