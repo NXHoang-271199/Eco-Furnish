@@ -1,5 +1,7 @@
   <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Sweet Alerts js -->
+  <script src="{{ asset('assets/admins/libs/sweetalert2/sweetalert2.min.js') }}"></script>
 
     
     <script>
@@ -49,24 +51,61 @@
             // Xử lý xóa biến thể sử dụng event delegation
             $(document).on('click', '.delete-item', function() {
                 var deleteButton = $(this);
-                if (confirm('Bạn có muốn xóa biến thể này không?')) {
-                    var variantId = deleteButton.data('id');
-                    
-                    $.ajax({
-                        url: '/admin/variants/' + variantId,
-                        type: 'DELETE',
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                if (response.redirect) {
-                                    window.location.href = response.redirect;
+                var variantId = deleteButton.data('id');
+                
+                // Sử dụng SweetAlert2 thay vì confirm() mặc định
+                Swal.fire({
+                    title: 'Xác nhận xóa?',
+                    text: "Bạn có chắc chắn muốn xóa biến thể này?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Có, xóa!',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Thực hiện AJAX để xóa biến thể
+                        $.ajax({
+                            url: '/admin/variants/' + variantId,
+                            type: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        title: 'Đã xóa!',
+                                        text: 'Biến thể đã được chuyển vào thùng rác.',
+                                        icon: 'success',
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        if (response.redirect) {
+                                            window.location.href = response.redirect;
+                                        } else {
+                                            window.location.reload();
+                                        }
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        title: 'Lỗi!',
+                                        text: response.message || 'Có lỗi xảy ra khi xóa biến thể.',
+                                        icon: 'error',
+                                        confirmButtonText: 'OK'
+                                    });
                                 }
+                            },
+                            error: function(xhr) {
+                                Swal.fire({
+                                    title: 'Lỗi!',
+                                    text: 'Có lỗi xảy ra khi xóa biến thể.',
+                                    icon: 'error',
+                                    confirmButtonText: 'OK'
+                                });
                             }
-                        }
-                    });
-                }
+                        });
+                    }
+                });
             });
 
             // Xử lý khi click vào nút edit
