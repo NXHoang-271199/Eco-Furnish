@@ -1048,7 +1048,7 @@ const OrderDetail = () => {
       const deliveredTime = new Date(order.updated_at).getTime();
       const currentTime = new Date().getTime();
       const timeSinceDelivered = currentTime - deliveredTime;
-      const autoConfirmDelayMs = 24 * 60 * 60 * 1000; // 24 giờ
+      const autoConfirmDelayMs = 30 * 60 * 60 * 24 * 1000; // 24 giờ
 
       if (timeSinceDelivered >= autoConfirmDelayMs) {
         console.log(
@@ -1181,7 +1181,7 @@ const OrderDetail = () => {
       order &&
       (order.payment_method?.name === "MoMo" ||
         order.payment_method?.name === "VNPAY") && // Thanh toán online
-      (order.payment_status === 0 || order.payment_status === 2) && // Chưa thanh toán hoặc đang chờ
+      order.payment_status === 2 && // Chưa thanh toán hoặc đang chờ
       order.order_status !== "Hủy Đơn" && // Chưa bị hủy
       order.order_status !== "Đã Nhận"; // Chưa nhận
 
