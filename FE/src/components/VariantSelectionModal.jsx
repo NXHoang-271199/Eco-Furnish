@@ -238,6 +238,21 @@ const VariantSelectionModal = ({
         }
     };
 
+    // Cập nhật hàm xử lý thay đổi số lượng
+    const handleQuantityChange = (e) => {
+        const newValue = parseInt(e.target.value) || 0;
+        const stockQty = getStockQuantity();
+
+        if (newValue < 1) {
+            setQuantity(1);
+        } else if (newValue > stockQty) {
+            setQuantity(stockQty);
+            toast.error(`Số lượng tối đa có thể mua là ${stockQty}`);
+        } else {
+            setQuantity(newValue);
+        }
+    };
+
     // Increment quantity
     const increaseQuantity = () => {
         const stockQuantity = getStockQuantity();
@@ -338,8 +353,8 @@ const VariantSelectionModal = ({
                                         key={value}
                                         onClick={() => handleVariantAttributeChange(variantName, value)}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-all duration-300 ${selectedVariantAttributes[variantName] === value
-                                                ? "bg-amber-500 text-white shadow-md"
-                                                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                            ? "bg-amber-500 text-white shadow-md"
+                                            : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                                             }`}
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
@@ -463,10 +478,21 @@ const VariantSelectionModal = ({
                                             <input
                                                 type="number"
                                                 value={quantity}
-                                                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                                onChange={handleQuantityChange}
                                                 className="w-16 h-10 border-t border-b border-gray-300 text-center outline-none text-gray-700"
                                                 min="1"
                                                 max={getStockQuantity()}
+                                                onKeyPress={(e) => {
+                                                    if (!/[0-9]/.test(e.key)) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                                onPaste={(e) => {
+                                                    const pastedText = e.clipboardData.getData('text');
+                                                    if (!/^\d+$/.test(pastedText)) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
                                             />
                                             <motion.button
                                                 onClick={increaseQuantity}
@@ -496,10 +522,10 @@ const VariantSelectionModal = ({
                                             onClick={handleAddToCart}
                                             disabled={loading || (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0)}
                                             className={`px-5 py-2 rounded-lg text-white font-medium flex items-center ${loading ?
+                                                "bg-gray-400 cursor-not-allowed" :
+                                                (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0) ?
                                                     "bg-gray-400 cursor-not-allowed" :
-                                                    (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0) ?
-                                                        "bg-gray-400 cursor-not-allowed" :
-                                                        "bg-amber-500 hover:bg-amber-600"
+                                                    "bg-amber-500 hover:bg-amber-600"
                                                 }`}
                                             whileHover={!(loading || (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0)) ? { scale: 1.02, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" } : {}}
                                             whileTap={!(loading || (!selectedVariantId && product.has_variants) || (selectedVariantId && getStockQuantity() <= 0)) ? { scale: 0.98 } : {}}

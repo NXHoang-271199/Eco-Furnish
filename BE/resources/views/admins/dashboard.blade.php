@@ -1067,7 +1067,29 @@
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-info-subtle text-info">Khách hàng</span>
+                                                    @php
+                                                        // Phân loại khách hàng dựa trên số đơn hàng và tổng chi tiêu
+                                                        $customerType = '';
+                                                        $badgeClass = '';
+                                                        
+                                                        if ($buyer->orders_count >= 10 || $buyer->total_spent >= 20000000) {
+                                                            $customerType = 'VIP';
+                                                            $badgeClass = 'bg-danger-subtle text-danger';
+                                                        } elseif ($buyer->orders_count >= 5 || $buyer->total_spent >= 10000000) {
+                                                            $customerType = 'Thân thiết';
+                                                            $badgeClass = 'bg-warning-subtle text-warning';
+                                                        } elseif ($buyer->orders_count >= 3 || $buyer->total_spent >= 5000000) {
+                                                            $customerType = 'Thường xuyên';
+                                                            $badgeClass = 'bg-info-subtle text-info';
+                                                        } elseif ($buyer->orders_count >= 1) {
+                                                            $customerType = 'Khách thường';
+                                                            $badgeClass = 'bg-success-subtle text-success';
+                                                        } else {
+                                                            $customerType = 'Mới';
+                                                            $badgeClass = 'bg-light text-muted';
+                                                        }
+                                                    @endphp
+                                                    <span class="badge {{ $badgeClass }}">{{ $customerType }}</span>
                                                 </td>
                                                 <td>
                                                     <p class="mb-0">{{ $buyer->orders_count }} đơn hàng</p>
@@ -1075,41 +1097,10 @@
                                                 <td>
                                                     <h5 class="fs-14 mb-0">{{ number_format($buyer->total_spent, 0, ',', '.') }} ₫</h5>
                                                 </td>
-                                                <td>
-                                                    @php
-                                                        $totalStock = 0;
-                                                        if ($buyer->orders_count > 0) {
-                                                            $totalStock = $buyer->total_spent / $buyer->orders_count;
-                                                        }
-                                                        $statusClass = $totalStock > 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
-                                                        $statusText = $totalStock > 0 ? 'Còn hàng' : 'Hết hàng';
-                                                    @endphp
-                                                    <span class="badge {{ $statusClass }}">{{ $statusText }}</span>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        @php
-                                                            $percent = min(round(($buyer->orders_count / ($topBuyerStats->max_orders ?: 1)) * 100), 100);
-                                                            $trend = rand(-5, 10);
-                                                            $trendClass = $trend >= 0 ? 'success' : 'danger';
-                                                            $barClass = $percent > 80 ? 'bg-success' : ($percent > 50 ? 'bg-info' : ($percent > 30 ? 'bg-warning' : ''));
-                                                        @endphp
-                                                        <div class="flex-shrink-0">
-                                                            <span class="badge badge-soft-{{ $trendClass }} rounded-pill">{{ $trend >= 0 ? '+' : '' }}{{ $trend }}%</span>
-                                                        </div>
-                                                        <div class="flex-grow-1">
-                                                            <div class="progress animated-progress custom-progress progress-label h-6">
-                                                                <div class="progress-bar {{ $barClass }}" role="progressbar" style="width: {{ $percent }}%" aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100">
-                                                                    <div class="label">{{ $percent }}%</div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
                                             </tr>
                                             @empty
                                             <tr>
-                                                <td colspan="5" class="text-center">Không có dữ liệu người mua</td>
+                                                <td colspan="4" class="text-center">Không có dữ liệu người mua</td>
                                             </tr>
                                             @endforelse
                                         </tbody>
