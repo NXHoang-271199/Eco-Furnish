@@ -1071,22 +1071,29 @@
                                                         // Phân loại khách hàng dựa trên số đơn hàng và tổng chi tiêu
                                                         $customerType = '';
                                                         $badgeClass = '';
+                                                        $iconClass = '';
+                                                        $animationClass = '';
                                                         
                                                         if ($buyer->orders_count >= 10 || $buyer->total_spent >= 20000000) {
-                                                            $customerType = 'VIP';
-                                                            $badgeClass = 'bg-danger-subtle text-danger';
+                                                            $customerType = 'Người mua trung thành';
+                                                            $badgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
+                                                            $iconClass = 'ri-vip-crown-fill me-1';
+                                                            $animationClass = 'badge-bounce';
                                                         } elseif ($buyer->orders_count >= 5 || $buyer->total_spent >= 10000000) {
-                                                            $customerType = 'Thân thiết';
-                                                            $badgeClass = 'bg-warning-subtle text-warning';
+                                                            $customerType = 'Khách hàng thân thiết';
+                                                            $badgeClass = 'bg-warning-subtle text-warning border border-warning-subtle';
+                                                            $iconClass = 'ri-star-fill me-1';
+                                                            $animationClass = 'badge-pulse';
                                                         } elseif ($buyer->orders_count >= 3 || $buyer->total_spent >= 5000000) {
-                                                            $customerType = 'Thường xuyên';
-                                                            $badgeClass = 'bg-info-subtle text-info';
+                                                            $customerType = 'Khách hàng tiềm năng';
+                                                            $badgeClass = 'bg-info-subtle text-info border border-info-subtle';
+                                                            $iconClass = 'ri-user-star-line me-1';
+                                                            $animationClass = 'badge-fade';
                                                         } elseif ($buyer->orders_count >= 1) {
-                                                            $customerType = 'Khách thường';
-                                                            $badgeClass = 'bg-success-subtle text-success';
-                                                        } else {
-                                                            $customerType = 'Mới';
-                                                            $badgeClass = 'bg-light text-muted';
+                                                            $customerType = 'Khách hàng mới';
+                                                            $badgeClass = 'bg-success-subtle text-success border border-success-subtle';
+                                                            $iconClass = 'ri-user-add-line me-1';
+                                                            $animationClass = 'badge-slide';
                                                         }
                                                     @endphp
                                                     <span class="badge {{ $badgeClass }}">{{ $customerType }}</span>
@@ -1585,13 +1592,6 @@
 
         // Khởi tạo counter cho các số liệu thống kê
         initCounters();
-
-        // Xử lý nút tạo báo cáo đơn hàng
-        document.getElementById('createOrderReport').addEventListener('click', function () {
-            const reportType = this.getAttribute('data-report-type');
-            const reportTitle = this.getAttribute('data-report-title');
-            exportToExcel(reportType, reportTitle);
-        });
 
         // Xử lý nút xuất báo cáo doanh thu
         document.getElementById('exportRevenueReport').addEventListener('click', function () {
@@ -2135,7 +2135,7 @@
             // Thu thập dữ liệu dựa vào loại báo cáo
             if (reportType === 'buyers') {
                 // Thu thập dữ liệu từ bảng người mua hàng nhiều nhất
-                headers = ['Khách hàng', 'Email', 'Loại', 'Đơn hàng', 'Chi tiêu', 'Tỷ lệ'];
+                headers = ['Khách hàng', 'Email', 'Loại', 'Đơn hàng', 'Chi tiêu'];
 
                 // Tìm bảng người mua hàng
                 const titles = document.querySelectorAll('.card-title');
@@ -2163,32 +2163,18 @@
                         const buyerName = nameElement ? nameElement.textContent.trim() : '';
                         const email = emailElement ? emailElement.textContent.trim() : '';
 
-                        let type = '', orders = '', spent = '', rate = '';
+                        let type = '', orders = '', spent = '';
 
                         if (cells.length >= 2) type = cells[1].textContent.trim();
                         if (cells.length >= 3) orders = cells[2].textContent.trim();
                         if (cells.length >= 4) spent = cells[3].textContent.trim();
-                        if (cells.length >= 5) {
-                            // Lấy tỷ lệ từ progress bar nếu có
-                            const progressBar = cells[4].querySelector('.progress-bar');
-                            if (progressBar) {
-                                const labelElement = progressBar.querySelector('.label');
-                                if (labelElement) {
-                                    rate = labelElement.textContent.trim();
-                                } else {
-                                    rate = progressBar.getAttribute('aria-valuenow') + '%';
-                                }
-                            } else {
-                                rate = cells[4].textContent.trim();
-                            }
-                        }
 
-                        data.push([buyerName, email, type, orders, spent, rate]);
+                        data.push([buyerName, email, type, orders, spent]);
                     });
                 }
             } else if (reportType === 'products') {
                 // Thu thập dữ liệu từ bảng sản phẩm bán chạy
-                headers = ['Sản phẩm', 'Giá', 'Đơn hàng', 'Tồn kho', 'Tổng tiền', 'Ngày tạo'];
+                headers = ['Sản phẩm', 'Giá', 'Đơn hàng', 'Tồn kho', 'Tổng tiền'];
 
                 // Tìm bảng sản phẩm bán chạy
                 const titles = document.querySelectorAll('.card-title');
@@ -2238,42 +2224,256 @@
                             totalAmount = amountElement ? amountElement.textContent.trim() : '';
                         }
 
-                        data.push([productName, price, orders, stock, totalAmount, createdDate]);
+                        data.push([productName, price, orders, stock, totalAmount]);
                     });
                 }
             } else if (reportType === 'revenue') {
                 // Thu thập dữ liệu cho báo cáo doanh thu
-                headers = ['Tháng', 'Đơn hàng', 'Doanh thu', 'Hoàn tiền', 'Tỷ lệ chuyển đổi'];
+                headers = ['Tháng/Ngày', 'Đơn hàng', 'Doanh thu', 'Hoàn tiền'];
 
-                // Lấy dữ liệu từ biểu đồ (dùng dữ liệu mẫu nếu không có dữ liệu thực)
-                const monthlyData = @json($monthlyData ?? []);
+                // Lấy dữ liệu gốc từ Blade
+                const allMonthlyData = @json($monthlyData ?? []);
 
-                if (monthlyData && monthlyData.length > 0) {
-                    // Dữ liệu thực từ backend
-                    monthlyData.forEach(item => {
+                // Lấy khoảng ngày đang được chọn
+                const dateRangeInput = document.getElementById('dateRangePicker');
+                const dateRange = dateRangeInput ? dateRangeInput.value : '';
+                let startDate = null;
+                let endDate = null;
+
+                if (dateRange) {
+                    const rangeParts = dateRange.split(' đến ');
+                    startDate = new Date(rangeParts[0]);
+                    // Đặt giờ về 00:00:00 để so sánh chính xác
+                    startDate.setHours(0, 0, 0, 0);
+
+                    if (rangeParts.length > 1) {
+                        endDate = new Date(rangeParts[1]);
+                    } else {
+                        endDate = new Date(rangeParts[0]);
+                    }
+                    // Đặt giờ về 23:59:59 để bao gồm cả ngày cuối
+                    endDate.setHours(23, 59, 59, 999);
+                }
+
+                console.log("Filtering revenue data for range:", startDate, endDate); // DEBUG
+
+                // Lọc dữ liệu dựa trên khoảng ngày
+                const filteredMonthlyData = allMonthlyData.filter(item => {
+                    if (!startDate || !endDate) {
+                        return true; // Nếu không có bộ lọc, lấy tất cả
+                    }
+
+                    // Chuyển đổi "Tháng X" hoặc định dạng ngày thành đối tượng Date
+                    let itemDate;
+                    if (item.month.startsWith('Th')) { // Xử lý định dạng "Tháng X"
+                        const monthNumber = parseInt(item.month.replace('Th', ''));
+                        if (!isNaN(monthNumber)) {
+                            // Giả sử là năm hiện tại. Cần điều chỉnh nếu dữ liệu có thể qua nhiều năm.
+                            const year = new Date().getFullYear();
+                            // Lấy ngày đầu tiên của tháng đó
+                            itemDate = new Date(year, monthNumber - 1, 1);
+                        } else {
+                            return false; // Không thể phân tích tháng
+                        }
+                    } else { // Thử phân tích các định dạng ngày khác nếu có
+                       try {
+                           // Cố gắng phân tích ngày trực tiếp nếu backend trả về định dạng khác
+                           itemDate = new Date(item.month);
+                           if (isNaN(itemDate.getTime())) { // Kiểm tra xem Date có hợp lệ không
+                                return false;
+                           }
+                           itemDate.setHours(0,0,0,0); // Chuẩn hóa về đầu ngày
+                       } catch (e) {
+                           return false; // Không thể phân tích ngày
+                       }
+                    }
+
+                    // Đối với định dạng "Tháng X", chúng ta cần kiểm tra xem *bất kỳ* ngày nào trong tháng đó
+                    // có nằm trong khoảng thời gian lọc hay không. Hoặc đơn giản hơn, nếu bộ lọc chỉ trong 1 tháng,
+                    // ta kiểm tra tháng đó. Nếu bộ lọc qua nhiều tháng, ta bao gồm các tháng nằm giữa.
+                    // --- Logic đơn giản hóa: Kiểm tra ngày đầu tháng --- 
+                    // (Cách này có thể không chính xác hoàn toàn nếu bộ lọc chỉ vài ngày giữa tháng,
+                    // nhưng phù hợp nếu backend đã lọc sẵn theo tháng)
+                    return itemDate >= startDate && itemDate <= endDate;
+                });
+
+                console.log("Filtered Monthly Data:", filteredMonthlyData); // DEBUG
+
+                if (filteredMonthlyData && filteredMonthlyData.length > 0) {
+                    filteredMonthlyData.forEach(item => {
+                        // Sử dụng tên tháng/ngày từ dữ liệu đã lọc
+                        const displayMonth = item.month;
                         data.push([
-                            item.month,
+                            displayMonth,
                             item.orders.toString(),
                             item.revenue.toLocaleString('vi-VN') + ' ₫',
-                            item.refunds.toString(),
-                            '15%' // Giá trị mẫu cho tỷ lệ chuyển đổi
+                            item.refunds.toString()
                         ]);
                     });
-                } else {
+                } else if (!dateRange) { // Chỉ hiển thị dữ liệu mẫu nếu không có bộ lọc VÀ không có dữ liệu thực
                     // Dữ liệu mẫu nếu không có dữ liệu thực
                     for (let i = 1; i <= 12; i++) {
                         data.push([
                             'Tháng ' + i,
                             Math.floor(Math.random() * 500 + 300).toString(),
                             (Math.random() * 10000000 + 5000000).toLocaleString('vi-VN') + ' ₫',
-                            Math.floor(Math.random() * 30).toString(),
-                            Math.floor(Math.random() * 10 + 10) + '%'
+                            Math.floor(Math.random() * 30).toString()
                         ]);
                     }
+                } // Không thêm dòng nào nếu có bộ lọc nhưng không có dữ liệu
+            } else if (reportType === 'toprated') {
+                // Thu thập dữ liệu từ bảng sản phẩm đánh giá cao nhất
+                headers = ['Sản phẩm', 'Danh mục', 'Giá', 'Tổng đánh giá', 'Xếp hạng TB', 'Trạng thái'];
+
+                // Tìm bảng sản phẩm đánh giá cao
+                const titles = document.querySelectorAll('.card-title');
+                let ratedTable = null;
+
+                for (let i = 0; i < titles.length; i++) {
+                    if (titles[i].textContent.includes('Top 5 sản phẩm có lượt đánh giá cao nhất')) {
+                        const ratedCard = titles[i].closest('.card');
+                        if (ratedCard) {
+                            ratedTable = ratedCard.querySelector('table');
+                            break;
+                        }
+                    }
+                }
+
+                if (ratedTable) {
+                    const rows = ratedTable.querySelectorAll('tbody tr');
+
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        let productName = '', category = '', price = '', totalReviews = '', avgRating = '', status = '';
+
+                        if (cells.length > 0) {
+                            const nameElement = cells[0].querySelector('.text-dark');
+                            const categoryElement = cells[0].querySelector('.fw-medium');
+                            productName = nameElement ? nameElement.textContent.trim() : '';
+                            category = categoryElement ? categoryElement.textContent.trim() : '';
+                        }
+                        if (cells.length > 1) price = cells[1].textContent.trim();
+                        if (cells.length > 2) totalReviews = cells[2].textContent.trim();
+                        if (cells.length > 3) {
+                            const ratingElement = cells[3].querySelector('.ms-1'); // Lấy phần text (x.x)
+                            avgRating = ratingElement ? ratingElement.textContent.replace(/[\(\)]/g, '').trim() : '';
+                        }
+                        if (cells.length > 4) status = cells[4].textContent.trim();
+
+                        data.push([productName, category, price, totalReviews, avgRating, status]);
+                    });
+                }
+            } else if (reportType === 'topbuyers') {
+                // Thu thập dữ liệu từ bảng người mua hàng nhiều nhất
+                headers = ['Khách hàng', 'Email', 'Loại', 'Đơn hàng', 'Tổng chi tiêu'];
+
+                // Tìm bảng người mua hàng
+                const titles = document.querySelectorAll('.card-title');
+                let buyerTable = null;
+
+                for (let i = 0; i < titles.length; i++) {
+                    if (titles[i].textContent.includes('Xếp hạng người mua hàng nhiều nhất')) { // Sửa lại tên tiêu đề cho chính xác
+                        const buyerCard = titles[i].closest('.card');
+                        if (buyerCard) {
+                            buyerTable = buyerCard.querySelector('table');
+                            break;
+                        }
+                    }
+                }
+
+                console.log('Buyer Table:', buyerTable); // DEBUG
+
+                if (buyerTable) {
+                    const rows = buyerTable.querySelectorAll('tbody tr');
+                    console.log('Rows found:', rows.length); // DEBUG
+
+                    rows.forEach((row, rowIndex) => {
+                        console.log('Processing row:', rowIndex, row); // DEBUG
+                        const cells = row.querySelectorAll('td');
+
+                        // Lấy tên và email từ cấu trúc div > div > h5/span
+                        const nameElement = cells[0]?.querySelector('h5 a'); // SỬA SELECTOR
+                        const emailElement = cells[0]?.querySelector('span.text-muted'); // SỬA SELECTOR
+
+                        const buyerName = nameElement ? nameElement.textContent.trim() : '';
+                        const email = emailElement ? emailElement.textContent.trim() : '';
+
+                        let type = '', orders = '', spent = '';
+
+                        if (cells.length >= 2) type = cells[1].textContent.trim();
+                        if (cells.length >= 3) orders = cells[2].textContent.trim(); // Đơn hàng là ở cột 3 (index 2)
+                        if (cells.length >= 4) { // Tổng chi tiêu là ở cột 4 (index 3)
+                            const spentElement = cells[3].querySelector('h5'); // SỬA SELECTOR
+                            spent = spentElement ? spentElement.textContent.trim() : '';
+                        }
+
+                        console.log('Extracted data:', buyerName, email, type, orders, spent); // DEBUG
+
+                        // Chỉ thêm hàng nếu có tên khách hàng (để tránh hàng trống)
+                        if (buyerName) {
+                           data.push([buyerName, email, type, orders, spent]);
+                        }
+                    });
+                }
+            } else if (reportType === 'products') {
+                // Thu thập dữ liệu từ bảng sản phẩm bán chạy
+                headers = ['Sản phẩm', 'Giá', 'Đơn hàng', 'Tồn kho', 'Tổng tiền'];
+
+                // Tìm bảng sản phẩm bán chạy
+                const titles = document.querySelectorAll('.card-title');
+                let productTable = null;
+
+                for (let i = 0; i < titles.length; i++) {
+                    if (titles[i].textContent.includes('Sản phẩm bán chạy nhất')) {
+                        const productCard = titles[i].closest('.card');
+                        if (productCard) {
+                            productTable = productCard.querySelector('table');
+                            break;
+                        }
+                    }
+                }
+
+                if (productTable) {
+                    const rows = productTable.querySelectorAll('tbody tr');
+
+                    rows.forEach(row => {
+                        const nameElement = row.querySelector('.fs-14.my-1 a');
+                        const dateElement = row.querySelector('.text-muted');
+
+                        // Lấy dữ liệu từ các ô
+                        const cells = row.querySelectorAll('td');
+                        const productName = nameElement ? nameElement.textContent.trim() : '';
+                        const createdDate = dateElement ? dateElement.textContent.trim() : '';
+
+                        let price = '', orders = '', stock = '', totalAmount = '';
+
+                        if (cells.length >= 2) {
+                            const priceElement = cells[1].querySelector('.fs-14.my-1.fw-normal');
+                            price = priceElement ? priceElement.textContent.trim() : '';
+                        }
+
+                        if (cells.length >= 3) {
+                            const ordersElement = cells[2].querySelector('.fs-14.my-1.fw-normal');
+                            orders = ordersElement ? ordersElement.textContent.trim() : '';
+                        }
+
+                        if (cells.length >= 4) {
+                            const stockElement = cells[3].querySelector('.fs-14.my-1.fw-normal');
+                            stock = stockElement ? stockElement.textContent.trim() : '';
+                        }
+
+                        if (cells.length >= 5) {
+                            const amountElement = cells[4].querySelector('.fs-14.my-1.fw-normal');
+                            totalAmount = amountElement ? amountElement.textContent.trim() : '';
+                        }
+
+                        data.push([productName, price, orders, stock, totalAmount]);
+                    });
                 }
             }
 
             // Kiểm tra và debug
+            console.log('Loại báo cáo:', reportType);
             console.log('Tiêu đề:', headers);
             console.log('Dữ liệu:', data);
 
