@@ -105,20 +105,20 @@ const WalletPage = () => {
       }
 
       // Kiểm tra và tự động hủy các giao dịch quá hạn (30 phút)
-      const pendingTransactions = transactionsResponse.data.transactions.filter(
-        (tx) => tx.type === "nap_tien" && tx.status === "cho_thanh_toan"
-      );
+      // const pendingTransactions = transactionsResponse.data.transactions.filter(
+      //   (tx) => tx.type === "nap_tien" && tx.status === "cho_thanh_toan"
+      // );
 
-      pendingTransactions.forEach((tx) => {
-        const createdDate = new Date(tx.created_at.replace(/-/g, "/"));
-        const now = new Date();
-        const diffMinutes = Math.floor((now - createdDate) / (1000 * 60));
+      // pendingTransactions.forEach((tx) => {
+      //   const createdDate = new Date(tx.created_at.replace(/-/g, "/"));
+      //   const now = new Date();
+      //   const diffMinutes = Math.floor((now - createdDate) / (1000 * 60));
 
-        // Nếu giao dịch đã chờ quá 30 phút, tự động hủy
-        if (diffMinutes >= 30) {
-          cancelTransaction(tx.id);
-        }
-      });
+      //   // Nếu giao dịch đã chờ quá 30 phút, tự động hủy
+      //   if (diffMinutes >= 30) {
+      //     cancelTransaction(tx.id);
+      //   }
+      // });
     } catch (error) {
       console.error("Lỗi khi tải dữ liệu ví:", error);
       if (!isBackground) {
