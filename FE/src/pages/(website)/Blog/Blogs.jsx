@@ -83,17 +83,24 @@ const Blogs = () => {
           return;
         }
 
-        const response = await axios.get(`${API_URL}/posts/category/${categoryInfo.slug}`);
+        const response = await axios.get(
+          `${API_URL}/posts/category/${categoryInfo.slug}`
+        );
         console.log("Dữ liệu bài viết theo danh mục:", response.data);
 
         if (response.data && response.data.status === "success") {
           const postsData = response.data.data || [];
           if (postsData.length === 0) {
-            setError(`Không có bài viết nào trong danh mục "${categoryInfo.title}"`);
+            setError(
+              `Không có bài viết nào trong danh mục "${categoryInfo.title}"`
+            );
           }
           setPosts(postsData);
         } else {
-          console.error("API trả về cấu trúc dữ liệu không đúng:", response.data);
+          console.error(
+            "API trả về cấu trúc dữ liệu không đúng:",
+            response.data
+          );
           setPosts([]);
           setError("Không thể tải bài viết. Vui lòng thử lại sau.");
         }
@@ -106,8 +113,6 @@ const Blogs = () => {
     },
     [fetchAllPosts, categories]
   );
-
-  // Hàm format ngày tháng
   const formatDate = (dateString) => {
     const options = {
       weekday: "long",
@@ -121,11 +126,8 @@ const Blogs = () => {
   return (
     <div className="bg-gray-100 mt-10">
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* <section className="relative">
-          
-        {/* Tiêu đề và mô tả trang */}
         <div className="mt-10 mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-4">Blog Nội Thất</h1>
+          <h1 className="text-3xl font-bold mb-4">Bài viết Nội Thất</h1>
           <p className="text-gray-600 max-w-3xl mx-auto">
             {activeCategory === "all" &&
               "Khám phá những ý tưởng và xu hướng mới nhất về thiết kế nội thất cho ngôi nhà của bạn."}
@@ -134,20 +136,18 @@ const Blogs = () => {
                 "Danh mục bài viết")}
           </p>
         </div>
-
-        {/* Section danh mục và bài viết */}
         <section className="mt-16 my-6">
-          {/* Danh mục bài viết - hiển thị ngang ở trên */}
           <div className="w-full mb-8">
             <h2 className="font-medium text-xl mb-5 text-center">
               Danh mục bài viết
             </h2>
             <div className="flex flex-wrap justify-center gap-4">
               <button
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${activeCategory === "all"
-                  ? "bg-amber-300 text-white shadow-md"
-                  : "bg-white text-gray-600 hover:bg-amber-100"
-                  }`}
+                className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                  activeCategory === "all"
+                    ? "bg-amber-300 text-white shadow-md"
+                    : "bg-white text-gray-600 hover:bg-amber-100"
+                }`}
                 onClick={() => handleCategoryClick("all")}
               >
                 Tất cả bài viết
@@ -156,10 +156,11 @@ const Blogs = () => {
               {categories.map((category) => (
                 <button
                   key={category.id}
-                  className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${activeCategory === category.slug
-                    ? "bg-amber-300 text-white shadow-md"
-                    : "bg-white text-gray-600 hover:bg-amber-100"
-                    }`}
+                  className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                    activeCategory === category.slug
+                      ? "bg-amber-300 text-white shadow-md"
+                      : "bg-white text-gray-600 hover:bg-amber-100"
+                  }`}
                   onClick={() => handleCategoryClick(category.slug)}
                 >
                   {category.title}
@@ -167,8 +168,6 @@ const Blogs = () => {
               ))}
             </div>
           </div>
-
-          {/* Phần bài viết chính - chiếm toàn bộ chiều rộng */}
           <div className="w-full mt-6">
             {loading ? (
               <div className="flex flex-col justify-center items-center h-64">
@@ -179,8 +178,9 @@ const Blogs = () => {
               <div className="text-center py-10">
                 <h3 className="text-xl font-semibold mb-2">
                   {activeCategory !== "all" &&
-                    `Danh mục: ${categories.find((c) => c.slug === activeCategory)
-                      ?.title || activeCategory
+                    `Danh mục: ${
+                      categories.find((c) => c.slug === activeCategory)
+                        ?.title || activeCategory
                     }`}
                 </h3>
                 <p className="text-red-500">{error}</p>
@@ -207,8 +207,6 @@ const Blogs = () => {
                       >
                         <div className="bg-white rounded-xl shadow-sm h-full hover:shadow-md transition-all duration-300 overflow-hidden group-hover:translate-y-[-5px]">
                           <div className="relative overflow-hidden rounded-t-xl">
-
-                            {/* Ảnh thumbnail */}
                             <div className="aspect-w-16 aspect-h-9 relative">
                               <img
                                 src={
@@ -216,8 +214,8 @@ const Blogs = () => {
                                     ? post.thumbnail.startsWith("http")
                                       ? post.thumbnail
                                       : post.thumbnail.startsWith("/")
-                                        ? `http://localhost:8000${post.thumbnail}`
-                                        : `http://localhost:8000/${post.thumbnail}`
+                                      ? `http://localhost:8000${post.thumbnail}`
+                                      : `http://localhost:8000/${post.thumbnail}`
                                     : "http://localhost:5173/src/assets/img/banners/homepage01-slide2.jpg"
                                 }
                                 alt={post.title}
@@ -236,25 +234,18 @@ const Blogs = () => {
                           </div>
 
                           <div className="p-5">
-                            {/* Ngày đăng */}
                             <div className="flex items-center mb-3 text-gray-500 text-sm">
                               <i className="far fa-clock mr-2"></i>
                               <span>{formatDate(post.created_at)}</span>
                             </div>
-
-                            {/* Tiêu đề bài viết */}
                             <h2 className="text-lg font-bold text-gray-800 line-clamp-2 group-hover:text-amber-500 transition-colors duration-200">
                               {post.title}
                             </h2>
-
-                            {/* Mô tả ngắn (nếu có) */}
                             {post.description && (
                               <p className="mt-2 text-gray-600 text-sm line-clamp-3">
                                 {post.description}
                               </p>
                             )}
-
-                            {/* Nút đọc thêm */}
                             <div className="mt-4 flex justify-end">
                               <span className="inline-flex items-center text-amber-500 text-sm font-medium group-hover:text-amber-600">
                                 Xem thêm
@@ -275,10 +266,11 @@ const Blogs = () => {
                         <p className="text-gray-500">
                           {activeCategory === "all"
                             ? "Hiện tại chưa có bài viết nào được đăng tải. Vui lòng quay lại sau."
-                            : `Chưa có bài viết nào thuộc danh mục "${categories.find(
-                              (c) => c.slug === activeCategory
-                            )?.title || activeCategory
-                            }". Vui lòng chọn danh mục khác.`}
+                            : `Chưa có bài viết nào thuộc danh mục "${
+                                categories.find(
+                                  (c) => c.slug === activeCategory
+                                )?.title || activeCategory
+                              }". Vui lòng chọn danh mục khác.`}
                         </p>
                       </div>
                     </div>

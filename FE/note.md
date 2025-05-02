@@ -131,6 +131,67 @@ Route quản lý người dùng: Định nghĩa các route liên quan đến ng�
 Social OAuth Routes: Các route để tích hợp đăng nhập qua Google và Facebook.
    - `/auth/google/redirect`: Redirect người dùng đến Google để đăng nhập.
    - `/auth/facebook/redirect`: Redirect người dùng đến Facebook để đăng nhập.
+Social OAuth Routes: Các route để tích hợp đăng nhập qua Google và Facebook.
+   - `/auth/google/redirect`: Redirect người dùng đến Google để đăng nhập.
+   - `/auth/facebook/redirect`: Redirect người dùng đến Facebook để đăng nhập.
+Route bài viết (posts): Định nghĩa các route để hiển thị bài viết, bao gồm bài viết theo danh mục.
+   - `/posts`: Lấy tất cả các bài viết.
+   - `/posts/{slug}`: Lấy bài viết theo `slug`.
+Voucher Routes: Các route để lấy voucher và kiểm tra tính hợp lệ của voucher.
+    - `/vouchers`: Lấy tất cả voucher.
+    - `/check-voucher`: Kiểm tra tính hợp lệ của voucher.
+Banner Routes: Cung cấp các route để lấy danh sách banner cho website.
+    - `/banners`: Lấy tất cả các banner.
+Route gửi tin nhắn: Cung cấp API để gửi tin nhắn qua sự kiện.
+    - `/send-message`: Gửi tin nhắn thông qua sự kiện `MessageSent`.
+Route tin nhắn (messages): Các route để quản lý tin nhắn của người dùng.
+    - `/messages/user/{userId}`: Lấy tin nhắn theo ID người dùng.
+    - `/messages/unread`: Lấy tin nhắn chưa đọc.
 
+Quản lý token xác thực: Cung cấp API xác thực token người dùng cho Socket server.
+    - `/auth/verify-token`: Xác thực token người dùng.
 
+Route kiểm tra token: Kiểm tra tính hợp lệ của token đang sử dụng.
+    - `/auth/check-token`: Kiểm tra token người dùng.
 
+ Test xác thực: API để kiểm tra việc xác thực người dùng qua token.
+    - `/auth/check`: API kiểm tra thông tin người dùng đã đăng nhập.
+API lấy thông tin người dùng theo ID: Cung cấp API để lấy thông tin người dùng qua ID.
+    - `/users/{id}`: Lấy thông tin người dùng theo ID.
+User Notification Routes: Các route để quản lý thông báo người dùng.
+    - `/user/notifications`: Lấy tất cả thông báo của người dùng.
+    - `/user/notifications/{id}/read`: Đánh dấu thông báo là đã đọc.
+Route giỏ hàng (cart): Cung cấp API để quản lý giỏ hàng của người dùng.
+    - `/cart`: Lấy giỏ hàng của người dùng.
+    - `/cart/add`: Thêm sản phẩm vào giỏ hàng.
+    - `/cart/update`: Cập nhật số lượng sản phẩm trong giỏ hàng.
+    - `/cart/remove`: Xóa sản phẩm khỏi giỏ hàng.
+Route phương thức thanh toán (payment methods): API để lấy danh sách phương thức thanh toán.
+    - `/payment-methods`: Lấy tất cả phương thức thanh toán.
+    - `/payment-methods/deposit`: Lấy các phương thức thanh toán cho việc nạp tiền vào ví.
+Route đơn hàng (orders): Các route quản lý đơn hàng.
+    - `/orders`: Lấy danh sách đơn hàng.
+    - `/orders/{id}`: Lấy chi tiết đơn hàng.
+    - `/orders/create`: Tạo đơn hàng mới. 
+Route đánh giá sản phẩm (reviews): Các route để quản lý đánh giá sản phẩm.
+    - `/reviews`: Thêm đánh giá sản phẩm mới.
+    - `/products/{productId}/reviews`: Lấy danh sách đánh giá của sản phẩm.
+Wallet Routes: Các route quản lý ví người dùng.
+    - `/wallet/balance`: Lấy số dư ví của người dùng.
+    - `/wallet/transactions`: Lấy lịch sử giao dịch của ví.
+Tài khoản ngân hàng: API để quản lý tài khoản ngân hàng của người dùng.
+    - `/bank-accounts`: Lấy danh sách tài khoản ngân hàng.
+    - `/bank-accounts/{accountId}`: Cập nhật thông tin tài khoản ngân hàng.
+
+MoMo IPN: Route xử lý thông báo IPN từ MoMo cho thanh toán.
+    - `/momo/ipn`: Xử lý IPN từ MoMo khi thanh toán thành công.
+
+VNPAY IPN: Route xử lý thông báo IPN từ VNPAY cho thanh toán.
+    - `/vnpay/ipn`: Xử lý IPN từ VNPAY khi thanh toán thành công.
+
+Route hủy giao dịch ví: Cung cấp API để hủy một giao dịch ví.
+    - `/wallet/transactions/{id}/cancel`: Hủy giao dịch ví theo ID.
+Rút tiền từ ví: API để tạo yêu cầu rút tiền từ ví.
+    - `/wallet/withdraw-requests`: Tạo yêu cầu rút tiền.
+Route tạo mã QR: API tạo mã QR cho việc thanh toán hoặc nạp tiền.
+    - `/wallet/generate-qr-preview`: Tạo preview mã QR cho ví.

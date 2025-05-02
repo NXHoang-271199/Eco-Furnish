@@ -3,7 +3,8 @@
 Dự án này tích hợp chức năng chat với AI sử dụng API Gemini của Google vào ứng dụng web Eco-Furnish.
 
 ## Tính năng
-
+- Thanh toán online với momo và vnpay.
+- ví người dùng, gợi ý thông minh
 - Bong bóng chat ở góc phải dưới cùng của trang web
 - Tích hợp API Gemini để trả lời câu hỏi của người dùng
 - Lưu lịch sử chat vào localStorage
