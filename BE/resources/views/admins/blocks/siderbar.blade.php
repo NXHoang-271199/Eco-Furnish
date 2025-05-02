@@ -4,12 +4,14 @@
         <!-- Dark Logo-->
         <a href="index.html" class="logo logo-dark">
             <span class="logo-sm">
-                <h4 class="m-0 text-dark d-flex align-items-center justify-content-center mt-3" style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
+                <h4 class="m-0 text-dark d-flex align-items-center justify-content-center mt-3"
+                    style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
                     <span style="color: #4B56D2; font-weight: 700;">Eco</span>
                 </h4>
             </span>
             <span class="logo-lg">
-                <h3 class="m-0 text-dark d-flex align-items-center justify-content-center py-2 mt-2" style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
+                <h3 class="m-0 text-dark d-flex align-items-center justify-content-center py-2 mt-2"
+                    style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
                     <span style="color: #4B56D2; font-weight: 700;">Eco </span>
                     <span style="font-weight: 500;">Furnish</span>
                 </h3>
@@ -18,12 +20,14 @@
         <!-- Light Logo-->
         <a href="index.html" class="logo logo-light">
             <span class="logo-sm">
-                <h4 class="m-0 text-white d-flex align-items-center justify-content-center mt-3" style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
+                <h4 class="m-0 text-white d-flex align-items-center justify-content-center mt-3"
+                    style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
                     <span style="color: #82C3EC; font-weight: 700;">Eco</span>
                 </h4>
             </span>
             <span class="logo-lg">
-                <h3 class="m-0 text-white d-flex align-items-center justify-content-center py-2 mt-2" style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
+                <h3 class="m-0 text-white d-flex align-items-center justify-content-center py-2 mt-2"
+                    style="font-family: 'Poppins', sans-serif; letter-spacing: 1px;">
                     <span style="color: #82C3EC; font-weight: 700;">Eco</span>
                     <span style="font-weight: 500;">Furnish</span>
                 </h3>
@@ -60,7 +64,8 @@
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="{{ route('users.admins') }}" class="nav-link" data-key="t-sweet-alerts">
+                                        <a href="{{ route('users.admins') }}" class="nav-link"
+                                            data-key="t-sweet-alerts">
                                             <i class="ri-shield-user-line"></i>Quản trị
                                         </a>
                                     </li>
@@ -264,32 +269,33 @@
                 @if (Auth::user()->hasPermission('view-messages'))
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="{{ route('messages.index') }}">
-                            <i class="ri-customer-service-2-line"></i> <span data-key="t-advance-ui">Chat trực tuyến</span>
+                            <i class="ri-customer-service-2-line"></i> <span data-key="t-advance-ui">Chat trực
+                                tuyến</span>
                         </a>
                     </li>
                 @endif
 
                 @if (Auth::user()->hasPermission('view-wallets'))
                     <li class="nav-item">
-                        <a class="nav-link menu-link" href="#sidebarWallet" data-bs-toggle="collapse"
-                            role="button" aria-expanded="false" aria-controls="sidebarWallet">
+                        <a class="nav-link menu-link" href="#sidebarWallet" data-bs-toggle="collapse" role="button"
+                            aria-expanded="false" aria-controls="sidebarWallet">
                             <i class="ri-wallet-3-line"></i> <span data-key="t-advance-ui">Quản Lý Ví Tiền</span>
                         </a>
                         <div class="collapse menu-dropdown" id="sidebarWallet">
                             <ul class="nav nav-sm flex-column">
                                 @if (Auth::user()->hasPermission('view-wallets'))
-                                <li class="nav-item">
-                                    <a href="{{ route('wallets.index') }}" class="nav-link">
-                                        Số Dư Khách Hàng
-                                    </a>
-                                </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('wallets.index') }}" class="nav-link">
+                                            Số Dư Khách Hàng
+                                        </a>
+                                    </li>
                                 @endif
                                 @if (Auth::user()->hasPermission('view-wallets-transactions'))
-                                <li class="nav-item">
-                                    <a href="{{ route('wallets.transactions') }}" class="nav-link">
-                                        Lịch Sử Giao Dịch
-                                    </a>
-                                </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('wallets.transactions') }}" class="nav-link">
+                                            Lịch Sử Giao Dịch
+                                        </a>
+                                    </li>
                                 @endif
                             </ul>
                         </div>

@@ -136,6 +136,8 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'Xem Thông Tin Ví Tiền', 'slug' => 'view-wallets', 'model' => 'App\Models\Wallet'],
             ['name' => 'Xem Lịch Sử Giao Dịch', 'slug' => 'view-wallets-transactions', 'model' => 'App\Models\Wallet'],
             ['name' => 'Cộng Tiền Vào Ví', 'slug' => 'edit-wallets', 'model' => 'App\Models\Wallet'],
+            ['name' => 'Quản Lý Giao Dịch Ví', 'slug' => 'manage-wallet-transactions', 'model' => 'App\Models\Wallet'],
+            ['name' => 'Quản Lý Yêu Cầu Rút Tiền', 'slug' => 'manage-withdraw-requests', 'model' => 'App\Models\Wallet'],
 
             // Message permissions
             ['name' => 'Xem Tin Nhắn', 'slug' => 'view-messages', 'model' => 'App\Models\Message'],
@@ -192,7 +194,7 @@ class RolesAndPermissionsSeeder extends Seeder
             // Reviews
             'view-reviews', 'update-reviews',
 
-            // Wallets
+            // Wallets - Chỉ cho phép xem
             'view-wallets', 'view-wallets-transactions',
 
             // Messages
