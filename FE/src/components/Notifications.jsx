@@ -26,6 +26,11 @@ const Notifications = () => {
     const toastShownIds = useRef(new Set());
     const notificationContainerRef = useRef(null);
 
+    // Thêm biến global để lưu trữ ID đã hiển thị xuyên suốt session
+    const processedNotificationIds = new Set(
+        JSON.parse(sessionStorage.getItem('processedNotificationIds') || '[]')
+    );
+
     useEffect(() => {
         // Đăng ký nhận thông báo từ socket
         const unsubscribe = subscribeToNotifications(handleNewNotification);
@@ -48,6 +53,7 @@ const Notifications = () => {
             window.removeEventListener('order-notification', handleOrderNotification);
             recentNotificationIds.current.clear();
             toastShownIds.current.clear();
+            // Không xóa khỏi sessionStorage để giữ trạng thái giữa các lần mount/unmount
         };
     }, []);
 
@@ -105,19 +111,29 @@ const Notifications = () => {
         // Đảm bảo dữ liệu thông báo hợp lệ
         if (!notification || !notification.id) return;
 
+        // Kiểm tra nếu thông báo đã được xử lý trong session hiện tại
+        if (processedNotificationIds.has(notification.id)) {
+            console.log("⚠️ Đã xử lý thông báo này trong session hiện tại, bỏ qua:", notification.id);
+            return;
+        }
+
         // Kiểm tra nếu thông báo đã được xử lý gần đây
         if (recentNotificationIds.current.has(notification.id)) {
             console.log("⚠️ Đã nhận thông báo này gần đây, bỏ qua:", notification.id);
             return;
         }
 
-        // Thêm vào danh sách đã xử lý
+        // Thêm vào danh sách đã xử lý session
+        processedNotificationIds.add(notification.id);
+        sessionStorage.setItem('processedNotificationIds', JSON.stringify([...processedNotificationIds]));
+
+        // Thêm vào danh sách đã xử lý gần đây
         recentNotificationIds.current.add(notification.id);
 
-        // Sau 5 giây, xóa khỏi danh sách đã xử lý (để tránh danh sách quá lớn)
+        // Tăng thời gian để xóa ID khỏi danh sách, từ 5 giây lên 30 giây
         setTimeout(() => {
             recentNotificationIds.current.delete(notification.id);
-        }, 5000);
+        }, 30000);
 
         // Thêm thông báo mới vào danh sách
         setNotifications(prevNotifications => {
@@ -150,10 +166,10 @@ const Notifications = () => {
         if (!toastShownIds.current.has(notification.id)) {
             toastShownIds.current.add(notification.id);
 
-            // Sau 10 giây, cho phép hiển thị lại toast này (nếu cần)
+            // Tăng thời gian, từ 10 giây lên 60 giây
             setTimeout(() => {
                 toastShownIds.current.delete(notification.id);
-            }, 10000);
+            }, 60000);
 
             // Kiểm tra loại thông báo và hiển thị toast tương ứng
             if (notification.transaction_type === 'nap_tien') {

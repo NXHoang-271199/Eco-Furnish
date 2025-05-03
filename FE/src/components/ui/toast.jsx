@@ -131,6 +131,17 @@ export const showWalletDepositToast = (notification) => {
     // Tạo ID duy nhất cho toast để tránh hiển thị trùng lặp
     const toastId = `wallet-notification-${notification.id || Date.now()}`;
 
+    // Kiểm tra xem toast này đã được hiển thị chưa
+    const shownToastIds = JSON.parse(sessionStorage.getItem('shownToastIds') || '[]');
+    if (shownToastIds.includes(toastId)) {
+        console.log(`Toast với ID ${toastId} đã được hiển thị trước đó, bỏ qua.`);
+        return;
+    }
+
+    // Thêm toast ID vào danh sách đã hiển thị
+    shownToastIds.push(toastId);
+    sessionStorage.setItem('shownToastIds', JSON.stringify(shownToastIds));
+
     // Phát âm thanh thông báo
     playNotificationSound();
 
@@ -301,7 +312,22 @@ export const showPaymentReminderToast = (order) => {
     if (!order || !order.id || !order.order_code) return;
 
     // Tạo ID duy nhất cho toast để tránh hiển thị trùng lặp
-    const toastId = `payment-reminder-${order.id || Date.now()}`;
+    const toastId = `payment-reminder-${order.id}`;
+
+    // Kiểm tra thời gian lần cuối hiển thị thông báo (15 phút = 900000 ms)
+    const REMINDER_INTERVAL = 15 * 60 * 1000; // 15 phút
+    const lastReminderTimes = JSON.parse(localStorage.getItem('paymentReminderTimes') || '{}');
+    const currentTime = Date.now();
+
+    // Nếu đã hiển thị gần đây, bỏ qua
+    if (lastReminderTimes[order.id] && (currentTime - lastReminderTimes[order.id]) < REMINDER_INTERVAL) {
+        console.log(`Thông báo thanh toán cho đơn hàng #${order.order_code} đã hiển thị gần đây, bỏ qua.`);
+        return;
+    }
+
+    // Cập nhật thời gian hiển thị thông báo
+    lastReminderTimes[order.id] = currentTime;
+    localStorage.setItem('paymentReminderTimes', JSON.stringify(lastReminderTimes));
 
     // Màu sắc thông báo - đỏ cho cảnh báo thanh toán
     const colorClass = 'bg-red-500';
