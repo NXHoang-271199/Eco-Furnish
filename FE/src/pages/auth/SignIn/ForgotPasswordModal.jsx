@@ -26,7 +26,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
       );
       setIsSuccess(true);
     } catch (error) {
-      setMessage(error.response?.data?.message || "Có lỗi xảy ra!");
+      setMessage(error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại!");
       setIsSuccess(false);
     } finally {
       setIsLoading(false);

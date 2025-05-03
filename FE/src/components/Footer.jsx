@@ -18,10 +18,10 @@ const Footer = () => {
                 </p>
               </div>
             </div>
-            <p>400 University Drive Suite 200 Coral Gables, FL 33134 USA</p>
+            <p>Toa nha Eco Furnish,Cau Giay,Viet nam</p>
           </div>
           <div>
-            <div className="font-semibold">Site Map</div>
+            <div className="font-semibold"> Map</div>
             <ul className="leading-10">
               <li>
                 <Link to="/">Trang chủ</Link>
@@ -48,9 +48,9 @@ const Footer = () => {
           <div>
             <div className="font-semibold">Vị trí </div>
             <ul className="leading-10">
-              <li>support@euphoria.in</li>
-              <li>Ahmedabad Main Road</li>
-              <li>Udaipur, India- 313002</li>
+              <li>QuantriEco@euphoria.in</li>
+              <li>Ecofurnish@euphoria.in</li>
+              <li>Viet nam</li>
             </ul>
           </div>
         </div>

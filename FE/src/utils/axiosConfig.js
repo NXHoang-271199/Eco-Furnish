@@ -91,9 +91,12 @@ axiosInstance.interceptors.response.use(
           throw new Error("No refresh token available");
         }
 
-        const res = await axios.post("http://localhost:8000/api/users/refresh-token", {
-          refresh_token: refreshToken,
-        });
+        const res = await axios.post(
+          "http://localhost:8000/api/users/refresh-token",
+          {
+            refresh_token: refreshToken,
+          }
+        );
 
         if (res.data.status === "success") {
           const newToken = res.data.data.access_token;
