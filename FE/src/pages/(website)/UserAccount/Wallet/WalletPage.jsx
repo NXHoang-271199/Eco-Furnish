@@ -692,10 +692,36 @@ const WalletPage = () => {
                     </span>
                   </div>
 
+                  {/* Hiển thị thông tin tài khoản ngân hàng khi giao dịch là rút tiền */}
+                  {selectedTransaction.type === "rut_tien" && selectedTransaction.withdraw_request && (
+                    <>
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="text-gray-600">Ngân hàng</span>
+                        <span className="text-gray-800 font-medium">
+                          {selectedTransaction.withdraw_request.bank_name}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="text-gray-600">Số tài khoản</span>
+                        <span className="text-gray-800 font-medium">
+                          {selectedTransaction.withdraw_request.bank_account_number}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between py-2 border-b">
+                        <span className="text-gray-600">Chủ tài khoản</span>
+                        <span className="text-gray-800 font-medium">
+                          {selectedTransaction.withdraw_request.account_holder_name}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
                   <div className="flex justify-between py-2 border-b">
                     <span className="text-gray-600">Thời gian</span>
                     <span className="text-gray-800 font-medium">
-                      {selectedTransaction.created_at}
+                      {new Date(selectedTransaction.created_at).toLocaleString("vi-VN")}
                     </span>
                   </div>
 

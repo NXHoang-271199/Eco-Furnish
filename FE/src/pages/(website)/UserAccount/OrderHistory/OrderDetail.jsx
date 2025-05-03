@@ -80,11 +80,10 @@ const RefundRequestModal = memo(
                 {reasonOptions.map((reason, index) => (
                   <div
                     key={index}
-                    className={`flex items-center p-2 rounded-md cursor-pointer ${
-                      selectedReason === reason
-                        ? "bg-orange-100 border border-orange-500"
-                        : "hover:bg-gray-100"
-                    }`}
+                    className={`flex items-center p-2 rounded-md cursor-pointer ${selectedReason === reason
+                      ? "bg-orange-100 border border-orange-500"
+                      : "hover:bg-gray-100"
+                      }`}
                     onClick={() => handleReasonSelect(reason)}
                   >
                     <div className="h-4 w-4 rounded-full border border-gray-400 flex items-center justify-center mr-2">
@@ -174,9 +173,8 @@ const ReviewModal = memo(
             key={i}
             type="button"
             onClick={() => handleRatingChange(i)}
-            className={`text-2xl focus:outline-none ${
-              i <= rating ? "text-amber-400" : "text-gray-300"
-            }`}
+            className={`text-2xl focus:outline-none ${i <= rating ? "text-amber-400" : "text-gray-300"
+              }`}
           >
             <FiStar className={i <= rating ? "fill-amber-400" : ""} />
           </button>
@@ -487,11 +485,10 @@ const CancelOrderModal = memo(
                 {reasonOptions.map((reason, index) => (
                   <div
                     key={index}
-                    className={`flex items-center p-2 rounded-md cursor-pointer ${
-                      selectedReason === reason
-                        ? "bg-orange-100 border border-orange-500"
-                        : "hover:bg-gray-100"
-                    }`}
+                    className={`flex items-center p-2 rounded-md cursor-pointer ${selectedReason === reason
+                      ? "bg-orange-100 border border-orange-500"
+                      : "hover:bg-gray-100"
+                      }`}
                     onClick={() => handleReasonSelect(reason)}
                   >
                     <div className="h-4 w-4 rounded-full border border-gray-400 flex items-center justify-center mr-2">
@@ -569,9 +566,8 @@ const ReviewsList = ({ orderId }) => {
           // Đảm bảo mỗi đánh giá có ID duy nhất
           const uniqueReviews = response.data.data.map((review) => ({
             ...review,
-            uniqueKey: `${review.id}-${review.product_id}-${
-              review.product_variant_id || "no-variant"
-            }-${new Date(review.created_at).getTime()}`,
+            uniqueKey: `${review.id}-${review.product_id}-${review.product_variant_id || "no-variant"
+              }-${new Date(review.created_at).getTime()}`,
           }));
           setReviews(uniqueReviews);
         } else {
@@ -667,9 +663,8 @@ const ReviewsList = ({ orderId }) => {
             <div className="flex items-start">
               {review.product_image && (
                 <img
-                  src={`${import.meta.env.VITE_API_BASE_URL}/storage/${
-                    review.product_image
-                  }`}
+                  src={`${import.meta.env.VITE_API_BASE_URL}/storage/${review.product_image
+                    }`}
                   alt={review.product_name}
                   className="w-16 h-16 object-cover rounded mr-4"
                   onError={(e) => {
@@ -685,16 +680,16 @@ const ReviewsList = ({ orderId }) => {
                   <div className="bg-gray-50 px-2 py-1 rounded-md text-sm my-1 inline-block border border-gray-200">
                     {Array.isArray(review.variant_details)
                       ? review.variant_details.map((detail, idx) => (
-                          <span key={idx} className="text-gray-700">
-                            {detail.name || detail.attribute_name}:{" "}
-                            <strong>
-                              {detail.value || detail.attribute_value}
-                            </strong>
-                            {idx < review.variant_details.length - 1
-                              ? ", "
-                              : ""}
-                          </span>
-                        ))
+                        <span key={idx} className="text-gray-700">
+                          {detail.name || detail.attribute_name}:{" "}
+                          <strong>
+                            {detail.value || detail.attribute_value}
+                          </strong>
+                          {idx < review.variant_details.length - 1
+                            ? ", "
+                            : ""}
+                        </span>
+                      ))
                       : renderVariantDetails(review.variant_details)}
                   </div>
                 )}
@@ -715,9 +710,8 @@ const ReviewsList = ({ orderId }) => {
                     {review.images.map((image, index) => (
                       <img
                         key={index}
-                        src={`${
-                          import.meta.env.VITE_API_BASE_URL
-                        }/storage/${image}`}
+                        src={`${import.meta.env.VITE_API_BASE_URL
+                          }/storage/${image}`}
                         alt={`Review image ${index + 1}`}
                         className="w-16 h-16 object-cover rounded"
                         onError={(e) => {
@@ -1189,7 +1183,7 @@ const OrderDetail = () => {
       const orderCreatedTime = new Date(order.created_at).getTime();
       const currentTime = new Date().getTime();
       const timeSinceCreated = currentTime - orderCreatedTime;
-      const autoCancelDelayMs = 30 * 60 * 1000; // 30 phút (30 giây test)
+      const autoCancelDelayMs = 5 * 1000; // 24 giờ
 
       if (timeSinceCreated >= autoCancelDelayMs) {
         console.log(
@@ -1464,7 +1458,7 @@ const OrderDetail = () => {
       );
       toast.error(
         error.response?.data?.message ||
-          "Không thể hủy đơn hàng. Vui lòng thử lại sau."
+        "Không thể hủy đơn hàng. Vui lòng thử lại sau."
       );
     } finally {
       setLoading(false);
@@ -1616,7 +1610,7 @@ const OrderDetail = () => {
         // Hiển thị thông báo lỗi cụ thể hơn nếu có
         alert(
           response.data.message ||
-            "Không thể lấy link thanh toán lại. Vui lòng kiểm tra console."
+          "Không thể lấy link thanh toán lại. Vui lòng kiểm tra console."
         );
         console.error(
           "API response không chứa URL thanh toán hợp lệ:",
@@ -1694,18 +1688,16 @@ const OrderDetail = () => {
             {refundSteps.map((step, index) => (
               <div
                 key={step.id}
-                className={`flex flex-col items-center ${
-                  currentStep >= step.id ? "text-orange-600" : "text-gray-400"
-                }`}
+                className={`flex flex-col items-center ${currentStep >= step.id ? "text-orange-600" : "text-gray-400"
+                  }`}
               >
                 <div
                   className={`
                   rounded-full h-8 w-8 flex items-center justify-center border-2 mb-1
-                  ${
-                    currentStep >= step.id
+                  ${currentStep >= step.id
                       ? "border-orange-500 bg-orange-100"
                       : "border-gray-300"
-                  }
+                    }
                 `}
                 >
                   {step.icon}
@@ -1802,18 +1794,16 @@ const OrderDetail = () => {
               {steps.map((step, index) => (
                 <div
                   key={step.id}
-                  className={`flex flex-col items-center ${
-                    currentStep >= step.id ? "text-amber-600" : "text-gray-400"
-                  }`}
+                  className={`flex flex-col items-center ${currentStep >= step.id ? "text-amber-600" : "text-gray-400"
+                    }`}
                 >
                   <div
                     className={`
                     rounded-full h-8 w-8 flex items-center justify-center border-2 mb-1
-                    ${
-                      currentStep >= step.id
+                    ${currentStep >= step.id
                         ? "border-amber-500 bg-amber-100"
                         : "border-gray-300"
-                    }
+                      }
                   `}
                   >
                     {step.icon}
@@ -1912,9 +1902,9 @@ const OrderDetail = () => {
       // Thêm thông tin biến thể nếu có
       product_variant: item.product_variant_id
         ? {
-            id: item.product_variant_id, // Lấy id từ product_variant_id
-            variant_details: item.product_variant?.variant_details || [],
-          }
+          id: item.product_variant_id, // Lấy id từ product_variant_id
+          variant_details: item.product_variant?.variant_details || [],
+        }
         : null,
     });
     setShowReviewModal(true);
