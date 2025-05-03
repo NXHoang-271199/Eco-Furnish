@@ -9,6 +9,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import Banner from "../../../components/Banner";
 import { motion } from "framer-motion";
 import LoadingScreen from "../../../components/LoadingScreen";
+import VariantSelectionModal from "../../../components/VariantSelectionModal";
+import { toast } from "react-toastify";
+import axiosInstance from "../../../utils/axiosConfig";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -34,6 +37,9 @@ const Products = () => {
   const [sortOption, setSortOption] = useState("newest");
   // Thêm state lưu trữ thông tin đánh giá
   const [productRatings, setProductRatings] = useState({});
+  const [variantModalOpen, setVariantModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   const [searchParams] = useSearchParams();
   const spaceFilter = searchParams.get('space');
@@ -525,6 +531,47 @@ const Products = () => {
     }
   }, [products, isSearchLoading, isLoading]);
 
+  // Hàm xử lý thêm sản phẩm vào giỏ hàng
+  const handleAddToCart = async (product) => {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+      return;
+    }
+
+    // Kiểm tra xem sản phẩm có biến thể hay không
+    if (product.has_variants) {
+      // Nếu có, mở modal chọn biến thể
+      setSelectedProduct(product);
+      setVariantModalOpen(true);
+    } else {
+      // Nếu không, thêm trực tiếp vào giỏ hàng
+      try {
+        setAddingToCart(true);
+        const response = await axiosInstance.post("/cart/add", {
+          product_id: product.id,
+          quantity: 1
+        });
+
+        if (response.status === 200 || response.status === 201) {
+          toast.success("Đã thêm sản phẩm vào giỏ hàng!");
+        }
+      } catch (error) {
+        console.error("Lỗi khi thêm vào giỏ hàng:", error);
+        toast.error(error.response?.data?.message || "Có lỗi xảy ra khi thêm vào giỏ hàng");
+      } finally {
+        setAddingToCart(false);
+      }
+    }
+  };
+
+  // Hàm xử lý sau khi thêm sản phẩm vào giỏ hàng từ modal
+  const handleVariantAddedToCart = () => {
+    setVariantModalOpen(false);
+    setSelectedProduct(null);
+  };
+
   return (
     <>
       {isLoading && !isSearching && <LoadingScreen />}
@@ -828,8 +875,7 @@ const Products = () => {
                             onClick={(e) => {
                               e.preventDefault(); // Prevent link navigation
                               e.stopPropagation(); // Prevent event bubbling
-                              // Add to cart logic here
-                              console.log("Add to cart:", product.id);
+                              handleAddToCart(product);
                             }}
                             className={`bg-white text-amber-600 p-3 rounded-full shadow-lg hover:bg-amber-500 hover:text-white transition-all duration-300 transform hover:scale-110 ${!checkProductInStock(product) ? 'opacity-50 cursor-not-allowed' : ''}`}
                             whileHover={{ scale: checkProductInStock(product) ? 1.15 : 1, rotate: checkProductInStock(product) ? 5 : 0 }}
@@ -1092,6 +1138,19 @@ const Products = () => {
           ))}
         </div>
       </section>
+
+      {/* Modal chọn biến thể sản phẩm */}
+      {variantModalOpen && selectedProduct && (
+        <VariantSelectionModal
+          isOpen={variantModalOpen}
+          onClose={() => {
+            setVariantModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          product={selectedProduct}
+          onAddToCart={handleVariantAddedToCart}
+        />
+      )}
     </>
   );
 };

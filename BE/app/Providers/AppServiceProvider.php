@@ -6,6 +6,7 @@ use App\Models\OrderNotification;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\DB;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,7 +29,15 @@ class AppServiceProvider extends ServiceProvider
         $unreadCount = 0;
 
         if (Schema::hasTable('order_notifications')) {
-            $unreadCount = OrderNotification::where('is_read', false)->count();
+            // Lấy danh sách các ID thông báo mới nhất cho mỗi đơn hàng
+            $latestNotificationIds = OrderNotification::select('order_id', DB::raw('MAX(id) as max_id'))
+                ->groupBy('order_id')
+                ->pluck('max_id');
+                
+            // Đếm số lượng thông báo chưa đọc từ danh sách thông báo mới nhất
+            $unreadCount = OrderNotification::whereIn('id', $latestNotificationIds)
+                ->where('is_read', false)
+                ->count();
         }
 
         View::share('unreadCount', $unreadCount);

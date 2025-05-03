@@ -691,15 +691,6 @@ const Cart = () => {
                           <RiSecurePaymentLine className="text-amber-500 mt-0.5 flex-shrink-0" />
                           <p>
                             Bảo hành 12 tháng với lỗi từ nhà sản xuất.{" "}
-                            <button className="text-amber-600 underline decoration-amber-200 hover:decoration-amber-500 transition-all duration-300">
-                              Chi tiết
-                            </button>
-                          </p>
-                        </div>
-                        <div className="flex items-start gap-2 text-sm text-gray-500">
-                          <FiTruck className="text-amber-500 mt-0.5 flex-shrink-0" />
-                          <p>
-                            Vận chuyển miễn phí cho đơn hàng trên 1.000.000đ
                           </p>
                         </div>
                       </div>

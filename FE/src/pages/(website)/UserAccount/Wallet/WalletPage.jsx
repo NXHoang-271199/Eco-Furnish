@@ -103,22 +103,6 @@ const WalletPage = () => {
           navigate(location.pathname, { replace: true, state: {} });
         }
       }
-
-      // Kiểm tra và tự động hủy các giao dịch quá hạn (30 phút)
-      const pendingTransactions = transactionsResponse.data.transactions.filter(
-        (tx) => tx.type === "nap_tien" && tx.status === "cho_thanh_toan"
-      );
-
-      pendingTransactions.forEach((tx) => {
-        const createdDate = new Date(tx.created_at.replace(/-/g, "/"));
-        const now = new Date();
-        const diffMinutes = Math.floor((now - createdDate) / (1000 * 60));
-
-        // Nếu giao dịch đã chờ quá 30 phút, tự động hủy
-        if (diffMinutes >= 30) {
-          cancelTransaction(tx.id);
-        }
-      });
     } catch (error) {
       console.error("Lỗi khi tải dữ liệu ví:", error);
       if (!isBackground) {
@@ -257,14 +241,6 @@ const WalletPage = () => {
     ) : (
       <FaArrowUp className="text-red-500" />
     );
-  };
-
-  // Kiểm tra xem giao dịch có trong vòng 30 phút không
-  const isWithin30Minutes = (createdAt) => {
-    const createdDate = new Date(createdAt.replace(/-/g, "/"));
-    const now = new Date();
-    const diffMinutes = Math.floor((now - createdDate) / (1000 * 60));
-    return diffMinutes <= 30;
   };
 
   // Hàm mở popup chi tiết giao dịch
@@ -540,23 +516,22 @@ const WalletPage = () => {
                                 <FaSync />
                               )}
                             </button>
-                            {isWithin30Minutes(tx.created_at) && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  cancelTransaction(tx.id);
-                                }}
-                                disabled={actionLoading}
-                                className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100"
-                                title="Hủy giao dịch"
-                              >
-                                {actionLoading ? (
-                                  <FaSpinner className="animate-spin" />
-                                ) : (
-                                  <FaTimes />
-                                )}
-                              </button>
-                            )}
+                            {/* Always show cancel button for pending deposits */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelTransaction(tx.id);
+                              }}
+                              disabled={actionLoading}
+                              className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100"
+                              title="Hủy giao dịch"
+                            >
+                              {actionLoading ? (
+                                <FaSpinner className="animate-spin" />
+                              ) : (
+                                <FaTimes />
+                              )}
+                            </button>
                           </div>
                         )}
                       <span
@@ -758,23 +733,22 @@ const WalletPage = () => {
                         )}
                         Thanh toán lại
                       </button>
-                      {isWithin30Minutes(selectedTransaction.created_at) && (
-                        <button
-                          onClick={() => {
-                            cancelTransaction(selectedTransaction.id);
-                            closeTransactionDetail();
-                          }}
-                          className="flex-1 bg-red-600 text-white py-2 px-4 rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2"
-                          disabled={actionLoading}
-                        >
-                          {actionLoading ? (
-                            <FaSpinner className="animate-spin" />
-                          ) : (
-                            <FaTimes />
-                          )}
-                          Hủy giao dịch
-                        </button>
-                      )}
+                      {/* Always show cancel button for pending deposits */}
+                      <button
+                        onClick={() => {
+                          cancelTransaction(selectedTransaction.id);
+                          closeTransactionDetail();
+                        }}
+                        className="flex-1 bg-red-600 text-white py-2 px-4 rounded-xl hover:bg-red-700 transition flex items-center justify-center gap-2"
+                        disabled={actionLoading}
+                      >
+                        {actionLoading ? (
+                          <FaSpinner className="animate-spin" />
+                        ) : (
+                          <FaTimes />
+                        )}
+                        Hủy giao dịch
+                      </button>
                     </div>
                   )}
 

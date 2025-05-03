@@ -101,7 +101,11 @@ class PaymentMethodController extends Controller
         $amount = $request->total_price;
         $orderId = $request->order_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5173/order-success";
+<<<<<<< HEAD
         $ipnUrl = $request->notify_url ?? "https://2338-116-104-74-207.ngrok-free.app/api/momo/ipn";
+=======
+        $ipnUrl = $request->notify_url ?? "https://2afa-113-23-102-247.ngrok-free.app/api/momo/ipn";
+>>>>>>> 1957c7db016b005f106bddf19f1279d09ca141b9
 
         $extraData = '';
 
@@ -262,7 +266,11 @@ class PaymentMethodController extends Controller
         $amount = $request->amount;
         $orderId = $request->wallet_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5173/account/wallet/deposit-success";
+<<<<<<< HEAD
         $ipnUrl = $request->notify_url ?? "https://2338-116-104-74-207.ngrok-free.app/api/momo/ipn";
+=======
+        $ipnUrl = $request->notify_url ?? "https://2afa-113-23-102-247.ngrok-free.app/api/momo/ipn";
+>>>>>>> 1957c7db016b005f106bddf19f1279d09ca141b9
 
         $extraData = '';
 

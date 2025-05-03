@@ -147,7 +147,8 @@
                                     <div class="mb-3">
                                         <label for="roleSelect" class="form-label">Vai trò</label>
                                         <select class="form-select @error('role_id') is-invalid @enderror" id="roleSelect"
-                                            name="role_id" required autocomplete="off">
+                                            name="role_id" required autocomplete="off"
+                                            @if (auth()->user()->role && auth()->user()->role->slug === 'staff') disabled @endif>
                                             <option value="">Chọn vai trò</option>
                                             @foreach ($listRoles as $role)
                                                 <option value="{{ $role->id }}"
