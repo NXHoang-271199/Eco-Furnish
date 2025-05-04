@@ -1048,7 +1048,7 @@ const OrderDetail = () => {
       const deliveredTime = new Date(order.updated_at).getTime();
       const currentTime = new Date().getTime();
       const timeSinceDelivered = currentTime - deliveredTime;
-      const autoConfirmDelayMs = 30 * 60 * 60 * 24 * 1000; // 24 giờ
+      const autoConfirmDelayMs = 3 * 60 * 60 * 24 * 1000; // 24 giờ
 
       if (timeSinceDelivered >= autoConfirmDelayMs) {
         console.log(
