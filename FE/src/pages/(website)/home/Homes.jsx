@@ -841,7 +841,7 @@ const Homes = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="max-w-[1600px] mx-auto px-4 mt-4"
+        className="max-w-auto mx-auto px-4 mt-4"
       >
         <div className="rounded-2xl overflow-hidden">
           <Banner />
@@ -930,7 +930,7 @@ const Homes = () => {
         </div>
       </motion.section>
       {/* Sản phẩm được AI gợi ý */}
-      {aiRecommendations.length > 0 && (
+      {hasActivityData && aiRecommendations.length > 0 && (
         <motion.section
           initial="hidden"
           whileInView="visible"

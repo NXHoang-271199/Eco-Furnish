@@ -1183,7 +1183,7 @@ const OrderDetail = () => {
       const orderCreatedTime = new Date(order.created_at).getTime();
       const currentTime = new Date().getTime();
       const timeSinceCreated = currentTime - orderCreatedTime;
-      const autoCancelDelayMs = 5 * 1000; // 24 giờ
+      const autoCancelDelayMs = 1 * 60 * 60 * 1000; // 24 giờ
 
       if (timeSinceCreated >= autoCancelDelayMs) {
         console.log(
@@ -2284,14 +2284,24 @@ const OrderDetail = () => {
             className="bg-white rounded-lg shadow-sm overflow-hidden h-fit"
           >
             <div className="border-b border-gray-100 px-6 py-4">
-              <h2 className="text-xl font-semibold text-gray-800">Tổng tiền đơn hàng</h2>
+              <h2 className="text-xl font-semibold text-gray-800">
+                Tổng tiền đơn hàng
+              </h2>
             </div>
 
             <div className="p-6">
               <div className="space-y-3 text-gray-600">
                 <div className="flex justify-between">
                   <span>Tạm tính:</span>
-                  <span>{formatCurrency(order.total_price)}</span>
+                  <span>
+                    {" "}
+                    {formatCurrency(
+                      order.order_items.reduce(
+                        (total, item) => total + parseFloat(item.total_price),
+                        0
+                      )
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Phí vận chuyển:</span>
@@ -2299,7 +2309,7 @@ const OrderDetail = () => {
                 </div>
                 {(order.voucher || order.discount_amount > 0) && (
                   <div className="flex justify-between text-green-600">
-                    <span>Giảm giá {order.voucher ? '(voucher)' : ''}:</span>
+                    <span>Giảm giá {order.voucher ? "(voucher)" : ""}:</span>
                     <span>-{formatCurrency(order.discount_amount || 0)}</span>
                   </div>
                 )}
@@ -2309,9 +2319,7 @@ const OrderDetail = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-medium">Thành tiền:</span>
                   <span className="text-xl font-bold text-amber-600">
-                    {formatCurrency(
-                      order.total_price - (order.discount_amount || 0)
-                    )}
+                    {formatCurrency(order.total_price)}
                   </span>
                 </div>
               </div>

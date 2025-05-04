@@ -1,16 +1,24 @@
-import { useState, useEffect, useMemo } from "react"
-import { FiSearch, FiEye, FiInfo, FiPackage, FiClock, FiCalendar, FiMapPin } from "react-icons/fi"
-import { Link, useNavigate } from "react-router-dom"
-import axiosInstance from "../../../../utils/axiosConfig"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useEffect, useMemo } from "react";
+import {
+  FiSearch,
+  FiEye,
+  FiInfo,
+  FiPackage,
+  FiClock,
+  FiCalendar,
+  FiMapPin,
+} from "react-icons/fi";
+import { Link, useNavigate } from "react-router-dom";
+import axiosInstance from "../../../../utils/axiosConfig";
+import { motion, AnimatePresence } from "framer-motion";
 
 const OrderHistory = () => {
-  const [activeTab, setActiveTab] = useState("all")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   // Ánh xạ trạng thái đơn hàng - Cập nhật theo định dạng chuỗi từ API
   const statusMap = {
@@ -23,7 +31,7 @@ const OrderHistory = () => {
     "Đã Nhận": "Hoàn thành",
     "Hủy Đơn": "Đã hủy",
     "Hoàn Hàng": "Hoàn hàng",
-  }
+  };
 
   // Ánh xạ tab sang giá trị trạng thái API
   const tabToStatusMap = {
@@ -36,7 +44,7 @@ const OrderHistory = () => {
     completed: "Đã Nhận",
     cancelled: "Hủy Đơn",
     returned: "Hoàn Hàng",
-  }
+  };
 
   // Danh sách các tab
   const tabs = [
@@ -47,54 +55,54 @@ const OrderHistory = () => {
     { id: "completed", name: "Hoàn thành", icon: <FiPackage /> },
     { id: "cancelled", name: "Đã hủy", icon: <FiPackage /> },
     { id: "returned", name: "Hoàn hàng", icon: <FiPackage /> },
-  ]
+  ];
 
   // Hàm lấy tên trạng thái hiển thị từ trạng thái API
   const getStatusName = (statusValue) => {
-    return statusMap[statusValue] || "Không xác định"
-  }
+    return statusMap[statusValue] || "Không xác định";
+  };
 
   // Thêm hàm format tiền tệ
   const formatCurrency = (amount) => {
-    let numericAmount = amount
+    let numericAmount = amount;
     // Cố gắng chuyển đổi nếu là chuỗi số
     if (typeof amount === "string") {
-      numericAmount = Number.parseFloat(amount.replace(/[^\d.-]/g, "")) // Loại bỏ ký tự không phải số trước khi parse
+      numericAmount = Number.parseFloat(amount.replace(/[^\d.-]/g, "")); // Loại bỏ ký tự không phải số trước khi parse
     }
 
     if (typeof numericAmount !== "number" || isNaN(numericAmount)) {
-      console.warn("formatCurrency received invalid amount:", amount) // Log giá trị không hợp lệ
-      return "0 ₫"
+      console.warn("formatCurrency received invalid amount:", amount); // Log giá trị không hợp lệ
+      return "0 ₫";
     }
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(numericAmount)
-  }
+    }).format(numericAmount);
+  };
 
   // Hàm tính tổng tiền đơn hàng
   const calculateOrderTotal = (orderItems) => {
-    if (!Array.isArray(orderItems)) return 0
+    if (!Array.isArray(orderItems)) return 0;
     return orderItems.reduce((total, item) => {
-      const itemTotal = (item.price || 0) * (item.quantity || 0)
-      return total + itemTotal
-    }, 0)
-  }
+      const itemTotal = (item.price || 0) * (item.quantity || 0);
+      return total + itemTotal;
+    }, 0);
+  };
 
   // Lấy dữ liệu đơn hàng từ API
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        setLoading(true)
-        const token = localStorage.getItem("authToken")
-        const refreshToken = localStorage.getItem("refreshToken")
-        const userData = localStorage.getItem("userData")
+        setLoading(true);
+        const token = localStorage.getItem("authToken");
+        const refreshToken = localStorage.getItem("refreshToken");
+        const userData = localStorage.getItem("userData");
 
-        console.log("Token hiện tại:", token)
-        console.log("Refresh token hiện tại:", refreshToken)
-        console.log("userData", userData)
+        console.log("Token hiện tại:", token);
+        console.log("Refresh token hiện tại:", refreshToken);
+        console.log("userData", userData);
 
         if (!token || !userData) {
           // navigate("/sign-in", {
@@ -104,99 +112,108 @@ const OrderHistory = () => {
           //   },
           // });
 
-          return
+          return;
         }
 
         const response = await axiosInstance.get(`/orders`, {
           withCredentials: true,
-        })
+        });
 
         // Kiểm tra phản hồi thành công và có dữ liệu hợp lệ
         if (response.data?.status === "success" && response.data?.data?.data) {
-          setOrders(response.data.data.data) // Dữ liệu đơn hàng tồn tại
-          setError(null) // Xóa lỗi nếu tải thành công
+          setOrders(response.data.data.data); // Dữ liệu đơn hàng tồn tại
+          setError(null); // Xóa lỗi nếu tải thành công
         } else if (response.data?.status === "success") {
           // Phản hồi thành công nhưng không có đơn hàng
-          setOrders([]) // Đặt danh sách rỗng
-          setError(null) // Không có lỗi
+          setOrders([]); // Đặt danh sách rỗng
+          setError(null); // Không có lỗi
         } else {
           // Các trường hợp lỗi khác từ API (status không phải success hoặc cấu trúc không đúng)
-          console.error("API trả về lỗi hoặc định dạng không mong đợi:", response.data)
-          setError("Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau.") // Thông báo lỗi chung
+          console.error(
+            "API trả về lỗi hoặc định dạng không mong đợi:",
+            response.data
+          );
+          setError("Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau."); // Thông báo lỗi chung
         }
       } catch (error) {
-        console.error("Lỗi khi lấy đơn hàng:", error)
+        console.error("Lỗi khi lấy đơn hàng:", error);
 
         // Xử lý lỗi cụ thể (ví dụ: hết hạn token)
-        if (error.message === "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại") {
-          setError(error.message)
-          console.log("Lỗi:", error.message)
+        if (
+          error.message === "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại"
+        ) {
+          setError(error.message);
+          console.log("Lỗi:", error.message);
           // Đợi 2 giây rồi chuyển hướng
           setTimeout(() => {
             // navigate("/sign-in");
-          }, 2000)
+          }, 2000);
         } else if (error.response) {
           // Xử lý lỗi từ phản hồi của server (ví dụ: 4xx, 5xx)
-          console.error("Lỗi phản hồi từ server:", error.response.data)
-          setError(`Lỗi ${error.response.status}: Không thể tải dữ liệu.`)
+          console.error("Lỗi phản hồi từ server:", error.response.data);
+          setError(`Lỗi ${error.response.status}: Không thể tải dữ liệu.`);
         } else if (error.request) {
           // Lỗi không nhận được phản hồi
-          console.error("Không nhận được phản hồi:", error.request)
-          setError("Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.")
+          console.error("Không nhận được phản hồi:", error.request);
+          setError("Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.");
         } else {
           // Lỗi khác khi thiết lập request
-          console.error("Lỗi thiết lập request:", error.message)
-          setError("Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.")
+          console.error("Lỗi thiết lập request:", error.message);
+          setError("Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.");
         }
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchOrders()
-  }, [navigate])
+    fetchOrders();
+  }, [navigate]);
 
   // Lọc và tìm kiếm đơn hàng
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       // Lọc theo tab trạng thái
-      const selectedStatus = tabToStatusMap[activeTab]
-      const statusMatch = activeTab === "all" || order.order_status === selectedStatus
+      const selectedStatus = tabToStatusMap[activeTab];
+      const statusMatch =
+        activeTab === "all" || order.order_status === selectedStatus;
 
       // Lọc theo từ khóa tìm kiếm (Mã đơn hàng hoặc Tên sản phẩm)
-      const searchTerm = searchQuery.toLowerCase()
+      const searchTerm = searchQuery.toLowerCase();
       const searchMatch =
         searchQuery === "" ||
         order.order_code.toLowerCase().includes(searchTerm) ||
-        (order.order_items && order.order_items.some((item) => item.product?.name?.toLowerCase().includes(searchTerm)))
+        (order.order_items &&
+          order.order_items.some((item) =>
+            item.product?.name?.toLowerCase().includes(searchTerm)
+          ));
 
-      return statusMatch && searchMatch
-    })
-  }, [orders, activeTab, searchQuery])
+      return statusMatch && searchMatch;
+    });
+  }, [orders, activeTab, searchQuery]);
 
   // Hàm xác định màu dựa trên trạng thái
   const getStatusColor = (status) => {
     switch (status) {
       case "Chưa Xác Nhận":
-        return "bg-amber-100 text-amber-800 border border-amber-300"
+        return "bg-amber-100 text-amber-800 border border-amber-300";
       case "Đã Xác Nhận":
-        return "bg-sky-100 text-sky-800 border border-sky-300"
+        return "bg-sky-100 text-sky-800 border border-sky-300";
       case "Đang Chuẩn Bị Hàng":
-        return "bg-indigo-100 text-indigo-800 border border-indigo-300"
+        return "bg-indigo-100 text-indigo-800 border border-indigo-300";
       case "Đang Giao":
-        return "bg-violet-100 text-violet-800 border border-violet-300"
+        return "bg-violet-100 text-violet-800 border border-violet-300";
       case "Đã Giao":
-        return "bg-teal-100 text-teal-800 border border-teal-300"
+        return "bg-teal-100 text-teal-800 border border-teal-300";
       case "Đã Nhận":
-        return "bg-emerald-100 text-emerald-800 border border-emerald-300"
+        return "bg-emerald-100 text-emerald-800 border border-emerald-300";
       case "Hủy Đơn":
-        return "bg-rose-100 text-rose-800 border border-rose-300"
+        return "bg-rose-100 text-rose-800 border border-rose-300";
       case "Hoàn Hàng":
-        return "bg-slate-100 text-slate-800 border border-slate-300"
+        return "bg-slate-100 text-slate-800 border border-slate-300";
       default:
-        return "bg-slate-100 text-slate-800 border border-slate-300"
+        return "bg-slate-100 text-slate-800 border border-slate-300";
     }
-  }
+  };
 
   // Animation variants
   const containerVariants = {
@@ -207,7 +224,7 @@ const OrderHistory = () => {
         staggerChildren: 0.1,
       },
     },
-  }
+  };
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
@@ -220,14 +237,16 @@ const OrderHistory = () => {
         damping: 12,
       },
     },
-  }
+  };
 
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white">
         <h1 className="text-2xl font-bold">Lịch sử đơn hàng</h1>
-        <p className="text-orange-100">Quản lý và theo dõi tất cả đơn hàng của bạn</p>
+        <p className="text-orange-100">
+          Quản lý và theo dõi tất cả đơn hàng của bạn
+        </p>
       </div>
 
       {/* Tab Navigation */}
@@ -236,7 +255,9 @@ const OrderHistory = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-4 whitespace-nowrap font-medium flex items-center transition-all duration-200 relative ${activeTab === tab.id ? "text-orange-500" : "text-gray-600 hover:text-orange-400 hover:bg-orange-50"
+            className={`px-4 py-4 whitespace-nowrap font-medium flex items-center transition-all duration-200 relative ${activeTab === tab.id
+              ? "text-orange-500"
+              : "text-gray-600 hover:text-orange-400 hover:bg-orange-50"
               }`}
           >
             <span className="mr-2">{tab.icon}</span>
@@ -312,7 +333,9 @@ const OrderHistory = () => {
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-100 text-orange-500 mb-4">
                 <FiSearch className="w-10 h-10" />
               </div>
-              <p className="text-gray-600 text-lg">Không có đơn hàng nào phù hợp với tìm kiếm của bạn.</p>
+              <p className="text-gray-600 text-lg">
+                Không có đơn hàng nào phù hợp với tìm kiếm của bạn.
+              </p>
               <button
                 onClick={() => setSearchQuery("")}
                 className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
@@ -338,9 +361,13 @@ const OrderHistory = () => {
                     <div className="flex flex-wrap justify-between items-start gap-2">
                       <div>
                         <div className="flex items-center">
-                          <span className="font-medium text-lg text-gray-800">#{order.order_code}</span>
+                          <span className="font-medium text-lg text-gray-800">
+                            #{order.order_code}
+                          </span>
                           <span
-                            className={`ml-3 inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(order.order_status)}`}
+                            className={`ml-3 inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                              order.order_status
+                            )}`}
                           >
                             {getStatusName(order.order_status)}
                           </span>
@@ -349,13 +376,16 @@ const OrderHistory = () => {
                         {order.created_at && (
                           <div className="flex items-center text-sm text-gray-500 mt-1">
                             <FiCalendar className="mr-1 text-gray-400" />
-                            {new Date(order.created_at).toLocaleDateString("vi-VN", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {new Date(order.created_at).toLocaleDateString(
+                              "vi-VN",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
                           </div>
                         )}
                       </div>
@@ -372,8 +402,8 @@ const OrderHistory = () => {
                       <div className="mt-3 flex items-start text-sm text-gray-600">
                         <FiMapPin className="mr-2 mt-0.5 flex-shrink-0 text-gray-400" />
                         <span>
-                          {order.address?.address_line}, {order.address?.ward}, {order.address?.district},{" "}
-                          {order.address?.province}
+                          {order.address?.address_line}, {order.address?.ward},{" "}
+                          {order.address?.district}, {order.address?.province}
                         </span>
                       </div>
                     )}
@@ -394,13 +424,18 @@ const OrderHistory = () => {
                             <div className="flex items-center">
                               {item.product?.image_thumnail ? (
                                 <img
-                                  src={item.product.image_thumnail.startsWith("http")
-                                    ? item.product.image_thumnail
-                                    : `http://localhost:8000/storage/${item.product.image_thumnail}`}
+                                  src={
+                                    item.product.image_thumnail.startsWith(
+                                      "http"
+                                    )
+                                      ? item.product.image_thumnail
+                                      : `http://localhost:8000/storage/${item.product.image_thumnail}`
+                                  }
                                   alt={item.product?.name || "Sản phẩm"}
                                   className="w-12 h-12 object-cover rounded-md mr-3 border border-gray-200"
                                   onError={(e) => {
-                                    e.target.src = "https://via.placeholder.com/100x100?text=No+Image";
+                                    e.target.src =
+                                      "https://via.placeholder.com/100x100?text=No+Image";
                                   }}
                                 />
                               ) : (
@@ -412,10 +447,14 @@ const OrderHistory = () => {
                                 <span className="text-sm font-medium text-gray-800">
                                   {item.product?.name || "Tên sản phẩm"}
                                 </span>
-                                <span className="block text-xs text-gray-500">Số lượng: {item.quantity}</span>
+                                <span className="block text-xs text-gray-500">
+                                  Số lượng: {item.quantity}
+                                </span>
                               </div>
                             </div>
-                            <span className="text-sm font-medium text-orange-600">{formatCurrency(item.price)}</span>
+                            <span className="text-sm font-medium text-orange-600">
+                              {formatCurrency(item.total_price)}
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -425,9 +464,14 @@ const OrderHistory = () => {
                   {/* Total Amount */}
                   <div className="bg-gray-50 p-4 border-t">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600 font-medium">Tổng tiền:</span>
+                      <span className="text-gray-600 font-medium">
+                        Tổng tiền:
+                      </span>
                       <span className="text-xl font-bold text-orange-600">
-                        {formatCurrency(order.total_amount || calculateOrderTotal(order.order_items))}
+                        {formatCurrency(
+                          order.total_price ||
+                          calculateOrderTotal(order.order_items)
+                        )}
                       </span>
                     </div>
                   </div>
@@ -438,7 +482,7 @@ const OrderHistory = () => {
         </AnimatePresence>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default OrderHistory
+export default OrderHistory;

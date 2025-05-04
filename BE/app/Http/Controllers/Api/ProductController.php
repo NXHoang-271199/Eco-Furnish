@@ -47,11 +47,12 @@ class ProductController extends Controller
                 }
             }
 
+            // Lấy tất cả sản phẩm khớp với query, không phân trang
             $products = $query->orderBy('created_at', 'desc')
-                              ->paginate(12);
+                              ->get(); 
 
             // Thêm thông tin giá và số lượng vào response
-            $products->getCollection()->transform(function ($product) {
+            $products->transform(function ($product) {
                 // Nếu sản phẩm có biến thể
                 if ($product->has_variants) {
                     // Tính giá thấp nhất và cao nhất từ các biến thể
@@ -80,9 +81,10 @@ class ProductController extends Controller
                 return $product;
             });
             
+            // Trả về danh sách sản phẩm trực tiếp, không còn cấu trúc phân trang
             return response()->json([
                 'status' => 'success',
-                'data' => $products
+                'data' => $products // Trả về collection sản phẩm
             ]);
         } catch (\Exception $e) {
             Log::error('API Get Products Error: ' . $e->getMessage());
@@ -290,11 +292,12 @@ class ProductController extends Controller
                 });
             }
 
+            // Lấy tất cả sản phẩm khớp, không phân trang
             $products = $query->orderBy('created_at', 'desc')
-                ->paginate(12);
+                ->get(); 
 
             // Thêm thông tin giá và số lượng vào response
-            $products->getCollection()->transform(function ($product) {
+            $products->transform(function ($product) {
                 if ($product->has_variants) {
                     // Tính giá thấp nhất và cao nhất từ các biến thể
                     $minPrice = $product->variants->min('price');
@@ -322,6 +325,7 @@ class ProductController extends Controller
                 return $product;
             });
 
+            // Trả về danh sách sản phẩm trực tiếp
             return response()->json([
                 'status' => 'success',
                 'data' => $products
