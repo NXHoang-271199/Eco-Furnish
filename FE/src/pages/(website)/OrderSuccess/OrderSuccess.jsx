@@ -121,7 +121,7 @@ const OrderSuccess = () => {
                       Phương thức thanh toán:
                     </span>{" "}
                     {orderInfo.payment_method === "MoMo"
-                      ? "Ví MoMo"
+                      ? "MoMo"
                       : orderInfo.payment_method === "VNPAY"
                         ? "VNPAY"
                         : orderInfo.payment_method === "Ví"
