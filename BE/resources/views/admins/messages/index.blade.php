@@ -50,14 +50,14 @@
                         </div>
                         <div class="message-input-container p-3 border-top">
                             <div class="input-group">
-                                <input type="text" id="messageInput" class="form-control border-end-0" 
+                                <input type="text" id="messageInput" class="form-control border-end-0"
                                        placeholder="Nhập tin nhắn..." disabled>
-                                <button id="imageUploadBtn" class="btn btn-outline-secondary border-start-0 border-end-0" 
+                                <button id="imageUploadBtn" class="btn btn-outline-secondary border-start-0 border-end-0"
                                         type="button" disabled>
                                     <i class="fas fa-image"></i>
                                 </button>
                                 <!-- Thêm nút emoji picker -->
-                                <button id="emojiBtn" class="btn btn-outline-secondary border-start-0 border-end-0" 
+                                <button id="emojiBtn" class="btn btn-outline-secondary border-start-0 border-end-0"
                                         type="button" disabled>
                                     <i class="fas fa-smile"></i>
                                 </button>
@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 connectionStatus.textContent = "Mất kết nối";
                 connectionStatus.classList.remove('bg-success', 'bg-warning');
                 connectionStatus.classList.add('bg-danger');
-                
+
                 userList.innerHTML = '<li class="list-group-item text-center text-muted">Đang kết nối lại...</li>';
                 disableChat();
 
@@ -494,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 reconnectWithDelay();
             });
-            
+
             // Nhận danh sách người dùng hiện tại
             socket.on("currentUsers", (users) => {
                 console.log("Nhận danh sách users:", users);
@@ -648,15 +648,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const li = document.createElement('li');
         li.id = `user-${userId}`;
         li.className = 'list-group-item d-flex justify-content-between align-items-center user-item animate__animated animate__fadeInLeft';
-        
+
         // Tạo avatar ngẫu nhiên nếu không có avatar
         const colors = ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c'];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
         const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        
+
         li.innerHTML = `
             <div class="d-flex align-items-center">
-                <div class="user-avatar me-2" style="width: 35px; height: 35px; background-color: ${randomColor}; 
+                <div class="user-avatar me-2" style="width: 35px; height: 35px; background-color: ${randomColor};
                      border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
                     ${initials}
                 </div>
@@ -698,7 +698,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => {
                 chattingWith.classList.remove('animate__animated', 'animate__fadeIn');
                 }, 1000);
-                
+
             // Kích hoạt ô nhập tin nhắn
             enableChat();
 
@@ -847,7 +847,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Hiển thị các nhóm tin nhắn với hiệu ứng delay
                 const groupedMessages = groupMessagesForDisplay(messages);
-                
+
                 // Sử dụng setTimeout để tạo hiệu ứng kéo dài hiển thị tin nhắn
                 groupedMessages.forEach((group, index) => {
                     setTimeout(() => {
@@ -862,7 +862,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 addMessageToChat(msg, group.type); // msg đã có sent_at
                             });
                         }
-                        
+
                         // Cuộn xuống dưới
                         chatBox.scrollTop = chatBox.scrollHeight;
                     }, index * 20); // Delay 20ms giữa các nhóm tin nhắn
@@ -899,19 +899,19 @@ document.addEventListener('DOMContentLoaded', function() {
          if (userElement) {
              // Thêm class warning để thay đổi màu nền và hiệu ứng pulse
              userElement.classList.add('list-group-item-warning');
-             
+
              // Thêm hiệu ứng đập nhanh 3 lần
              userElement.classList.add('animate__animated', 'animate__headShake');
             setTimeout(() => {
                  userElement.classList.remove('animate__animated', 'animate__headShake');
             }, 1000);
-            
+
              // Chỉ thêm badge nếu chưa có
              if (!userElement.querySelector('.new-message-badge')) {
                  const badge = document.createElement('span');
                  badge.className = 'badge bg-danger rounded-pill new-message-badge animate__animated animate__fadeIn ms-1';
                  badge.innerHTML = '<i class="fas fa-bell me-1"></i> Mới';
-                 
+
                  // Chèn vào trước badge thời gian (nếu có) để không bị đẩy xuống
                  const timeBadge = userElement.querySelector('.badge.bg-secondary');
                  if (timeBadge) {
@@ -953,7 +953,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 1 ảnh: Hiển thị lớn
             imagesContent = `<div class="message-image mb-2">
                 <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh">
-                    <img src="${imageUrls[0]}" alt="Hình ảnh" class="img-fluid rounded shadow-sm" 
+                    <img src="${imageUrls[0]}" alt="Hình ảnh" class="img-fluid rounded shadow-sm"
                          style="max-height: 200px; cursor: pointer; transition: all 0.3s ease;">
                 </a>
             </div>`;
@@ -963,13 +963,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="d-flex" style="gap: 4px;">
                     <div style="width: 50%;">
                         <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
-                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded shadow-sm" 
+                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded shadow-sm"
                                  style="height: 120px; object-fit: cover; cursor: pointer; transition: all 0.3s ease;">
                         </a>
                     </div>
                     <div style="width: 50%;">
                         <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
-                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded shadow-sm" 
+                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded shadow-sm"
                                  style="height: 120px; object-fit: cover; cursor: pointer; transition: all 0.3s ease;">
                         </a>
                     </div>
@@ -981,19 +981,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 4px;">
                     <div style="grid-column: 1; grid-row: 1;">
                         <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
-                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded shadow-sm" 
+                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded shadow-sm"
                                  style="height: 100px; object-fit: cover; cursor: pointer; transition: all 0.3s ease;">
                         </a>
                     </div>
                     <div style="grid-column: 2; grid-row: 1;">
                         <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
-                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded shadow-sm" 
+                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded shadow-sm"
                                  style="height: 100px; object-fit: cover; cursor: pointer; transition: all 0.3s ease;">
                         </a>
                     </div>
                     <div style="grid-column: span 2; grid-row: 2;">
                         <a href="${imageUrls[2]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 3">
-                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded shadow-sm" 
+                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded shadow-sm"
                                  style="height: 100px; object-fit: cover; cursor: pointer; transition: all 0.3s ease;">
                         </a>
                     </div>
@@ -1005,27 +1005,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 4px;">
                     <div style="grid-column: 1; grid-row: 1;">
                         <a href="${imageUrls[0]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 1">
-                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded shadow-sm" 
+                            <img src="${imageUrls[0]}" alt="Hình ảnh 1" class="w-100 rounded shadow-sm"
                                  style="height: 100px; object-fit: cover; cursor: pointer; transition: all 0.3s ease;">
                         </a>
                     </div>
                     <div style="grid-column: 2; grid-row: 1;">
                         <a href="${imageUrls[1]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 2">
-                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded shadow-sm" 
+                            <img src="${imageUrls[1]}" alt="Hình ảnh 2" class="w-100 rounded shadow-sm"
                                  style="height: 100px; object-fit: cover; cursor: pointer; transition: all 0.3s ease;">
                         </a>
                     </div>
                     <div style="grid-column: 1; grid-row: 2; position: relative;">
                         <a href="${imageUrls[2]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 3">
-                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded shadow-sm" 
+                            <img src="${imageUrls[2]}" alt="Hình ảnh 3" class="w-100 rounded shadow-sm"
                                  style="height: 100px; object-fit: cover; cursor: pointer; transition: all 0.3s ease;">
                         </a>
                     </div>
                     <div style="grid-column: 2; grid-row: 2; position: relative;">
                         <a href="${imageUrls[3]}" data-lightbox="${msgGroup}" data-title="Hình ảnh 4" class="position-relative d-block">
-                            <img src="${imageUrls[3]}" alt="Hình ảnh 4" class="w-100 rounded shadow-sm" 
+                            <img src="${imageUrls[3]}" alt="Hình ảnh 4" class="w-100 rounded shadow-sm"
                                  style="height: 100px; object-fit: cover; filter: brightness(50%); cursor: pointer; transition: all 0.3s ease;">
-                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-white rounded" 
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-white rounded"
                                  style="font-size: 1.1rem; font-weight: bold; background-color: rgba(0,0,0,0.4);">
                                 +${remainingCount}
                             </div>
@@ -1087,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         chatBox.appendChild(messageDiv);
-        
+
         // Thêm hiệu ứng cuộn mượt
         setTimeout(() => {
             chatBox.scrollTo({
@@ -1116,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let messageContent = '';
         const formattedTime = formatMessageTime(message.sent_at); // Định dạng thời gian
-        
+
          // Lấy tên từ message.sender, fallback nếu cần
         const senderName = senderType === 'client' ? (message.sender?.name || 'Khách hàng') : 'Admin';
 
@@ -1163,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         chatBox.appendChild(messageDiv);
-        
+
         // Thêm hiệu ứng cuộn mượt
         setTimeout(() => {
             chatBox.scrollTo({
@@ -1188,14 +1188,14 @@ document.addEventListener('DOMContentLoaded', function() {
         sendMessageBtn.disabled = false;
         imageUploadBtn.disabled = false;
         emojiBtn.disabled = false; // Thêm dòng này để bật nút emoji
-        
+
         // Thêm hiệu ứng focus cho input
         messageInput.classList.add('animate__animated', 'animate__fadeIn');
                 setTimeout(() => {
             messageInput.classList.remove('animate__animated', 'animate__fadeIn');
             messageInput.focus();
         }, 500);
-        
+
         // Thêm hiệu ứng cho nút gửi và upload
         sendMessageBtn.classList.add('animate__animated', 'animate__fadeIn');
         imageUploadBtn.classList.add('animate__animated', 'animate__fadeIn');
@@ -1240,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Disable nút gửi tạm thời để tránh gửi nhiều lần
             sendMessageBtn.disabled = true;
-            
+
             // Hiệu ứng đang gửi
             const originalText = sendMessageBtn.innerHTML;
             sendMessageBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang gửi';
@@ -1249,12 +1249,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Khôi phục nút gửi
                 sendMessageBtn.innerHTML = originalText;
                 sendMessageBtn.disabled = false;
-                
+
                 if (response.success) {
                     console.log('Tin nhắn văn bản đã được gửi thành công');
                     // Gửi đối tượng Date() thay vì toLocaleString()
-                    addMessageToChat({ text: text, sent_at: new Date() }, 'admin'); 
-                    
+                    addMessageToChat({ text: text, sent_at: new Date() }, 'admin');
+
                     // Hiệu ứng xóa text input
                     messageInput.value = ''; // Clear input sau khi gửi thành công
                     messageInput.classList.add('animate__animated', 'animate__fadeOut');
@@ -1262,11 +1262,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         messageInput.classList.remove('animate__animated', 'animate__fadeOut');
                         messageInput.focus();
                     }, 300);
-                    
+
                     updateSendButtonState();
                 } else {
                     console.error('Lỗi khi gửi tin nhắn văn bản:', response.error);
-                    
+
                     // Hiển thị thông báo lỗi với Toastify
                 Toastify({
                         text: `Không thể gửi tin nhắn: ${response.error}`,
@@ -1295,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', function() {
         sendMessageBtn.disabled = true;
         imageUploadBtn.disabled = true;
         messageInput.disabled = true;
-        
+
         // Hiển thị progress bar với animation
         uploadProgressContainer.style.display = 'block';
         uploadStatus.textContent = `Đang chuẩn bị upload 0/${selectedImageFiles.length}...`;
@@ -1315,7 +1315,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     // Hiển thị tên file đang upload
                     uploadStatus.textContent = `Đang upload: ${file.name} (${index + 1}/${totalFiles})`;
-                    
+
                     // Sử dụng fetch để upload
                     const response = await fetch('http://localhost:3002/upload', {
                         method: 'POST',
@@ -1331,18 +1331,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (response.ok && result.success && result.file?.url) {
                         uploadedUrls.push(result.file.url);
                         totalProgress += (100 / totalFiles); // Cập nhật tiến trình tổng thể
-                        
+
                         // Cập nhật progress bar với animation
                         uploadProgressBar.style.width = `${Math.min(totalProgress, 100)}%`;
                         uploadProgressBar.textContent = `${Math.round(Math.min(totalProgress, 100))}%`;
                         uploadStatus.textContent = `Đã upload ${uploadedUrls.length}/${totalFiles}: ${file.name}`;
-                        
+
                         // Thêm hiệu ứng cho progress bar
                         uploadProgressBar.classList.add('animate__animated', 'animate__pulse');
         setTimeout(() => {
                             uploadProgressBar.classList.remove('animate__animated', 'animate__pulse');
                         }, 300);
-                        
+
                         resolve(result.file.url);
         } else {
                         console.error(`Lỗi upload ảnh ${index + 1}:`, result.message || response.statusText);
@@ -1366,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (uploadedUrls.length > 0) {
                 // Cập nhật trạng thái hoàn thành
                 uploadStatus.textContent = `Đã upload thành công ${uploadedUrls.length}/${totalFiles} ảnh. Đang gửi...`;
-                
+
                 // Gửi sự kiện adminMultipleImagesUpload qua socket
                 const messageData = {
                     userId: currentUserId, // ID người nhận
@@ -1377,20 +1377,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 socket.emit('adminMultipleImagesUpload', messageData, (response) => {
                     if (response.success) {
                         console.log('✅ Nhóm ảnh đã được gửi thành công qua socket');
-                        
+
                         // Nếu có cả tin nhắn văn bản
                         if (hasText) {
                             // Hiển thị tin nhắn văn bản
                             addMessageToChat({ text: textMessage, sent_at: new Date() }, 'admin');
                             console.log('✅ Tin nhắn văn bản kèm theo đã được gửi thành công');
                         }
-                        
+
                         // Hiển thị nhóm ảnh đã gửi trong chat của admin
                         addImageGroupToChat(uploadedUrls, new Date(), 'admin', { name: 'Admin' });
-                        
+
                         // Xóa nội dung input sau khi gửi thành công
                         messageInput.value = '';
-                        
+
                         // Hiển thị thông báo thành công
                         Toastify({
                             text: `Đã gửi ${uploadedUrls.length} ảnh${hasText ? ' và tin nhắn văn bản' : ''} thành công!`,
@@ -1416,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     } else {
                         console.error('❌ Lỗi khi gửi nhóm ảnh qua socket:', response.error);
-                        
+
                         // Thông báo lỗi
                         Toastify({
                             text: `Không thể gửi nhóm ảnh: ${response.error}`,
@@ -1445,7 +1445,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             // Lỗi không mong muốn trong quá trình xử lý promises
             console.error("Lỗi không mong muốn khi xử lý upload:", error);
-            
+
             // Thông báo lỗi
                 Toastify({
                 text: "Lỗi không mong muốn khi xử lý upload.",
@@ -1461,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedImageFiles = [];
             imageInput.value = null;
             updateImagePreview();
-            
+
             // Ẩn progress bar với hiệu ứng
                 setTimeout(() => {
                 uploadProgressContainer.classList.add('animate__fadeOut');
@@ -1574,7 +1574,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     addImageGroupToChat(
                         pendingClientImages.map(msg => msg.image),
                         // Truyền timestamp gốc (nếu có) hoặc thời gian hiện tại
-                        firstImageMsg.sent_at || new Date(), 
+                        firstImageMsg.sent_at || new Date(),
                         'client',
                         firstImageMsg.sender // Truyền sender object nếu có
                     );
@@ -1588,7 +1588,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("⏳ [Admin Buffer] Xử lý ảnh đơn.");
                 const singleImageMsg = pendingClientImages[0];
                  if (currentUserId === singleImageMsg.sender_id) {
-                    addMessageToChat(singleImageMsg, 'client'); 
+                    addMessageToChat(singleImageMsg, 'client');
                      console.log("✅ [Admin Buffer] Đã hiển thị ảnh đơn.");
                  } else {
                      highlightUserWithNewMessage(singleImageMsg.sender_id);
@@ -1617,7 +1617,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isNaN(date.getTime())) {
                  console.warn("Invalid timestamp received:", timestamp);
                  // Trả về timestamp gốc hoặc một chuỗi báo lỗi nếu không hợp lệ
-                 return timestamp.toString(); 
+                 return timestamp.toString();
             }
             const timeString = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
             const dateString = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -1632,7 +1632,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Xử lý sự kiện hiển thị/ẩn emoji picker
     emojiBtn.addEventListener('click', function() {
         emojiPickerContainer.style.display = emojiPickerContainer.style.display === 'none' ? 'block' : 'none';
-        
+
         // Thêm hiệu ứng fade in nếu hiển thị
         if (emojiPickerContainer.style.display === 'block') {
             emojiPickerContainer.classList.add('animate__fadeIn');
@@ -1651,21 +1651,21 @@ document.addEventListener('DOMContentLoaded', function() {
     emojiButtons.forEach(btn => {
         btn.addEventListener('click', function() {
             const emoji = this.getAttribute('data-emoji');
-            
+
             // Thêm emoji vào vị trí con trỏ hiện tại
             const cursorPosition = messageInput.selectionStart;
             const textBeforeCursor = messageInput.value.substring(0, cursorPosition);
             const textAfterCursor = messageInput.value.substring(cursorPosition);
-            
+
             messageInput.value = textBeforeCursor + emoji + textAfterCursor;
-            
+
             // Di chuyển con trỏ sau emoji vừa chèn
             messageInput.selectionStart = cursorPosition + emoji.length;
             messageInput.selectionEnd = cursorPosition + emoji.length;
-            
+
             // Focus lại vào input
             messageInput.focus();
-            
+
             // Ẩn emoji picker sau khi chọn
             emojiPickerContainer.style.display = 'none';
         });
