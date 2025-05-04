@@ -246,4 +246,186 @@
             height: 300px !important;
         }
     }
+
+    /* Hiệu ứng Pulse cho các sự kiện click */
+    .pulse {
+        animation: pulse 0.6s ease-out;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(64, 81, 137, 0.4);
+        }
+        70% {
+            transform: scale(1.03);
+            box-shadow: 0 0 0 10px rgba(64, 81, 137, 0);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(64, 81, 137, 0);
+        }
+    }
+    
+    /* Hiệu ứng chuyển đổi tab mượt mà */
+    .nav-link.active {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .nav-link.active::before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: #405189;
+        animation: slideInHorizontal 0.4s ease forwards;
+    }
+    
+    @keyframes slideInHorizontal {
+        from {
+            transform: scaleX(0);
+            transform-origin: left;
+        }
+        to {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+    }
+    
+    /* Hiệu ứng nút chuyển tab */
+    .btn-switch-tab {
+        animation: bounce 0.5s ease-in-out infinite alternate;
+        animation-iteration-count: 3;
+    }
+    
+    @keyframes bounce {
+        0% {
+            transform: translateY(0);
+        }
+        100% {
+            transform: translateY(-5px);
+        }
+    }
+    
+    /* Hiệu ứng hiển thị nội dung tab */
+    .tab-pane.show.active {
+        animation: fadeInUp 0.5s ease forwards;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Hiệu ứng hover cho các mục biến thể */
+    .variant-detail-item {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+    }
+    
+    .variant-detail-item::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(64, 81, 137, 0.05);
+        border-radius: 6px;
+        z-index: -1;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+    }
+    
+    .variant-detail-item:hover::after {
+        transform: scaleX(1);
+    }
+    
+    /* Hiệu ứng loading skeleton cho khi nội dung đang tải */
+    .skeleton-loading {
+        position: relative;
+        overflow: hidden;
+        background-color: #f7f7f7;
+        border-radius: 4px;
+    }
+    
+    .skeleton-loading::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, 
+            rgba(255, 255, 255, 0) 0%, 
+            rgba(255, 255, 255, 0.2) 50%, 
+            rgba(255, 255, 255, 0) 100%);
+        animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-100%);
+        }
+        100% {
+            transform: translateX(100%);
+        }
+    }
+    
+    /* Hiệu ứng shadow hover cho bảng */
+    .variant-table {
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .variant-table:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* Hiệu ứng cuộn mượt mà */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Hiệu ứng thông báo nhấp nháy cho biến thể đang bán chạy */
+    .status-badge.in-stock {
+        position: relative;
+    }
+    
+    .status-badge.in-stock::before {
+        content: '';
+        display: block;
+        width: 6px;
+        height: 6px;
+        background: #10c469;
+        border-radius: 50%;
+        position: absolute;
+        left: -3px;
+        top: 50%;
+        transform: translateY(-50%);
+        animation: blink 2s infinite;
+    }
+    
+    @keyframes blink {
+        0% {
+            opacity: 0;
+        }
+        50% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+        }
+    }
 </style>

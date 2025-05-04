@@ -79,7 +79,9 @@
                                 <th>Số tiền</th>
                                 <th>Trạng thái</th>
                                 <th>Thời gian</th>
-                                <th>Hành động</th>
+                                @if (Auth::user()->hasPermission('manage-withdraw-requests'))
+                                    <th>Hành động</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -120,14 +122,16 @@
                                         </span>
                                     </td>
                                     <td>{{ $transaction->created_at->format('d/m/Y H:i') }}</td>
-                                    <td>
-                                        @if ($transaction->type === 'rut_tien' && $transaction->withdrawRequest)
-                                            <a class="btn btn-sm btn-outline-primary" href="#"
-                                                onclick="openWithdrawModal('{{ route('wallets.withdraws.detail', $transaction->withdrawRequest->id) }}')">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        @endif
-                                    </td>
+                                    @if (Auth::user()->hasPermission('manage-withdraw-requests'))
+                                        <td>
+                                            @if ($transaction->type === 'rut_tien' && $transaction->withdrawRequest)
+                                                <a class="btn btn-sm btn-outline-primary" href="#"
+                                                    onclick="openWithdrawModal('{{ route('wallets.withdraws.detail', $transaction->withdrawRequest->id) }}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            @endif
+                                        </td>
+                                    @endif
                                 </tr>
                                 {{-- Dòng chi tiết toggle --}}
                                 <tr class="transaction-detail-row d-none" id="detail-{{ $key }}">

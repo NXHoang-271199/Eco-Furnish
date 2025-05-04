@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { FaUserAstronaut, FaShippingFast, FaFilter } from "react-icons/fa";
 import { AiOutlineSearch } from "react-icons/ai";
 import { LiaTrophySolid } from "react-icons/lia";
@@ -9,6 +9,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import Banner from "../../../components/Banner";
 import { motion } from "framer-motion";
 import LoadingScreen from "../../../components/LoadingScreen";
+import VariantSelectionModal from "../../../components/VariantSelectionModal";
+import { toast } from "react-toastify";
+import axiosInstance from "../../../utils/axiosConfig";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -34,6 +37,11 @@ const Products = () => {
   const [sortOption, setSortOption] = useState("newest");
   // Thêm state lưu trữ thông tin đánh giá
   const [productRatings, setProductRatings] = useState({});
+  const [variantModalOpen, setVariantModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [debouncedProducts, setDebouncedProducts] = useState([]); // State for debounced products for rating fetch
+  const ratingFetchTimeoutRef = useRef(null); // Ref for debounce timeout
 
   const [searchParams] = useSearchParams();
   const spaceFilter = searchParams.get('space');
@@ -478,22 +486,46 @@ const Products = () => {
       setImagesLoaded(false);
       setLoadedImagesCount(0);
     }
-  }, [currentPage, spaceFilter, debouncedSearchTerm, isSearching]);
+  }, [currentPage, spaceFilter, isSearching]);
 
   // Thêm hàm xử lý thay đổi tùy chọn sắp xếp
   const handleSortOptionChange = (e) => {
     setSortOption(e.target.value);
   };
 
-  // Thêm useEffect mới để tải thông tin đánh giá cho các sản phẩm đã tải
+  // Debounce products state change for rating fetching
   useEffect(() => {
-    // Chỉ tải đánh giá khi có sản phẩm và không phải đang tìm kiếm
-    if (products.length > 0 && !isSearchLoading && !isLoading) {
-      const fetchRatings = async () => {
-        const ratingsData = {};
+    // Clear existing timeout if products change again quickly
+    if (ratingFetchTimeoutRef.current) {
+      clearTimeout(ratingFetchTimeoutRef.current);
+    }
 
-        // Tạo mảng các promise để tải đánh giá cho tất cả sản phẩm
-        const ratingPromises = products.map(product =>
+    // Set a new timeout to update debouncedProducts
+    ratingFetchTimeoutRef.current = setTimeout(() => {
+      setDebouncedProducts(products);
+    }, 300); // Wait 300ms after products stop changing
+
+    // Cleanup timeout on unmount or before next run
+    return () => {
+      if (ratingFetchTimeoutRef.current) {
+        clearTimeout(ratingFetchTimeoutRef.current);
+      }
+    };
+  }, [products]); // Depend only on products
+
+  // Thêm useEffect mới để tải thông tin đánh giá cho các sản phẩm đã tải (sử dụng debouncedProducts)
+  useEffect(() => {
+    // Chỉ tải đánh giá khi có sản phẩm đã debounce và không phải đang tìm kiếm hoặc loading
+    if (debouncedProducts.length > 0 && !isSearchLoading && !isLoading) {
+      const fetchRatings = async () => {
+        const ratingsData = { ...productRatings }; // Preserve existing ratings
+
+        // Create an array of promises only for products without ratings yet
+        const productsToFetchRatings = debouncedProducts.filter(p => !ratingsData[p.id]);
+
+        if (productsToFetchRatings.length === 0) return; // Skip if all ratings are already fetched
+
+        const ratingPromises = productsToFetchRatings.map(product =>
           axios.get(`${import.meta.env.VITE_API_URL}/api/products/${product.id}/reviews`)
             .then(response => {
               if (response.data.success && Array.isArray(response.data.data)) {
@@ -523,7 +555,48 @@ const Products = () => {
 
       fetchRatings();
     }
-  }, [products, isSearchLoading, isLoading]);
+  }, [debouncedProducts, isSearchLoading, isLoading]);
+
+  // Hàm xử lý thêm sản phẩm vào giỏ hàng
+  const handleAddToCart = async (product) => {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+      return;
+    }
+
+    // Kiểm tra xem sản phẩm có biến thể hay không
+    if (product.has_variants) {
+      // Nếu có, mở modal chọn biến thể
+      setSelectedProduct(product);
+      setVariantModalOpen(true);
+    } else {
+      // Nếu không, thêm trực tiếp vào giỏ hàng
+      try {
+        setAddingToCart(true);
+        const response = await axiosInstance.post("/cart/add", {
+          product_id: product.id,
+          quantity: 1
+        });
+
+        if (response.status === 200 || response.status === 201) {
+          toast.success("Đã thêm sản phẩm vào giỏ hàng!");
+        }
+      } catch (error) {
+        console.error("Lỗi khi thêm vào giỏ hàng:", error);
+        toast.error(error.response?.data?.message || "Có lỗi xảy ra khi thêm vào giỏ hàng");
+      } finally {
+        setAddingToCart(false);
+      }
+    }
+  };
+
+  // Hàm xử lý sau khi thêm sản phẩm vào giỏ hàng từ modal
+  const handleVariantAddedToCart = () => {
+    setVariantModalOpen(false);
+    setSelectedProduct(null);
+  };
 
   return (
     <>
@@ -828,8 +901,7 @@ const Products = () => {
                             onClick={(e) => {
                               e.preventDefault(); // Prevent link navigation
                               e.stopPropagation(); // Prevent event bubbling
-                              // Add to cart logic here
-                              console.log("Add to cart:", product.id);
+                              handleAddToCart(product);
                             }}
                             className={`bg-white text-amber-600 p-3 rounded-full shadow-lg hover:bg-amber-500 hover:text-white transition-all duration-300 transform hover:scale-110 ${!checkProductInStock(product) ? 'opacity-50 cursor-not-allowed' : ''}`}
                             whileHover={{ scale: checkProductInStock(product) ? 1.15 : 1, rotate: checkProductInStock(product) ? 5 : 0 }}
@@ -1092,6 +1164,19 @@ const Products = () => {
           ))}
         </div>
       </section>
+
+      {/* Modal chọn biến thể sản phẩm */}
+      {variantModalOpen && selectedProduct && (
+        <VariantSelectionModal
+          isOpen={variantModalOpen}
+          onClose={() => {
+            setVariantModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          product={selectedProduct}
+          onAddToCart={handleVariantAddedToCart}
+        />
+      )}
     </>
   );
 };

@@ -27,6 +27,15 @@
                                 return;
                             }
                             
+                            // Thêm thông báo thành công sử dụng SweetAlert2
+                            Swal.fire({
+                                title: 'Thành công!',
+                                text: 'Đã thêm danh mục mới thành công',
+                                icon: 'success',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            
                             // Thêm danh mục mới vào bảng
                             var table = $('table tbody');
                             var newRow = $('<tr></tr>');
@@ -35,22 +44,45 @@
                             var rowCount = table.find('tr').length;
                             var newIndex = ((currentPage - 1) * perPage) + rowCount + 1;
                             
+                            // Sử dụng trực tiếp spacesDisplay từ phản hồi nếu có
+                            var spacesDisplay = response.category.spacesDisplay || 'Chưa phân loại';
+                            
+                            // Tạo các ô dữ liệu
                             newRow.append('<td>' + newIndex + '</td>');
                             newRow.append('<td>' + response.category.name + '</td>');
+                            newRow.append('<td>' + spacesDisplay + '</td>'); // Sử dụng chuỗi đã định dạng sẵn
                             newRow.append(
                                 '<td>' +
                                 '<div class="hstack gap-3 fs-15">' +
-                                '<a href="/admin/categories/' + response.category.id + '/edit" class="link-primary">' +
+                                '<a href="javascript:void(0);" class="link-primary edit-trigger" data-id="' + response.category.id + '" data-bs-toggle="tooltip" data-bs-placement="top" title="Sửa">' +
                                 '<i class="ri-pencil-fill align-bottom me-2"></i>' +
                                 '</a>' +
-                                '<a href="javascript:void(0);" class="link-danger delete-item" data-id="' + response.category.id + '">' +
+                                '<a href="javascript:void(0);" class="link-danger delete-item" data-id="' + response.category.id + '" data-bs-toggle="tooltip" data-bs-placement="top" title="Xóa">' +
                                 '<i class="ri-delete-bin-fill align-bottom"></i>' +
                                 '</a>' +
                                 '</div>' +
                                 '</td>'
                             );
                             
-                            table.append(newRow);
+                            // Thêm dòng mới vào đầu bảng thay vì cuối
+                            table.prepend(newRow);
+                            
+                            // Cập nhật STT của tất cả các dòng
+                            table.find('tr').each(function(index) {
+                                $(this).find('td:first').text(index + 1);
+                            });
+                            
+                            // Khởi tạo tooltip cho các phần tử mới
+                            var newTooltips = [].slice.call(newRow[0].querySelectorAll('[data-bs-toggle="tooltip"]'));
+                            newTooltips.forEach(function(element) {
+                                new bootstrap.Tooltip(element);
+                            });
+                            
+                            // Làm nổi bật dòng mới thêm vào
+                            newRow.addClass('table-success');
+                            setTimeout(function() {
+                                newRow.removeClass('table-success');
+                            }, 2000);
                             
                             // Xóa form
                             $('#categoryForm')[0].reset();
@@ -90,50 +122,60 @@
                 });
             });
 
-            // Xử lý xóa danh mục sử dụng event delegation
-            $(document).on('click', '.delete-item', function() {
-                var deleteButton = $(this);
-                if (confirm('Bạn có muốn xóa danh mục này không?')) {
-                    var categoryId = deleteButton.data('id');
-                    
-                    $.ajax({
-                        url: '/admin/categories/' + categoryId,
-                        type: 'DELETE',
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                if (response.redirect) {
-                                    window.location.href = response.redirect;
-                                }
-                            }
-                        },
-                        error: function(xhr) {
-                            var errorMessage = '';
-                            if (xhr.responseJSON && xhr.responseJSON.message) {
-                                errorMessage = xhr.responseJSON.message;
-                            } else {
-                                errorMessage = 'Có lỗi xảy ra khi xóa danh mục';
-                            }
-                            
-                            // Hiển thị thông báo lỗi
-                            var alertHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                                errorMessage +
-                                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                                '</div>';
-                            $('#category-list .card-body').prepend(alertHtml);
-                        }
-                    });
-                }
-            });
-
             // Xử lý khi click vào nút edit
             $(document).on('click', '.edit-trigger', function(e) {
                 e.preventDefault();
                 var categoryId = $(this).data('id');
-                var td = $(this).closest('tr').find('.edit-name');
-                td.trigger('click');
+
+                // Thay đổi cách xử lý: Gọi trực tiếp API lấy dữ liệu danh mục
+                const getDataUrl = `/admin/categories/${categoryId}/data`;
+
+                $.ajax({
+                    url: getDataUrl,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            const categoryData = response.data;
+
+                            // Điền tên
+                            editNameInput.val(categoryData.name);
+                            editCategoryIdInput.val(categoryData.id);
+
+                            // --- Xử lý Select Multiple ---
+                            // Reset lựa chọn cũ trên select multiple
+                            editSpacesSelect.val(null); // Đặt giá trị là null để xóa các lựa chọn
+
+                            // Chọn các options tương ứng với categoryData.spaces
+                            if (categoryData.spaces && Array.isArray(categoryData.spaces)) {
+                                editSpacesSelect.val(categoryData.spaces);
+                            }
+
+                            // Cập nhật action form
+                            const updateUrl = `/admin/categories/${categoryData.id}`;
+                            editForm.attr('action', updateUrl);
+
+                            // Hiển thị form sửa
+                            addBlock.hide();
+                            editBlock.show();
+                            $('html, body').animate({ scrollTop: editBlock.offset().top - 100 }, 500);
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: response.message || 'Không thể lấy dữ liệu danh mục.',
+                            });
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                         console.error("AJAX error:", textStatus, errorThrown);
+                         Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Có lỗi xảy ra khi kết nối đến máy chủ.',
+                        });
+                    }
+                });
             });
 
             // Xử lý chỉnh sửa danh mục trực tiếp
@@ -246,70 +288,6 @@
             const editCategoryIdInput = $('#edit_category_id'); // Input ẩn lưu ID
             const cancelEditBtn = $('#cancelEditBtn');
 
-            // Xử lý khi click nút Sửa
-            $('.edit-trigger').on('click', function() {
-                const categoryId = $(this).data('id');
-                const getDataUrl = `/admin/categories/${categoryId}/data`;
-
-                $.ajax({
-                    url: getDataUrl,
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success && response.data) {
-                            const categoryData = response.data;
-
-                            // Điền tên
-                            editNameInput.val(categoryData.name);
-                            editCategoryIdInput.val(categoryData.id);
-
-                            // --- Xử lý Select Multiple ---
-                            // Reset lựa chọn cũ trên select multiple
-                            editSpacesSelect.val(null); // Đặt giá trị là null để xóa các lựa chọn
-
-                            // Chọn các options tương ứng với categoryData.spaces
-                            if (categoryData.spaces && Array.isArray(categoryData.spaces)) {
-                                editSpacesSelect.val(categoryData.spaces);
-                            }
-
-                            // Nếu bạn dùng choices.js, bạn cần cập nhật nó sau khi thay đổi giá trị
-                            // Ví dụ:
-                            // const choicesInstance = editSpacesSelect[0].choices; // Lấy instance choices.js
-                            // if (choicesInstance) {
-                            //    choicesInstance.clearStore(); // Xóa cache
-                            //    choicesInstance.setChoiceByValue(categoryData.spaces); // Đặt lại giá trị
-                            // } else {
-                                   // Nếu không dùng choices.js, trình duyệt tự xử lý .val() cho select multiple
-                            // }
-
-
-                            // Cập nhật action form
-                            const updateUrl = `/admin/categories/${categoryData.id}`;
-                            editForm.attr('action', updateUrl);
-
-                            // Hiển thị form sửa
-                            addBlock.hide();
-                            editBlock.show();
-                            $('html, body').animate({ scrollTop: editBlock.offset().top - 100 }, 500);
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Lỗi',
-                                text: response.message || 'Không thể lấy dữ liệu danh mục.',
-                            });
-                        }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                         console.error("AJAX error:", textStatus, errorThrown);
-                         Swal.fire({
-                            icon: 'error',
-                            title: 'Lỗi',
-                            text: 'Có lỗi xảy ra khi kết nối đến máy chủ.',
-                        });
-                    }
-                });
-            });
-
             // Xử lý khi click nút Hủy
             cancelEditBtn.on('click', function() {
                 editBlock.hide();
@@ -344,8 +322,8 @@
                 editBlock.show();
             }
 
-            // Xử lý xóa (giữ nguyên logic xóa cũ của bạn, thường là dùng SweetAlert và AJAX/Form submit)
-            $('.delete-item').on('click', function() {
+            // Sử dụng event delegation cho nút xóa để xử lý các hàng được thêm vào sau
+            $(document).on('click', '.delete-item', function() {
                 const categoryId = $(this).data('id');
                 const deleteUrl = `/admin/categories/${categoryId}`;
 
@@ -360,25 +338,44 @@
                     cancelButtonText: 'Hủy'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                         // Tạo form ẩn để submit DELETE request
-                         const form = document.createElement('form');
-                         form.method = 'POST';
-                         form.action = deleteUrl;
-
-                         const csrfInput = document.createElement('input');
-                         csrfInput.type = 'hidden';
-                         csrfInput.name = '_token';
-                         csrfInput.value = '{{ csrf_token() }}'; // Lấy CSRF token từ Blade
-                         form.appendChild(csrfInput);
-
-                         const methodInput = document.createElement('input');
-                         methodInput.type = 'hidden';
-                         methodInput.name = '_method';
-                         methodInput.value = 'DELETE';
-                         form.appendChild(methodInput);
-
-                         document.body.appendChild(form);
-                         form.submit();
+                         // Thay đổi từ form submit sang AJAX request
+                         $.ajax({
+                             url: deleteUrl,
+                             type: 'POST',
+                             data: {
+                                 _token: '{{ csrf_token() }}',
+                                 _method: 'DELETE'
+                             },
+                             success: function(response) {
+                                 if (response.success) {
+                                     Swal.fire({
+                                         title: 'Đã xóa!',
+                                         text: 'Danh mục đã được chuyển vào thùng rác.',
+                                         icon: 'success',
+                                         showConfirmButton: false,
+                                         timer: 1500
+                                     }).then(() => {
+                                         if (response.redirect) {
+                                             window.location.href = response.redirect;
+                                         } else {
+                                             window.location.reload();
+                                         }
+                                     });
+                                 }
+                             },
+                             error: function(xhr) {
+                                 let errorMessage = 'Có lỗi xảy ra khi xóa danh mục';
+                                 if (xhr.responseJSON && xhr.responseJSON.message) {
+                                     errorMessage = xhr.responseJSON.message;
+                                 }
+                                 
+                                 Swal.fire({
+                                     title: 'Lỗi!',
+                                     text: errorMessage,
+                                     icon: 'error'
+                                 });
+                             }
+                         });
                     }
                 });
             });

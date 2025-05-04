@@ -264,6 +264,7 @@ class OrderController extends Controller
 
             $order = $refundRequest->order;
             if ($order) {
+                // Cập nhật trạng thái đơn hàng thành "Hoàn Hàng" khi duyệt yêu cầu
                 $order->update(['order_status' => 'Hoàn Hàng']);
             }
 

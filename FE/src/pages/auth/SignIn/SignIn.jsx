@@ -44,13 +44,10 @@ const SignIn = () => {
 
   const onSubmit = async (data) => {
     try {
-      const response = await axiosInstance.post(
-        `/users/login`,
-        {
-          ...data,
-          remember_me: data.remember_me || false,
-        }
-      );
+      const response = await axiosInstance.post(`/users/login`, {
+        ...data,
+        remember_me: data.remember_me || false,
+      });
 
       if (response.data.status === "success") {
         // Lưu token và thông tin user
@@ -66,7 +63,7 @@ const SignIn = () => {
       }
     } catch (error) {
       if (error.response?.status === 403) {
-        setAuthError("Tài khoản của bạn đã bị vô hiệu hóa.");
+        setAuthError("Tài khoản không tồn tại");
       } else if (error.response?.data?.message) {
         setAuthError(error.response.data.message);
       } else {

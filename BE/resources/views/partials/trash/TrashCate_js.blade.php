@@ -82,6 +82,53 @@
                             }).then(() => {
                                 window.location.reload();
                             });
+                        } else if (response.hasProducts) {
+                            Swal.fire({
+                                title: 'Cảnh báo!',
+                                text: response.message,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Vẫn xóa',
+                                cancelButtonText: 'Hủy',
+                                confirmButtonColor: '#dc3545'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    $.ajax({
+                                        url: `/admin/trash/trash-categories/${id}?force=true`,
+                                        type: 'DELETE',
+                                        headers: {
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                        },
+                                        success: function(forceResponse) {
+                                            if (forceResponse.success) {
+                                                Swal.fire({
+                                                    title: 'Thành công!',
+                                                    text: forceResponse.message,
+                                                    icon: 'success',
+                                                    confirmButtonText: 'OK'
+                                                }).then(() => {
+                                                    window.location.reload();
+                                                });
+                                            } else {
+                                                Swal.fire({
+                                                    title: 'Lỗi!',
+                                                    text: forceResponse.message,
+                                                    icon: 'error',
+                                                    confirmButtonText: 'OK'
+                                                });
+                                            }
+                                        },
+                                        error: function(xhr) {
+                                            Swal.fire({
+                                                title: 'Lỗi!',
+                                                text: 'Có lỗi xảy ra khi xóa vĩnh viễn danh mục',
+                                                icon: 'error',
+                                                confirmButtonText: 'OK'
+                                            });
+                                        }
+                                    });
+                                }
+                            });
                         } else {
                             Swal.fire({
                                 title: 'Lỗi!',
