@@ -83,12 +83,50 @@ class CategoryController extends Controller
 
             DB::commit();
 
+            // Kiểm tra nếu là request AJAX
+            if ($request->ajax() || $request->wantsJson()) {
+                // Chuẩn bị dữ liệu không gian để trả về
+                $spaceNames = [];
+                foreach ($spaceKeys as $key) {
+                    if (isset($this->spaceTypes[$key])) {
+                        $spaceNames[$key] = $this->spaceTypes[$key];
+                    }
+                }
+                
+                // Trả về JSON response với thông tin category đầy đủ
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Thêm danh mục thành công',
+                    'category' => [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => $category->slug,
+                        'spaces' => $spaceKeys, // Trả về mảng spaces đã chọn
+                        'spaceNames' => $spaceNames, // Thêm tên không gian
+                        'spacesDisplay' => count($spaceKeys) > 0 ? implode(', ', array_map(function($key) {
+                            return $this->spaceTypes[$key] ?? '';
+                        }, $spaceKeys)) : 'Chưa phân loại' // Chuỗi đã định dạng sẵn
+                    ]
+                ]);
+            }
+
+            // Nếu không phải AJAX thì redirect như bình thường
             return redirect()->route('categories.index')
-                         ->with('success', 'Thêm danh mục thành công'); // Redirect về index với thông báo
+                         ->with('success', 'Thêm danh mục thành công');
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating category: ' . $e->getMessage());
+            
+            // Kiểm tra nếu là AJAX request
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Có lỗi xảy ra khi thêm danh mục: ' . $e->getMessage(),
+                    'errors' => ['general' => 'Có lỗi xảy ra, vui lòng thử lại.']
+                ], 422);
+            }
+            
             // Redirect về index với thông báo lỗi và error bag
             return back()->with('error', 'Có lỗi xảy ra khi thêm danh mục: ' . $e->getMessage())
                          ->withErrors(['general' => 'Có lỗi xảy ra, vui lòng thử lại.'], 'store') // Thêm lỗi vào error bag 'store'

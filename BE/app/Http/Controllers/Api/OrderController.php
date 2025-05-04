@@ -270,14 +270,20 @@ class OrderController extends Controller
                     'total_price' => $item->total_price,
                 ]);
 
+                // Lấy số lượng từ database để đảm bảo dữ liệu mới nhất
                 $productStock = $item->product_variant_id
-                    ? ProductVariant::find($item->product_variant_id)
-                    : Product::find($item->product_id);
+                    ? ProductVariant::lockForUpdate()->find($item->product_variant_id)
+                    : Product::lockForUpdate()->find($item->product_id);
 
-                if ($productStock && $productStock->quantity >= $item->quantity) {
+                if (!$productStock) {
+                    throw new \Exception("Không tìm thấy sản phẩm {$item->product->name} trong kho");
+                }
+
+                if ($productStock->quantity >= $item->quantity) {
                     $productStock->decrement('quantity', $item->quantity);
                 } else {
-                    throw new \Exception("Sản phẩm {$item->product->name} không đủ số lượng trong kho");
+                    // Nếu số lượng không đủ, hủy giao dịch và trả về lỗi cụ thể
+                    throw new \Exception("Sản phẩm {$item->product->name} chỉ còn {$productStock->quantity} trong kho, không đủ số lượng đặt hàng");
                 }
             }
 
@@ -535,11 +541,42 @@ class OrderController extends Controller
                 'total_price' => $subtotal,
             ]);
 
-            // Trừ số lượng tồn kho
+            // Kiểm tra lại và trừ số lượng tồn kho (sử dụng lockForUpdate để đảm bảo không có race condition)
             if ($variant) {
-                $variant->decrement('quantity', $requestedQuantity);
+                $freshVariant = ProductVariant::lockForUpdate()->find($variant->id);
+                if (!$freshVariant) {
+                    throw new \Exception("Không tìm thấy biến thể sản phẩm");
+                }
+                
+                if ($freshVariant->quantity < $requestedQuantity) {
+                    throw new \Exception("Sản phẩm {$product->name} chỉ còn {$freshVariant->quantity} trong kho, không đủ số lượng đặt hàng");
+                }
+                
+                $freshVariant->decrement('quantity', $requestedQuantity);
             } else {
-                $product->decrement('quantity', $requestedQuantity);
+                $freshProduct = Product::lockForUpdate()->find($product->id);
+                if (!$freshProduct) {
+                    throw new \Exception("Không tìm thấy sản phẩm");
+                }
+                
+                if ($freshProduct->quantity < $requestedQuantity) {
+                    throw new \Exception("Sản phẩm {$product->name} chỉ còn {$freshProduct->quantity} trong kho, không đủ số lượng đặt hàng");
+                }
+                
+                $freshProduct->decrement('quantity', $requestedQuantity);
+            }
+
+            // Kiểm tra và xóa sản phẩm này khỏi giỏ hàng nếu có
+            $cart = Cart::where('user_id', $userId)->first();
+            if ($cart) {
+                // Tìm sản phẩm trong giỏ hàng với cùng product_id và variant_id (nếu có)
+                $cartItemQuery = $cart->cartItems()->where('product_id', $product->id);
+                if ($variant) {
+                    $cartItemQuery->where('product_variant_id', $variant->id);
+                }
+                
+                // Xóa sản phẩm khỏi giỏ hàng
+                $cartItemQuery->delete();
             }
 
             // ✅ Thêm thông báo đơn hàng
@@ -724,8 +761,9 @@ class OrderController extends Controller
                 'status' => 'Chờ Duyệt',
             ]);
 
-            // Cập nhật trạng thái đơn hàng thành "Hoàn Hàng"
-            $order->update(['order_status' => 'Hoàn Hàng']);
+            // QUAN TRỌNG: Không cập nhật trạng thái đơn hàng thành "Hoàn Hàng" tại đây
+            // Trạng thái đơn hàng chỉ chuyển sang "Hoàn Hàng" khi admin duyệt yêu cầu
+            // Việc này giúp tránh hiển thị thông báo "Đơn hàng đã hoàn" khi yêu cầu chưa được duyệt
 
             // Kiểm tra payment_status của đơn hàng, nếu là 1 thì tạo giao dịch ví
             if ($order->payment_status == 1) {  // payment_status phải là 1 (đã thanh toán)

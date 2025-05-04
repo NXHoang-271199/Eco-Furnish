@@ -129,9 +129,19 @@
                                     <div>
                                         @php
                                             use App\Models\OrderNotification;
-                                            $notifications = OrderNotification::with('order')
-                                                ->orderBy('created_at', 'desc')
+                                            use Illuminate\Support\Facades\DB;
+                                            // Lấy thông báo nhưng chỉ lấy thông báo mới nhất cho mỗi đơn hàng
+                                            $latestNotifications = OrderNotification::with('order.user')
+                                                ->select('order_id', DB::raw('MAX(id) as max_id'))
+                                                ->groupBy('order_id')
+                                                ->orderBy('max_id', 'desc')
                                                 ->limit(10)
+                                                ->get()
+                                                ->pluck('max_id');
+                                            
+                                            $notifications = OrderNotification::with('order.user')
+                                                ->whereIn('id', $latestNotifications)
+                                                ->orderBy('created_at', 'desc')
                                                 ->get();
                                         @endphp
 

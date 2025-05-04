@@ -14,7 +14,8 @@ class WalletController extends Controller
     {
         $this->middleware('permission:view-wallets');
         $this->middleware('permission:view-wallets-transactions', ['only' => ['allTransactions']]);
-        $this->middleware('permission:edit-wallets', ['only' => ['updateBalance', 'approveWithdraw', 'rejectWithdraw']]);
+        $this->middleware('permission:edit-wallets', ['only' => ['updateBalance']]);
+        $this->middleware('permission:manage-withdraw-requests', ['only' => ['approveWithdraw', 'rejectWithdraw', 'getWithdrawDetail']]);
     }
 
     // Danh sách ví người dùng

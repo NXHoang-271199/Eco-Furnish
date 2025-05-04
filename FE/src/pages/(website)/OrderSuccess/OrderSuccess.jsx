@@ -77,7 +77,7 @@ const OrderSuccess = () => {
                   orderInfo.products.slice(0, 3).map((item, index) => (
                     <div className="relative" key={index}>
                       <img
-                        src={`http://localhost:8000/storage/${item.product?.image_thumnail}`}
+                        src={`http://localhost:8000/storage/${item.product?.image_thumbnail}`}
                         alt={item.product?.name}
                         className="rounded-lg w-12 h-12 object-cover"
                         onError={(e) => {
@@ -121,14 +121,14 @@ const OrderSuccess = () => {
                       Phương thức thanh toán:
                     </span>{" "}
                     {orderInfo.payment_method === "MoMo"
-                      ? "Ví MoMo"
+                      ? "MoMo"
                       : orderInfo.payment_method === "VNPAY"
-                        ? "VNPAY"
-                        : orderInfo.payment_method === "Ví"
-                          ? "Ví"
-                          : orderInfo.payment_method === "Tiền mặt"
-                            ? "Tiền mặt (COD)"
-                            : "Đang cập nhật..."}
+                      ? "VNPAY"
+                      : orderInfo.payment_method === "Ví"
+                      ? "Ví"
+                      : orderInfo.payment_method === "Tiền mặt"
+                      ? "Tiền mặt"
+                      : "Đang cập nhật..."}
                   </p>
                 </div>
               </div>

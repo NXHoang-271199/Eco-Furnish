@@ -85,13 +85,15 @@ class ProductVariant extends Model
 
             // Nếu là đối tượng với cặp khóa-giá trị {variantId: variantValueId}
             foreach ($details as $variantId => $variantValueId) {
-                $variant = Variant::find($variantId);
-                $variantValue = VariantValue::find($variantValueId);
+                // Sử dụng withTrashed() để lấy cả biến thể đã bị xóa mềm
+                $variant = Variant::withTrashed()->find($variantId);
+                $variantValue = VariantValue::withTrashed()->find($variantValueId);
 
                 if ($variant && $variantValue) {
                     $formattedDetails[] = [
                         'name' => $variant->name,
-                        'value' => $variantValue->value
+                        'value' => $variantValue->value,
+                        'is_deleted' => $variant->trashed() || $variantValue->trashed() // Thêm thông tin về trạng thái xóa
                     ];
                 } else {
                     \Log::warning("Không tìm thấy variant hoặc variant value", [

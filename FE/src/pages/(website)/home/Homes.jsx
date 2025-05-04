@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   motion,
   useScroll,
@@ -66,6 +66,9 @@ const Homes = () => {
   const [variantModalOpen, setVariantModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
+  // Lấy location từ react-router-dom để kiểm tra khi nào trang được reload
+  const location = useLocation();
+
   const bannerRef = useRef(null);
   const bannerInView = useInView(bannerRef, { once: false, amount: 0.5 });
   const bannerControls = useAnimation();
@@ -78,6 +81,25 @@ const Homes = () => {
   const springY = useSpring(y, { stiffness: 50, damping: 15 });
   const springOpacity = useSpring(opacity, { stiffness: 50, damping: 15 });
   const springScale = useSpring(scale, { stiffness: 50, damping: 15 });
+
+  // Quản lý scroll restoration và scroll lên đầu trang
+  useEffect(() => {
+    // Lưu trạng thái scrollRestoration hiện tại
+    const originalScrollRestoration = history.scrollRestoration;
+    // Chuyển sang chế độ manual để ngăn trình duyệt tự động khôi phục
+    if (originalScrollRestoration === 'auto') {
+      history.scrollRestoration = 'manual';
+    }
+    // Cuộn lên đầu trang
+    window.scrollTo(0, 0);
+
+    // Khôi phục lại trạng thái ban đầu khi component unmount
+    return () => {
+      if (history.scrollRestoration === 'manual') {
+        history.scrollRestoration = originalScrollRestoration;
+      }
+    };
+  }, [location]); // Chạy mỗi khi location thay đổi (tức là điều hướng đến trang này)
 
   // Lắng nghe cập nhật hoạt động người dùng và sinh gợi ý sản phẩm
   useEffect(() => {

@@ -722,11 +722,32 @@
                 </div>
 
                 <!-- Payment Status -->
-                @if ($order->payment_status == 1 && $order->order_status == 'Hoàn Hàng')
+                @if ($order->payment_status == 1 && $order->order_status == 'Hoàn Hàng' && $order->refundRequest->where('status', 'Đã Duyệt')->count() > 0)
                     <div class="alert alert-danger text-center payment-alert animate-up delay-5">
                         <i class="fas fa-undo-alt me-2"></i>
                         <strong>Đơn hàng đã hoàn. Số tiền đã hoàn lại là
                             {{ number_format($order->total_price, 0, ',', '.') }} đ.</strong>
+                    </div>
+                @elseif ($order->payment_status == 1 && $order->order_status == 'Hoàn Hàng' && $order->refundRequest->where('status', 'Chờ Duyệt')->count() > 0)
+                    <div class="alert alert-warning text-center payment-alert animate-up delay-5">
+                        <i class="fas fa-clock me-2"></i>
+                        <strong>Đơn hàng đang chờ duyệt yêu cầu hoàn. Số tiền chờ hoàn lại là
+                            {{ number_format($order->total_price, 0, ',', '.') }} đ.</strong>
+                    </div>
+                @elseif ($order->payment_status == 1 && $order->order_status == 'Hoàn Hàng' && $order->refundRequest->where('status', 'Từ Chối')->count() > 0)
+                    <div class="alert alert-danger text-center payment-alert animate-up delay-5">
+                        <i class="fas fa-ban me-2"></i>
+                        <strong>Yêu cầu hoàn hàng đã bị từ chối.</strong>
+                    </div>
+                @elseif ($order->payment_status == 1 && $order->order_status == 'Hoàn Hàng')
+                    <div class="alert alert-warning text-center payment-alert animate-up delay-5">
+                        <i class="fas fa-sync me-2"></i>
+                        <strong>Đơn hàng đang trong quá trình xử lý hoàn hàng. Vui lòng xem xét yêu cầu hoàn.</strong>
+                    </div>
+                @elseif ($order->order_status == 'Hủy Đơn')
+                    <div class="alert alert-danger text-center payment-alert animate-up delay-5">
+                        <i class="fas fa-ban me-2"></i>
+                        <strong>Đơn hàng đã bị hủy.</strong>
                     </div>
                 @elseif ($order->payment_status == 0)
                     <div class="alert alert-danger text-center payment-alert animate-up delay-5">

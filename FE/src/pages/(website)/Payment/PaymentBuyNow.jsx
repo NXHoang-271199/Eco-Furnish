@@ -49,7 +49,7 @@ const PaymentBuyNow = () => {
   const [userAddresses, setUserAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [modalMode, setModalMode] = useState('select'); // 'select', 'add', 'edit'
+  const [modalMode, setModalMode] = useState("select"); // 'select', 'add', 'edit'
   const [addressFormData, setAddressFormData] = useState({
     first_name: "",
     last_name: "",
@@ -143,7 +143,7 @@ const PaymentBuyNow = () => {
   const getUserId = () => {
     const userData = JSON.parse(localStorage.getItem("userData"));
     return userData?.id || null;
-  }
+  };
 
   // useEffect để lấy địa chỉ người dùng và set địa chỉ mặc định
   useEffect(() => {
@@ -152,12 +152,12 @@ const PaymentBuyNow = () => {
       fetchUserAddresses(userId);
       // Lấy thông tin người dùng để điền vào form nếu cần
       const userData = JSON.parse(localStorage.getItem("userData")) || {};
-      setAddressFormData(prev => ({
+      setAddressFormData((prev) => ({
         ...prev,
-        first_name: userData.first_name || '', // Giả sử có first_name trong userData
-        last_name: userData.last_name || '', // Giả sử có last_name trong userData
-        email: userData.email || '',
-        phone: userData.phone || ''
+        first_name: userData.first_name || "", // Giả sử có first_name trong userData
+        last_name: userData.last_name || "", // Giả sử có last_name trong userData
+        email: userData.email || "",
+        phone: userData.phone || "",
       }));
     }
     fetchProvinces(); // Gọi fetchProvinces ở đây nếu chưa gọi
@@ -167,13 +167,12 @@ const PaymentBuyNow = () => {
     // if (!selectedProducts || selectedProducts.length === 0) {
     //   navigate("/products");
     // }
-
   }, [navigate]); // Chỉ chạy 1 lần khi mount
 
   // useEffect để tự động chọn địa chỉ mặc định khi danh sách địa chỉ thay đổi
   useEffect(() => {
     if (userAddresses.length > 0 && !selectedAddress) {
-      const defaultAddress = userAddresses.find(addr => addr.is_default);
+      const defaultAddress = userAddresses.find((addr) => addr.is_default);
       setSelectedAddress(defaultAddress || userAddresses[0]);
     }
   }, [userAddresses, selectedAddress]);
@@ -183,11 +182,11 @@ const PaymentBuyNow = () => {
     setLoading(true);
     try {
       const response = await addressService.getUserAddresses(userId);
-      if (response && response.status === 'success') {
+      if (response && response.status === "success") {
         setUserAddresses(response.data || []);
         // Tự động chọn địa chỉ mặc định hoặc địa chỉ đầu tiên
         if (response.data && response.data.length > 0) {
-          const defaultAddr = response.data.find(a => a.is_default);
+          const defaultAddr = response.data.find((a) => a.is_default);
           setSelectedAddress(defaultAddr || response.data[0]);
         } else {
           setSelectedAddress(null); // Không có địa chỉ nào
@@ -213,7 +212,7 @@ const PaymentBuyNow = () => {
     const selectedProvince = provinces.find(
       (p) => p.code === Number(selectedProvinceCode)
     );
-    setAddressFormData(prev => ({
+    setAddressFormData((prev) => ({
       ...prev,
       province: selectedProvince?.name || "",
       district: "", // Reset khi tỉnh thay đổi
@@ -232,7 +231,7 @@ const PaymentBuyNow = () => {
     const selectedDistrict = districts.find(
       (d) => d.code === Number(selectedDistrictCode)
     );
-    setAddressFormData(prev => ({
+    setAddressFormData((prev) => ({
       ...prev,
       district: selectedDistrict?.name || "",
       ward: "", // Reset khi quận thay đổi
@@ -247,7 +246,7 @@ const PaymentBuyNow = () => {
   const handleModalWardChange = (e) => {
     const selectedWardCode = e.target.value;
     const selectedWard = wards.find((w) => w.code === Number(selectedWardCode));
-    setAddressFormData(prev => ({
+    setAddressFormData((prev) => ({
       ...prev,
       ward: selectedWard?.name || "",
     }));
@@ -256,15 +255,15 @@ const PaymentBuyNow = () => {
   // Hàm xử lý thay đổi input trong modal
   const handleAddressFormChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setAddressFormData(prev => ({
+    setAddressFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   // Hàm mở modal chọn địa chỉ
   const openSelectAddressModal = () => {
-    setModalMode('select');
+    setModalMode("select");
     setShowAddressModal(true);
   };
 
@@ -288,7 +287,7 @@ const PaymentBuyNow = () => {
     });
     setDistricts([]); // Reset district và ward khi mở modal thêm
     setWards([]);
-    setModalMode('add');
+    setModalMode("add");
     setShowAddressModal(true);
   };
 
@@ -309,10 +308,14 @@ const PaymentBuyNow = () => {
       is_default: addressToEdit.is_default || false,
     });
     // Cần fetch lại district và ward nếu province/district đã có
-    const provinceCode = provinces.find(p => p.name === addressToEdit.province)?.code;
+    const provinceCode = provinces.find(
+      (p) => p.name === addressToEdit.province
+    )?.code;
     if (provinceCode) {
       fetchDistricts(provinceCode).then(() => {
-        const districtCode = districts.find(d => d.name === addressToEdit.district)?.code;
+        const districtCode = districts.find(
+          (d) => d.name === addressToEdit.district
+        )?.code;
         if (districtCode) {
           fetchWards(districtCode);
         }
@@ -321,7 +324,7 @@ const PaymentBuyNow = () => {
       setDistricts([]);
       setWards([]);
     }
-    setModalMode('edit');
+    setModalMode("edit");
     setShowAddressModal(true);
   };
 
@@ -334,7 +337,15 @@ const PaymentBuyNow = () => {
     }
 
     // Basic validation
-    if (!addressFormData.first_name || !addressFormData.last_name || !addressFormData.phone || !addressFormData.province || !addressFormData.district || !addressFormData.ward || !addressFormData.street_address) {
+    if (
+      !addressFormData.first_name ||
+      !addressFormData.last_name ||
+      !addressFormData.phone ||
+      !addressFormData.province ||
+      !addressFormData.district ||
+      !addressFormData.ward ||
+      !addressFormData.street_address
+    ) {
       toast.error("Vui lòng điền đầy đủ các trường bắt buộc (*)");
       return;
     }
@@ -342,24 +353,37 @@ const PaymentBuyNow = () => {
     setLoading(true);
     try {
       let response;
-      if (modalMode === 'add') {
+      if (modalMode === "add") {
         response = await addressService.addAddress(userId, addressFormData);
-      } else if (modalMode === 'edit' && editingAddressId) {
-        response = await addressService.updateAddress(userId, editingAddressId, addressFormData);
+      } else if (modalMode === "edit" && editingAddressId) {
+        response = await addressService.updateAddress(
+          userId,
+          editingAddressId,
+          addressFormData
+        );
       } else {
         throw new Error("Chế độ modal không hợp lệ hoặc thiếu ID địa chỉ.");
       }
 
-      if (response && response.status === 'success') {
-        toast.success(`Đã ${modalMode === 'add' ? 'thêm' : 'cập nhật'} địa chỉ!`);
+      if (response && response.status === "success") {
+        toast.success(
+          `Đã ${modalMode === "add" ? "thêm" : "cập nhật"} địa chỉ!`
+        );
         fetchUserAddresses(userId); // Tải lại danh sách
         setShowAddressModal(false); // Đóng modal
       } else {
-        toast.error(response?.message || `Không thể ${modalMode === 'add' ? 'thêm' : 'cập nhật'} địa chỉ.`);
+        toast.error(
+          response?.message ||
+            `Không thể ${modalMode === "add" ? "thêm" : "cập nhật"} địa chỉ.`
+        );
       }
     } catch (err) {
       console.error("Lỗi khi lưu địa chỉ:", err);
-      toast.error(`Đã xảy ra lỗi khi ${modalMode === 'add' ? 'thêm' : 'cập nhật'} địa chỉ.`);
+      toast.error(
+        `Đã xảy ra lỗi khi ${
+          modalMode === "add" ? "thêm" : "cập nhật"
+        } địa chỉ.`
+      );
     } finally {
       setLoading(false);
     }
@@ -374,7 +398,7 @@ const PaymentBuyNow = () => {
       setLoading(true);
       try {
         const response = await addressService.deleteAddress(userId, addressId);
-        if (response && response.status === 'success') {
+        if (response && response.status === "success") {
           toast.success("Đã xóa địa chỉ.");
           fetchUserAddresses(userId);
           // Nếu địa chỉ bị xóa đang được chọn, cần chọn lại địa chỉ khác
@@ -382,7 +406,7 @@ const PaymentBuyNow = () => {
             setSelectedAddress(null); // Sẽ tự động chọn lại trong useEffect
           }
           // Nếu đang ở modal chọn và xóa hết, chuyển sang modal thêm
-          if (modalMode === 'select' && userAddresses.length === 1) {
+          if (modalMode === "select" && userAddresses.length === 1) {
             setTimeout(openAddAddressModal, 100); // Đợi state update rồi mở modal add
           }
         } else {
@@ -468,7 +492,9 @@ const PaymentBuyNow = () => {
         setDiscountAmount(response.data.discount_amount);
         setVoucherId(response.data.voucher_id);
         // Cập nhật voucher đã chọn
-        const selected = availableVouchers.find(v => v.id === response.data.voucher_id);
+        const selected = availableVouchers.find(
+          (v) => v.id === response.data.voucher_id
+        );
         setSelectedVoucher(selected || null);
       } else {
         setDiscountError(response.data.message || "Mã giảm giá không hợp lệ");
@@ -496,7 +522,11 @@ const PaymentBuyNow = () => {
 
     // Kiểm tra nếu giá trị đơn hàng không đủ để áp dụng voucher
     if (calculateSubtotal() < voucher.min_order_value) {
-      setDiscountError(`Giá trị đơn hàng tối thiểu phải từ ${formatPrice(voucher.min_order_value)}`);
+      setDiscountError(
+        `Giá trị đơn hàng tối thiểu phải từ ${formatPrice(
+          voucher.min_order_value
+        )}`
+      );
       return;
     }
 
@@ -575,55 +605,125 @@ const PaymentBuyNow = () => {
     }
 
     // Kiểm tra các trường cần thiết của selectedAddress
-    if (!selectedAddress.full_name || !selectedAddress.phone || !selectedAddress.province || !selectedAddress.district || !selectedAddress.street_address) {
+    if (
+      !selectedAddress.full_name ||
+      !selectedAddress.phone ||
+      !selectedAddress.province ||
+      !selectedAddress.district ||
+      !selectedAddress.street_address
+    ) {
       setError("Địa chỉ được chọn thiếu thông tin. Vui lòng cập nhật địa chỉ.");
       // Có thể mở modal edit trực tiếp
       // openEditAddressModal(selectedAddress);
       return;
     }
 
-    // Xử lý thanh toán bằng ví
-    const selectedMethodObj = paymentMethods.find((method) => method.id === Number(paymentMethod));
-    if (selectedMethodObj && selectedMethodObj.name === "Ví") {
-      // Kiểm tra nếu chưa có mật khẩu cấp 2
-      if (!hasLevel2Password) {
-        // Chuyển hướng đến trang thiết lập mật khẩu cấp 2 với tham số redirect để quay lại
-        // Lưu trạng thái hiện tại vào localStorage để có thể khôi phục sau khi thiết lập mật khẩu cấp 2
-        localStorage.setItem("pendingPaymentState", JSON.stringify({
-          product_id: selectedProducts[0].product.id,
-          product_variant_id: selectedProducts[0].product_variant?.id || null,
-          quantity: selectedProducts[0].quantity,
-          selectedAddress: selectedAddress?.id,
-          paymentMethod,
-          voucherId,
-          discountAmount,
-          type: "buy_now",
-          // Thêm thông tin chi tiết về sản phẩm
-          product_name: selectedProducts[0].product.name,
-          product_price: selectedProducts[0].product.price,
-          product_discount_price: selectedProducts[0].product.discount_price,
-          product_image_thumbnail: selectedProducts[0].product.image_thumbnail,
-          // Thêm thông tin chi tiết về biến thể nếu có
-          variant_price: selectedProducts[0].product_variant?.price,
-          variant_discount_price: selectedProducts[0].product_variant?.discount_price,
-          // Thêm thông tin tổng giá trị sản phẩm
-          total_price: calculateSubtotal()
-        }));
-
-        navigate("/account?tab=level2password&redirect=payment_buy_now");
-        toast.info("Vui lòng thiết lập mật khẩu cấp 2 để thanh toán bằng ví.");
-        return;
-      }
-
-      // Nếu đã có mật khẩu cấp 2, hiển thị modal xác nhận
-      setShowLevel2PasswordModal(true);
-      setLevel2Password("");
-      setLevel2PasswordError("");
+    // Kiểm tra số lượng sản phẩm còn trong kho trước khi xử lý thanh toán
+    const singleProductItem = selectedProducts[0];
+    if (!singleProductItem) {
+      setError("Không tìm thấy thông tin sản phẩm để mua ngay.");
       return;
     }
 
-    // Tiếp tục xử lý đặt hàng nếu không phải thanh toán bằng ví
-    processOrder();
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("authToken");
+      const productId = singleProductItem.product.id;
+      const variantId = singleProductItem.product_variant
+        ? singleProductItem.product_variant.id
+        : null;
+      const quantity = singleProductItem.quantity;
+
+      // Kiểm tra tồn kho trước khi mở modal thanh toán
+      let stockCheckUrl = `/products/${productId}`;
+      const stockResponse = await axiosInstance.get(stockCheckUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (stockResponse.data && stockResponse.data.status === "success") {
+        const productData = stockResponse.data.data;
+        let availableStock = 0;
+
+        if (variantId) {
+          // Tìm biến thể đúng để kiểm tra số lượng
+          const variant = productData.variants.find((v) => v.id === variantId);
+          availableStock = variant ? variant.quantity : 0;
+        } else {
+          availableStock = productData.quantity;
+        }
+
+        if (availableStock < quantity) {
+          toast.error(`Hàng đã hết`, { autoClose: 3000 });
+          setError(
+            `Sản phẩm chỉ còn ${availableStock} trong kho, không đủ số lượng đặt hàng.`
+          );
+          setLoading(false);
+          return;
+        }
+      }
+      setLoading(false);
+
+      // Xử lý thanh toán bằng ví
+      const selectedMethodObj = paymentMethods.find(
+        (method) => method.id === Number(paymentMethod)
+      );
+      if (selectedMethodObj && selectedMethodObj.name === "Ví") {
+        // Kiểm tra nếu chưa có mật khẩu cấp 2
+        if (!hasLevel2Password) {
+          // Chuyển hướng đến trang thiết lập mật khẩu cấp 2 với tham số redirect để quay lại
+          // Lưu trạng thái hiện tại vào localStorage để có thể khôi phục sau khi thiết lập mật khẩu cấp 2
+          localStorage.setItem(
+            "pendingPaymentState",
+            JSON.stringify({
+              product_id: selectedProducts[0].product.id,
+              product_variant_id:
+                selectedProducts[0].product_variant?.id || null,
+              quantity: selectedProducts[0].quantity,
+              selectedAddress: selectedAddress?.id,
+              paymentMethod,
+              voucherId,
+              discountAmount,
+              type: "buy_now",
+              // Thêm thông tin chi tiết về sản phẩm
+              product_name: selectedProducts[0].product.name,
+              product_price: selectedProducts[0].product.price,
+              product_discount_price:
+                selectedProducts[0].product.discount_price,
+              product_image_thumbnail:
+                selectedProducts[0].product.image_thumbnail,
+              // Thêm thông tin chi tiết về biến thể nếu có
+              variant_price: selectedProducts[0].product_variant?.price,
+              variant_discount_price:
+                selectedProducts[0].product_variant?.discount_price,
+              // Thêm thông tin tổng giá trị sản phẩm
+              total_price: calculateSubtotal(),
+            })
+          );
+
+          navigate("/account?tab=level2password&redirect=payment_buy_now");
+          toast.info(
+            "Vui lòng thiết lập mật khẩu cấp 2 để thanh toán bằng ví."
+          );
+          return;
+        }
+
+        // Nếu đã có mật khẩu cấp 2, hiển thị modal xác nhận
+        setShowLevel2PasswordModal(true);
+        setLevel2Password("");
+        setLevel2PasswordError("");
+        setCheckingLevel2Password(false); // Đảm bảo trạng thái ban đầu là false
+        return;
+      }
+
+      // Tiếp tục xử lý đặt hàng nếu không phải thanh toán bằng ví
+      processOrder();
+    } catch (err) {
+      console.error("Lỗi khi kiểm tra tồn kho:", err);
+      setLoading(false);
+      setError("Có lỗi xảy ra khi kiểm tra thông tin sản phẩm.");
+    }
   };
 
   // Tách logic xử lý đặt hàng
@@ -650,7 +750,7 @@ const PaymentBuyNow = () => {
         quantity: singleProductItem.quantity,
         // Lấy thông tin từ selectedAddress
         user_name: selectedAddress.full_name,
-        user_email: selectedAddress.email || '', // Email có thể null
+        user_email: selectedAddress.email || "", // Email có thể null
         user_address: `${selectedAddress.street_address}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.province}, ${selectedAddress.country}`,
         user_phone: selectedAddress.phone,
         payment_method_id: Number(paymentMethod),
@@ -658,8 +758,14 @@ const PaymentBuyNow = () => {
       };
 
       // Thêm mật khẩu cấp 2 nếu thanh toán bằng ví
-      const selectedMethod = paymentMethods.find((method) => method.id === Number(paymentMethod));
-      if (selectedMethod && selectedMethod.name === "Ví" && level2PasswordInput) {
+      const selectedMethod = paymentMethods.find(
+        (method) => method.id === Number(paymentMethod)
+      );
+      if (
+        selectedMethod &&
+        selectedMethod.name === "Ví" &&
+        level2PasswordInput
+      ) {
         orderData.level2_password = level2PasswordInput;
       }
 
@@ -685,6 +791,46 @@ const PaymentBuyNow = () => {
       setOrderCode(newOrderCode);
 
       if (response.status === 200 || response.status === 201) {
+        // Lưu thông tin đơn hàng vào localStorage trước khi chuyển hướng đến bất kỳ phương thức thanh toán nào
+        localStorage.setItem(
+          "orderInfo",
+          JSON.stringify({
+            order_code: newOrderCode,
+            total: calculateTotal(),
+            payment_method: selectedMethod.name,
+            order_date: new Date().toISOString(),
+            products: [
+              {
+                id: singleProductItem.product.id,
+                product: {
+                  id: singleProductItem.product.id,
+                  name: singleProductItem.product.name,
+                  image_thumbnail: singleProductItem.product.image_thumbnail,
+                  price: singleProductItem.product.price,
+                  discount_price: singleProductItem.product.discount_price,
+                },
+                product_variant: singleProductItem.product_variant
+                  ? {
+                      id: singleProductItem.product_variant.id,
+                      price: singleProductItem.product_variant.price,
+                      discount_price:
+                        singleProductItem.product_variant.discount_price,
+                      variant_details:
+                        singleProductItem.product_variant.variant_details ||
+                        null,
+                    }
+                  : null,
+                quantity: singleProductItem.quantity,
+                variant_details: singleProductItem.product_variant
+                  ? singleProductItem.product_variant.variant_details
+                  : null,
+              },
+            ],
+          })
+        );
+        // Xóa dữ liệu đơn hàng tạm thời nếu có
+        localStorage.removeItem("tempSelectedProducts");
+
         if (selectedMethod.name === "MoMo") {
           if (response.data && response.data.payUrl) {
             window.location.href = response.data.payUrl;
@@ -698,15 +844,6 @@ const PaymentBuyNow = () => {
             setError("Không nhận được đường dẫn thanh toán từ VNPAY");
           }
         } else {
-          localStorage.setItem(
-            "orderInfo",
-            JSON.stringify({
-              order_code: newOrderCode,
-              total: calculateTotal(),
-              payment_method: selectedMethod.name,
-              order_date: new Date().toISOString(),
-            })
-          );
           navigate("/order-success");
         }
       }
@@ -719,6 +856,14 @@ const PaymentBuyNow = () => {
         // Reset lại trạng thái kiểm tra mật khẩu cấp 2 để có thể thử lại
         setCheckingLevel2Password(false);
         // Giữ modal mở để người dùng có thể nhập lại
+      } else if (
+        err.response?.data?.error &&
+        err.response.data.error.includes("không đủ số lượng")
+      ) {
+        // Xử lý lỗi khi sản phẩm hết hàng hoặc không đủ số lượng
+        toast.error("Hàng đã hết", { autoClose: 3000 });
+        setError("Hàng đã hết. Vui lòng quay lại trang sản phẩm kiểm tra lại.");
+        setShowLevel2PasswordModal(false);
       } else {
         // Các lỗi khác vẫn hiển thị như cũ
         setError(
@@ -729,6 +874,7 @@ const PaymentBuyNow = () => {
       }
     } finally {
       setLoading(false);
+      // Không đóng modal nếu là lỗi mật khẩu cấp 2
     }
   };
 
@@ -755,11 +901,14 @@ const PaymentBuyNow = () => {
       const token = localStorage.getItem("authToken");
       if (!token) return;
 
-      const response = await axiosInstance.get("/users/level2-password/status", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axiosInstance.get(
+        "/users/level2-password/status",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.data.status === "success") {
         setHasLevel2Password(response.data.data.has_level2_password);
@@ -810,22 +959,39 @@ const PaymentBuyNow = () => {
             {loading && <p>Đang tải địa chỉ...</p>}
             {!loading && selectedAddress ? (
               <div className="text-sm text-gray-700">
-                <p className="font-medium">{selectedAddress.full_name} - {selectedAddress.phone}</p>
+                <p className="font-medium">
+                  {selectedAddress.full_name} - {selectedAddress.phone}
+                </p>
                 <p>{`${selectedAddress.street_address}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.province}, ${selectedAddress.country}`}</p>
                 {selectedAddress.is_default && (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2">Mặc định</span>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2">
+                    Mặc định
+                  </span>
                 )}
               </div>
             ) : (
-              !loading && <p className="text-sm text-gray-500">Bạn chưa có địa chỉ. Vui lòng thêm địa chỉ.</p>
+              !loading && (
+                <p className="text-sm text-gray-500">
+                  Bạn chưa có địa chỉ. Vui lòng thêm địa chỉ.
+                </p>
+              )
             )}
           </div>
 
           <div className="mt-6 bg-white p-5 rounded-lg shadow-sm border">
             <h3 className="font-semibold text-lg mb-4 text-gray-800 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2 text-blue-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
                 <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+                  clipRule="evenodd"
+                />
               </svg>
               Phương thức thanh toán
             </h3>
@@ -835,20 +1001,23 @@ const PaymentBuyNow = () => {
                   // Kiểm tra xem phương thức thanh toán có phải là Ví không
                   const isWalletMethod = method.name === "Ví";
                   // Kiểm tra xem số dư ví có đủ để thanh toán không
-                  const insufficientBalance = isWalletMethod && walletBalance < calculateTotal();
+                  const insufficientBalance =
+                    isWalletMethod && walletBalance < calculateTotal();
                   // Quyết định disabled dựa trên điều kiện số dư
                   const isDisabled = isWalletMethod && insufficientBalance;
 
                   return (
                     <label
                       key={method.id}
-                      className={`relative flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${paymentMethod === method.id.toString() && !isDisabled
-                        ? "bg-blue-50 border-2 border-blue-500"
-                        : "border border-gray-200 hover:border-blue-400"
-                        } ${isDisabled
+                      className={`relative flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${
+                        paymentMethod === method.id.toString() && !isDisabled
+                          ? "bg-blue-50 border-2 border-blue-500"
+                          : "border border-gray-200 hover:border-blue-400"
+                      } ${
+                        isDisabled
                           ? "opacity-60 cursor-not-allowed bg-gray-50"
                           : "cursor-pointer"
-                        }`}
+                      }`}
                     >
                       <div className="flex items-center space-x-4">
                         <input
@@ -870,9 +1039,18 @@ const PaymentBuyNow = () => {
                           </div>
                         ) : (
                           <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-6 w-6"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
                               <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                              <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                              <path
+                                fillRule="evenodd"
+                                d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+                                clipRule="evenodd"
+                              />
                             </svg>
                           </div>
                         )}
@@ -883,28 +1061,41 @@ const PaymentBuyNow = () => {
                               : method.name}
                           </span>
                           {isWalletMethod && (
-                            <span className={`text-sm ${insufficientBalance ? "text-red-500" : "text-green-600"}`}>
+                            <span
+                              className={`text-sm ${
+                                insufficientBalance
+                                  ? "text-red-500"
+                                  : "text-green-600"
+                              }`}
+                            >
                               Số dư: {formatPrice(walletBalance)}
                             </span>
                           )}
                           {method.name === "MoMo" && (
-                            <span className="text-sm text-gray-500">Thanh toán qua ví điện tử MoMo</span>
+                            <span className="text-sm text-gray-500">
+                              Thanh toán qua ví điện tử MoMo
+                            </span>
                           )}
                           {method.name === "VNPAY" && (
-                            <span className="text-sm text-gray-500">Thanh toán qua cổng VNPAY</span>
+                            <span className="text-sm text-gray-500">
+                              Thanh toán qua cổng VNPAY
+                            </span>
                           )}
                           {method.name === "Tiền mặt" && (
-                            <span className="text-sm text-gray-500">Thanh toán khi nhận được hàng</span>
+                            <span className="text-sm text-gray-500">
+                              Thanh toán khi nhận được hàng
+                            </span>
                           )}
                         </div>
                       </div>
 
                       {/* Phù hợp nhất / Không đủ số dư */}
-                      {(paymentMethod === method.id.toString() && !isDisabled) && (
-                        <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-medium px-2 py-1 rounded-full">
-                          Đã chọn
-                        </span>
-                      )}
+                      {paymentMethod === method.id.toString() &&
+                        !isDisabled && (
+                          <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+                            Đã chọn
+                          </span>
+                        )}
                       {isWalletMethod && insufficientBalance && (
                         <span className="text-xs text-red-500 font-medium bg-red-50 px-2 py-1 rounded-full">
                           Số dư không đủ
@@ -915,9 +1106,25 @@ const PaymentBuyNow = () => {
                 })
               ) : (
                 <div className="flex items-center justify-center p-6 text-gray-500">
-                  <svg className="animate-spin mr-2 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin mr-2 h-5 w-5 text-blue-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Đang tải phương thức thanh toán...
                 </div>
@@ -928,7 +1135,10 @@ const PaymentBuyNow = () => {
           {error && <div className="mt-4 text-red-500 text-sm">{error}</div>}
 
           <div className="mt-6 flex justify-between items-center">
-            <Link to="/products" className="text-sm text-blue-600 hover:text-blue-800">
+            <Link
+              to="/products"
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
               Tiếp tục mua sắm
             </Link>
             <button
@@ -995,12 +1205,19 @@ const PaymentBuyNow = () => {
               >
                 {showVoucherDropdown ? "Ẩn" : "Hiển thị"} mã giảm giá khả dụng
                 <svg
-                  className={`ml-1 w-4 h-4 transition-transform ${showVoucherDropdown ? 'rotate-180' : ''}`}
+                  className={`ml-1 w-4 h-4 transition-transform ${
+                    showVoucherDropdown ? "rotate-180" : ""
+                  }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
                 </svg>
               </button>
 
@@ -1009,28 +1226,49 @@ const PaymentBuyNow = () => {
                   <div className="p-2 max-h-60 overflow-y-auto">
                     {availableVouchers.length > 0 ? (
                       availableVouchers.map((voucher) => {
-                        const isApplicable = calculateSubtotal() >= voucher.min_order_value;
+                        const isApplicable =
+                          calculateSubtotal() >= voucher.min_order_value;
                         return (
                           <div
                             key={voucher.id}
-                            onClick={() => isApplicable && handleSelectVoucher(voucher)}
-                            className={`p-3 border-b border-gray-100 last:border-b-0 ${isApplicable ? 'cursor-pointer hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'
-                              } ${selectedVoucher?.id === voucher.id ? 'bg-amber-50' : ''}`}
+                            onClick={() =>
+                              isApplicable && handleSelectVoucher(voucher)
+                            }
+                            className={`p-3 border-b border-gray-100 last:border-b-0 ${
+                              isApplicable
+                                ? "cursor-pointer hover:bg-gray-50"
+                                : "opacity-50 cursor-not-allowed"
+                            } ${
+                              selectedVoucher?.id === voucher.id
+                                ? "bg-amber-50"
+                                : ""
+                            }`}
                           >
                             <div className="flex justify-between items-start">
                               <div>
-                                <span className="font-medium text-gray-800">{voucher.code}</span>
+                                <span className="font-medium text-gray-800">
+                                  {voucher.code}
+                                </span>
                                 <p className="text-xs text-gray-500 mt-1">
-                                  Giảm {voucher.discount_percentage}% tối đa {formatPrice(voucher.max_discount_amount)}
+                                  Giảm {voucher.discount_percentage}% tối đa{" "}
+                                  {formatPrice(voucher.max_discount_amount)}
                                 </p>
                               </div>
                               <div className="text-right">
-                                <span className={`text-xs px-2 py-1 rounded-full ${isApplicable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                  }`}>
-                                  {isApplicable ? 'Có thể dùng' : 'Chưa đủ điều kiện'}
+                                <span
+                                  className={`text-xs px-2 py-1 rounded-full ${
+                                    isApplicable
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-red-100 text-red-700"
+                                  }`}
+                                >
+                                  {isApplicable
+                                    ? "Có thể dùng"
+                                    : "Chưa đủ điều kiện"}
                                 </span>
                                 <p className="text-xs text-gray-500 mt-1">
-                                  Đơn tối thiểu {formatPrice(voucher.min_order_value)}
+                                  Đơn tối thiểu{" "}
+                                  {formatPrice(voucher.min_order_value)}
                                 </p>
                               </div>
                             </div>
@@ -1038,7 +1276,9 @@ const PaymentBuyNow = () => {
                         );
                       })
                     ) : (
-                      <div className="p-3 text-center text-gray-500">Không có mã giảm giá khả dụng</div>
+                      <div className="p-3 text-center text-gray-500">
+                        Không có mã giảm giá khả dụng
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1049,8 +1289,8 @@ const PaymentBuyNow = () => {
             {selectedProducts.map((item) => {
               const price = item.product_variant
                 ? item.product_variant.discount_price ||
-                item.product_variant.price ||
-                0
+                  item.product_variant.price ||
+                  0
                 : item.product.discount_price || item.product.price || 0;
               return (
                 <div
@@ -1113,35 +1353,49 @@ const PaymentBuyNow = () => {
             {/* Header Modal */}
             <div className="flex justify-between items-center p-4 border-b">
               <h2 className="text-lg font-semibold">
-                {modalMode === 'select' && 'Danh sách địa chỉ'}
-                {modalMode === 'add' && 'Thêm địa chỉ mới'}
-                {modalMode === 'edit' && 'Chỉnh sửa địa chỉ'}
+                {modalMode === "select" && "Danh sách địa chỉ"}
+                {modalMode === "add" && "Thêm địa chỉ mới"}
+                {modalMode === "edit" && "Chỉnh sửa địa chỉ"}
               </h2>
-              <button onClick={() => setShowAddressModal(false)} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+              <button
+                onClick={() => setShowAddressModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                &times;
+              </button>
             </div>
 
             {/* Body Modal */}
             <div className="p-6">
               {/* Chế độ Chọn địa chỉ */}
-              {modalMode === 'select' && (
+              {modalMode === "select" && (
                 <div>
                   {userAddresses.length > 0 ? (
                     <div className="space-y-4">
-                      {userAddresses.map(addr => (
+                      {userAddresses.map((addr) => (
                         <div
                           key={addr.id}
-                          className={`border rounded-md p-4 cursor-pointer hover:border-blue-500 ${selectedAddress?.id === addr.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                          className={`border rounded-md p-4 cursor-pointer hover:border-blue-500 ${
+                            selectedAddress?.id === addr.id
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-300"
+                          }`}
                           onClick={() => handleSelectAddress(addr)}
                         >
                           <div className="flex justify-between items-start mb-1">
                             <div className="font-medium">
                               {addr.full_name} - {addr.phone}
                               {addr.is_default && (
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2">Mặc định</span>
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2">
+                                  Mặc định
+                                </span>
                               )}
                             </div>
                             <button
-                              onClick={(e) => { e.stopPropagation(); openEditAddressModal(addr); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditAddressModal(addr);
+                              }}
                               className="text-xs text-blue-600 hover:underline ml-4"
                             >
                               Sửa
@@ -1152,7 +1406,9 @@ const PaymentBuyNow = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500">Bạn chưa có địa chỉ nào được lưu.</p>
+                    <p className="text-center text-gray-500">
+                      Bạn chưa có địa chỉ nào được lưu.
+                    </p>
                   )}
                   <div className="mt-6 text-center">
                     <button
@@ -1166,79 +1422,210 @@ const PaymentBuyNow = () => {
               )}
 
               {/* Chế độ Thêm/Sửa địa chỉ */}
-              {(modalMode === 'add' || modalMode === 'edit') && (
+              {(modalMode === "add" || modalMode === "edit") && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Cột trái: Thông tin liên hệ */}
                   <div className="md:col-span-1 space-y-4">
-                    <h4 className="font-semibold text-gray-700 mb-2">Thông Tin Liên Hệ</h4>
+                    <h4 className="font-semibold text-gray-700 mb-2">
+                      Thông Tin Liên Hệ
+                    </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Họ *</label>
-                        <input type="text" name="first_name" value={addressFormData.first_name} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
+                        <label className="block text-sm font-medium mb-1">
+                          Họ *
+                        </label>
+                        <input
+                          type="text"
+                          name="first_name"
+                          value={addressFormData.first_name}
+                          onChange={handleAddressFormChange}
+                          className="w-full border rounded-md p-2"
+                        />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Tên *</label>
-                        <input type="text" name="last_name" value={addressFormData.last_name} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
+                        <label className="block text-sm font-medium mb-1">
+                          Tên *
+                        </label>
+                        <input
+                          type="text"
+                          name="last_name"
+                          value={addressFormData.last_name}
+                          onChange={handleAddressFormChange}
+                          className="w-full border rounded-md p-2"
+                        />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Số điện thoại *</label>
-                      <input type="tel" name="phone" value={addressFormData.phone} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
+                      <label className="block text-sm font-medium mb-1">
+                        Số điện thoại *
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={addressFormData.phone}
+                        onChange={handleAddressFormChange}
+                        className="w-full border rounded-md p-2"
+                      />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Email *</label>
-                      <input type="email" name="email" value={addressFormData.email} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" />
+                      <label className="block text-sm font-medium mb-1">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={addressFormData.email}
+                        onChange={handleAddressFormChange}
+                        className="w-full border rounded-md p-2"
+                      />
                     </div>
                     {/* Nút đặt làm mặc định */}
                     <div className="flex items-center pt-2">
                       <label className="flex items-center cursor-pointer">
                         <div className="relative">
-                          <input type="checkbox" name="is_default" checked={addressFormData.is_default} onChange={handleAddressFormChange} className="sr-only" />
-                          <div className={`block w-10 h-6 rounded-full transition ${addressFormData.is_default ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                          <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${addressFormData.is_default ? 'translate-x-4' : ''}`}></div>
+                          <input
+                            type="checkbox"
+                            name="is_default"
+                            checked={addressFormData.is_default}
+                            onChange={handleAddressFormChange}
+                            className="sr-only"
+                          />
+                          <div
+                            className={`block w-10 h-6 rounded-full transition ${
+                              addressFormData.is_default
+                                ? "bg-blue-500"
+                                : "bg-gray-300"
+                            }`}
+                          ></div>
+                          <div
+                            className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${
+                              addressFormData.is_default ? "translate-x-4" : ""
+                            }`}
+                          ></div>
                         </div>
-                        <div className="ml-3 text-sm text-gray-700">Đặt làm địa chỉ mặc định</div>
+                        <div className="ml-3 text-sm text-gray-700">
+                          Đặt làm địa chỉ mặc định
+                        </div>
                       </label>
                     </div>
                   </div>
 
                   {/* Cột phải: Địa chỉ giao hàng */}
                   <div className="md:col-span-1 space-y-4">
-                    <h4 className="font-semibold text-gray-700 mb-2">Địa Chỉ Giao Hàng</h4>
+                    <h4 className="font-semibold text-gray-700 mb-2">
+                      Địa Chỉ Giao Hàng
+                    </h4>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Tên địa chỉ (VD: Nhà riêng, Công ty)</label>
-                      <input type="text" name="address_name" value={addressFormData.address_name} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" placeholder="Tùy chọn" />
+                      <label className="block text-sm font-medium mb-1">
+                        Tên địa chỉ (VD: Nhà riêng, Công ty)
+                      </label>
+                      <input
+                        type="text"
+                        name="address_name"
+                        value={addressFormData.address_name}
+                        onChange={handleAddressFormChange}
+                        className="w-full border rounded-md p-2"
+                        placeholder="Tùy chọn"
+                      />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Quốc gia</label>
-                      <input type="text" name="country" value={addressFormData.country} onChange={handleAddressFormChange} className="w-full border rounded-md p-2 bg-gray-100" readOnly />
+                      <label className="block text-sm font-medium mb-1">
+                        Quốc gia
+                      </label>
+                      <input
+                        type="text"
+                        name="country"
+                        value={addressFormData.country}
+                        onChange={handleAddressFormChange}
+                        className="w-full border rounded-md p-2 bg-gray-100"
+                        readOnly
+                      />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Tỉnh / Thành phố *</label>
-                      <select name="province" value={provinces.find(p => p.name === addressFormData.province)?.code || ""} onChange={handleModalProvinceChange} className="w-full border rounded-md p-2">
+                      <label className="block text-sm font-medium mb-1">
+                        Tỉnh / Thành phố *
+                      </label>
+                      <select
+                        name="province"
+                        value={
+                          provinces.find(
+                            (p) => p.name === addressFormData.province
+                          )?.code || ""
+                        }
+                        onChange={handleModalProvinceChange}
+                        className="w-full border rounded-md p-2"
+                      >
                         <option value="">Chọn tỉnh/thành</option>
-                        {provinces.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
+                        {provinces.map((p) => (
+                          <option key={p.code} value={p.code}>
+                            {p.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Quận / Huyện *</label>
-                        <select name="district" value={districts.find(d => d.name === addressFormData.district)?.code || ""} onChange={handleModalDistrictChange} className="w-full border rounded-md p-2" disabled={!addressFormData.province || districts.length === 0}>
+                        <label className="block text-sm font-medium mb-1">
+                          Quận / Huyện *
+                        </label>
+                        <select
+                          name="district"
+                          value={
+                            districts.find(
+                              (d) => d.name === addressFormData.district
+                            )?.code || ""
+                          }
+                          onChange={handleModalDistrictChange}
+                          className="w-full border rounded-md p-2"
+                          disabled={
+                            !addressFormData.province || districts.length === 0
+                          }
+                        >
                           <option value="">Chọn quận/huyện</option>
-                          {districts.map(d => <option key={d.code} value={d.code}>{d.name}</option>)}
+                          {districts.map((d) => (
+                            <option key={d.code} value={d.code}>
+                              {d.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Xã / Phường *</label>
-                        <select name="ward" value={wards.find(w => w.name === addressFormData.ward)?.code || ""} onChange={handleModalWardChange} className="w-full border rounded-md p-2" disabled={!addressFormData.district || wards.length === 0}>
+                        <label className="block text-sm font-medium mb-1">
+                          Xã / Phường *
+                        </label>
+                        <select
+                          name="ward"
+                          value={
+                            wards.find((w) => w.name === addressFormData.ward)
+                              ?.code || ""
+                          }
+                          onChange={handleModalWardChange}
+                          className="w-full border rounded-md p-2"
+                          disabled={
+                            !addressFormData.district || wards.length === 0
+                          }
+                        >
                           <option value="">Chọn phường/xã</option>
-                          {wards.map(w => <option key={w.code} value={w.code}>{w.name}</option>)}
+                          {wards.map((w) => (
+                            <option key={w.code} value={w.code}>
+                              {w.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Địa chỉ đường *</label>
-                      <input type="text" name="street_address" value={addressFormData.street_address} onChange={handleAddressFormChange} className="w-full border rounded-md p-2" placeholder="Số nhà, tên đường..." />
+                      <label className="block text-sm font-medium mb-1">
+                        Địa chỉ đường *
+                      </label>
+                      <input
+                        type="text"
+                        name="street_address"
+                        value={addressFormData.street_address}
+                        onChange={handleAddressFormChange}
+                        className="w-full border rounded-md p-2"
+                        placeholder="Số nhà, tên đường..."
+                      />
                     </div>
                   </div>
                 </div>
@@ -1246,10 +1633,14 @@ const PaymentBuyNow = () => {
             </div>
 
             {/* Footer Modal (Chỉ hiển thị khi thêm/sửa) */}
-            {(modalMode === 'add' || modalMode === 'edit') && (
+            {(modalMode === "add" || modalMode === "edit") && (
               <div className="flex justify-end space-x-3 p-4 border-t">
                 <button
-                  onClick={() => userAddresses.length > 0 ? setModalMode('select') : setShowAddressModal(false)} // Quay lại Select nếu có địa chỉ, nếu không thì đóng
+                  onClick={() =>
+                    userAddresses.length > 0
+                      ? setModalMode("select")
+                      : setShowAddressModal(false)
+                  } // Quay lại Select nếu có địa chỉ, nếu không thì đóng
                   className="px-4 py-2 border rounded-md"
                 >
                   Hủy
@@ -1264,7 +1655,7 @@ const PaymentBuyNow = () => {
               </div>
             )}
             {/* Footer Modal (Chỉ hiển thị khi chọn) */}
-            {modalMode === 'select' && (
+            {modalMode === "select" && (
               <div className="flex justify-end p-4 border-t">
                 <button
                   onClick={() => setShowAddressModal(false)}
@@ -1274,7 +1665,8 @@ const PaymentBuyNow = () => {
                 </button>
               </div>
             )}
-          </div> {/* Đóng thẻ div cho modal content */}
+          </div>{" "}
+          {/* Đóng thẻ div cho modal content */}
         </div> // Đóng thẻ div cho modal overlay
       )}
 
@@ -1285,7 +1677,10 @@ const PaymentBuyNow = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Xác nhận thanh toán</h2>
               <button
-                onClick={() => setShowLevel2PasswordModal(false)}
+                onClick={() => {
+                  setShowLevel2PasswordModal(false);
+                  setCheckingLevel2Password(false); // Reset trạng thái khi đóng modal
+                }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
                 disabled={checkingLevel2Password}
               >
@@ -1293,7 +1688,9 @@ const PaymentBuyNow = () => {
               </button>
             </div>
 
-            <p className="mb-4 text-gray-700">Để bảo mật giao dịch, vui lòng nhập mật khẩu cấp 2 của bạn.</p>
+            <p className="mb-4 text-gray-700">
+              Để bảo mật giao dịch, vui lòng nhập mật khẩu cấp 2 của bạn.
+            </p>
 
             <div className="mb-4">
               <input
@@ -1305,13 +1702,18 @@ const PaymentBuyNow = () => {
                 disabled={checkingLevel2Password}
               />
               {level2PasswordError && (
-                <p className="mt-1 text-red-500 text-sm">{level2PasswordError}</p>
+                <p className="mt-1 text-red-500 text-sm">
+                  {level2PasswordError}
+                </p>
               )}
             </div>
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setShowLevel2PasswordModal(false)}
+                onClick={() => {
+                  setShowLevel2PasswordModal(false);
+                  setCheckingLevel2Password(false); // Reset trạng thái khi đóng modal
+                }}
                 className="px-4 py-2 border rounded-md"
                 disabled={checkingLevel2Password}
               >
@@ -1324,13 +1726,31 @@ const PaymentBuyNow = () => {
               >
                 {checkingLevel2Password ? (
                   <span className="flex items-center">
-                    <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin h-4 w-4 mr-2"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Đang xác thực
                   </span>
-                ) : "Xác nhận"}
+                ) : (
+                  "Xác nhận"
+                )}
               </button>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { FaUserAstronaut, FaShippingFast, FaFilter } from "react-icons/fa";
 import { AiOutlineSearch } from "react-icons/ai";
 import { LiaTrophySolid } from "react-icons/lia";
@@ -40,6 +40,8 @@ const Products = () => {
   const [variantModalOpen, setVariantModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [debouncedProducts, setDebouncedProducts] = useState([]); // State for debounced products for rating fetch
+  const ratingFetchTimeoutRef = useRef(null); // Ref for debounce timeout
 
   const [searchParams] = useSearchParams();
   const spaceFilter = searchParams.get('space');
@@ -484,22 +486,46 @@ const Products = () => {
       setImagesLoaded(false);
       setLoadedImagesCount(0);
     }
-  }, [currentPage, spaceFilter, debouncedSearchTerm, isSearching]);
+  }, [currentPage, spaceFilter, isSearching]);
 
   // Thêm hàm xử lý thay đổi tùy chọn sắp xếp
   const handleSortOptionChange = (e) => {
     setSortOption(e.target.value);
   };
 
-  // Thêm useEffect mới để tải thông tin đánh giá cho các sản phẩm đã tải
+  // Debounce products state change for rating fetching
   useEffect(() => {
-    // Chỉ tải đánh giá khi có sản phẩm và không phải đang tìm kiếm
-    if (products.length > 0 && !isSearchLoading && !isLoading) {
-      const fetchRatings = async () => {
-        const ratingsData = {};
+    // Clear existing timeout if products change again quickly
+    if (ratingFetchTimeoutRef.current) {
+      clearTimeout(ratingFetchTimeoutRef.current);
+    }
 
-        // Tạo mảng các promise để tải đánh giá cho tất cả sản phẩm
-        const ratingPromises = products.map(product =>
+    // Set a new timeout to update debouncedProducts
+    ratingFetchTimeoutRef.current = setTimeout(() => {
+      setDebouncedProducts(products);
+    }, 300); // Wait 300ms after products stop changing
+
+    // Cleanup timeout on unmount or before next run
+    return () => {
+      if (ratingFetchTimeoutRef.current) {
+        clearTimeout(ratingFetchTimeoutRef.current);
+      }
+    };
+  }, [products]); // Depend only on products
+
+  // Thêm useEffect mới để tải thông tin đánh giá cho các sản phẩm đã tải (sử dụng debouncedProducts)
+  useEffect(() => {
+    // Chỉ tải đánh giá khi có sản phẩm đã debounce và không phải đang tìm kiếm hoặc loading
+    if (debouncedProducts.length > 0 && !isSearchLoading && !isLoading) {
+      const fetchRatings = async () => {
+        const ratingsData = { ...productRatings }; // Preserve existing ratings
+
+        // Create an array of promises only for products without ratings yet
+        const productsToFetchRatings = debouncedProducts.filter(p => !ratingsData[p.id]);
+
+        if (productsToFetchRatings.length === 0) return; // Skip if all ratings are already fetched
+
+        const ratingPromises = productsToFetchRatings.map(product =>
           axios.get(`${import.meta.env.VITE_API_URL}/api/products/${product.id}/reviews`)
             .then(response => {
               if (response.data.success && Array.isArray(response.data.data)) {
@@ -529,7 +555,7 @@ const Products = () => {
 
       fetchRatings();
     }
-  }, [products, isSearchLoading, isLoading]);
+  }, [debouncedProducts, isSearchLoading, isLoading]);
 
   // Hàm xử lý thêm sản phẩm vào giỏ hàng
   const handleAddToCart = async (product) => {

@@ -128,7 +128,7 @@
                                 <td>{{ $tran->created_at->format('d/m/Y H:i') }}</td>
                                 <td>
                                     @if ($tran->type === 'rut_tien' && $tran->withdrawRequest)
-                                        <a class="btn btn-sm btn-outline-primary" href="#"
+                                        <a class="btn btn-sm btn-outline-primary"
                                             onclick="openWithdrawModal('{{ route('wallets.withdraws.detail', $tran->withdrawRequest->id) }}')">
                                             <i class="fas fa-eye"></i>
                                         </a>

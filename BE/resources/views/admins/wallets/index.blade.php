@@ -24,8 +24,10 @@
                             <div class="col-md-3">
                                 <select name="withdraw_filter" class="form-select">
                                     <option value="">Tất cả</option>
-                                    <option value="1" {{ request('withdraw_filter') == '1' ? 'selected' : '' }}>Có yêu cầu rút tiền</option>
-                                    <option value="2" {{ request('withdraw_filter') == '2' ? 'selected' : '' }}>Không có yêu cầu rút tiền</option>
+                                    <option value="1" {{ request('withdraw_filter') == '1' ? 'selected' : '' }}>Có yêu
+                                        cầu rút tiền</option>
+                                    <option value="2" {{ request('withdraw_filter') == '2' ? 'selected' : '' }}>Không
+                                        có yêu cầu rút tiền</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -52,7 +54,9 @@
                                 <th scope="col">Số dư</th>
                                 <th scope="col">Yêu cầu rút tiền (Chờ xử lý)</th>
                                 <th scope="col">Ngày tạo ví</th>
-                                <th scope="col">Hành động</th>
+                                @if (Auth::user()->hasPermission('edit-wallets'))
+                                    <th scope="col">Hành động</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -78,17 +82,13 @@
                                     </td>
 
                                     <td>{{ $wallet->created_at->format('d/m/Y H:i') }}</td>
-                                    <td class="text-nowrap">
-                                        <a href="{{ route('wallets.show', $wallet->id) }}" class="btn btn-info btn-sm">
-                                            <i class="ri-eye-line align-middle"></i> Chi tiết
-                                        </a>
-                                        @if (Auth::user()->hasPermission('edit-wallets'))
-                                            <a href="javascript:void(0);" class="btn btn-primary btn-sm"
-                                                onclick="openBalanceModal({{ $wallet->id }}, '{{ $wallet->user->name }}')">
-                                                <i class="ri-wallet-3-line align-middle"></i> Cộng số dư
+                                    @if (Auth::user()->hasPermission('edit-wallets'))
+                                        <td class="text-nowrap">
+                                            <a href="{{ route('wallets.show', $wallet->id) }}" class="btn btn-info btn-sm">
+                                                <i class="ri-eye-line align-middle"></i> Chi tiết
                                             </a>
-                                        @endif
-                                    </td>
+                                        </td>
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>

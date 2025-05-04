@@ -101,7 +101,7 @@ class PaymentMethodController extends Controller
         $amount = $request->total_price;
         $orderId = $request->order_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5173/order-success";
-        $ipnUrl = $request->notify_url ?? "https://5c0a-2402-9d80-853-e0c0-29aa-404a-436d-b503.ngrok-free.app/api/momo/ipn";
+        $ipnUrl = $request->notify_url ?? "https://2294-42-1-77-15.ngrok-free.app/api/momo/ipn";
 
         $extraData = '';
 
@@ -144,7 +144,7 @@ class PaymentMethodController extends Controller
         }
         //   $data = $request->all();
         $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-        $vnp_Returnurl = "http://localhost:5173/account/wallet";
+        $vnp_Returnurl = "http://localhost:5173/order-success";
         $vnp_TmnCode = $config['vnp_TmnCode']; //Mã website tại VNPAY
         $vnp_HashSecret = $config['vnp_HashSecret']; //Chuỗi bí mật
 
@@ -262,7 +262,7 @@ class PaymentMethodController extends Controller
         $amount = $request->amount;
         $orderId = $request->wallet_code ?? time();
         $redirectUrl = $request->return_url ?? "http://localhost:5173/account/wallet/deposit-success";
-        $ipnUrl = $request->notify_url ?? "https://6233-113-23-103-71.ngrok-free.app/api/momo/ipn";
+        $ipnUrl = $request->notify_url ?? "https://2294-42-1-77-15.ngrok-free.app/api/momo/ipn";
 
         $extraData = '';
 

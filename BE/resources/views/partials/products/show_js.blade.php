@@ -74,53 +74,45 @@
             e.target.style.transform = 'scale(1) translate(0, 0)';
         }
 
-        function changeMainImage(src, clickedThumb) {
+        function changeMainImage(imageUrl, thumbnailElement) {
+            // Thêm hiệu ứng fade out cho ảnh chính
             const mainImage = document.getElementById('main-product-image');
-            const thumbnails = document.querySelectorAll('.thumbnail-wrapper');
-            const container = document.querySelector('.gallery-container');
             
-            if (mainImage && clickedThumb) {
-                // Cập nhật ảnh chính với hiệu ứng fade
-                mainImage.style.opacity = '0';
-                mainImage.style.transform = 'scale(0.95)';
+            // Hiệu ứng fade out
+            mainImage.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            mainImage.style.opacity = '0';
+            mainImage.style.transform = 'scale(0.98)';
+            
+            // Thay đổi nguồn ảnh sau khi hiệu ứng fade out hoàn thành
+            setTimeout(() => {
+                mainImage.setAttribute('src', imageUrl);
                 
-                setTimeout(() => {
-                    mainImage.src = src;
-                    mainImage.style.transition = 'all 0.3s ease';
-                    mainImage.style.opacity = '1';
-                    mainImage.style.transform = 'scale(1)';
-                }, 150);
-                
-                // Cập nhật trạng thái active cho thumbnails
-                thumbnails.forEach(thumb => thumb.classList.remove('active'));
-                clickedThumb.classList.add('active');
-
-                // Tính toán vị trí để thumbnail được chọn nằm giữa
-                const containerWidth = container.offsetWidth;
-                const thumbWidth = clickedThumb.offsetWidth;
-                const thumbLeft = clickedThumb.offsetLeft;
-                const scrollPosition = thumbLeft - (containerWidth / 2) + (thumbWidth / 2);
-
-                // Cuộn đến vị trí đã tính
-                container.scrollTo({
-                    left: scrollPosition,
-                    behavior: 'smooth'
-                });
-            }
+                // Hiệu ứng fade in cho ảnh mới
+                mainImage.style.opacity = '1';
+                mainImage.style.transform = 'scale(1)';
+            }, 300);
+            
+            // Xóa lớp active khỏi tất cả các thumbnail
+            const thumbnails = document.querySelectorAll('.thumbnail-wrapper');
+            thumbnails.forEach(thumb => thumb.classList.remove('active'));
+            
+            // Thêm lớp active cho thumbnail đã chọn
+            thumbnailElement.classList.add('active');
         }
 
         function scrollGallery(direction) {
-            const container = document.querySelector('.gallery-container');
-            const scrollAmount = 200;
+            const galleryContainer = document.querySelector('.gallery-container');
+            const scrollAmount = 100; // Số pixel để cuộn
             
-            if (container) {
-                const currentScroll = container.scrollLeft;
-                const newScroll = direction === 'next' 
-                    ? currentScroll + scrollAmount 
-                    : currentScroll - scrollAmount;
-                    
-                container.scrollTo({
-                    left: newScroll,
+            // Hiệu ứng cuộn mượt
+            if (direction === 'prev') {
+                galleryContainer.scrollBy({
+                    left: -scrollAmount,
+                    behavior: 'smooth'
+                });
+            } else {
+                galleryContainer.scrollBy({
+                    left: scrollAmount,
                     behavior: 'smooth'
                 });
             }
@@ -128,63 +120,138 @@
 
         function confirmDelete(button) {
             Swal.fire({
-                title: 'Xác nhận xóa?',
-                text: "Bạn có chắc chắn muốn xóa sản phẩm này không?",
+                title: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
+                text: "Thao tác này không thể hoàn tác!",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Có, xóa!',
+                confirmButtonText: 'Xóa',
                 cancelButtonText: 'Hủy',
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                customClass: {
-                    popup: 'animated zoomIn'
-                },
-                showClass: {
-                    popup: 'animated zoomIn faster'
-                },
-                hideClass: {
-                    popup: 'animated zoomOut faster'
-                }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const form = button.closest('form');
-                    const formData = new FormData(form);
-                    
-                    // Thực hiện AJAX request
-                    $.ajax({
-                        url: form.action,
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire({
-                                    title: 'Thành công!',
-                                    text: 'Xóa sản phẩm thành công',
-                                    icon: 'success',
-                                    showConfirmButton: false,
-                                    timer: 1500
-                                }).then(() => {
-                                    window.location.href = '/admin/products';
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Lỗi!',
-                                    text: response.message || 'Có lỗi xảy ra khi xóa sản phẩm',
-                                    icon: 'error'
-                                });
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.fire({
-                                title: 'Lỗi!',
-                                text: 'Có lỗi xảy ra khi xóa sản phẩm',
-                                icon: 'error'
-                            });
-                        }
-                    });
+                    button.closest('form').submit();
                 }
             });
         }
+
+        // Định nghĩa Observer để xử lý hiệu ứng lướt chuột
+        document.addEventListener('DOMContentLoaded', function() {
+            // Xử lý hiệu ứng cho bảng biến thể khi lăn chuột
+            const variantRows = document.querySelectorAll('.variant-table tbody tr');
+            
+            // Tạo Intersection Observer để theo dõi khi các hàng xuất hiện trong viewport
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        // Thêm animation với delay tăng dần để tạo hiệu ứng lần lượt
+                        setTimeout(() => {
+                            entry.target.style.opacity = '0';
+                            entry.target.style.transform = 'translateY(20px)';
+                            
+                            // Kích hoạt animation
+                            setTimeout(() => {
+                                entry.target.style.transition = 'all 0.5s ease';
+                                entry.target.style.opacity = '1';
+                                entry.target.style.transform = 'translateY(0)';
+                            }, 50);
+                            
+                            // Ngừng quan sát phần tử này sau khi đã áp dụng hiệu ứng
+                            observer.unobserve(entry.target);
+                        }, index * 120); // Thời gian delay tăng dần cho mỗi hàng
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            // Quan sát mỗi hàng trong bảng
+            variantRows.forEach(row => {
+                observer.observe(row);
+            });
+            
+            // Xử lý sự kiện bấm vào tab biến thể
+            const variantsTab = document.getElementById('nav-variants-tab');
+            const detailsTab = document.getElementById('nav-details-tab');
+            
+            if (variantsTab && detailsTab) {
+                // Thêm hiệu ứng khi chuyển tab
+                variantsTab.addEventListener('click', function() {
+                    // Reset animation cho các hàng khi tab được mở lại
+                    variantRows.forEach(row => {
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateY(20px)';
+                        row.style.transition = 'none';
+                        
+                        // Theo dõi lại các hàng
+                        observer.observe(row);
+                    });
+                });
+                
+                // Hiệu ứng nút chuyển tab
+                const switchTabBtn = document.querySelector('.btn-switch-tab');
+                if (switchTabBtn) {
+                    switchTabBtn.addEventListener('mouseenter', function() {
+                        this.style.transform = 'translateY(-3px) scale(1.05)';
+                    });
+                    
+                    switchTabBtn.addEventListener('mouseleave', function() {
+                        this.style.transform = '';
+                    });
+                    
+                    switchTabBtn.addEventListener('click', function() {
+                        // Thêm hiệu ứng pulse khi bấm nút
+                        this.classList.add('pulse');
+                        setTimeout(() => {
+                            this.classList.remove('pulse');
+                        }, 800);
+                        
+                        // Cuộn trang xuống phần biến thể nếu nằm ngoài viewport
+                        const tabContent = document.getElementById('nav-variants');
+                        if (tabContent) {
+                            setTimeout(() => {
+                                const rect = tabContent.getBoundingClientRect();
+                                if (rect.top < 0 || rect.bottom > window.innerHeight) {
+                                    tabContent.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'center'
+                                    });
+                                }
+                            }, 400);
+                        }
+                    });
+                }
+            }
+            
+            // Thêm hiệu ứng cho gallery
+            const galleryContainer = document.querySelector('.gallery-container');
+            if (galleryContainer) {
+                const thumbnails = galleryContainer.querySelectorAll('.thumbnail-wrapper');
+                
+                thumbnails.forEach((thumb, index) => {
+                    // Thêm animation xuất hiện
+                    thumb.style.opacity = '0';
+                    thumb.style.transform = 'translateY(10px)';
+                    
+                    setTimeout(() => {
+                        thumb.style.transition = 'all 0.4s ease';
+                        thumb.style.opacity = thumb.classList.contains('active') ? '1' : '0.5';
+                        thumb.style.transform = 'translateY(0)';
+                    }, 100 + index * 100);
+                    
+                    // Thêm hiệu ứng hover
+                    thumb.addEventListener('mouseenter', function() {
+                        if (!this.classList.contains('active')) {
+                            this.style.opacity = '1';
+                            this.style.transform = 'scale(1.05)';
+                        }
+                    });
+                    
+                    thumb.addEventListener('mouseleave', function() {
+                        if (!this.classList.contains('active')) {
+                            this.style.opacity = '0.5';
+                            this.style.transform = 'scale(0.95)';
+                        }
+                    });
+                });
+            }
+        });
     </script>

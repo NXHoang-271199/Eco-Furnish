@@ -11,6 +11,7 @@ use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\OrderItem;
+use Illuminate\Support\Facades\DB;
 
 class TrashController extends Controller
 {
@@ -186,40 +187,86 @@ class TrashController extends Controller
                     if ($force) {
                         Product::withTrashed()->where('category_id', $id)->update(['category_id' => null]);
                     }
+                    // Thêm dòng code để xóa vĩnh viễn danh mục
+                    $item->forceDelete();
                     break;
                 case 'trash-variants':
                     $item = Variant::onlyTrashed()->findOrFail($id);
-                    $productIds = ProductVariant::where('variant_id', $id)
-                                    ->pluck('product_id')
-                                    ->unique();
-                    $productsCount = $productIds->count();
-                    if ($productsCount > 0 && !$force) {
+                    
+                    // Chúng ta sẽ đếm chính xác số lượng sản phẩm chứa biến thể này
+                    // bằng cách truy vấn trên bảng product_variants
+                    
+                    // Lấy tất cả sản phẩm có variant_details chứa biến thể này
+                    $variantId = $id;
+                    
+                    // Tìm các sản phẩm có biến thể này trong variant_details
+                    $products = \DB::table('products')
+                        ->join('product_variants', 'products.id', '=', 'product_variants.product_id')
+                        ->whereRaw("product_variants.variant_details LIKE ?", ["%\"$variantId\"%"])
+                        ->where('products.deleted_at', null) // Chỉ đếm sản phẩm chưa bị xóa mềm
+                        ->select('products.id', 'products.name')
+                        ->distinct() // Đảm bảo mỗi sản phẩm chỉ được tính một lần
+                        ->get();
+                    
+                    $productsCount = $products->count();
+                    
+                    // Nếu có sản phẩm đang sử dụng biến thể này, không cho phép xóa vĩnh viễn
+                    if ($productsCount > 0) {
+                        $productNames = $products->pluck('name')->take(3)->toArray();
+                        $productNamesStr = implode(', ', $productNames);
+                        
+                        if (count($products) > 3) {
+                            $productNamesStr .= ' và ' . (count($products) - 3) . ' sản phẩm khác';
+                        }
+                        
                         return response()->json([
                             'success' => false,
                             'hasProducts' => true,
-                            'message' => "Đang có {$productsCount} sản phẩm sử dụng biến thể này. Bạn có chắc chắn muốn xóa?"
-                        ], 200);
+                            'productsCount' => $productsCount,
+                            'message' => "Không thể xóa vĩnh viễn vì có {$productsCount} sản phẩm đang sử dụng biến thể này: {$productNamesStr}"
+                        ], 400);
                     }
-                    if ($force) {
-                        ProductVariant::withTrashed()->where('variant_id', $id)->forceDelete();
-                    }
+                    
+                    // Chỉ xóa vĩnh viễn khi không có sản phẩm nào sử dụng
+                    $item->forceDelete();
                     break;
+                
                 case 'trash-variant-values':
                     $item = VariantValue::onlyTrashed()->findOrFail($id);
-                    $productIds = ProductVariant::where('variant_value_id', $id)
-                                    ->pluck('product_id')
-                                    ->unique();
-                    $productsCount = $productIds->count();
-                    if ($productsCount > 0 && !$force) {
+                    
+                    // Tương tự như trên, kiểm tra sản phẩm sử dụng giá trị biến thể này
+                    $valueId = $id;
+                    
+                    // Tìm các sản phẩm có giá trị biến thể này trong variant_details
+                    $products = \DB::table('products')
+                        ->join('product_variants', 'products.id', '=', 'product_variants.product_id')
+                        ->whereRaw("product_variants.variant_details LIKE ?", ["%\"$valueId\"%"])
+                        ->where('products.deleted_at', null) // Chỉ đếm sản phẩm chưa bị xóa mềm
+                        ->select('products.id', 'products.name')
+                        ->distinct() // Đảm bảo mỗi sản phẩm chỉ được tính một lần
+                        ->get();
+                    
+                    $productsCount = $products->count();
+                    
+                    // Nếu có sản phẩm đang sử dụng giá trị biến thể này, không cho phép xóa vĩnh viễn
+                    if ($productsCount > 0) {
+                        $productNames = $products->pluck('name')->take(3)->toArray();
+                        $productNamesStr = implode(', ', $productNames);
+                        
+                        if (count($products) > 3) {
+                            $productNamesStr .= ' và ' . (count($products) - 3) . ' sản phẩm khác';
+                        }
+                        
                         return response()->json([
                             'success' => false,
                             'hasProducts' => true,
-                            'message' => "Đang có {$productsCount} sản phẩm sử dụng giá trị biến thể này. Bạn có chắc chắn muốn xóa?"
-                        ], 200);
+                            'productsCount' => $productsCount,
+                            'message' => "Không thể xóa vĩnh viễn vì có {$productsCount} sản phẩm đang sử dụng giá trị biến thể này: {$productNamesStr}"
+                        ], 400);
                     }
-                    if ($force) {
-                        ProductVariant::withTrashed()->where('variant_value_id', $id)->forceDelete();
-                    }
+                    
+                    // Chỉ xóa vĩnh viễn khi không có sản phẩm nào sử dụng
+                    $item->forceDelete();
                     break;
                 default:
                     abort(404);
