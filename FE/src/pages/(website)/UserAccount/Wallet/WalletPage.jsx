@@ -86,17 +86,26 @@ const WalletPage = () => {
 
         if (recentSuccessfulDeposit) {
           // Kiểm tra xem thông báo này đã được xử lý thông qua socket hay chưa
-          const processedIds = JSON.parse(sessionStorage.getItem('processedNotificationIds') || '[]');
-          const alreadyProcessed = processedIds.includes(recentSuccessfulDeposit.id.toString());
+          const processedIds = JSON.parse(
+            sessionStorage.getItem("processedNotificationIds") || "[]"
+          );
+          const alreadyProcessed = processedIds.includes(
+            recentSuccessfulDeposit.id.toString()
+          );
 
           if (!alreadyProcessed) {
-            console.log("Hiển thị thông báo nạp tiền thành công vì chưa được xử lý qua socket");
+            console.log(
+              "Hiển thị thông báo nạp tiền thành công vì chưa được xử lý qua socket"
+            );
             const depositAmount = parseFloat(recentSuccessfulDeposit.amount);
             const prevBalance = currentBalance - depositAmount;
 
             // Thêm ID vào danh sách đã xử lý để tránh hiển thị lại
             processedIds.push(recentSuccessfulDeposit.id.toString());
-            sessionStorage.setItem('processedNotificationIds', JSON.stringify(processedIds));
+            sessionStorage.setItem(
+              "processedNotificationIds",
+              JSON.stringify(processedIds)
+            );
 
             showWalletDepositToast({
               amount: depositAmount,
@@ -108,7 +117,10 @@ const WalletPage = () => {
               id: recentSuccessfulDeposit.id,
             });
           } else {
-            console.log("Không hiển thị thông báo nạp tiền vì đã được xử lý qua socket:", recentSuccessfulDeposit.id);
+            console.log(
+              "Không hiển thị thông báo nạp tiền vì đã được xử lý qua socket:",
+              recentSuccessfulDeposit.id
+            );
           }
 
           // Xóa trạng thái sau khi đã xử lý
@@ -260,35 +272,6 @@ const WalletPage = () => {
   const openTransactionDetail = (tx) => {
     setSelectedTransaction(tx);
 
-    // Tính toán số dư trước và sau giao dịch
-    const amount = parseFloat(tx.amount);
-    let balanceAfter = 0;
-    let balanceBefore = 0;
-
-    if (tx.type === "nap_tien" || tx.type === "hoan_tien") {
-      // Nếu là giao dịch nạp tiền hoặc hoàn tiền, số dư sau = số dư hiện tại, số dư trước = số dư hiện tại - số tiền
-      if (tx.status === "thanh_cong") {
-        balanceAfter = balance;
-        balanceBefore = balance - amount;
-      } else {
-        // Nếu giao dịch chưa thành công, số dư không thay đổi
-        balanceAfter = balance;
-        balanceBefore = balance;
-      }
-    } else if (tx.type === "thanh_toan_don_hang" || tx.type === "rut_tien") {
-      // Nếu là giao dịch thanh toán hoặc rút tiền, số dư sau = số dư hiện tại, số dư trước = số dư hiện tại + số tiền
-      if (tx.status === "thanh_cong") {
-        balanceAfter = balance;
-        balanceBefore = balance + Math.abs(amount);
-      } else {
-        // Nếu giao dịch chưa thành công, số dư không thay đổi
-        balanceAfter = balance;
-        balanceBefore = balance;
-      }
-    }
-
-    setBalanceBeforeTransaction(balanceBefore);
-    setBalanceAfterTransaction(balanceAfter);
     setShowModal(true);
   };
 
@@ -316,6 +299,7 @@ const WalletPage = () => {
     if (status === "thanh_cong") return "bg-green-100 text-green-800";
     if (status === "cho_thanh_toan") return "bg-yellow-100 text-yellow-800";
     if (status === "da_huy") return "bg-red-100 text-red-800";
+    if (status === "that_bai") return "bg-red-100 text-red-800";
     return "bg-gray-100 text-gray-800";
   };
 
@@ -324,6 +308,7 @@ const WalletPage = () => {
     if (status === "thanh_cong") return "Thành công";
     if (status === "cho_thanh_toan") return "Chờ thanh toán";
     if (status === "da_huy") return "Đã hủy";
+    if (status === "that_bai") return "Thất bại";
     return status;
   };
 
@@ -477,8 +462,21 @@ const WalletPage = () => {
                       {getTransactionIcon(tx.type, tx.amount)}
                       <div>
                         <p className="text-sm font-medium text-gray-800">
-                          {tx.description}
+                          {(() => {
+                            if (tx.type === "nap_tien")
+                              return "Nạp tiền vào ví";
+                            if (tx.type === "rut_tien")
+                              return "Rút tiền khỏi ví";
+                            if (tx.type === "thanh_toan_don_hang")
+                              return `Thanh toán đơn hàng ${tx.order?.code ? "#" + tx.order.code : ""
+                                }`;
+                            if (tx.type === "hoan_tien")
+                              return `Hoàn tiền đơn hàng ${tx.order?.code ? "#" + tx.order.code : ""
+                                }`;
+                            return tx.description || "Giao dịch ví";
+                          })()}
                         </p>
+
                         <div className="flex flex-wrap gap-2 text-xs text-gray-500">
                           <p>{tx.created_at}</p>
                           <p
@@ -488,7 +486,9 @@ const WalletPage = () => {
                                 ? "text-orange-500"
                                 : tx.status === "da_huy"
                                   ? "text-red-500"
-                                  : ""
+                                  : tx.status === "that_bai"
+                                    ? "text-red-500"
+                                    : ""
                               }`}
                           >
                             {tx.status === "thanh_cong"
@@ -497,7 +497,9 @@ const WalletPage = () => {
                                 ? "Chờ thanh toán"
                                 : tx.status === "da_huy"
                                   ? "Đã hủy"
-                                  : tx.status}
+                                  : tx.status === "that_bai"
+                                    ? "Thất bại"
+                                    : tx.status}
                           </p>
                         </div>
                       </div>
@@ -623,60 +625,78 @@ const WalletPage = () => {
                 </div>
 
                 {/* Số dư trước và sau giao dịch */}
-                {selectedTransaction.status === "thanh_cong" && (
-                  <div className="bg-indigo-50 rounded-xl overflow-hidden">
-                    <div className="grid grid-cols-2 divide-x divide-indigo-100">
-                      <div className="p-3 text-center">
-                        <p className="text-xs text-indigo-600 font-medium mb-1">
-                          Số dư trước
-                        </p>
-                        <p className="text-indigo-800 font-bold">
-                          {formatMoney(balanceBeforeTransaction)}
-                        </p>
+                {selectedTransaction.status === "thanh_cong" &&
+                  !(
+                    selectedTransaction.type === "thanh_toan_don_hang" &&
+                    selectedTransaction.payment_method !== "Ví"
+                  ) && (
+                    <div className="bg-indigo-50 rounded-xl overflow-hidden">
+                      <div className="grid grid-cols-2 divide-x divide-indigo-100">
+                        <div className="p-3 text-center">
+                          <p className="text-xs text-indigo-600 font-medium mb-1">
+                            Số dư trước
+                          </p>
+                          <p className="text-indigo-800 font-bold">
+                            {formatMoney(selectedTransaction.balance_before)}
+                          </p>
+                        </div>
+                        <div className="p-3 text-center">
+                          <p className="text-xs text-indigo-600 font-medium mb-1">
+                            Số dư sau
+                          </p>
+                          <p className="text-indigo-800 font-bold">
+                            {formatMoney(selectedTransaction.balance_after)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="p-3 text-center">
-                        <p className="text-xs text-indigo-600 font-medium mb-1">
-                          Số dư sau
-                        </p>
-                        <p className="text-indigo-800 font-bold">
-                          {formatMoney(balanceAfterTransaction)}
-                        </p>
+                      <div className="bg-indigo-100 px-3 py-2 flex justify-center items-center">
+                        <FaExchangeAlt className="text-indigo-500 mr-2" />
+                        <span className="text-xs text-indigo-700">
+                          {selectedTransaction.type === "nap_tien" ||
+                            selectedTransaction.type === "hoan_tien"
+                            ? `+${formatMoney(selectedTransaction.amount)}`
+                            : `-${formatMoney(selectedTransaction.amount)}`}
+                        </span>
                       </div>
                     </div>
-                    <div className="bg-indigo-100 px-3 py-2 flex justify-center items-center">
-                      <FaExchangeAlt className="text-indigo-500 mr-2" />
-                      <span className="text-xs text-indigo-700">
-                        {selectedTransaction.type === "nap_tien" ||
-                          selectedTransaction.type === "hoan_tien"
-                          ? `+${formatMoney(selectedTransaction.amount)}`
-                          : `-${formatMoney(selectedTransaction.amount)}`}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Thông tin chi tiết */}
                 <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">Mã giao dịch</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-800 font-medium">
-                        {selectedTransaction.id}
-                      </span>
-                      <button
-                        className="text-indigo-600 hover:text-indigo-800"
-                        onClick={() => copyToClipboard(selectedTransaction.id)}
-                        title="Sao chép"
-                      >
-                        <FaRegCopy />
-                      </button>
-                      {copySuccess && (
-                        <span className="text-green-500 text-xs">
-                          {copySuccess}
+                  {selectedTransaction.wallet_code ||
+                    (selectedTransaction.type === "thanh_toan_don_hang" &&
+                      selectedTransaction.order_code) ||
+                    (selectedTransaction.type === "hoan_tien" &&
+                      selectedTransaction.order_code) ? (
+                    <div className="flex justify-between py-2 border-b">
+                      <span className="text-gray-600">Mã giao dịch</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-800 font-medium">
+                          {selectedTransaction.wallet_code
+                            ? selectedTransaction.wallet_code
+                            : selectedTransaction.order_code}
                         </span>
-                      )}
+                        <button
+                          className="text-indigo-600 hover:text-indigo-800"
+                          onClick={() =>
+                            copyToClipboard(
+                              selectedTransaction.wallet_code
+                                ? selectedTransaction.wallet_code
+                                : selectedTransaction.order_code
+                            )
+                          }
+                          title="Sao chép"
+                        >
+                          <FaRegCopy />
+                        </button>
+                        {copySuccess && (
+                          <span className="text-green-500 text-xs">
+                            {copySuccess}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
 
                   <div className="flex justify-between py-2 border-b">
                     <span className="text-gray-600">Loại giao dịch</span>
@@ -693,35 +713,73 @@ const WalletPage = () => {
                   </div>
 
                   {/* Hiển thị thông tin tài khoản ngân hàng khi giao dịch là rút tiền */}
-                  {selectedTransaction.type === "rut_tien" && selectedTransaction.withdraw_request && (
-                    <>
-                      <div className="flex justify-between py-2 border-b">
-                        <span className="text-gray-600">Ngân hàng</span>
-                        <span className="text-gray-800 font-medium">
-                          {selectedTransaction.withdraw_request.bank_name}
-                        </span>
-                      </div>
+                  {selectedTransaction.type === "rut_tien" &&
+                    selectedTransaction.withdraw_request && (
+                      <>
+                        <div className="flex justify-between py-2 border-b">
+                          <span className="text-gray-600">Ngân hàng</span>
+                          <span className="text-gray-800 font-medium">
+                            {selectedTransaction.withdraw_request.bank_name}
+                          </span>
+                        </div>
 
-                      <div className="flex justify-between py-2 border-b">
-                        <span className="text-gray-600">Số tài khoản</span>
-                        <span className="text-gray-800 font-medium">
-                          {selectedTransaction.withdraw_request.bank_account_number}
-                        </span>
-                      </div>
+                        <div className="flex justify-between py-2 border-b">
+                          <span className="text-gray-600">Số tài khoản</span>
+                          <span className="text-gray-800 font-medium">
+                            {
+                              selectedTransaction.withdraw_request
+                                .bank_account_number
+                            }
+                          </span>
+                        </div>
 
-                      <div className="flex justify-between py-2 border-b">
-                        <span className="text-gray-600">Chủ tài khoản</span>
-                        <span className="text-gray-800 font-medium">
-                          {selectedTransaction.withdraw_request.account_holder_name}
-                        </span>
-                      </div>
-                    </>
-                  )}
+                        <div className="flex justify-between py-2 border-b">
+                          <span className="text-gray-600">Chủ tài khoản</span>
+                          <span className="text-gray-800 font-medium">
+                            {
+                              selectedTransaction.withdraw_request
+                                .account_holder_name
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b">
+                          <span className="text-gray-600">
+                            Trạng thái duyệt
+                          </span>
+                          <span
+                            className={`font-medium ${selectedTransaction.withdraw_request.status ===
+                              "da_duyet"
+                              ? "text-green-600"
+                              : selectedTransaction.withdraw_request
+                                .status === "tu_choi"
+                                ? "text-red-600"
+                                : selectedTransaction.withdraw_request
+                                  .status === "da_huy"
+                                  ? "text-gray-500"
+                                  : "text-orange-500"
+                              }`}
+                          >
+                            {selectedTransaction.withdraw_request.status ===
+                              "da_duyet"
+                              ? "Đã duyệt"
+                              : selectedTransaction.withdraw_request.status ===
+                                "tu_choi"
+                                ? "Từ chối"
+                                : selectedTransaction.withdraw_request.status ===
+                                  "da_huy"
+                                  ? "Đã hủy"
+                                  : "Đang xử lý"}
+                          </span>
+                        </div>
+                      </>
+                    )}
 
                   <div className="flex justify-between py-2 border-b">
                     <span className="text-gray-600">Thời gian</span>
                     <span className="text-gray-800 font-medium">
-                      {new Date(selectedTransaction.created_at).toLocaleString("vi-VN")}
+                      {new Date(selectedTransaction.created_at).toLocaleString(
+                        "vi-VN"
+                      )}
                     </span>
                   </div>
 
