@@ -1042,7 +1042,7 @@ const OrderDetail = () => {
       const deliveredTime = new Date(order.updated_at).getTime();
       const currentTime = new Date().getTime();
       const timeSinceDelivered = currentTime - deliveredTime;
-      const autoConfirmDelayMs = 30 * 60 * 60 * 24 * 1000; // 24 giờ
+      const autoConfirmDelayMs = 3 * 60 * 60 * 24 * 1000; // 3 ngày
 
       if (timeSinceDelivered >= autoConfirmDelayMs) {
         console.log(
@@ -2284,7 +2284,7 @@ const OrderDetail = () => {
             className="bg-white rounded-lg shadow-sm overflow-hidden h-fit"
           >
             <div className="border-b border-gray-100 px-6 py-4">
-              <h2 className="text-xl font-semibold text-gray-800">Tổng cộng</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Tổng tiền đơn hàng</h2>
             </div>
 
             <div className="p-6">
@@ -2297,9 +2297,9 @@ const OrderDetail = () => {
                   <span>Phí vận chuyển:</span>
                   <span>{formatCurrency(0)}</span>
                 </div>
-                {order.voucher && (
+                {(order.voucher || order.discount_amount > 0) && (
                   <div className="flex justify-between text-green-600">
-                    <span>Giảm giá (voucher):</span>
+                    <span>Giảm giá {order.voucher ? '(voucher)' : ''}:</span>
                     <span>-{formatCurrency(order.discount_amount || 0)}</span>
                   </div>
                 )}
@@ -2307,7 +2307,7 @@ const OrderDetail = () => {
 
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-medium">Tổng cộng:</span>
+                  <span className="text-lg font-medium">Thành tiền:</span>
                   <span className="text-xl font-bold text-amber-600">
                     {formatCurrency(
                       order.total_price - (order.discount_amount || 0)

@@ -1707,7 +1707,8 @@
                                     type: 'line',
                                     data: [],
                                     color: '#f34e4e',
-                                    dashArray: 4
+                                    dashArray: 4,
+                                    yAxisIndex: 2 // Sử dụng trục Y thứ 3 riêng biệt
                                 }
                             ]
                         };
@@ -1754,6 +1755,9 @@
                                 filteredData.noData = true; // Đánh dấu là không có dữ liệu
                             @endif
                         }
+                        
+                        // Thêm hàm cập nhật thống kê tổng hợp
+                        updateChartSummary(filteredData);
 
                         return filteredData;
                     }
@@ -1764,6 +1768,53 @@
                         months: chartData.months,
                         series: chartData.series
                     } : { months: [], series: [] };
+                }
+                
+                // Hàm cập nhật thống kê tổng hợp dựa trên dữ liệu đã lọc
+                function updateChartSummary(filteredData) {
+                    // Chỉ thực hiện nếu có dữ liệu đã lọc
+                    if (!filteredData || !filteredData.series || filteredData.series.length < 3) return;
+                    
+                    let totalOrders = 0;
+                    let totalRevenue = 0;
+                    let totalRefunds = 0;
+                    
+                    // Tính tổng đơn hàng từ series 0
+                    if (filteredData.series[0] && filteredData.series[0].data) {
+                        totalOrders = filteredData.series[0].data.reduce((sum, val) => sum + (val || 0), 0);
+                    }
+                    
+                    // Tính tổng doanh thu từ series 1
+                    if (filteredData.series[1] && filteredData.series[1].data) {
+                        totalRevenue = filteredData.series[1].data.reduce((sum, val) => sum + (val || 0), 0);
+                    }
+                    
+                    // Tính tổng hoàn tiền từ series 2
+                    if (filteredData.series[2] && filteredData.series[2].data) {
+                        totalRefunds = filteredData.series[2].data.reduce((sum, val) => sum + (val || 0), 0);
+                    }
+                    
+                    // Cập nhật giá trị hiển thị
+                    const orderCounter = document.getElementById('chart-orders-counter');
+                    if (orderCounter) {
+                        orderCounter.setAttribute('data-target', totalOrders);
+                        orderCounter.textContent = '0'; // Reset để animation chạy lại
+                    }
+                    
+                    const revenueCounter = document.getElementById('chart-revenue-counter');
+                    if (revenueCounter) {
+                        revenueCounter.setAttribute('data-target', totalRevenue);
+                        revenueCounter.textContent = '0'; // Reset để animation chạy lại
+                    }
+                    
+                    const refundCounter = document.getElementById('chart-refunds-counter');
+                    if (refundCounter) {
+                        refundCounter.setAttribute('data-target', totalRefunds);
+                        refundCounter.textContent = '0'; // Reset để animation chạy lại
+                    }
+                    
+                    // Khởi động lại animation đếm
+                    initCounters();
                 }
 
                 // Tạo biểu đồ với dữ liệu ban đầu
@@ -1958,6 +2009,9 @@
                             // Hoàn tiền
                             seriesName: 'Hoàn tiền',
                             opposite: true,
+                            min: 0,
+                            max: 12, // Đặt giá trị tối đa cho trục hoàn tiền
+                            tickAmount: 6,
                             axisTicks: {
                                 show: true
                             },
@@ -1968,6 +2022,9 @@
                             labels: {
                                 style: {
                                     colors: '#f34e4e'
+                                },
+                                formatter: function (value) {
+                                    return Math.round(value);
                                 }
                             },
                             title: {
@@ -1995,19 +2052,39 @@
                             fontSize: '12px',
                             fontFamily: 'Roboto, sans-serif'
                         },
-                        y: {
-                            formatter: function (value, { seriesIndex, dataPointIndex, w }) {
-                                const seriesName = w.config.series[seriesIndex].name;
-
-                                if (seriesName === 'Doanh thu') {
-                                    return formatCurrency(value);
-                                } else if (seriesName === 'Đơn hàng') {
-                                    return value + " đơn";
-                                } else if (seriesName === 'Hoàn tiền') {
-                                    return value + " đơn";
-                                }
-                                return value;
+                        custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                            const seriesName = w.config.series[seriesIndex].name;
+                            const colors = ["#4776E6", "#63ad6f", "#f34e4e"];
+                            
+                            // Lấy dữ liệu hiện tại
+                            const month = w.globals.labels[dataPointIndex];
+                            const orders = series[0][dataPointIndex];
+                            const revenue = series[1][dataPointIndex];
+                            const refunds = series[2][dataPointIndex];
+                            
+                            if (orders === 0 && revenue === 0 && refunds === 0) {
+                                return '<div class="apexcharts-tooltip-title" style="font-weight: bold; margin-bottom: 5px; text-align: center;">Tháng ' + month + '</div>' +
+                                       '<div style="padding: 10px; text-align: center;">Không có dữ liệu</div>';
                             }
+                            
+                            return '<div class="apexcharts-tooltip-title" style="font-weight: bold; margin-bottom: 5px; text-align: center;">Tháng ' + month + '</div>' +
+                                   '<div style="padding: 5px 10px;">' +
+                                   '<div style="display: flex; align-items: center; margin-bottom: 5px;">' +
+                                   '<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ' + colors[0] + '; margin-right: 5px;"></span>' +
+                                   '<span style="flex: 1;">Đơn hàng:</span>' +
+                                   '<span style="font-weight: bold;">' + orders + ' đơn</span>' +
+                                   '</div>' +
+                                   '<div style="display: flex; align-items: center; margin-bottom: 5px;"> ' +
+                                   '<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ' + colors[1] + '; margin-right: 5px;"></span>' +
+                                   '<span style="flex: 1;">Doanh thu: </span>' +
+                                   '<span style="font-weight: bold;"> ' + formatCurrency(revenue) + '</span>' +
+                                   '</div>' +
+                                   '<div style="display: flex; align-items: center;">' +
+                                   '<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ' + colors[2] + '; margin-right: 5px;"></span>' +
+                                   '<span style="flex: 1;">Hoàn tiền:</span>' +
+                                   '<span style="font-weight: bold;">' + refunds + ' đơn</span>' +
+                                   '</div>' +
+                                   '</div>';
                         }
                     },
                     states: {
@@ -2029,6 +2106,16 @@
                 // Khởi tạo biểu đồ
                 const chart = new ApexCharts(document.querySelector("#customer_impression_charts"), options);
                 chart.render();
+                
+                // Thêm phần xử lý để điều chỉnh hiển thị tooltip biểu đồ
+                document.querySelector("#customer_impression_charts").addEventListener('mouseover', function(e) {
+                    const tooltipEl = document.querySelector('.apexcharts-tooltip');
+                    if (tooltipEl) {
+                        tooltipEl.style.padding = '0';
+                        tooltipEl.style.boxShadow = '0 5px 15px rgba(0,0,0,0.15)';
+                        tooltipEl.style.borderRadius = '8px';
+                    }
+                });
 
                 // Hàm cập nhật thống kê tổng hợp khi lọc
                 function updateStatistics(period) {
@@ -2826,6 +2913,16 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('date_range')) {
                 updateStatistics();
+                
+                // Đảm bảo cập nhật thống kê tổng hợp biểu đồ sau khi trang đã tải
+                setTimeout(function() {
+                    // Lấy dữ liệu biểu đồ đã được lọc
+                    const filteredData = filterChartData();
+                    if (filteredData) {
+                        // Cập nhật thống kê tổng hợp
+                        updateChartSummary(filteredData);
+                    }
+                }, 500);
             }
 
             // Refresh AOS animations sau khi trang đã tải hoàn toàn
@@ -2858,6 +2955,9 @@
 
             // Cập nhật trạng thái overlay "Không có dữ liệu"
             updateNoDataOverlay(newData);
+            
+            // Cập nhật thống kê tổng hợp
+            updateChartSummary(newData);
         }
 
         console.log('Biểu đồ đã được khởi tạo');
