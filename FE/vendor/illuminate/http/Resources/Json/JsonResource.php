@@ -53,7 +53,6 @@ class JsonResource implements ArrayAccess, JsonSerializable, Responsable, UrlRou
      * Create a new resource instance.
      *
      * @param  mixed  $resource
-     * @return void
      */
     public function __construct($resource)
     {
@@ -106,7 +105,7 @@ class JsonResource implements ArrayAccess, JsonSerializable, Responsable, UrlRou
     public function resolve($request = null)
     {
         $data = $this->toArray(
-            $request = $request ?: Container::getInstance()->make('request')
+            $request ?: Container::getInstance()->make('request')
         );
 
         if ($data instanceof Arrayable) {
