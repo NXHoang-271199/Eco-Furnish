@@ -1016,7 +1016,11 @@ function formatDateTime($dateString) {
                                 <div class="align-items-center mt-4 pt-2 justify-content-between row text-center text-sm-start">
                                     <div class="col-sm">
                                         <div class="text-muted">
-                                            Hiển thị <span class="fw-semibold">{{ $bestSellingProducts->count() }}</span> trong số <span class="fw-semibold">{{ $bestSellingProducts->total() }}</span> kết quả
+                                            @if ($bestSellingProducts->total() > 0)
+                                                Hiển thị từ <span class="fw-semibold">{{ $bestSellingProducts->firstItem() }}</span> đến <span class="fw-semibold">{{ $bestSellingProducts->lastItem() }}</span>
+                                            @else
+                                                Không tìm thấy kết quả nào
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="col-sm-auto mt-3 mt-sm-0">
@@ -1028,21 +1032,21 @@ function formatDateTime($dateString) {
                                                 </li>
                                             @else
                                                 <li class="page-item">
-                                                    <a class="page-link" href="{{ $bestSellingProducts->previousPageUrl() }}" rel="prev">←</a>
+                                                    <a class="page-link" href="{{ $bestSellingProducts->appends(request()->except('product_page'))->previousPageUrl() }}&product_page={{ $bestSellingProducts->currentPage() - 1 }}" rel="prev">←</a>
                                                 </li>
                                             @endif
 
                                             {{-- Các nút số trang --}}
-                                            @foreach ($bestSellingProducts->getUrlRange(1, $bestSellingProducts->lastPage()) as $page => $url)
-                                                <li class="page-item {{ $page == $bestSellingProducts->currentPage() ? 'active' : '' }}">
-                                                    <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                                            @for($i = 1; $i <= $bestSellingProducts->lastPage(); $i++)
+                                                <li class="page-item {{ $i == $bestSellingProducts->currentPage() ? 'active' : '' }}">
+                                                    <a class="page-link" href="{{ $bestSellingProducts->appends(request()->except('product_page'))->url(1) }}&product_page={{ $i }}">{{ $i }}</a>
                                                 </li>
-                                            @endforeach
+                                            @endfor
 
                                             {{-- Nút trang sau --}}
                                             @if ($bestSellingProducts->hasMorePages())
                                                 <li class="page-item">
-                                                    <a class="page-link" href="{{ $bestSellingProducts->nextPageUrl() }}" rel="next">→</a>
+                                                    <a class="page-link" href="{{ $bestSellingProducts->appends(request()->except('product_page'))->nextPageUrl() }}&product_page={{ $bestSellingProducts->currentPage() + 1 }}" rel="next">→</a>
                                                 </li>
                                             @else
                                                 <li class="page-item disabled">
@@ -1137,7 +1141,11 @@ function formatDateTime($dateString) {
                                 <div class="align-items-center mt-4 pt-2 justify-content-between row text-center text-sm-start">
                                     <div class="col-sm">
                                         <div class="text-muted">
-                                            Hiển thị <span class="fw-semibold">{{ $topBuyers->count() }}</span> trong số <span class="fw-semibold">{{ $topBuyerStats->total }}</span> kết quả
+                                            @if ($topBuyers->total() > 0)
+                                                Hiển thị từ <span class="fw-semibold">{{ $topBuyers->firstItem() }}</span> đến <span class="fw-semibold">{{ $topBuyers->lastItem() }}</span>
+                                            @else
+                                                Không tìm thấy người mua nào
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="col-sm-auto">
@@ -1149,7 +1157,7 @@ function formatDateTime($dateString) {
                                                 </li>
                                             @else
                                                 <li class="page-item">
-                                                    <a class="page-link" href="{{ $topBuyers->previousPageUrl() }}" aria-label="Previous">
+                                                    <a class="page-link" href="{{ $topBuyers->appends(request()->except('buyer_page'))->previousPageUrl() }}&buyer_page={{ $topBuyers->currentPage() - 1 }}" aria-label="Previous">
                                                         ←
                                                     </a>
                                                 </li>
@@ -1158,14 +1166,14 @@ function formatDateTime($dateString) {
                                             {{-- Các nút số trang --}}
                                             @for($i = 1; $i <= $topBuyers->lastPage(); $i++)
                                                 <li class="page-item {{ $i == $topBuyers->currentPage() ? 'active' : '' }}">
-                                                    <a class="page-link" href="{{ $topBuyers->url($i) }}">{{ $i }}</a>
+                                                    <a class="page-link" href="{{ $topBuyers->appends(request()->except('buyer_page'))->url(1) }}&buyer_page={{ $i }}">{{ $i }}</a>
                                                 </li>
                                             @endfor
 
                                             {{-- Nút trang sau --}}
                                             @if($topBuyers->hasMorePages())
                                                 <li class="page-item">
-                                                    <a class="page-link" href="{{ $topBuyers->nextPageUrl() }}" aria-label="Next">
+                                                    <a class="page-link" href="{{ $topBuyers->appends(request()->except('buyer_page'))->nextPageUrl() }}&buyer_page={{ $topBuyers->currentPage() + 1 }}" aria-label="Next">
                                                         →
                                                     </a>
                                                 </li>
