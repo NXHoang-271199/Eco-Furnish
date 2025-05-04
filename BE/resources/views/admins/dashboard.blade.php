@@ -633,6 +633,25 @@
 
 {{-- @section: dùng để chị định phần nội dụng được hiển thị --}}
 @section('content')
+@php
+/**
+ * Hàm định dạng ngày tháng từ chuỗi datetime
+ * 
+ * @param string|null $dateString Chuỗi ngày tháng
+ * @return string Ngày tháng đã định dạng hoặc chuỗi rỗng
+ */
+function formatDateTime($dateString) {
+    if (empty($dateString)) return '';
+    
+    try {
+        $date = new \DateTime($dateString);
+        return $date->format('d/m/Y H:i:s');
+    } catch (\Exception $e) {
+        return $dateString;
+    }
+}
+@endphp
+
 <div class="container-fluid p-0 px-4 dashboard-container">
 
     <div class="row g-0">
@@ -702,7 +721,7 @@
                                         <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Tổng doanh thu</p>
                                     </div>
                                     <div class="flex-shrink-0">
-                                        <h5 class="{{ $earningsPercentage >= 0 ? 'text-success' : 'text-danger' }} fs-14 mb-0">
+                                        <h5 class="{{ $earningsPercentage >= 0 ? 'text-success' : 'text-danger' }} fs-14 mb-0 d-none">
                                             <i class="ri-arrow-{{ $earningsPercentage >= 0 ? 'right-up' : 'right-down' }}-line fs-13 align-middle"></i> {{ $earningsPercentage >= 0 ? '+' : '' }}{{ number_format($earningsPercentage, 2) }} %
                                         </h5>
                                     </div>
@@ -730,7 +749,7 @@
                                      <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Đơn hàng</p>
                                     </div>
                                     <div class="flex-shrink-0">
-                                        <h5 class="{{ $ordersPercentage >= 0 ? 'text-success' : 'text-danger' }} fs-14 mb-0">
+                                        <h5 class="{{ $ordersPercentage >= 0 ? 'text-success' : 'text-danger' }} fs-14 mb-0 d-none">
                                             <i class="ri-arrow-{{ $ordersPercentage >= 0 ? 'right-up' : 'right-down' }}-line fs-13 align-middle"></i> {{ $ordersPercentage >= 0 ? '+' : '' }}{{ number_format($ordersPercentage, 2) }} %
                                         </h5>
                                     </div>
@@ -758,7 +777,7 @@
                                         <p class="text-uppercase fw-medium text-muted text-truncate mb-0">Khách hàng</p>
                                     </div>
                                     <div class="flex-shrink-0">
-                                        <h5 class="{{ $customersPercentage >= 0 ? 'text-success' : 'text-danger' }} fs-14 mb-0">
+                                        <h5 class="{{ $customersPercentage >= 0 ? 'text-success' : 'text-danger' }} fs-14 mb-0 d-none">
                                             <i class="ri-arrow-{{ $customersPercentage >= 0 ? 'right-up' : 'right-down' }}-line fs-13 align-middle"></i> {{ $customersPercentage >= 0 ? '+' : '' }}{{ number_format($customersPercentage, 2) }} %
                                         </h5>
                                     </div>
@@ -919,7 +938,7 @@
                                                         </div>
                                                         <div>
                                                             <h5 class="fs-14 my-1"><a href="{{ route('products.show', $product->id) }}" class="text-reset">{{ $product->name }}</a></h5>
-                                                            <span class="text-muted">{{ $product->created_at ?? 'N/A' }}</span>
+                                                            <span class="text-muted">{{ $product->created_at ? formatDateTime($product->created_at) : 'N/A' }}</span>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -2287,7 +2306,7 @@
                         // Lấy dữ liệu từ các ô
                         const cells = row.querySelectorAll('td');
                         const productName = nameElement ? nameElement.textContent.trim() : '';
-                        const createdDate = dateElement ? dateElement.textContent.trim() : '';
+                        const createdDate = jsFormatDateTime(dateElement ? dateElement.textContent.trim() : '');
 
                         let price = '', orders = '', stock = '', totalAmount = '';
 
@@ -2530,7 +2549,7 @@
                         // Lấy dữ liệu từ các ô
                         const cells = row.querySelectorAll('td');
                         const productName = nameElement ? nameElement.textContent.trim() : '';
-                        const createdDate = dateElement ? dateElement.textContent.trim() : '';
+                        const createdDate = jsFormatDateTime(dateElement ? dateElement.textContent.trim() : '');
 
                         let price = '', orders = '', stock = '', totalAmount = '';
 
@@ -2569,56 +2588,305 @@
             let productData = [];
 
             if (reportType === 'revenue') {
-                // Tìm bảng sản phẩm bán chạy
-                const titles = document.querySelectorAll('.card-title');
-                let productTable = null;
+                // Kiểm tra xem có đang dùng bộ lọc ngày hay không
+                const dateRangeInput = document.getElementById('dateRangePicker');
+                const isUsingDateFilter = dateRangeInput && dateRangeInput.value.trim() !== '';
+                
+                if (isUsingDateFilter) {
+                    // Nếu có bộ lọc, lấy dữ liệu từ bảng trong trang
+                    const titles = document.querySelectorAll('.card-title');
+                    let productTable = null;
 
-                for (let i = 0; i < titles.length; i++) {
-                    if (titles[i].textContent.includes('Sản phẩm bán chạy nhất')) {
-                        const productCard = titles[i].closest('.card');
-                        if (productCard) {
-                            productTable = productCard.querySelector('table');
-                            break;
+                    for (let i = 0; i < titles.length; i++) {
+                        if (titles[i].textContent.includes('Sản phẩm bán chạy nhất')) {
+                            const productCard = titles[i].closest('.card');
+                            if (productCard) {
+                                productTable = productCard.querySelector('table');
+                                break;
+                            }
                         }
                     }
-                }
 
-                if (productTable) {
-                    const rows = productTable.querySelectorAll('tbody tr');
+                    if (productTable) {
+                        const rows = productTable.querySelectorAll('tbody tr');
 
-                    rows.forEach(row => {
-                        const nameElement = row.querySelector('.fs-14.my-1 a');
-                        const dateElement = row.querySelector('.text-muted');
+                        rows.forEach(row => {
+                            const nameElement = row.querySelector('.fs-14.my-1 a');
+                            const dateElement = row.querySelector('.text-muted');
 
-                        // Lấy dữ liệu từ các ô
-                        const cells = row.querySelectorAll('td');
-                        const productName = nameElement ? nameElement.textContent.trim() : '';
-                        const createdDate = dateElement ? dateElement.textContent.trim() : '';
+                            // Lấy dữ liệu từ các ô
+                            const cells = row.querySelectorAll('td');
+                            const productName = nameElement ? nameElement.textContent.trim() : '';
+                            
+                            // Xử lý đặc biệt cho ngày tạo khi có bộ lọc
+                            let createdDate = '';
+                            if (dateElement) {
+                                // Lấy text gốc từ DOM
+                                const dateText = dateElement.textContent.trim();
+                                // Nếu có thể, cố gắng chuyển đổi sang định dạng dd/mm/yyyy hh:mm:ss
+                                try {
+                                    // Kiểm tra nếu date đã đúng định dạng dd/mm/yyyy
+                                    if (/^\d{2}\/\d{2}\/\d{4}/.test(dateText)) {
+                                        createdDate = dateText;
+                                    } else {
+                                        // Nếu là định dạng YYYY-MM-DD
+                                        const date = new Date(dateText);
+                                        if (!isNaN(date.getTime())) {
+                                            const year = date.getFullYear();
+                                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                                            const day = String(date.getDate()).padStart(2, '0');
+                                            const hours = String(date.getHours()).padStart(2, '0');
+                                            const minutes = String(date.getMinutes()).padStart(2, '0');
+                                            const seconds = String(date.getSeconds()).padStart(2, '0');
+                                            
+                                            createdDate = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+                                        } else {
+                                            createdDate = dateText; // Giữ nguyên nếu không chuyển đổi được
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error('Lỗi khi định dạng ngày từ DOM:', e);
+                                    createdDate = dateText; // Giữ nguyên nếu có lỗi
+                                }
+                            }
 
-                        let price = '', orders = '', stock = '', totalAmount = '';
+                            let price = '', orders = '', stock = '', totalAmount = '';
 
-                        if (cells.length >= 2) {
-                            const priceElement = cells[1].querySelector('.fs-14.my-1.fw-normal');
-                            price = priceElement ? priceElement.textContent.trim() : '';
+                            if (cells.length >= 2) {
+                                const priceElement = cells[1].querySelector('.fs-14.my-1.fw-normal');
+                                price = priceElement ? priceElement.textContent.trim() : '';
+                            }
+
+                            if (cells.length >= 3) {
+                                const ordersElement = cells[2].querySelector('.fs-14.my-1.fw-normal');
+                                orders = ordersElement ? ordersElement.textContent.trim() : '';
+                            }
+
+                            if (cells.length >= 4) {
+                                const stockElement = cells[3].querySelector('.fs-14.my-1.fw-normal');
+                                stock = stockElement ? stockElement.textContent.trim() : '';
+                            }
+
+                            if (cells.length >= 5) {
+                                const amountElement = cells[4].querySelector('.fs-14.my-1.fw-normal');
+                                totalAmount = amountElement ? amountElement.textContent.trim() : '';
+                            }
+
+                            productData.push([productName, price, orders, stock, totalAmount, createdDate]);
+                        });
+                    }
+                } else {
+                    // Nếu không có bộ lọc, lấy dữ liệu từ tất cả các sản phẩm đã order (từ tất cả các tab thời gian)
+                    // Đầu tiên, lấy từ tab hiện tại
+                    let currentProductsData = [];
+                    
+                    // Tìm bảng sản phẩm bán chạy bằng phương pháp lặp qua các tiêu đề
+                    const allTitles = document.querySelectorAll('.card-title');
+                    let currentProductsTable = null;
+                    
+                    for (let i = 0; i < allTitles.length; i++) {
+                        if (allTitles[i].textContent.includes('Sản phẩm bán chạy nhất')) {
+                            const productCard = allTitles[i].closest('.card');
+                            if (productCard) {
+                                currentProductsTable = productCard.querySelector('table');
+                                break;
+                            }
                         }
-
-                        if (cells.length >= 3) {
-                            const ordersElement = cells[2].querySelector('.fs-14.my-1.fw-normal');
-                            orders = ordersElement ? ordersElement.textContent.trim() : '';
+                    }
+                    
+                    if (currentProductsTable) {
+                        const rows = currentProductsTable.querySelectorAll('tbody tr');
+                        rows.forEach(row => {
+                            const nameElement = row.querySelector('.fs-14.my-1 a');
+                            const dateElement = row.querySelector('.text-muted');
+                            
+                            const cells = row.querySelectorAll('td');
+                            const productName = nameElement ? nameElement.textContent.trim() : '';
+                            const createdDate = jsFormatDateTime(dateElement ? dateElement.textContent.trim() : '');
+                            
+                            let price = '', orders = '', stock = '', totalAmount = '';
+                            
+                            if (cells.length >= 2) {
+                                const priceElement = cells[1].querySelector('.fs-14.my-1.fw-normal');
+                                price = priceElement ? priceElement.textContent.trim() : '';
+                            }
+                            
+                            if (cells.length >= 3) {
+                                const ordersElement = cells[2].querySelector('.fs-14.my-1.fw-normal');
+                                orders = ordersElement ? ordersElement.textContent.trim() : '';
+                            }
+                            
+                            if (cells.length >= 4) {
+                                const stockElement = cells[3].querySelector('.fs-14.my-1.fw-normal');
+                                stock = stockElement ? stockElement.textContent.trim() : '';
+                            }
+                            
+                            if (cells.length >= 5) {
+                                const amountElement = cells[4].querySelector('.fs-14.my-1.fw-normal');
+                                totalAmount = amountElement ? amountElement.textContent.trim() : '';
+                            }
+                            
+                            currentProductsData.push({
+                                name: productName,
+                                price: price,
+                                orders: orders,
+                                stock: stock,
+                                totalAmount: totalAmount,
+                                createdDate: createdDate
+                            });
+                        });
+                    }
+                    
+                    // Lấy dữ liệu từ server cho tất cả sản phẩm đã order
+                    @php
+                        // Lấy danh sách tất cả sản phẩm đã từng được order với tổng số lượng, tổng tiền và tồn kho
+                        $allOrderedProducts = App\Models\Product::withTrashed()
+                            ->select(
+                                'products.id', 
+                                'products.name', 
+                                'products.price', 
+                                'products.image_thumnail',
+                                DB::raw('COUNT(DISTINCT order_items.order_id) as total_sold'), 
+                                DB::raw('SUM(order_items.quantity * order_items.price) as total_amount'),
+                                DB::raw('MIN(order_items.created_at) as first_order_date'), // Lấy ngày đặt hàng đầu tiên
+                                DB::raw('CASE 
+                                    WHEN COUNT(DISTINCT product_variants.id) > 0 THEN SUM(DISTINCT product_variants.quantity) 
+                                    ELSE products.quantity 
+                                END as total_stock')
+                            )
+                            ->leftJoin('product_variants', 'products.id', '=', 'product_variants.product_id')
+                            ->leftJoin('order_items', function($join) {
+                                $join->on('products.id', '=', 'order_items.product_id')
+                                    ->orOn('product_variants.id', '=', 'order_items.product_variant_id');
+                            })
+                            ->leftJoin('orders', 'order_items.order_id', '=', 'orders.id')
+                            ->whereNotNull('order_items.id')
+                            ->where(function($query) {
+                                $query->where('orders.payment_status', 'paid')
+                                     ->orWhere('orders.payment_status', 1);
+                            })
+                            ->groupBy('products.id', 'products.name', 'products.price', 'products.image_thumnail', 'products.quantity')
+                            ->orderByDesc('total_sold')
+                            ->get();
+                            
+                        // Thêm thông tin giá và ngày tạo chính xác cho mỗi sản phẩm
+                        foreach ($allOrderedProducts as $product) {
+                            // Tìm order_item đầu tiên của sản phẩm này để lấy giá biến thể nếu có
+                            $firstOrderItem = App\Models\OrderItem::where(function($query) use ($product) {
+                                    $query->where('product_id', $product->id)
+                                          ->orWhereHas('productVariant', function($q) use ($product) {
+                                              $q->where('product_id', $product->id);
+                                          });
+                                })
+                                ->whereHas('order', function($query) {
+                                    $query->where(function($q) {
+                                        $q->where('payment_status', 'paid')
+                                          ->orWhere('payment_status', 1);
+                                    });
+                                })
+                                ->orderBy('created_at', 'asc')
+                                ->first();
+                            
+                            if ($firstOrderItem) {
+                                // Nếu sản phẩm có biến thể, lấy giá từ biến thể đó
+                                if ($firstOrderItem->product_variant_id) {
+                                    $product->variant_price = $firstOrderItem->price;
+                                }
+                            }
+                            
+                            // Sử dụng ngày đặt hàng đầu tiên từ truy vấn tổng hợp
+                            $product->created_at = $product->first_order_date;
+                            
+                            // Lấy lại thông tin tồn kho chính xác
+                            $actualProduct = App\Models\Product::find($product->id);
+                            if ($actualProduct) {
+                                $product->total_stock = $actualProduct->total_quantity;
+                            }
                         }
+                    @endphp
 
-                        if (cells.length >= 4) {
-                            const stockElement = cells[3].querySelector('.fs-14.my-1.fw-normal');
-                            stock = stockElement ? stockElement.textContent.trim() : '';
-                        }
+                    // Chuyển đổi dữ liệu từ server thành mảng JavaScript để sử dụng trong báo cáo
+                    const allOrderedProductsData = @json($allOrderedProducts ?? []);
+                    
+                    // Kết hợp dữ liệu từ tất cả các nguồn
+                    if (allOrderedProductsData && allOrderedProductsData.length > 0) {
+                        // Tạo một Map để theo dõi các sản phẩm đã được thêm vào
+                        const processedProducts = new Map();
+                        
+                        allOrderedProductsData.forEach(product => {
+                            // Kiểm tra xem sản phẩm đã có trong dữ liệu hiện tại chưa
+                            const existingProduct = currentProductsData.find(p => p.name === product.name);
+                            
+                            // Nếu sản phẩm đã được xử lý, bỏ qua
+                            if (processedProducts.has(product.id)) {
+                                return;
+                            }
+                            
+                            processedProducts.set(product.id, true);
+                            
+                            if (!existingProduct) {
+                                // Nếu chưa có, chuyển đổi dữ liệu từ server sang định dạng mảng cho báo cáo Excel
+                                // Lấy biến thể giá (nếu có)
+                                let priceDisplay = '';
+                                try {
+                                    // Sử dụng giá biến thể nếu có, nếu không thì sử dụng giá sản phẩm
+                                    const priceValue = product.variant_price 
+                                        ? parseFloat(product.variant_price) 
+                                        : parseFloat(product.price);
+                                        
+                                    if (!isNaN(priceValue)) {
+                                        priceDisplay = priceValue.toLocaleString('vi-VN') + ' ₫';
+                                    } else {
+                                        priceDisplay = '0 ₫';
+                                    }
+                                } catch (e) {
+                                    priceDisplay = '0 ₫';
+                                }
 
-                        if (cells.length >= 5) {
-                            const amountElement = cells[4].querySelector('.fs-14.my-1.fw-normal');
-                            totalAmount = amountElement ? amountElement.textContent.trim() : '';
-                        }
+                                // Format ngày tạo
+                                let createdDate = '';
+                                try {
+                                    // Sử dụng ngày đặt hàng đầu tiên
+                                    if (product.created_at) {
+                                        createdDate = jsFormatDateTime(product.created_at);
+                                    }
+                                } catch (e) {
+                                    console.error('Lỗi khi định dạng ngày:', e);
+                                    createdDate = '';
+                                }
 
-                        productData.push([productName, price, orders, stock, totalAmount, createdDate]);
-                    });
+                                // Lấy tồn kho chính xác từ dữ liệu PHP
+                                let stockDisplay = product.total_stock !== undefined ? product.total_stock.toString() : '0';
+                                
+                                // Thêm sản phẩm vào danh sách
+                                productData.push([
+                                    product.name,
+                                    priceDisplay,
+                                    product.total_sold.toString(),
+                                    stockDisplay,
+                                    product.total_amount.toLocaleString('vi-VN') + ' ₫',
+                                    createdDate
+                                ]);
+                            } else {
+                                // Nếu sản phẩm đã có trong dữ liệu hiện tại (khi có bộ lọc)
+                                productData.push([
+                                    existingProduct.name,
+                                    existingProduct.price,
+                                    existingProduct.orders,
+                                    product.total_stock !== undefined ? product.total_stock.toString() : existingProduct.stock,
+                                    existingProduct.totalAmount,
+                                    existingProduct.createdDate // Sử dụng thời gian từ DOM khi có bộ lọc
+                                ]);
+                            }
+                        });
+
+                        // Sắp xếp theo số lượng đơn hàng giảm dần
+                        productData.sort((a, b) => {
+                            const ordersA = parseInt(a[2].replace(/[^0-9]/g, '')) || 0;
+                            const ordersB = parseInt(b[2].replace(/[^0-9]/g, '')) || 0;
+                            return ordersB - ordersA;
+                        });
+                    }
                 }
             }
 
@@ -2962,5 +3230,55 @@
 
         console.log('Biểu đồ đã được khởi tạo');
     });
+
+    // Hàm tiện ích để định dạng ngày tháng trong JavaScript
+    function jsFormatDateTime(dateStr) {
+        // Nếu không có giá trị ngày tháng hoặc là null/undefined, trả về 'N/A'
+        if (!dateStr) return '';
+        
+        try {
+            // Xử lý trường hợp đầu vào đã được định dạng dd/mm/yyyy
+            if (/^\d{2}\/\d{2}\/\d{4}/.test(dateStr)) {
+                return dateStr; // Giữ nguyên định dạng đã có
+            }
+            
+            // Nếu là chuỗi ngày tháng định dạng ISO (YYYY-MM-DD HH:MM:SS)
+            if (/^\d{4}-\d{2}-\d{2}T|\d{4}-\d{2}-\d{2} /.test(dateStr)) {
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime())) {
+                    // Định dạng dd/mm/yyyy hh:mm:ss
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    const seconds = String(date.getSeconds()).padStart(2, '0');
+                    
+                    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+                }
+            }
+            
+            // Cố gắng chuyển đổi các định dạng khác
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                // Định dạng dd/mm/yyyy hh:mm:ss
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                
+                return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+            }
+            
+            // Nếu không phải định dạng ngày tháng hợp lệ, trả về chuỗi ban đầu
+            return dateStr;
+        } catch (e) {
+            console.error('Lỗi khi định dạng ngày tháng:', e, 'cho giá trị:', dateStr);
+            // Nếu có lỗi, trả về chuỗi ban đầu
+            return dateStr;
+        }
+    }
 </script>
 @endsection
