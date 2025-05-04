@@ -968,29 +968,51 @@ class ChatController extends Controller
 
                 // Xây dựng điều kiện WHERE phức tạp
                 $query->where(function($mainQuery) use ($specificCategories, $productCategories, $keywordParts, $keywords) {
-                    // 1. Lọc theo danh mục cụ thể nếu có
+                    $searchableParts = array_filter($keywordParts, function($part) {
+                        return mb_strlen(trim($part)) >= 2; // Chỉ tìm từ >= 2 ký tự
+                    });
+
+                    // Ưu tiên lọc theo danh mục cụ thể NẾU có
                     if (!empty($specificCategories)) {
-                        Log::info('Lọc theo danh mục cụ thể: ' . implode(', ', $specificCategories));
+                        Log::info('Lọc CHỈ theo danh mục cụ thể: ' . implode(', ', $specificCategories));
                         $mainQuery->whereHas('category', function($q) use ($specificCategories, $productCategories) {
                             $q->where(function($subQ) use ($specificCategories, $productCategories) {
                                 foreach ($specificCategories as $category) {
                                     $categoryTerms = $productCategories[$category] ?? [$category];
                                     foreach ($categoryTerms as $term) {
+                                        // Tìm trong tên danh mục
                                         $subQ->orWhere('name', 'like', '%' . $term . '%');
                                     }
                                 }
                             });
                         });
-                    }
 
-                    // 2. Tìm kiếm theo các từ khóa còn lại
-                    $searchableParts = array_filter($keywordParts, function($part) {
-                         return mb_strlen(trim($part)) >= 2; // Chỉ tìm từ >= 2 ký tự
-                    });
+                        // Sau khi lọc theo danh mục, tìm thêm theo các từ khóa còn lại trong tên/mô tả CỦA các sản phẩm thuộc danh mục đó
+                        if (!empty($searchableParts)) {
+                             Log::info('Tìm kiếm thêm theo các từ khóa: ' . implode(', ', $searchableParts) . ' trong các danh mục đã lọc.');
+                             $mainQuery->where(function ($q) use ($searchableParts) {
+                                 foreach ($searchableParts as $part) {
+                                     // Chỉ tìm trong tên và mô tả sản phẩm, không cần tìm lại trong category name
+                                     $q->orWhere('name', 'like', '%' . $part . '%')
+                                       ->orWhere('description', 'like', '%' . $part . '%');
+                                 }
+                             });
+                         } else if (mb_strlen(trim($keywords)) >= 2 && count($specificCategories) === 1 && empty($searchableParts)) {
+                             // Trường hợp chỉ có 1 danh mục và từ khóa gốc đủ dài (vd: "bàn gỗ"), nhưng $searchableParts rỗng
+                             // -> Tìm kiếm từ khóa gốc trong tên/mô tả của danh mục đó
+                             Log::info('Tìm kiếm thêm từ khóa gốc "' . $keywords . '" trong tên/mô tả cho danh mục đã lọc.');
+                             $mainQuery->where(function ($q) use ($keywords) {
+                                $q->where('name', 'like', '%' . $keywords . '%')
+                                  ->orWhere('description', 'like', '%' . $keywords . '%');
+                            });
+                         }
 
-                    if (empty($specificCategories) || !empty($searchableParts)) {
-                        Log::info('Tìm kiếm theo các từ khóa: ' . implode(', ', $searchableParts));
-                         $mainQuery->orWhere(function ($q) use ($searchableParts) {
+                    } else {
+                        // Nếu KHÔNG có danh mục cụ thể, tìm kiếm rộng hơn theo các từ khóa
+                         Log::info('Không có danh mục cụ thể, tìm kiếm rộng theo các từ khóa: ' . implode(', ', $searchableParts));
+                         $mainQuery->where(function ($q) use ($searchableParts) {
+                             if (empty($searchableParts)) return; // Tránh lỗi nếu không có từ khóa hợp lệ
+
                              foreach ($searchableParts as $part) {
                                  $q->orWhere('name', 'like', '%' . $part . '%')
                                    ->orWhere('description', 'like', '%' . $part . '%')
@@ -999,13 +1021,6 @@ class ChatController extends Controller
                                    });
                              }
                          });
-                    } elseif (!empty($specificCategories) && empty($searchableParts) && mb_strlen(trim($keywords)) >= 2) {
-                        // Trường hợp chỉ có danh mục và từ khóa gốc đủ dài (nhưng keywordParts đã bị lọc hết)
-                         Log::info('Tìm kiếm thêm từ khóa gốc "' . $keywords . '" trong tên/mô tả cho danh mục đã lọc.');
-                         $mainQuery->orWhere(function ($q) use ($keywords) {
-                            $q->where('name', 'like', '%' . $keywords . '%')
-                              ->orWhere('description', 'like', '%' . $keywords . '%');
-                        });
                     }
                 });
             } // Kết thúc else của isProductNameSearch
