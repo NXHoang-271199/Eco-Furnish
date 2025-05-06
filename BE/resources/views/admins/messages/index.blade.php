@@ -572,10 +572,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Xử lý khi client gửi nhiều ảnh (Đổi tên sự kiện thành clientMultipleImagesUpload)
             socket.on("clientMultipleImagesUpload", (data) => {
                 console.log("🖼️ Nhận nhiều ảnh từ client (sự kiện clientMultipleImagesUpload):", data);
-                // addDebugInfo(`Nhận ${data.images?.length || 0} ảnh từ client ${data.sender_id} qua sự kiện nhóm.`);
-
-                // Không cần phát âm thanh thông báo và hiển thị toast ở đây nữa
-                // vì đã được xử lý bởi order-notifications.js khi ở bất kỳ trang nào
 
                 // Xử lý buffer cũ trước khi hiển thị nhóm mới (tránh trùng lặp)
                 console.log("🖼️ [Admin Buffer] Xử lý buffer trước khi hiển thị nhóm ảnh mới.");
@@ -755,15 +751,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (!response.ok) {
-                    // addDebugInfo(`❌ Lỗi HTTP: ${response.status}`, "error");
-                    // addDebugInfo(`❌ Phản hồi: ${responseText}`, "error");
-
                     if (response.status === 401) {
-                        // addDebugInfo("❌ Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.", "error");
                         chatBox.innerHTML = '<div class="alert alert-danger">Token hết hạn hoặc không hợp lệ. Vui lòng tải lại trang.</div>';
                         return;
                     } else if (response.status === 403) {
-                        // addDebugInfo("❌ Không có quyền xem tin nhắn của người dùng này. Mã lỗi: 403", "error");
                         chatBox.innerHTML = '<div class="alert alert-danger">Không có quyền xem tin nhắn của người dùng này.</div>';
                         return;
                     }
@@ -775,14 +766,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     messages = await response.json();
                 } catch (parseError) {
-                    // addDebugInfo(`❌ Lỗi parse JSON: ${parseError.message}`, "error");
-                    // addDebugInfo(`❌ Dữ liệu: ${responseText.substring(0, 100)}...`, "error");
                     throw new Error(`Lỗi parse JSON: ${parseError.message}`);
                 }
 
                 if (!Array.isArray(messages)) {
                     console.error('Dữ liệu không đúng định dạng:', messages);
-                    // addDebugInfo(`Lỗi: Dữ liệu không đúng định dạng`, "error");
                     chatBox.innerHTML = '<div class="alert alert-danger">Lỗi: Dữ liệu không đúng định dạng</div>';
                     return;
                 }
@@ -873,12 +861,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } catch (error) {
                 console.error('Lỗi khi tải tin nhắn:', error);
-                // addDebugInfo(`Lỗi khi tải tin nhắn: ${error.message}`, "error");
 
                 if (retryCount < maxRetries) {
                     retryCount++;
                     const delay = retryCount * 2000;
-                    // addDebugInfo(`Đang thử tải lại tin nhắn sau ${delay/1000}s (lần ${retryCount})...`);
                     setTimeout(tryLoadMessages, delay);
                 } else {
                     if (error.name === 'TypeError') {

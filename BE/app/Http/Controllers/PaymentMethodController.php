@@ -42,7 +42,7 @@ class PaymentMethodController extends Controller
                 'image' => $filePath,
                 'name' => $request->input('name'),
                 'config' => $request->input('config'),
-                'is_connected' => $request->input('name') === 'Tiền mặt' ? true : false,
+                'is_connected' => ($request->input('name') === 'Tiền mặt' || $request->input('name') === 'Ví') ? true : false,
                 'created_at' => now()
             ];
             DB::table('payment_methods')->insert($dataPaymentMethod);
