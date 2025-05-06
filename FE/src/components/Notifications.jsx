@@ -14,6 +14,71 @@ import { useNavigate } from 'react-router-dom';
 import { subscribeToNotifications } from '../utils/socketConfig';
 import { showOrderStatusToast } from './ui/toast';
 
+// Hàm xóa sessionStorage khi cần thiết
+const clearNotificationStorage = () => {
+    try {
+        sessionStorage.removeItem('processedNotificationIds');
+        sessionStorage.removeItem('processedOrderStatuses');
+        console.log('Đã xóa dữ liệu thông báo trong sessionStorage');
+    } catch (error) {
+        console.error('Lỗi khi xóa dữ liệu thông báo:', error);
+    }
+};
+
+// Helper functions để quản lý processedNotificationIds trong sessionStorage
+const getProcessedNotificationIds = () => {
+    try {
+        return new Set(JSON.parse(sessionStorage.getItem('processedNotificationIds') || '[]'));
+    } catch (error) {
+        console.error('Lỗi khi đọc processedNotificationIds từ sessionStorage:', error);
+        return new Set();
+    }
+};
+
+const addProcessedNotificationId = (id) => {
+    try {
+        // Đọc giá trị hiện tại từ sessionStorage để đảm bảo có dữ liệu mới nhất
+        const ids = getProcessedNotificationIds();
+        ids.add(id);
+        sessionStorage.setItem('processedNotificationIds', JSON.stringify([...ids]));
+    } catch (error) {
+        console.error('Lỗi khi thêm ID vào processedNotificationIds:', error);
+    }
+};
+
+const isProcessedNotification = (id) => {
+    // Luôn đọc trực tiếp từ sessionStorage để đảm bảo dữ liệu mới nhất
+    return getProcessedNotificationIds().has(id);
+};
+
+// Hàm helper mới để lưu trữ cặp order_id và order_status đã xử lý
+const getProcessedOrderStatuses = () => {
+    try {
+        return new Map(JSON.parse(sessionStorage.getItem('processedOrderStatuses') || '[]'));
+    } catch (error) {
+        console.error('Lỗi khi đọc processedOrderStatuses từ sessionStorage:', error);
+        return new Map();
+    }
+};
+
+const addProcessedOrderStatus = (orderId, status) => {
+    try {
+        if (!orderId || !status) return;
+        // Đọc giá trị hiện tại từ sessionStorage
+        const statusMap = getProcessedOrderStatuses();
+        statusMap.set(orderId.toString(), status);
+        sessionStorage.setItem('processedOrderStatuses', JSON.stringify([...statusMap.entries()]));
+    } catch (error) {
+        console.error('Lỗi khi thêm cặp order_id/status vào processedOrderStatuses:', error);
+    }
+};
+
+const isProcessedOrderStatus = (orderId, status) => {
+    if (!orderId || !status) return false;
+    const statusMap = getProcessedOrderStatuses();
+    return statusMap.get(orderId.toString()) === status;
+};
+
 const Notifications = () => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -25,8 +90,23 @@ const Notifications = () => {
     const recentNotificationIds = useRef(new Set());
     const toastShownIds = useRef(new Set());
     const notificationContainerRef = useRef(null);
+    const reloadCountRef = useRef(0);
 
+    // Load khi component được tạo
     useEffect(() => {
+        // Reset thông báo đã xử lý khi tải lại trang
+        const currentReloadCount = parseInt(localStorage.getItem('notificationReloadCount') || '0');
+        if (currentReloadCount !== reloadCountRef.current) {
+            // Cập nhật giá trị mới
+            reloadCountRef.current = currentReloadCount;
+            // Xóa dữ liệu thông báo cũ khi tải lại trang
+            clearNotificationStorage();
+        }
+        // Tăng counter và lưu lại
+        const newReloadCount = currentReloadCount + 1;
+        localStorage.setItem('notificationReloadCount', newReloadCount.toString());
+        reloadCountRef.current = newReloadCount;
+
         // Đăng ký nhận thông báo từ socket
         const unsubscribe = subscribeToNotifications(handleNewNotification);
 
@@ -89,8 +169,30 @@ const Notifications = () => {
                     };
                 });
 
-                setNotifications(processedNotifications);
+                // Chỉ lọc bỏ các thông báo hoàn toàn trùng lặp (trùng ID)
+                const uniqueNotifications = filterDuplicateNotifications(processedNotifications);
+
+                // Đánh dấu tất cả thông báo là đã xử lý để tránh trùng lặp trong tương lai
+                uniqueNotifications.forEach(notification => {
+                    if (notification && notification.id) {
+                        addProcessedNotificationId(notification.id);
+                    }
+                    if (notification.order_id && notification.order_status) {
+                        addProcessedOrderStatus(notification.order_id, notification.order_status);
+                    }
+                });
+
+                // Sắp xếp thông báo theo thời gian tạo giảm dần
+                const sortedNotifications = uniqueNotifications.sort((a, b) =>
+                    new Date(b.created_at) - new Date(a.created_at)
+                );
+
+                setNotifications(sortedNotifications);
                 setUnreadCount(response.data.unreadCount || 0);
+
+                // Debug
+                console.log(`Hiển thị ${sortedNotifications.length} thông báo từ tổng số ${processedNotifications.length} thông báo`);
+                console.log(`Số lượng thông báo chưa đọc: ${response.data.unreadCount || 0}`);
             }
         } catch (error) {
             console.error('Lỗi khi lấy thông báo:', error);
@@ -99,25 +201,102 @@ const Notifications = () => {
         }
     };
 
+    // Hàm mới chỉ lọc bỏ thông báo trùng ID
+    const filterDuplicateNotifications = (notifications) => {
+        const uniqueNotifications = [];
+        const processedIds = new Set();
+        const processedOrderStatusPairs = new Map();
+
+        console.log(`Bắt đầu lọc ${notifications.length} thông báo...`);
+
+        // Chỉ lọc bỏ thông báo có ID trùng lặp hoặc trùng cặp order_id + order_status gần nhau
+        notifications.forEach(notification => {
+            // Bỏ qua thông báo đã có ID trùng lặp
+            if (notification.id && processedIds.has(notification.id)) {
+                console.log(`→ Bỏ qua thông báo trùng ID: ${notification.id}`);
+                return;
+            }
+
+            // Đánh dấu ID là đã xử lý
+            if (notification.id) {
+                processedIds.add(notification.id);
+            }
+
+            // Tạo khóa duy nhất cho thông báo dựa trên order_id và order_status (nếu có)
+            if (notification.order_id && notification.order_status) {
+                const key = `${notification.order_id}_${notification.order_status}`;
+
+                // Nếu đã có thông báo với cùng order_id và order_status, kiểm tra thời gian
+                if (processedOrderStatusPairs.has(key)) {
+                    const existingIndex = processedOrderStatusPairs.get(key);
+                    const existingNotification = uniqueNotifications[existingIndex];
+
+                    // Nếu thông báo hiện tại mới hơn thông báo đã có, thay thế thông báo cũ
+                    if (new Date(notification.created_at) > new Date(existingNotification.created_at)) {
+                        console.log(`→ Thay thế thông báo cũ với key ${key}: ID cũ ${existingNotification.id} -> ID mới ${notification.id}`);
+                        uniqueNotifications[existingIndex] = notification;
+                    } else {
+                        console.log(`→ Giữ lại thông báo cũ với key ${key}: ID ${existingNotification.id} (mới hơn ID ${notification.id})`);
+                    }
+                    return;
+                }
+
+                // Lưu vị trí của thông báo trong mảng kết quả
+                processedOrderStatusPairs.set(key, uniqueNotifications.length);
+            }
+
+            // Thêm thông báo vào danh sách kết quả
+            uniqueNotifications.push(notification);
+        });
+
+        console.log(`Kết quả lọc: Từ ${notifications.length} thông báo -> ${uniqueNotifications.length} thông báo duy nhất`);
+        if (uniqueNotifications.length < notifications.length) {
+            console.log(`Đã loại bỏ ${notifications.length - uniqueNotifications.length} thông báo trùng lặp`);
+        }
+
+        return uniqueNotifications;
+    };
+
     const handleNewNotification = (notification) => {
         console.log("Nhận thông báo mới:", notification);
 
         // Đảm bảo dữ liệu thông báo hợp lệ
         if (!notification || !notification.id) return;
 
-        // Kiểm tra nếu thông báo đã được xử lý gần đây
+        // Kiểm tra trực tiếp từ sessionStorage nếu thông báo đã được xử lý
+        if (isProcessedNotification(notification.id)) {
+            console.log("⚠️ Thông báo này đã được xử lý trước đó, bỏ qua:", notification.id);
+            return;
+        }
+
+        // Kiểm tra nếu thông báo đã được xử lý gần đây (để đề phòng nhận trùng lặp ngay lập tức)
         if (recentNotificationIds.current.has(notification.id)) {
             console.log("⚠️ Đã nhận thông báo này gần đây, bỏ qua:", notification.id);
             return;
         }
 
-        // Thêm vào danh sách đã xử lý
+        // Kiểm tra cặp order_id và order_status
+        if (notification.order_id && notification.order_status &&
+            isProcessedOrderStatus(notification.order_id, notification.order_status)) {
+            console.log(`⚠️ Cặp order_id (${notification.order_id}) và order_status (${notification.order_status}) đã được xử lý trước đó, bỏ qua`);
+            return;
+        }
+
+        // Đánh dấu thông báo đã được xử lý
+        addProcessedNotificationId(notification.id);
+
+        // Nếu là thông báo đơn hàng, đánh dấu cặp order_id và order_status
+        if (notification.order_id && notification.order_status) {
+            addProcessedOrderStatus(notification.order_id, notification.order_status);
+        }
+
+        // Thêm vào danh sách đã xử lý gần đây
         recentNotificationIds.current.add(notification.id);
 
-        // Sau 5 giây, xóa khỏi danh sách đã xử lý (để tránh danh sách quá lớn)
+        // Tăng thời gian để xóa ID khỏi danh sách, từ 30 giây lên 60 giây
         setTimeout(() => {
             recentNotificationIds.current.delete(notification.id);
-        }, 5000);
+        }, 60000);
 
         // Thêm thông báo mới vào danh sách
         setNotifications(prevNotifications => {
@@ -150,10 +329,10 @@ const Notifications = () => {
         if (!toastShownIds.current.has(notification.id)) {
             toastShownIds.current.add(notification.id);
 
-            // Sau 10 giây, cho phép hiển thị lại toast này (nếu cần)
+            // Tăng thời gian, từ 10 giây lên 60 giây
             setTimeout(() => {
                 toastShownIds.current.delete(notification.id);
-            }, 10000);
+            }, 60000);
 
             // Kiểm tra loại thông báo và hiển thị toast tương ứng
             if (notification.transaction_type === 'nap_tien') {

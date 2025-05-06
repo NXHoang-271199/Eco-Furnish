@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from "react";
 import { FaUserAstronaut, FaShippingFast, FaFilter } from "react-icons/fa";
 import { AiOutlineSearch } from "react-icons/ai";
 import { LiaTrophySolid } from "react-icons/lia";
@@ -12,6 +12,321 @@ import LoadingScreen from "../../../components/LoadingScreen";
 import VariantSelectionModal from "../../../components/VariantSelectionModal";
 import { toast } from "react-toastify";
 import axiosInstance from "../../../utils/axiosConfig";
+
+// Thêm các hàm utils cho sessionStorage cache
+const setSessionCache = (key, data, expirationMinutes = 1) => {
+  try {
+    const now = new Date();
+    const item = {
+      value: data,
+      expiry: now.getTime() + expirationMinutes * 60 * 1000
+    };
+    sessionStorage.setItem(key, JSON.stringify(item));
+  } catch (error) {
+    console.warn('Error saving to sessionStorage:', error);
+  }
+};
+
+const getSessionCache = (key) => {
+  try {
+    const itemStr = sessionStorage.getItem(key);
+    if (!itemStr) return null;
+
+    const item = JSON.parse(itemStr);
+    const now = new Date();
+
+    // Kiểm tra xem cache có hết hạn chưa
+    if (now.getTime() > item.expiry) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+
+    return item.value;
+  } catch (error) {
+    console.warn('Error getting from sessionStorage:', error);
+    return null;
+  }
+};
+
+// Thêm một hàm mới để xóa cache liên quan đến sản phẩm, danh mục và biến thể
+const clearProductRelatedCache = () => {
+  // Lấy tất cả keys của sessionStorage
+  const keys = Object.keys(sessionStorage);
+
+  // Duyệt qua các keys và xóa những cache liên quan đến sản phẩm, danh mục và biến thể
+  keys.forEach(key => {
+    if (key.includes('products_') || key.includes('categories_') ||
+      key.includes('variants') || key.includes('all_products_')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+};
+
+// Di chuyển các animation variants ra ngoài component để tất cả components đều có thể sử dụng
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+    },
+  },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+// Tạo Component đã được tách thành các thành phần nhỏ hơn để tránh re-render
+const ProductCard = memo(({ product, productRatings, handleAddToCart, handleImageLoad, imageLoadError, setImageLoadError, checkProductInStock }) => {
+  return (
+    <motion.div
+      key={product.id}
+      className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 group flex flex-col"
+      variants={fadeIn}
+      initial="hidden"
+      animate="visible"
+      whileHover={{ y: -6, scale: 1.02 }}
+    >
+      <Link
+        to={`/product-detail/${product.id}`}
+        className="block flex flex-col flex-grow"
+      >
+        <div className="relative overflow-hidden">
+          {/* Image Container */}
+          <div className="aspect-square overflow-hidden bg-gray-50">
+            <motion.img
+              src={
+                product.image_thumnail
+                  ? product.image_thumnail.startsWith("http")
+                    ? product.image_thumnail
+                    : `${import.meta.env.VITE_API_URL}/storage/${product.image_thumnail}`
+                  : "/images/no-image.png"
+              }
+              alt={product.name}
+              className={`w-full h-full object-cover transition-transform duration-500 ease-in-out ${!checkProductInStock(product) ? 'opacity-60 grayscale' : 'group-hover:scale-105'}`}
+              loading="lazy"
+              onLoad={() => handleImageLoad(product.id)}
+              onError={(e) => {
+                const productId = product.id;
+                handleImageLoad(productId);
+                if (!imageLoadError[productId]) {
+                  setImageLoadError((prev) => ({
+                    ...prev,
+                    [productId]: true,
+                  }));
+                  e.target.src = "/images/no-image.png";
+                }
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+
+          {/* Badges */}
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
+            <span className="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
+              MỚI
+            </span>
+          </div>
+
+          {/* Out of Stock Overlay */}
+          {!checkProductInStock(product) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
+              <span className="bg-red-600 text-white font-bold px-4 py-2 rounded-md text-base shadow-lg">Hết hàng</span>
+            </div>
+          )}
+
+          {/* Add to Cart Button */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-end">
+            <motion.button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAddToCart(product);
+              }}
+              className={`bg-white text-amber-600 p-3 rounded-full shadow-lg hover:bg-amber-500 hover:text-white transition-all duration-300 transform hover:scale-110 ${!checkProductInStock(product) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              whileHover={{ scale: checkProductInStock(product) ? 1.15 : 1, rotate: checkProductInStock(product) ? 5 : 0 }}
+              whileTap={{ scale: checkProductInStock(product) ? 0.95 : 1 }}
+              disabled={!checkProductInStock(product)}
+              title="Thêm vào giỏ hàng"
+            >
+              <IoCartOutline className="text-xl" />
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Product Info */}
+        <div className="p-5 flex flex-col flex-grow">
+          {/* Rating */}
+          <div className="flex items-center mb-2">
+            {[1, 2, 3, 4, 5].map((star) => {
+              const rating = productRatings[product.id]?.average || 0;
+              return (
+                <IoStar
+                  key={star}
+                  className={`${star <= Math.round(rating)
+                    ? "text-yellow-400"
+                    : "text-gray-300"
+                    } w-4 h-4`}
+                />
+              );
+            })}
+            <span className="text-gray-500 text-sm ml-2">
+              {productRatings[product.id]
+                ? productRatings[product.id].average.toFixed(1)
+                : "0.0"}
+            </span>
+          </div>
+
+          {/* Product Name */}
+          <h3 className="font-semibold text-gray-800 text-lg mb-1 group-hover:text-amber-600 transition-colors duration-300 line-clamp-2">
+            {product.name}
+          </h3>
+
+          {/* Description */}
+          <div
+            className="text-gray-600 text-sm mb-4 line-clamp-2 flex-grow"
+            dangerouslySetInnerHTML={{
+              __html:
+                product.description ||
+                "Sản phẩm nội thất cao cấp, bền đẹp và thân thiện với môi trường.",
+            }}
+          />
+
+          {/* Price */}
+          <div className="flex justify-between items-end mt-auto pt-2 border-t border-gray-100">
+            {product.has_variants ? (
+              <div className="flex-1">
+                {product.variants && product.variants.length > 0 ? (
+                  <div className="flex flex-col items-start">
+                    <p className="text-amber-600 font-bold text-xl">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(product.variants[0].discount_price || product.variants[0].price || 0)}
+                    </p>
+                    {product.variants[0].discount_price && (
+                      <p className="text-gray-400 line-through text-sm">
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(product.variants[0].price || 0)}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-amber-600 font-bold text-xl">
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format(0)}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex-1">
+                {product.discount_price ? (
+                  <div className="flex flex-col items-start">
+                    <p className="text-amber-600 font-bold text-xl">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(product.discount_price)}
+                    </p>
+                    <p className="text-gray-400 line-through text-sm">
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(product.price)}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-amber-600 font-bold text-xl">
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format(product.price || 0)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+});
+
+// Tách phần danh mục thành component riêng để tối ưu render
+const CategoryList = memo(({ categories, selectedCategories, handleCategoryChange, spaceFilter }) => {
+  if (!Array.isArray(categories) || categories.length === 0) {
+    return (
+      <p className="text-sm text-gray-500 italic">
+        {spaceFilter ? `Không có danh mục con.` : `Đang tải danh mục...`}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {categories.map((category) => (
+        <label
+          key={category.id}
+          className="flex items-center space-x-3 cursor-pointer group p-1 rounded hover:bg-amber-50 transition-colors"
+        >
+          <input
+            type="checkbox"
+            checked={selectedCategories.includes(category.id)}
+            onChange={() => handleCategoryChange(category.id)}
+            className="form-checkbox h-5 w-5 rounded text-amber-500 border-gray-300 focus:ring-amber-500 transition-all"
+          />
+          <span className="group-hover:text-amber-600 transition-colors font-medium">
+            {category.name}
+          </span>
+        </label>
+      ))}
+    </>
+  );
+});
+
+// Tách variant list thành component riêng
+const VariantList = memo(({ variant, selectedVariants, handleVariantValueChange }) => {
+  return (
+    <div key={variant.id} className="mb-8">
+      <h4 className="text-base font-semibold mb-4 flex items-center text-gray-700">
+        <span className="w-2 h-5 bg-amber-500 rounded-full mr-2 inline-block"></span>
+        {variant.name}
+      </h4>
+      <div className="space-y-3 text-gray-600 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+        {variant.values.map((value) => (
+          <label
+            key={value.id}
+            className="flex items-center space-x-3 cursor-pointer group p-1 rounded hover:bg-amber-50 transition-colors"
+          >
+            <input
+              type="checkbox"
+              checked={selectedVariants.includes(value.id)}
+              onChange={() => handleVariantValueChange(value.id)}
+              className="form-checkbox h-5 w-5 rounded text-amber-500 border-gray-300 focus:ring-amber-500"
+            />
+            <span className="group-hover:text-amber-600 transition-colors font-medium">
+              {value.value}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+});
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -27,6 +342,7 @@ const Products = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(""); // State for debounced search term
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchLoading, setIsSearchLoading] = useState(false); // Biến loading riêng cho tìm kiếm
+  const [isSearching, setIsSearching] = useState(false); // Tạo flag để đánh dấu đang tìm kiếm
   const [dataLoaded, setDataLoaded] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [loadedImagesCount, setLoadedImagesCount] = useState(0);
@@ -40,30 +356,14 @@ const Products = () => {
   const [variantModalOpen, setVariantModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [debouncedProducts, setDebouncedProducts] = useState([]); // State for debounced products for rating fetch
+  const ratingFetchTimeoutRef = useRef(null); // Ref for debounce timeout
+  const apiCache = useRef({}); // Thêm cache cho API calls
+  const throttleTimerRef = useRef(null); // Ref cho throttling API calls
+  const refreshIntervalRef = useRef(null);
 
   const [searchParams] = useSearchParams();
   const spaceFilter = searchParams.get('space');
-
-  const fadeIn = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.3,
-      },
-    },
-  };
-
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-      },
-    },
-  };
 
   useEffect(() => {
     const timerId = setTimeout(() => {
@@ -76,20 +376,125 @@ const Products = () => {
     };
   }, [searchTerm]);
 
+  // Sửa đổi effect interval với đầy đủ dependencies
+  useEffect(() => {
+    // Xóa cache khi trang được tải
+    clearProductRelatedCache();
+
+    // Thiết lập interval để làm mới dữ liệu mỗi 5 giây
+    refreshIntervalRef.current = setInterval(() => {
+      // Chỉ làm mới khi người dùng không đang tìm kiếm
+      if (!isSearching) {
+        // Chỉ xóa cache sản phẩm và danh mục liên quan đến trang hiện tại
+        const currentProductsKey = `products_${currentPage}_${itemsPerPage}_${spaceFilter || 'none'}`;
+        const currentCategoriesKey = `categories_${spaceFilter || 'none'}`;
+        sessionStorage.removeItem(currentProductsKey);
+        sessionStorage.removeItem(currentCategoriesKey);
+        sessionStorage.removeItem('variants');
+
+        // Nếu không đang loading, thực hiện fetch dữ liệu mới
+        if (!isLoading) {
+          // Làm mới dữ liệu bằng cách fetch lại
+          const params = {
+            page: currentPage,
+            limit: itemsPerPage,
+            ...(spaceFilter && { space: spaceFilter }),
+          };
+
+          Promise.all([
+            axios.get(`${import.meta.env.VITE_API_URL}/api/products`, { params }),
+            axios.get(`${import.meta.env.VITE_API_URL}/api/categories/all`, {
+              params: { ...(spaceFilter && { space: spaceFilter }) }
+            }),
+            axios.get(`${import.meta.env.VITE_API_URL}/api/variants`)
+          ])
+            .then(([productsResponse, categoriesResponse, variantsResponse]) => {
+              if (productsResponse.data.status === "success" && productsResponse.data.data) {
+                const productsData = {
+                  data: productsResponse.data.data.data || [],
+                  last_page: productsResponse.data.data.last_page || 1,
+                  current_page: productsResponse.data.data.current_page || 1
+                };
+                setProducts(productsData.data);
+                setTotalPages(productsData.last_page);
+                setCurrentPage(productsData.current_page);
+                setSessionCache(currentProductsKey, productsData, 0.08); // 5 seconds (0.08 minutes)
+              }
+
+              if (categoriesResponse.data.success) {
+                const categoriesData = categoriesResponse.data.data || [];
+                setCategories(categoriesData);
+                setSessionCache(currentCategoriesKey, categoriesData, 0.08); // 5 seconds (0.08 minutes)
+              }
+
+              if (variantsResponse.data.status === "success") {
+                const variantsData = variantsResponse.data.data || [];
+                setVariants(variantsData);
+                setSessionCache('variants', variantsData, 0.08); // 5 seconds (0.08 minutes)
+              }
+            })
+            .catch(error => {
+              console.error("Lỗi khi làm mới dữ liệu:", error);
+            });
+        }
+      }
+    }, 5000); // Thực hiện mỗi 5 giây
+
+    // Cleanup interval khi component unmount
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [currentPage, itemsPerPage, spaceFilter, isSearching, isLoading]);
+
   // Ban đầu, tải tất cả sản phẩm để tìm kiếm realtime
   useEffect(() => {
     // Chỉ tải tất cả sản phẩm một lần khi component mount
     const fetchAllProducts = async () => {
       try {
+        // Kiểm tra cache trong sessionStorage trước khi gọi API
+        const cacheKey = `products_${spaceFilter || 'none'}`;
+        const cachedData = getSessionCache(cacheKey);
+
+        if (cachedData) {
+          setAllProducts(cachedData);
+          // Tính toán tổng số trang dựa trên số lượng sản phẩm và itemsPerPage
+          const totalPagesCount = Math.ceil(cachedData.length / itemsPerPage);
+          setTotalPages(totalPagesCount);
+
+          // Lấy sản phẩm cho trang hiện tại
+          const startIndex = (currentPage - 1) * itemsPerPage;
+          const endIndex = Math.min(startIndex + itemsPerPage, cachedData.length);
+          const productsForCurrentPage = cachedData.slice(startIndex, endIndex);
+
+          setProducts(productsForCurrentPage);
+          return;
+        }
+
         const params = {
-          limit: 1000, // Số lượng lớn để lấy tất cả sản phẩm
           ...(spaceFilter && { space: spaceFilter }),
         };
 
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/products`, { params });
 
         if (response.data.status === "success" && response.data.data) {
-          setAllProducts(response.data.data.data || []);
+          const allLoadedProducts = response.data.data || [];
+          setAllProducts(allLoadedProducts);
+
+          // Tính toán tổng số trang dựa trên số lượng sản phẩm và itemsPerPage
+          const totalPagesCount = Math.ceil(allLoadedProducts.length / itemsPerPage);
+          setTotalPages(totalPagesCount);
+
+          // Lấy sản phẩm cho trang hiện tại
+          const startIndex = (currentPage - 1) * itemsPerPage;
+          const endIndex = Math.min(startIndex + itemsPerPage, allLoadedProducts.length);
+          const productsForCurrentPage = allLoadedProducts.slice(startIndex, endIndex);
+
+          setProducts(productsForCurrentPage);
+
+          // Lưu vào sessionStorage cache với thời gian ngắn hơn
+          setSessionCache(cacheKey, allLoadedProducts, 0.08); // 5 seconds (0.08 minutes)
         }
       } catch (error) {
         console.error("Lỗi khi tải tất cả sản phẩm:", error);
@@ -97,9 +502,9 @@ const Products = () => {
     };
 
     fetchAllProducts();
-  }, [spaceFilter]); // Chỉ tải lại khi spaceFilter thay đổi
+  }, [spaceFilter, currentPage, itemsPerPage]);
 
-  // Xử lý tìm kiếm realtime - đảm bảo không gây ra hiệu ứng loading
+  // Cập nhật useEffect xử lý tìm kiếm realtime để hỗ trợ phân trang tốt hơn
   useEffect(() => {
     // Nếu đang tải lần đầu, bỏ qua tìm kiếm realtime
     if (isInitialLoad) return;
@@ -114,19 +519,28 @@ const Products = () => {
         product.name.toLowerCase().includes(keyword)
       );
 
-      setProducts(filteredResults);
-      setTotalPages(Math.ceil(filteredResults.length / itemsPerPage));
-      setCurrentPage(1);
+      // Tính toán tổng số trang
+      const calculatedTotalPages = Math.ceil(filteredResults.length / itemsPerPage);
+      setTotalPages(calculatedTotalPages);
+
+      // Nếu current page lớn hơn số trang tìm kiếm, reset về trang 1
+      if (currentPage > calculatedTotalPages) {
+        setCurrentPage(1);
+      }
+
+      // Tính toán các sản phẩm cho trang hiện tại
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = Math.min(startIndex + itemsPerPage, filteredResults.length);
+      const pagedProducts = filteredResults.slice(startIndex, endIndex);
+
+      setProducts(pagedProducts);
 
       // Đánh dấu dữ liệu đã được tải để ngăn hiệu ứng loading
       setDataLoaded(true);
       setImagesLoaded(true);
       setIsSearchLoading(false);
     }
-  }, [searchTerm, allProducts, isInitialLoad, itemsPerPage]);
-
-  // Tạo flag để đánh dấu đang tìm kiếm
-  const [isSearching, setIsSearching] = useState(false);
+  }, [searchTerm, allProducts, isInitialLoad, itemsPerPage, currentPage]);
 
   // Cập nhật isSearching khi searchTerm thay đổi
   useEffect(() => {
@@ -152,60 +566,140 @@ const Products = () => {
 
       setDataLoaded(false);
       try {
-        const params = {
-          page: currentPage,
-          limit: itemsPerPage,
-          ...(spaceFilter && { space: spaceFilter }),
-          // Không sử dụng debouncedSearchTerm vì đã xử lý tìm kiếm realtime riêng
-        };
+        // Tạo cache key dựa trên các tham số
+        const productsKey = `products_${spaceFilter || 'none'}`;
+        const categoriesKey = `categories_${spaceFilter || 'none'}`;
+        const variantsKey = 'variants';
 
-        const [productsResponse, categoriesResponse, variantsResponse] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/products`, { params }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/categories/all`, {
+        // Kiểm tra cache trong sessionStorage
+        let cachedProducts = getSessionCache(productsKey);
+        let cachedCategories = getSessionCache(categoriesKey);
+        let cachedVariants = getSessionCache(variantsKey);
+
+        // Chuẩn bị các promises cho các dữ liệu không có trong cache
+        const promises = [];
+        const keys = [];
+
+        // Kiểm tra cache cho products
+        if (!cachedProducts) {
+          const params = {
+            ...(spaceFilter && { space: spaceFilter }),
+          };
+          promises.push(axios.get(`${import.meta.env.VITE_API_URL}/api/products`, { params }));
+          keys.push('products');
+        } else {
+          const allLoadedProducts = cachedProducts;
+          // Tính toán tổng số trang dựa trên số lượng sản phẩm và itemsPerPage
+          const totalPagesCount = Math.ceil(allLoadedProducts.length / itemsPerPage);
+          setTotalPages(totalPagesCount);
+
+          // Lấy sản phẩm cho trang hiện tại
+          const startIndex = (currentPage - 1) * itemsPerPage;
+          const endIndex = Math.min(startIndex + itemsPerPage, allLoadedProducts.length);
+          const productsForCurrentPage = allLoadedProducts.slice(startIndex, endIndex);
+
+          setProducts(productsForCurrentPage);
+          setAllProducts(allLoadedProducts);
+        }
+
+        // Kiểm tra cache cho categories
+        if (!cachedCategories) {
+          promises.push(axios.get(`${import.meta.env.VITE_API_URL}/api/categories/all`, {
             params: { ...(spaceFilter && { space: spaceFilter }) }
-          }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/variants`)
-        ]);
-
-        // Xử lý dữ liệu sản phẩm
-        if (productsResponse.data.status === "success" && productsResponse.data.data) {
-          setProducts(productsResponse.data.data.data || []);
-          setTotalPages(productsResponse.data.data.last_page || 1);
-          setCurrentPage(productsResponse.data.data.current_page || 1);
+          }));
+          keys.push('categories');
         } else {
-          setProducts([]);
-          setTotalPages(1);
-          setCurrentPage(1);
+          setCategories(cachedCategories);
         }
 
-        // Xử lý dữ liệu danh mục
-        if (categoriesResponse.data.success) {
-          setCategories(categoriesResponse.data.data || []);
+        // Kiểm tra cache cho variants
+        if (!cachedVariants) {
+          promises.push(axios.get(`${import.meta.env.VITE_API_URL}/api/variants`));
+          keys.push('variants');
         } else {
-          setCategories([]);
+          setVariants(cachedVariants);
         }
 
-        // Xử lý dữ liệu biến thể
-        if (variantsResponse.data.status === "success") {
-          setVariants(variantsResponse.data.data || []);
+        // Thực hiện các API calls cho dữ liệu chưa có trong cache
+        if (promises.length > 0) {
+          const responses = await Promise.all(promises);
+
+          // Xử lý từng response theo thứ tự
+          responses.forEach((response, index) => {
+            const key = keys[index];
+
+            switch (key) {
+              case 'products':
+                if (response.data.status === "success" && response.data.data) {
+                  const allLoadedProducts = response.data.data || [];
+
+                  // Lưu vào sessionStorage
+                  setSessionCache(productsKey, allLoadedProducts, 0.08); // 5 seconds
+
+                  // Tính toán tổng số trang dựa trên số lượng sản phẩm và itemsPerPage
+                  const totalPagesCount = Math.ceil(allLoadedProducts.length / itemsPerPage);
+                  setTotalPages(totalPagesCount);
+
+                  // Lấy sản phẩm cho trang hiện tại
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const endIndex = Math.min(startIndex + itemsPerPage, allLoadedProducts.length);
+                  const productsForCurrentPage = allLoadedProducts.slice(startIndex, endIndex);
+
+                  setProducts(productsForCurrentPage);
+                  setAllProducts(allLoadedProducts);
+                } else {
+                  setProducts([]);
+                  setAllProducts([]);
+                  setTotalPages(1);
+                }
+                break;
+
+              case 'categories':
+                if (response.data.success) {
+                  const categoriesData = response.data.data || [];
+
+                  // Lưu vào sessionStorage với thời gian ngắn hơn
+                  setSessionCache(categoriesKey, categoriesData, 0.08); // 5 seconds
+
+                  setCategories(categoriesData);
+                } else {
+                  setCategories([]);
+                }
+                break;
+
+              case 'variants':
+                if (response.data.status === "success") {
+                  const variantsData = response.data.data || [];
+
+                  // Lưu vào sessionStorage với thời gian ngắn hơn
+                  setSessionCache(variantsKey, variantsData, 0.08); // 5 seconds
+
+                  setVariants(variantsData);
+                }
+                break;
+
+              default:
+                break;
+            }
+          });
         }
 
         // Đánh dấu dữ liệu đã được tải xong
         setDataLoaded(true);
-        setIsSearchLoading(false); // Tắt trạng thái loading tìm kiếm
+        setIsSearchLoading(false);
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error);
         setProducts([]);
+        setAllProducts([]);
         setTotalPages(1);
-        setCurrentPage(1);
         // Đánh dấu dữ liệu đã được tải xong ngay cả khi có lỗi
         setDataLoaded(true);
-        setIsSearchLoading(false); // Tắt trạng thái loading tìm kiếm
+        setIsSearchLoading(false);
       }
     };
 
     fetchData();
-  }, [currentPage, spaceFilter, itemsPerPage]);
+  }, [currentPage, spaceFilter, itemsPerPage, isSearching]);
 
   // Theo dõi trạng thái tải dữ liệu và hình ảnh để cập nhật isLoading
   useEffect(() => {
@@ -246,10 +740,12 @@ const Products = () => {
     }
   }, [currentPage, spaceFilter, isSearching]);
 
+  // Cập nhật filteredProducts để lọc từ allProducts thay vì products
   const filteredProducts = useMemo(() => {
     if (isLoading) return [];
 
-    let filtered = [...products];
+    // Bắt đầu lọc từ tất cả sản phẩm thay vì chỉ từ sản phẩm trang hiện tại
+    let filtered = [...allProducts];
 
     if (selectedCategories.length > 0) {
       filtered = filtered.filter((product) =>
@@ -339,25 +835,52 @@ const Products = () => {
     }
 
     return filtered;
-  }, [products, selectedCategories, selectedVariants, priceRange, variants, isLoading, sortOption]);
+  }, [allProducts, selectedCategories, selectedVariants, priceRange, variants, isLoading, sortOption]);
 
-  const handleCategoryChange = (categoryId) => {
+  // Tách phần hiển thị sản phẩm theo trang hiện tại thành một biến riêng
+  const paginatedProducts = useMemo(() => {
+    // Tính toán index bắt đầu và kết thúc cho trang hiện tại
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, filteredProducts.length);
+
+    // Trả về các sản phẩm cho trang hiện tại
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, currentPage, itemsPerPage]);
+
+  // Cập nhật useEffect để tính toán lại totalPages mỗi khi filteredProducts thay đổi
+  useEffect(() => {
+    // Tính toán tổng số trang dựa trên kết quả đã lọc
+    const calculatedTotalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+    setTotalPages(calculatedTotalPages);
+
+    // Nếu trang hiện tại lớn hơn tổng số trang, chuyển về trang 1
+    if (currentPage > calculatedTotalPages && calculatedTotalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredProducts, itemsPerPage, currentPage]);
+
+  // Cập nhật hàm handleCategoryChange để reset về trang 1 khi thay đổi bộ lọc
+  const handleCategoryChange = useCallback((categoryId) => {
     setSelectedCategories((prev) =>
       prev.includes(categoryId)
         ? prev.filter((id) => id !== categoryId)
         : [...prev, categoryId]
     );
-  };
+    setCurrentPage(1); // Reset về trang 1 khi thay đổi danh mục
+  }, []);
 
-  const handleVariantValueChange = (valueId) => {
+  // Cập nhật hàm handleVariantValueChange để reset về trang 1 khi thay đổi bộ lọc
+  const handleVariantValueChange = useCallback((valueId) => {
     setSelectedVariants((prev) =>
       prev.includes(valueId)
         ? prev.filter((id) => id !== valueId)
         : [...prev, valueId]
     );
-  };
+    setCurrentPage(1); // Reset về trang 1 khi thay đổi biến thể
+  }, []);
 
-  const handlePriceChange = (e, index) => {
+  // Cập nhật hàm handlePriceChange để reset về trang 1 khi thay đổi bộ lọc
+  const handlePriceChange = useCallback((e, index) => {
     const newPriceRange = [...priceRange];
     const value = parseInt(e.target.value);
     if (index === 0 && value > newPriceRange[1]) {
@@ -368,31 +891,65 @@ const Products = () => {
       newPriceRange[index] = value;
     }
     setPriceRange(newPriceRange);
-  };
+    setCurrentPage(1); // Reset về trang 1 khi thay đổi khoảng giá
+  }, [priceRange]);
 
-  const handlePageChange = (page) => {
+  // Cập nhật hàm handleSortOptionChange để reset về trang 1 khi thay đổi sắp xếp
+  const handleSortOptionChange = useCallback((e) => {
+    setSortOption(e.target.value);
+    setCurrentPage(1); // Reset về trang 1 khi thay đổi sắp xếp
+  }, []);
+
+  // Tối ưu vòng đời component với useCallback
+  const handlePageChange = useCallback((page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+
+      // Logic phân trang ở client
+      const startIndex = (page - 1) * itemsPerPage;
+
+      if (isSearching) {
+        // Nếu đang tìm kiếm, lọc từ allProducts trước
+        const keyword = searchTerm.toLowerCase().trim();
+        const filteredResults = allProducts.filter(product =>
+          product.name.toLowerCase().includes(keyword)
+        );
+
+        const endIndex = Math.min(startIndex + itemsPerPage, filteredResults.length);
+        const pagedProducts = filteredResults.slice(startIndex, endIndex);
+        setProducts(pagedProducts);
+      } else {
+        // Nếu không tìm kiếm, lấy trực tiếp từ allProducts
+        const endIndex = Math.min(startIndex + itemsPerPage, allProducts.length);
+        const pagedProducts = allProducts.slice(startIndex, endIndex);
+        setProducts(pagedProducts);
+      }
+
+      // Cuộn lên đầu trang khi chuyển trang
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     }
-  };
+  }, [totalPages, isSearching, searchTerm, allProducts, itemsPerPage]);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     // Không cần làm gì ở đây vì debouncedSearchTerm đã tự động cập nhật và trigger useEffect
-  };
+  }, []);
 
-  const handleSearchKeyPress = (e) => {
+  const handleSearchKeyPress = useCallback((e) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
-  };
+  }, [handleSearch]);
 
-  const resetClientFilters = () => {
+  const resetClientFilters = useCallback(() => {
     setSelectedCategories([]);
     setSelectedVariants([]);
     setPriceRange([0, 10000000]);
-  };
+  }, []);
 
-  const resetAllFilters = () => {
+  const resetAllFilters = useCallback(() => {
     resetClientFilters();
     setSearchTerm("");
     setDebouncedSearchTerm(""); // Reset cả debouncedSearchTerm
@@ -404,7 +961,7 @@ const Products = () => {
       setProducts(pagedProducts);
       setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
     }
-  };
+  }, [allProducts, itemsPerPage, resetClientFilters]);
 
   const toggleFilter = () => {
     setFilterOpen(!filterOpen);
@@ -484,55 +1041,147 @@ const Products = () => {
       setImagesLoaded(false);
       setLoadedImagesCount(0);
     }
-  }, [currentPage, spaceFilter, debouncedSearchTerm, isSearching]);
+  }, [currentPage, spaceFilter, isSearching]);
 
-  // Thêm hàm xử lý thay đổi tùy chọn sắp xếp
-  const handleSortOptionChange = (e) => {
-    setSortOption(e.target.value);
-  };
-
-  // Thêm useEffect mới để tải thông tin đánh giá cho các sản phẩm đã tải
+  // Debounce products state change for rating fetching
   useEffect(() => {
-    // Chỉ tải đánh giá khi có sản phẩm và không phải đang tìm kiếm
-    if (products.length > 0 && !isSearchLoading && !isLoading) {
+    // Clear existing timeout if products change again quickly
+    if (ratingFetchTimeoutRef.current) {
+      clearTimeout(ratingFetchTimeoutRef.current);
+    }
+
+    // Set a new timeout to update debouncedProducts
+    ratingFetchTimeoutRef.current = setTimeout(() => {
+      setDebouncedProducts(products);
+    }, 500); // Tăng thời gian chờ lên 500ms sau khi products dừng thay đổi
+
+    // Cleanup timeout on unmount or before next run
+    return () => {
+      if (ratingFetchTimeoutRef.current) {
+        clearTimeout(ratingFetchTimeoutRef.current);
+      }
+    };
+  }, [products]); // Depend only on products
+
+  // Thêm useEffect mới để tải thông tin đánh giá cho các sản phẩm đã tải (sử dụng debouncedProducts)
+  useEffect(() => {
+    // Chỉ tải đánh giá khi có sản phẩm đã debounce và không phải đang tìm kiếm hoặc loading
+    if (debouncedProducts.length > 0 && !isSearchLoading && !isLoading) {
       const fetchRatings = async () => {
-        const ratingsData = {};
+        const ratingsData = { ...productRatings }; // Preserve existing ratings
 
-        // Tạo mảng các promise để tải đánh giá cho tất cả sản phẩm
-        const ratingPromises = products.map(product =>
-          axios.get(`${import.meta.env.VITE_API_URL}/api/products/${product.id}/reviews`)
-            .then(response => {
-              if (response.data.success && Array.isArray(response.data.data)) {
-                const reviews = response.data.data;
-                if (reviews.length > 0) {
-                  const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-                  const avgRating = (totalRating / reviews.length).toFixed(1);
-                  ratingsData[product.id] = {
-                    average: parseFloat(avgRating),
-                    count: reviews.length
-                  };
-                } else {
-                  ratingsData[product.id] = { average: 0, count: 0 };
+        // Lọc chỉ những sản phẩm chưa có rating và chưa có trong cache
+        const productsToFetch = debouncedProducts.filter(p => {
+          if (ratingsData[p.id]) return false;
+
+          // Kiểm tra cache
+          const cachedRating = getSessionCache(`rating_${p.id}`);
+          if (cachedRating) {
+            // Cập nhật từ cache
+            ratingsData[p.id] = cachedRating;
+            return false;
+          }
+          return true;
+        });
+
+        if (productsToFetch.length === 0) {
+          // Cập nhật state từ cache nếu có thay đổi
+          if (Object.keys(ratingsData).length !== Object.keys(productRatings).length) {
+            setProductRatings(ratingsData);
+          }
+          return;
+        }
+
+        // Lấy danh sách ID sản phẩm cần fetch
+        const productIdsToFetch = productsToFetch.map(p => p.id);
+
+        // Giới hạn số lượng ID gửi trong một request
+        const maxIdsPerRequest = 10;
+
+        // Chia nhỏ mảng ID thành các gói nhỏ hơn
+        for (let i = 0; i < productIdsToFetch.length; i += maxIdsPerRequest) {
+          const idsChunk = productIdsToFetch.slice(i, i + maxIdsPerRequest);
+
+          try {
+            // Thay vì gọi nhiều request riêng lẻ, gom các ID và gửi một request
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/products/ratings`, {
+              params: { product_ids: idsChunk.join(',') }
+            });
+
+            if (response.data.success && response.data.data) {
+              // Giả sử API trả về dạng { product_id: { average: x, count: y }, ... }
+              const ratingResults = response.data.data;
+
+              // Cập nhật ratings cho tất cả sản phẩm đã nhận được
+              Object.keys(ratingResults).forEach(productId => {
+                ratingsData[productId] = ratingResults[productId];
+
+                // Lưu vào cache
+                setSessionCache(`rating_${productId}`, ratingResults[productId], 10);
+              });
+
+              // Cập nhật state sau mỗi lần nhận được kết quả
+              setProductRatings({ ...ratingsData });
+            }
+          } catch (error) {
+            console.error(`Error fetching batch ratings:`, error);
+
+            // Nếu batch request thất bại, sẽ cần thử lại từng sản phẩm riêng lẻ
+            await Promise.all(
+              idsChunk.map(async (productId) => {
+                try {
+                  const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/products/${productId}/reviews`);
+                  if (response.data.success && Array.isArray(response.data.data)) {
+                    const reviews = response.data.data;
+                    let ratingInfo;
+
+                    if (reviews.length > 0) {
+                      const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+                      const avgRating = (totalRating / reviews.length).toFixed(1);
+                      ratingInfo = {
+                        average: parseFloat(avgRating),
+                        count: reviews.length
+                      };
+                    } else {
+                      ratingInfo = { average: 0, count: 0 };
+                    }
+
+                    // Lưu vào cache và state
+                    setSessionCache(`rating_${productId}`, ratingInfo, 10);
+                    ratingsData[productId] = ratingInfo;
+                  }
+                } catch (itemError) {
+                  console.error(`Error fetching ratings for product ${productId}:`, itemError);
+                  ratingsData[productId] = { average: 0, count: 0 };
                 }
-              }
-            })
-            .catch(error => {
-              console.error(`Error fetching ratings for product ${product.id}:`, error);
-              ratingsData[product.id] = { average: 0, count: 0 };
-            })
-        );
+              })
+            );
 
-        // Đợi tất cả promise hoàn thành
-        await Promise.all(ratingPromises);
-        setProductRatings(ratingsData);
+            // Cập nhật state một lần sau khi xử lý tất cả sản phẩm trong gói thất bại
+            setProductRatings({ ...ratingsData });
+          }
+
+          // Đợi một khoảng thời gian ngắn giữa các gói để tránh too many attempts
+          if (i + maxIdsPerRequest < productIdsToFetch.length) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        }
       };
 
-      fetchRatings();
+      // Clear existing timeout if products change again quickly
+      if (ratingFetchTimeoutRef.current) {
+        clearTimeout(ratingFetchTimeoutRef.current);
+      }
+
+      // Chờ một khoảng thời gian trước khi bắt đầu tải đánh giá
+      ratingFetchTimeoutRef.current = setTimeout(() => {
+        fetchRatings();
+      }, 500);
     }
-  }, [products, isSearchLoading, isLoading]);
+  }, [debouncedProducts, isSearchLoading, isLoading, productRatings]);
 
   // Hàm xử lý thêm sản phẩm vào giỏ hàng
-  const handleAddToCart = async (product) => {
+  const handleAddToCart = useCallback(async (product) => {
     const token = localStorage.getItem("authToken");
 
     if (!token) {
@@ -564,13 +1213,13 @@ const Products = () => {
         setAddingToCart(false);
       }
     }
-  };
+  }, []);
 
   // Hàm xử lý sau khi thêm sản phẩm vào giỏ hàng từ modal
-  const handleVariantAddedToCart = () => {
+  const handleVariantAddedToCart = useCallback(() => {
     setVariantModalOpen(false);
     setSelectedProduct(null);
-  };
+  }, []);
 
   return (
     <>
@@ -656,10 +1305,9 @@ const Products = () => {
         </div>
 
         <div className="flex gap-6 relative">
-          {/* Filter Section - Added subtle shadow and border */}
+          {/* Filter Section */}
           <motion.div
-            className={`${filterOpen ? "flex" : "hidden"
-              } md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-lg border border-gray-100 sticky top-24 h-fit transition-all duration-300`}
+            className={`${filterOpen ? "flex" : "hidden"} md:flex flex-col w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-lg border border-gray-100 sticky top-24 h-fit transition-all duration-300`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
@@ -675,57 +1323,23 @@ const Products = () => {
                 Danh mục
               </h4>
               <div className="space-y-3 text-gray-600 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                {Array.isArray(categories) && categories.length > 0 ? (
-                  categories.map((category) => (
-                    <label
-                      key={category.id}
-                      className="flex items-center space-x-3 cursor-pointer group p-1 rounded hover:bg-amber-50 transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category.id)}
-                        onChange={() => handleCategoryChange(category.id)}
-                        className="form-checkbox h-5 w-5 rounded text-amber-500 border-gray-300 focus:ring-amber-500 transition-all"
-                      />
-                      <span className="group-hover:text-amber-600 transition-colors font-medium">
-                        {category.name}
-                      </span>
-                    </label>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 italic">
-                    {spaceFilter ? `Không có danh mục con.` : `Đang tải danh mục...`}
-                  </p>
-                )}
+                <CategoryList
+                  categories={categories}
+                  selectedCategories={selectedCategories}
+                  handleCategoryChange={handleCategoryChange}
+                  spaceFilter={spaceFilter}
+                />
               </div>
             </div>
 
             {/* Variant Filters */}
             {variants.map((variant) => (
-              <div key={variant.id} className="mb-8">
-                <h4 className="text-base font-semibold mb-4 flex items-center text-gray-700">
-                  <span className="w-2 h-5 bg-amber-500 rounded-full mr-2 inline-block"></span>
-                  {variant.name}
-                </h4>
-                <div className="space-y-3 text-gray-600 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                  {variant.values.map((value) => (
-                    <label
-                      key={value.id}
-                      className="flex items-center space-x-3 cursor-pointer group p-1 rounded hover:bg-amber-50 transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedVariants.includes(value.id)}
-                        onChange={() => handleVariantValueChange(value.id)}
-                        className="form-checkbox h-5 w-5 rounded text-amber-500 border-gray-300 focus:ring-amber-500"
-                      />
-                      <span className="group-hover:text-amber-600 transition-colors font-medium">
-                        {value.value}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <VariantList
+                key={variant.id}
+                variant={variant}
+                selectedVariants={selectedVariants}
+                handleVariantValueChange={handleVariantValueChange}
+              />
             ))}
 
             {/* Price Range Filter */}
@@ -784,17 +1398,17 @@ const Products = () => {
             animate="visible"
           >
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" // Increased gap
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
             >
               {isLoading ? (
-                // Skeleton Loader - Improved Styling
+                // Skeleton Loader
                 [...Array(itemsPerPage)].map((_, index) => (
                   <motion.div
-                    key={`skeleton-${index}`} // Use a more specific key
-                    className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100" // Softer corners, subtle border, slightly more shadow
+                    key={`skeleton-${index}`}
+                    className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100"
                     variants={fadeIn}
                   >
                     <div className="aspect-square bg-gray-200 animate-pulse"></div>
@@ -806,192 +1420,21 @@ const Products = () => {
                     </div>
                   </motion.div>
                 ))
-              ) : filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <motion.div
+              ) : paginatedProducts.length > 0 ? (
+                paginatedProducts.map((product) => (
+                  <ProductCard
                     key={product.id}
-                    className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 group flex flex-col" // Softer corners, flex column
-                    variants={fadeIn}
-                    initial="hidden"
-                    animate="visible"
-                    whileHover={{ y: -6, scale: 1.02 }} // Subtle lift and scale on hover
-                  >
-                    <Link
-                      to={`/product-detail/${product.id}`}
-                      className="block flex flex-col flex-grow" // Make link fill the card and grow
-                    >
-                      <div className="relative overflow-hidden">
-                        {/* Image Container */}
-                        <div className="aspect-square overflow-hidden bg-gray-50">
-                          <motion.img
-                            src={
-                              product.image_thumnail
-                                ? product.image_thumnail.startsWith("http")
-                                  ? product.image_thumnail
-                                  : `${import.meta.env.VITE_API_URL}/storage/${product.image_thumnail}` // Use VITE_API_URL
-                                : "/images/no-image.png" // Default image path
-                            }
-                            alt={product.name}
-                            className={`w-full h-full object-cover transition-transform duration-500 ease-in-out ${!checkProductInStock(product) ? 'opacity-60 grayscale' : 'group-hover:scale-105'}`} // Grayscale and less opacity if out of stock, zoom on hover
-                            loading="lazy"
-                            onLoad={() => handleImageLoad(product.id)}
-                            onError={(e) => {
-                              const productId = product.id;
-                              handleImageLoad(productId);
-                              if (!imageLoadError[productId]) {
-                                setImageLoadError((prev) => ({
-                                  ...prev,
-                                  [productId]: true,
-                                }));
-                                e.target.src = "/images/no-image.png";
-                              }
-                            }}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.5 }}
-                          />
-                        </div>
-
-                        {/* Badges */}
-                        <div className="absolute top-3 left-3 flex flex-col gap-2">
-                          <span className="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
-                            MỚI
-                          </span>
-                          {/* Add other badges like discount percentage if available */}
-                          {/* Example: product.discount_percent && <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">-{product.discount_percent}%</span> */}
-                        </div>
-
-
-                        {/* Out of Stock Overlay */}
-                        {!checkProductInStock(product) && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
-                            <span className="bg-red-600 text-white font-bold px-4 py-2 rounded-md text-base shadow-lg">Hết hàng</span>
-                          </div>
-                        )}
-
-                        {/* Add to Cart Button - Improved visibility and animation */}
-                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-end">
-                          <motion.button
-                            onClick={(e) => {
-                              e.preventDefault(); // Prevent link navigation
-                              e.stopPropagation(); // Prevent event bubbling
-                              handleAddToCart(product);
-                            }}
-                            className={`bg-white text-amber-600 p-3 rounded-full shadow-lg hover:bg-amber-500 hover:text-white transition-all duration-300 transform hover:scale-110 ${!checkProductInStock(product) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            whileHover={{ scale: checkProductInStock(product) ? 1.15 : 1, rotate: checkProductInStock(product) ? 5 : 0 }}
-                            whileTap={{ scale: checkProductInStock(product) ? 0.95 : 1 }}
-                            disabled={!checkProductInStock(product)}
-                            title="Thêm vào giỏ hàng"
-                          >
-                            <IoCartOutline className="text-xl" />
-                          </motion.button>
-                        </div>
-                      </div>
-
-                      {/* Product Info */}
-                      <div className="p-5 flex flex-col flex-grow"> {/* Flex grow for content */}
-                        {/* Rating */}
-                        <div className="flex items-center mb-2">
-                          {[1, 2, 3, 4, 5].map((star) => {
-                            // Lấy đánh giá từ state productRatings
-                            const rating = productRatings[product.id]?.average || 0;
-                            return (
-                              <IoStar
-                                key={star}
-                                className={`${star <= Math.round(rating)
-                                  ? "text-yellow-400"
-                                  : "text-gray-300" // Brighter yellow
-                                  } w-4 h-4`}
-                              />
-                            );
-                          })}
-                          <span className="text-gray-500 text-sm ml-2">
-                            {/* Hiển thị số đánh giá từ state */}
-                            {productRatings[product.id]
-                              ? productRatings[product.id].average.toFixed(1)
-                              : "0.0"}
-                          </span>
-                        </div>
-
-                        {/* Product Name */}
-                        <h3 className="font-semibold text-gray-800 text-lg mb-1 group-hover:text-amber-600 transition-colors duration-300 line-clamp-2"> {/* Larger text, line clamp */}
-                          {product.name}
-                        </h3>
-
-                        {/* Description */}
-                        <div
-                          className="text-gray-600 text-sm mb-4 line-clamp-2 flex-grow" // Flex grow for description
-                          dangerouslySetInnerHTML={{
-                            __html:
-                              product.description ||
-                              "Sản phẩm nội thất cao cấp, bền đẹp và thân thiện với môi trường.",
-                          }}
-                        />
-
-                        {/* Price */}
-                        <div className="flex justify-between items-end mt-auto pt-2 border-t border-gray-100"> {/* Align price to bottom */}
-                          {product.has_variants ? (
-                            <div className="flex-1">
-                              {product.variants && product.variants.length > 0 ? (
-                                <div className="flex flex-col items-start">
-                                  <p className="text-amber-600 font-bold text-xl"> {/* Larger, bolder price */}
-                                    {new Intl.NumberFormat("vi-VN", {
-                                      style: "currency",
-                                      currency: "VND",
-                                    }).format(product.variants[0].discount_price || product.variants[0].price || 0)}
-                                  </p>
-                                  {product.variants[0].discount_price && (
-                                    <p className="text-gray-400 line-through text-sm">
-                                      {new Intl.NumberFormat("vi-VN", {
-                                        style: "currency",
-                                        currency: "VND",
-                                      }).format(product.variants[0].price || 0)}
-                                    </p>
-                                  )}
-                                </div>
-                              ) : (
-                                <p className="text-amber-600 font-bold text-xl">
-                                  {new Intl.NumberFormat("vi-VN", {
-                                    style: "currency",
-                                    currency: "VND",
-                                  }).format(0)}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="flex-1">
-                              {product.discount_price ? (
-                                <div className="flex flex-col items-start">
-                                  <p className="text-amber-600 font-bold text-xl">
-                                    {new Intl.NumberFormat("vi-VN", {
-                                      style: "currency",
-                                      currency: "VND",
-                                    }).format(product.discount_price)}
-                                  </p>
-                                  <p className="text-gray-400 line-through text-sm">
-                                    {new Intl.NumberFormat("vi-VN", {
-                                      style: "currency",
-                                      currency: "VND",
-                                    }).format(product.price)}
-                                  </p>
-                                </div>
-                              ) : (
-                                <p className="text-amber-600 font-bold text-xl">
-                                  {new Intl.NumberFormat("vi-VN", {
-                                    style: "currency",
-                                    currency: "VND",
-                                  }).format(product.price || 0)}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
+                    product={product}
+                    productRatings={productRatings}
+                    handleAddToCart={handleAddToCart}
+                    handleImageLoad={handleImageLoad}
+                    imageLoadError={imageLoadError}
+                    setImageLoadError={setImageLoadError}
+                    checkProductInStock={checkProductInStock}
+                  />
                 ))
               ) : (
-                // No Products Found - Enhanced Styling
+                // No Products Found
                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-gray-50 rounded-2xl shadow-inner">
                   <motion.div
                     initial={{ scale: 0.5, opacity: 0 }}
@@ -1001,18 +1444,18 @@ const Products = () => {
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-20 w-20" // Larger icon
+                      className="h-20 w-20"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
-                      strokeWidth={1.5} // Thinner stroke
+                      strokeWidth={1.5}
                     >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 10.5a.5.5 0 11-1 0 .5.5 0 011 0zM14 10.5a.5.5 0 11-1 0 .5.5 0 011 0z" // Simple search icon variation
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 10.5a.5.5 0 11-1 0 .5.5 0 011 0zM14 10.5a.5.5 0 11-1 0 .5.5 0 011 0z"
                       />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17.25a.75.75 0 01-.75-.75V14.25m0-2.25v-2.25a.75.75 0 011.5 0v2.25m0 2.25a.75.75 0 01-.75.75zm3.75-9a.75.75 0 01.75.75v6.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75z" /> {/* Question mark elements */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17.25a.75.75 0 01-.75-.75V14.25m0-2.25v-2.25a.75.75 0 011.5 0v2.25m0 2.25a.75.75 0 01-.75.75zm3.75-9a.75.75 0 01.75.75v6.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75z" />
                     </svg>
                   </motion.div>
                   <h3 className="text-xl font-semibold mb-3 text-gray-700">
@@ -1039,7 +1482,7 @@ const Products = () => {
       {/* Pagination - Enhanced Styling */}
       {!isLoading && totalPages > 1 && (
         <motion.div
-          className="flex justify-center items-center space-x-2 sm:space-x-3 my-16" // Increased margin
+          className="flex justify-center items-center space-x-2 sm:space-x-3 my-16"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.8 }}
@@ -1061,9 +1504,9 @@ const Products = () => {
             <motion.button
               key={index}
               className={`border border-gray-200 rounded-full transition-all duration-300 min-w-[40px] h-10 flex items-center justify-center font-medium shadow-sm hover:shadow-md ${item === currentPage
-                ? "bg-amber-500 text-white scale-110 shadow-lg" // Highlight current page
+                ? "bg-amber-500 text-white scale-110 shadow-lg"
                 : item === "..."
-                  ? "bg-white text-gray-400 cursor-default px-2" // Ellipsis styling
+                  ? "bg-white text-gray-400 cursor-default px-2"
                   : "bg-white text-gray-700 hover:bg-amber-100 hover:text-amber-700"
                 }`}
               onClick={() => item !== "..." && handlePageChange(item)}
@@ -1091,13 +1534,13 @@ const Products = () => {
       )}
 
       {/* Features Section - Enhanced Styling */}
-      <section className="bg-gradient-to-br from-amber-50 to-orange-100 py-16 md:py-20"> {/* Gradient background */}
+      <section className="bg-gradient-to-br from-amber-50 to-orange-100 py-16 md:py-20">
         <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 px-4">
           {[
             {
               title: "Chất lượng cao cấp",
               description: "Vật liệu bền vững, thân thiện môi trường.",
-              icon: <LiaTrophySolid className="w-10 h-10 text-amber-600" />, // Slightly darker icon
+              icon: <LiaTrophySolid className="w-10 h-10 text-amber-600" />,
             },
             {
               title: "Hỗ trợ 24/7",
@@ -1107,7 +1550,7 @@ const Products = () => {
             {
               title: "Bảo hành 12 tháng",
               description: "Cam kết chất lượng, an tâm sử dụng.",
-              icon: <MdOutlineSettingsInputComponent className="w-10 h-10 text-amber-600" />, // Changed icon
+              icon: <MdOutlineSettingsInputComponent className="w-10 h-10 text-amber-600" />,
             },
             {
               title: "Miễn phí vận chuyển",
@@ -1117,20 +1560,20 @@ const Products = () => {
           ].map((item, idx) => (
             <motion.div
               key={idx}
-              className="flex items-center space-x-4 bg-white p-6 rounded-xl shadow-lg border border-amber-100 transform transition duration-300 hover:-translate-y-2 hover:shadow-xl" // Lift effect on hover
+              className="flex items-center space-x-4 bg-white p-6 rounded-xl shadow-lg border border-amber-100 transform transition duration-300 hover:-translate-y-2 hover:shadow-xl"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: idx * 0.1 }}
-              viewport={{ once: true, amount: 0.3 }} // Trigger animation when 30% visible
+              viewport={{ once: true, amount: 0.3 }}
             >
-              <div className="p-4 bg-amber-100 rounded-full shadow-inner"> {/* Inner shadow on icon bg */}
+              <div className="p-4 bg-amber-100 rounded-full shadow-inner">
                 {item.icon}
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-1">
                   {item.title}
                 </h2>
-                <p className="text-gray-600 text-sm"> {/* Slightly smaller description */}
+                <p className="text-gray-600 text-sm">
                   {item.description}
                 </p>
               </div>
@@ -1155,4 +1598,4 @@ const Products = () => {
   );
 };
 
-export default Products;
+export default memo(Products);
