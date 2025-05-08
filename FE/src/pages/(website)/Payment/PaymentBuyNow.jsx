@@ -374,13 +374,14 @@ const PaymentBuyNow = () => {
       } else {
         toast.error(
           response?.message ||
-          `Không thể ${modalMode === "add" ? "thêm" : "cập nhật"} địa chỉ.`
+            `Không thể ${modalMode === "add" ? "thêm" : "cập nhật"} địa chỉ.`
         );
       }
     } catch (err) {
       console.error("Lỗi khi lưu địa chỉ:", err);
       toast.error(
-        `Đã xảy ra lỗi khi ${modalMode === "add" ? "thêm" : "cập nhật"
+        `Đã xảy ra lỗi khi ${
+          modalMode === "add" ? "thêm" : "cập nhật"
         } địa chỉ.`
       );
     } finally {
@@ -810,14 +811,14 @@ const PaymentBuyNow = () => {
                 },
                 product_variant: singleProductItem.product_variant
                   ? {
-                    id: singleProductItem.product_variant.id,
-                    price: singleProductItem.product_variant.price,
-                    discount_price:
-                      singleProductItem.product_variant.discount_price,
-                    variant_details:
-                      singleProductItem.product_variant.variant_details ||
-                      null,
-                  }
+                      id: singleProductItem.product_variant.id,
+                      price: singleProductItem.product_variant.price,
+                      discount_price:
+                        singleProductItem.product_variant.discount_price,
+                      variant_details:
+                        singleProductItem.product_variant.variant_details ||
+                        null,
+                    }
                   : null,
                 quantity: singleProductItem.quantity,
                 variant_details: singleProductItem.product_variant
@@ -1008,13 +1009,15 @@ const PaymentBuyNow = () => {
                   return (
                     <label
                       key={method.id}
-                      className={`relative flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${paymentMethod === method.id.toString() && !isDisabled
-                        ? "bg-blue-50 border-2 border-blue-500"
-                        : "border border-gray-200 hover:border-blue-400"
-                        } ${isDisabled
+                      className={`relative flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${
+                        paymentMethod === method.id.toString() && !isDisabled
+                          ? "bg-blue-50 border-2 border-blue-500"
+                          : "border border-gray-200 hover:border-blue-400"
+                      } ${
+                        isDisabled
                           ? "opacity-60 cursor-not-allowed bg-gray-50"
                           : "cursor-pointer"
-                        }`}
+                      }`}
                     >
                       <div className="flex items-center space-x-4">
                         <input
@@ -1059,10 +1062,11 @@ const PaymentBuyNow = () => {
                           </span>
                           {isWalletMethod && (
                             <span
-                              className={`text-sm ${insufficientBalance
-                                ? "text-red-500"
-                                : "text-green-600"
-                                }`}
+                              className={`text-sm ${
+                                insufficientBalance
+                                  ? "text-red-500"
+                                  : "text-green-600"
+                              }`}
                             >
                               Số dư: {formatPrice(walletBalance)}
                             </span>
@@ -1229,13 +1233,16 @@ const PaymentBuyNow = () => {
                             onClick={() =>
                               isApplicable && handleSelectVoucher(voucher)
                             }
-                            className={`p-3 border-b border-gray-100 last:border-b-0 ${isApplicable
-                              ? "cursor-pointer hover:bg-gray-50"
-                              : "opacity-50 cursor-not-allowed"
-                              } ${selectedVoucher?.id === voucher.id
+
+                            className={`p-3 border-b border-gray-100 last:border-b-0 ${
+                              isApplicable
+                                ? "cursor-pointer hover:bg-gray-50"
+                                : "opacity-50 cursor-not-allowed"
+                            } ${
+                              selectedVoucher?.id === voucher.id
                                 ? "bg-amber-50"
                                 : ""
-                              }`}
+                            }`}
                           >
                             <div className="flex justify-between items-start">
                               <div>
@@ -1249,6 +1256,11 @@ const PaymentBuyNow = () => {
                               </div>
                               <div className="text-right">
                                 <span
+                                  className={`text-xs px-2 py-1 rounded-full ${
+                                    isApplicable
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-red-100 text-red-700"
+                                  }`}
                                   className={`text-xs px-2 py-1 rounded-full ${isApplicable
                                     ? "bg-green-100 text-green-700"
                                     : "bg-red-100 text-red-700"
@@ -1281,8 +1293,8 @@ const PaymentBuyNow = () => {
             {selectedProducts.map((item) => {
               const price = item.product_variant
                 ? item.product_variant.discount_price ||
-                item.product_variant.price ||
-                0
+                  item.product_variant.price ||
+                  0
                 : item.product.discount_price || item.product.price || 0;
               return (
                 <div
@@ -1367,10 +1379,11 @@ const PaymentBuyNow = () => {
                       {userAddresses.map((addr) => (
                         <div
                           key={addr.id}
-                          className={`border rounded-md p-4 cursor-pointer hover:border-blue-500 ${selectedAddress?.id === addr.id
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-300"
-                            }`}
+                          className={`border rounded-md p-4 cursor-pointer hover:border-blue-500 ${
+                            selectedAddress?.id === addr.id
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-300"
+                          }`}
                           onClick={() => handleSelectAddress(addr)}
                         >
                           <div className="flex justify-between items-start mb-1">
@@ -1482,14 +1495,16 @@ const PaymentBuyNow = () => {
                             className="sr-only"
                           />
                           <div
-                            className={`block w-10 h-6 rounded-full transition ${addressFormData.is_default
-                              ? "bg-blue-500"
-                              : "bg-gray-300"
-                              }`}
+                            className={`block w-10 h-6 rounded-full transition ${
+                              addressFormData.is_default
+                                ? "bg-blue-500"
+                                : "bg-gray-300"
+                            }`}
                           ></div>
                           <div
-                            className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${addressFormData.is_default ? "translate-x-4" : ""
-                              }`}
+                            className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${
+                              addressFormData.is_default ? "translate-x-4" : ""
+                            }`}
                           ></div>
                         </div>
                         <div className="ml-3 text-sm text-gray-700">
