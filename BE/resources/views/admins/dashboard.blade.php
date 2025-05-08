@@ -470,6 +470,40 @@
         text-align: center;
     }
 
+    /* Thêm style cho bảng sản phẩm bán chạy nhất */
+    .table-responsive .table td:last-child {
+        min-width: 140px;
+    }
+
+    /* CSS cho các cột trong bảng sản phẩm bán chạy */
+    .table-responsive .table td:first-child {
+        min-width: 250px; /* Cột tên sản phẩm */
+    }
+
+    .table-responsive .table td:nth-child(2) {
+        min-width: 120px; /* Cột giá */
+    }
+
+    .table-responsive .table td:nth-child(3), 
+    .table-responsive .table td:nth-child(4) {
+        min-width: 100px; /* Cột đơn hàng và tồn kho */
+    }
+
+    /* Đảm bảo văn bản luôn hiển thị đầy đủ */
+    .table-responsive .table td h5.fs-14,
+    .table-responsive .table td p {
+        white-space: normal;
+        word-wrap: break-word;
+        overflow: visible;
+    }
+
+    /* Tăng kích thước của container chứa bảng */
+    .table-responsive {
+        overflow-x: auto;
+        min-height: 0.01%;
+        margin-bottom: 1rem;
+    }
+
     .avatar-xs {
         width: 2rem;
         height: 2rem;

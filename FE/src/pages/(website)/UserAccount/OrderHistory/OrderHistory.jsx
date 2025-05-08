@@ -471,7 +471,7 @@ const OrderHistory = () => {
                       <span className="text-xl font-bold text-orange-600">
                         {formatCurrency(
                           order.total_price ||
-                            calculateOrderTotal(order.order_items)
+                          calculateOrderTotal(order.order_items)
                         )}
                       </span>
                     </div>

@@ -10,7 +10,6 @@ export const LoadingProvider = ({ children }) => {
     const [apiLoaded, setApiLoaded] = useState(false);
     const { imagesLoaded } = useImagePreloader();
 
-    // Function để đánh dấu khi API đã tải xong
     const markApiAsLoaded = () => {
         setApiLoaded(true);
     };

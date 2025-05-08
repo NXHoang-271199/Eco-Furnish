@@ -1319,7 +1319,7 @@ const ProductDetail = () => {
                         dangerouslySetInnerHTML={{
                           __html: product.description,
                         }}
-                        className="prose max-w-none text-gray-700"
+                        className="prose max-w-none text-gray-700 description-content"
                       />
                     ) : (
                       <p className="text-gray-500 italic text-center py-10">

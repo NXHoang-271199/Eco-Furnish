@@ -1205,9 +1205,8 @@ const PaymentBuyNow = () => {
               >
                 {showVoucherDropdown ? "Ẩn" : "Hiển thị"} mã giảm giá khả dụng
                 <svg
-                  className={`ml-1 w-4 h-4 transition-transform ${
-                    showVoucherDropdown ? "rotate-180" : ""
-                  }`}
+                  className={`ml-1 w-4 h-4 transition-transform ${showVoucherDropdown ? "rotate-180" : ""
+                    }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1234,6 +1233,7 @@ const PaymentBuyNow = () => {
                             onClick={() =>
                               isApplicable && handleSelectVoucher(voucher)
                             }
+
                             className={`p-3 border-b border-gray-100 last:border-b-0 ${
                               isApplicable
                                 ? "cursor-pointer hover:bg-gray-50"
@@ -1261,6 +1261,10 @@ const PaymentBuyNow = () => {
                                       ? "bg-green-100 text-green-700"
                                       : "bg-red-100 text-red-700"
                                   }`}
+                                  className={`text-xs px-2 py-1 rounded-full ${isApplicable
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                                    }`}
                                 >
                                   {isApplicable
                                     ? "Có thể dùng"

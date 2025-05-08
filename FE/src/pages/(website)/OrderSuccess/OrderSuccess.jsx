@@ -123,12 +123,12 @@ const OrderSuccess = () => {
                     {orderInfo.payment_method === "MoMo"
                       ? "MoMo"
                       : orderInfo.payment_method === "VNPAY"
-                      ? "VNPAY"
-                      : orderInfo.payment_method === "Ví"
-                      ? "Ví"
-                      : orderInfo.payment_method === "Tiền mặt"
-                      ? "Tiền mặt"
-                      : "Đang cập nhật..."}
+                        ? "VNPAY"
+                        : orderInfo.payment_method === "Ví"
+                          ? "Ví"
+                          : orderInfo.payment_method === "Tiền mặt"
+                            ? "Tiền mặt"
+                            : "Đang cập nhật..."}
                   </p>
                 </div>
               </div>

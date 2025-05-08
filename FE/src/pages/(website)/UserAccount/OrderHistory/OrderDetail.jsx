@@ -1189,7 +1189,7 @@ const OrderDetail = () => {
       const orderCreatedTime = new Date(order.created_at).getTime();
       const currentTime = new Date().getTime();
       const timeSinceCreated = currentTime - orderCreatedTime;
-      const autoCancelDelayMs = 5 * 1000; // 24 giờ
+      const autoCancelDelayMs = 1 * 60 * 60 * 1000; // 24 giờ
 
       if (timeSinceCreated >= autoCancelDelayMs) {
         console.log(

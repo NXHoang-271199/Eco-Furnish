@@ -283,14 +283,10 @@ const Homes = () => {
                 !keywordRelatedProducts.some((kp) => kp.id === p.id)
             );
           }
-
-          // 5. Kết hợp kết quả, ưu tiên sản phẩm theo từ khóa trước
           const combinedResults = [
             ...keywordRelatedProducts,
             ...categoryRelatedProducts,
-          ].slice(0, 4); // Giới hạn kết quả
-
-          // 6. Nếu vẫn thiếu sản phẩm, bổ sung thêm sản phẩm ngẫu nhiên
+          ].slice(0, 4);
           if (combinedResults.length < 4) {
             const randomProducts = products
               .filter(
@@ -309,8 +305,6 @@ const Homes = () => {
       }
     }
   };
-
-  // Hiệu ứng vị trí mặt trời (gradient)
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const rotateX = useTransform(mouseY, [-300, 300], [5, -5]);
@@ -349,6 +343,7 @@ const Homes = () => {
       setIsLoading(true); // Bắt đầu loading
       setImagesLoaded(false); // Reset trạng thái tải ảnh
       setLoadedImages(0); // Reset số ảnh đã tải
+
       try {
         dataFetchedRef.current = true;
         const [productsResponse, bestSellersResponse, postsResponse] =
@@ -365,25 +360,17 @@ const Homes = () => {
           Array.isArray(productsResponse.data.data.data)
         ) {
           processedProducts = productsResponse.data.data.data.map((product) => {
-            // Tạo bản sao sâu của sản phẩm để tránh tham chiếu
             const newProduct = JSON.parse(JSON.stringify(product));
-
-            // Chuẩn hóa has_variants thành boolean
             newProduct.has_variants = Boolean(
               newProduct.has_variants === 1 ||
               newProduct.has_variants === true ||
               newProduct.has_variants === "1" ||
               newProduct.has_variants === "true"
             );
-
-            // Đảm bảo variants là một mảng
             if (!Array.isArray(newProduct.variants)) {
               newProduct.variants = [];
             }
-
-            // Tính price_range
             if (newProduct.has_variants && newProduct.variants.length > 0) {
-              // Lọc ra các giá trị hợp lệ
               const validVariants = newProduct.variants.filter(
                 (v) => v && typeof v === "object"
               );
@@ -399,8 +386,6 @@ const Homes = () => {
                     return discount > 0 ? discount : 0;
                   })
                   .filter((p) => p > 0);
-
-                // Chỉ tính nếu có ít nhất một giá hợp lệ
                 if (prices.length > 0) {
                   newProduct.price_range = {
                     min: Math.min(...prices),
@@ -841,7 +826,7 @@ const Homes = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="max-w-[1600px] mx-auto px-4 mt-4"
+        className="max-w-auto mx-auto px-4 mt-4"
       >
         <div className="rounded-2xl overflow-hidden">
           <Banner />
@@ -930,7 +915,7 @@ const Homes = () => {
         </div>
       </motion.section>
       {/* Sản phẩm được AI gợi ý */}
-      {aiRecommendations.length > 0 && (
+      {hasActivityData && aiRecommendations.length > 0 && (
         <motion.section
           initial="hidden"
           whileInView="visible"
