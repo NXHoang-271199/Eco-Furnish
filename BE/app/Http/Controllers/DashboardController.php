@@ -90,7 +90,7 @@ class DashboardController extends Controller
                 'products.price', 
                 'products.image_thumnail', 
                 'products.quantity as stock',
-                'products.created_at', 
+                'orders.created_at',
                 DB::raw('SUM(order_items.quantity) as total_sold'),
                 DB::raw('SUM(order_items.price * order_items.quantity) as total_amount')
             )
@@ -105,7 +105,7 @@ class DashboardController extends Controller
         }
         
         // Hoàn thành câu truy vấn với group by và order by
-        $bestSellingProductsQuery->groupBy('products.id', 'products.name', 'products.price', 'products.image_thumnail', 'products.quantity', 'products.created_at')
+        $bestSellingProductsQuery->groupBy('products.id', 'products.name', 'products.price', 'products.image_thumnail', 'products.quantity', 'orders.created_at')
             ->orderByDesc('total_sold');
         
         // Đếm tổng số bản ghi để phân trang
@@ -579,7 +579,7 @@ class DashboardController extends Controller
                 'products.price', 
                 'products.image_thumnail', 
                 'products.quantity as stock',
-                'products.created_at', 
+                'orders.created_at',
                 DB::raw('SUM(order_items.quantity) as total_sold'),
                 DB::raw('SUM(order_items.price * order_items.quantity) as total_amount')
             )
@@ -588,7 +588,7 @@ class DashboardController extends Controller
                       ->orWhere('orders.payment_status', 1);
             })
             ->whereBetween('orders.created_at', [$startDate, $endDate])
-            ->groupBy('products.id', 'products.name', 'products.price', 'products.image_thumnail', 'products.quantity', 'products.created_at')
+            ->groupBy('products.id', 'products.name', 'products.price', 'products.image_thumnail', 'products.quantity', 'orders.created_at')
             ->orderByDesc('total_sold');
         
         // Đếm tổng số bản ghi để phân trang

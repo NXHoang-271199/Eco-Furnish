@@ -88,11 +88,10 @@ const Banner = () => {
         {banners.map((banner, index) => (
           <div
             key={banner.id}
-            className={`absolute top-0 left-0 w-full px-auto h-full transition-all duration-700 ease-in-out transform text-center ${
-              index === currentIndex
+            className={`absolute top-0 left-0 w-full px-auto h-full transition-all duration-700 ease-in-out transform text-center ${index === currentIndex
                 ? "opacity-100 z-10 scale-100"
                 : "opacity-0 z-0 scale-105"
-            }`}
+              }`}
             onClick={() => handleBannerClick(banner.link)}
             style={{ cursor: banner.link ? "pointer" : "default" }}
           >
@@ -108,7 +107,7 @@ const Banner = () => {
                 console.log(
                   "URL ảnh gốc:",
                   banner.image_url ||
-                    `${import.meta.env.VITE_API_BASE_URL}/${banner.image}`
+                  `${import.meta.env.VITE_API_BASE_URL}/${banner.image}`
                 );
                 e.target.onerror = () => {
                   e.target.src =
@@ -143,11 +142,10 @@ const Banner = () => {
             {banners.map((_, index) => (
               <button
                 key={index}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentIndex
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentIndex
                     ? "bg-white w-6 shadow-md"
                     : "bg-white bg-opacity-60 hover:bg-opacity-80"
-                }`}
+                  }`}
                 onClick={() => setCurrentIndex(index)}
                 aria-label={`Go to banner ${index + 1}`}
               />

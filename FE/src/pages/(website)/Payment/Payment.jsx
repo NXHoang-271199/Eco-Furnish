@@ -647,37 +647,95 @@ const Payment = () => {
       return;
     }
 
-    // Xử lý thanh toán bằng ví
-    const selectedMethodObj = paymentMethods.find((method) => method.id === Number(paymentMethod));
-    if (selectedMethodObj && selectedMethodObj.name === "Ví") {
-      // Kiểm tra nếu chưa có mật khẩu cấp 2
-      if (!hasLevel2Password) {
-        // Chuyển hướng đến trang thiết lập mật khẩu cấp 2 với tham số redirect để quay lại
-        // Lưu trạng thái hiện tại vào localStorage để có thể khôi phục sau khi thiết lập mật khẩu cấp 2
-        localStorage.setItem("pendingPaymentState", JSON.stringify({
-          selectedProducts: selectedProducts.map(item => item.id), // Lưu ID để tham chiếu
-          selectedProductsData: selectedProducts, // Lưu thông tin đầy đủ của sản phẩm
-          selectedAddress: selectedAddress?.id,
-          paymentMethod,
-          voucherId,
-          discountAmount,
-          type: "normal"
-        }));
+    // Kiểm tra số lượng sản phẩm trước khi xử lý thanh toán
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("authToken");
 
-        navigate("/account?tab=level2password&redirect=payment");
-        toast.info("Vui lòng thiết lập mật khẩu cấp 2 để thanh toán bằng ví.");
+      // Kiểm tra tồn kho cho tất cả sản phẩm trong giỏ hàng
+      let hasStockIssue = false;
+      let errorMessage = "";
+
+      // Kiểm tra từng sản phẩm trong giỏ hàng
+      for (const item of selectedProducts) {
+        const productId = item.product.id;
+        const variantId = item.product_variant_id;
+        const quantity = item.quantity;
+
+        // Gọi API để lấy thông tin sản phẩm hiện tại
+        const stockCheckUrl = `/products/${productId}`;
+        const stockResponse = await axiosInstance.get(stockCheckUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (stockResponse.data && stockResponse.data.status === 'success') {
+          const productData = stockResponse.data.data;
+          let availableStock = 0;
+
+          if (variantId) {
+            // Tìm biến thể đúng để kiểm tra số lượng
+            const variant = productData.variants.find(v => v.id === variantId);
+            availableStock = variant ? variant.quantity : 0;
+          } else {
+            availableStock = productData.quantity;
+          }
+
+          if (availableStock < quantity) {
+            hasStockIssue = true;
+            errorMessage = `Sản phẩm "${item.product.name}" chỉ còn ${availableStock} trong kho, không đủ số lượng đặt hàng.`;
+            break;
+          }
+        }
+      }
+
+      if (hasStockIssue) {
+        toast.error("Hàng đã hết", { autoClose: 3000 });
+        setError(errorMessage || "Hàng đã hết. Vui lòng quay lại giỏ hàng kiểm tra lại.");
+        setLoading(false);
         return;
       }
 
-      // Nếu đã có mật khẩu cấp 2, hiển thị modal xác nhận
-      setShowLevel2PasswordModal(true);
-      setLevel2Password("");
-      setLevel2PasswordError("");
-      return;
-    }
+      setLoading(false);
 
-    // Tiếp tục xử lý đặt hàng nếu không phải thanh toán bằng ví
-    processOrder();
+      // Xử lý thanh toán bằng ví
+      const selectedMethodObj = paymentMethods.find((method) => method.id === Number(paymentMethod));
+      if (selectedMethodObj && selectedMethodObj.name === "Ví") {
+        // Kiểm tra nếu chưa có mật khẩu cấp 2
+        if (!hasLevel2Password) {
+          // Chuyển hướng đến trang thiết lập mật khẩu cấp 2 với tham số redirect để quay lại
+          // Lưu trạng thái hiện tại vào localStorage để có thể khôi phục sau khi thiết lập mật khẩu cấp 2
+          localStorage.setItem("pendingPaymentState", JSON.stringify({
+            selectedProducts: selectedProducts.map(item => item.id), // Lưu ID để tham chiếu
+            selectedProductsData: selectedProducts, // Lưu thông tin đầy đủ của sản phẩm
+            selectedAddress: selectedAddress?.id,
+            paymentMethod,
+            voucherId,
+            discountAmount,
+            type: "normal"
+          }));
+
+          navigate("/account?tab=level2password&redirect=payment");
+          toast.info("Vui lòng thiết lập mật khẩu cấp 2 để thanh toán bằng ví.");
+          return;
+        }
+
+        // Nếu đã có mật khẩu cấp 2, hiển thị modal xác nhận
+        setShowLevel2PasswordModal(true);
+        setLevel2Password("");
+        setLevel2PasswordError("");
+        setCheckingLevel2Password(false); // Đảm bảo trạng thái ban đầu là false
+        return;
+      }
+
+      // Tiếp tục xử lý đặt hàng nếu không phải thanh toán bằng ví
+      processOrder();
+    } catch (err) {
+      console.error("Lỗi khi kiểm tra tồn kho:", err);
+      setLoading(false);
+      setError("Có lỗi xảy ra khi kiểm tra thông tin sản phẩm.");
+    }
   };
 
   // Tách logic xử lý đặt hàng
@@ -771,6 +829,11 @@ const Payment = () => {
         // Reset lại trạng thái kiểm tra mật khẩu cấp 2 để có thể thử lại
         setCheckingLevel2Password(false);
         // Giữ modal mở để người dùng có thể nhập lại
+      } else if (err.response?.data?.error && err.response.data.error.includes("không đủ số lượng")) {
+        // Xử lý lỗi khi sản phẩm hết hàng hoặc không đủ số lượng
+        toast.error("Hàng đã hết", { autoClose: 3000 });
+        setError("Hàng đã hết. Vui lòng quay lại giỏ hàng kiểm tra lại.");
+        setShowLevel2PasswordModal(false);
       } else {
         // Các lỗi khác vẫn hiển thị như cũ
         setError(
@@ -1310,7 +1373,10 @@ const Payment = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Xác nhận thanh toán</h2>
               <button
-                onClick={() => setShowLevel2PasswordModal(false)}
+                onClick={() => {
+                  setShowLevel2PasswordModal(false);
+                  setCheckingLevel2Password(false); // Reset trạng thái khi đóng modal
+                }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
                 disabled={checkingLevel2Password}
               >
@@ -1336,7 +1402,10 @@ const Payment = () => {
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setShowLevel2PasswordModal(false)}
+                onClick={() => {
+                  setShowLevel2PasswordModal(false);
+                  setCheckingLevel2Password(false); // Reset trạng thái khi đóng modal
+                }}
                 className="px-4 py-2 border rounded-md"
                 disabled={checkingLevel2Password}
               >

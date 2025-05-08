@@ -55,65 +55,6 @@
         }
 
         function confirmForceDelete(id) {
-            function executeDelete(force = false) {
-                $.ajax({
-                    url: `/admin/trash/trash-variants/${id}`,
-                    type: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    data: {
-                        force: force
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                title: 'Thành công!',
-                                text: response.message,
-                                icon: 'success',
-                                confirmButtonText: 'OK'
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        } else if (response.hasProducts) {
-                            Swal.fire({
-                                title: 'Cảnh báo!',
-                                text: response.message,
-                                icon: 'warning',
-                                showCancelButton: true,
-                                confirmButtonText: 'Có, xóa!',
-                                cancelButtonText: 'Hủy',
-                                confirmButtonColor: '#dc3545',
-                                cancelButtonColor: '#6c757d'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    executeDelete(true);
-                                }
-                            });
-                        } else {
-                            Swal.fire({
-                                title: 'Lỗi!',
-                                text: response.message,
-                                icon: 'error',
-                                confirmButtonText: 'OK'
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        let message = 'Có lỗi xảy ra khi xóa vĩnh viễn biến thể';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            message = xhr.responseJSON.message;
-                        }
-                        Swal.fire({
-                            title: 'Lỗi!',
-                            text: message,
-                            icon: 'error',
-                            confirmButtonText: 'OK'
-                        });
-                    }
-                });
-            }
-
             Swal.fire({
                 title: 'Xác nhận xóa vĩnh viễn?',
                 text: "Hành động này không thể hoàn tác!",
@@ -125,7 +66,52 @@
                 cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    executeDelete(false);
+                    $.ajax({
+                        url: `/admin/trash/trash-variants/${id}`,
+                        type: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Thành công!',
+                                    text: response.message,
+                                    icon: 'success',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    window.location.reload();
+                                });
+                            } else {
+                                // Xử lý trường hợp có phản hồi thất bại (hiển thị cảnh báo)
+                                Swal.fire({
+                                    title: 'Không thể xóa!',
+                                    text: response.message,
+                                    icon: 'warning',
+                                    confirmButtonText: 'Đã hiểu'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            let message = 'Có lỗi xảy ra khi xóa vĩnh viễn biến thể';
+                            let icon = 'error';
+                            
+                            // Xử lý phản hồi lỗi 400 từ server (khi có sản phẩm đang sử dụng biến thể)
+                            if (xhr.status === 400 && xhr.responseJSON) {
+                                message = xhr.responseJSON.message;
+                                icon = 'warning';
+                            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                                message = xhr.responseJSON.message;
+                            }
+                            
+                            Swal.fire({
+                                title: 'Không thể xóa!',
+                                text: message,
+                                icon: icon,
+                                confirmButtonText: 'Đã hiểu'
+                            });
+                        }
+                    });
                 }
             });
         }

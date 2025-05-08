@@ -239,14 +239,13 @@ const ChatRealTime = () => {
                     processedMessages.push(groupMessage);
                     i = nextIndex; // Bỏ qua các tin nhắn đã được nhóm
                 } else {
-                    // Nếu chỉ có 1 ảnh, giữ nguyên tin nhắn gốc
+                    // Nếu chỉ có 1 ảnh, không nhóm
                     processedMessages.push(currentMsg);
                     i++;
                 }
             } else {
-                // Nếu không phải ảnh, thêm vào kết quả bình thường
+                // Không phải ảnh, giữ nguyên tin nhắn
                 processedMessages.push(currentMsg);
-                processedImageIds.current.add(msgId); // Đánh dấu đã xử lý
                 i++;
             }
         }
@@ -798,6 +797,9 @@ const ChatRealTime = () => {
                         isCurrentUser: false,
                         is_read: isOpen
                     };
+
+                    // Log chi tiết số lượng ảnh đã nhận
+                    console.log(`📊 Nhận ${data.images.length} ảnh từ admin`);
 
                     setMessages((prev) => [...prev, imageGroupMessage]);
 
@@ -1526,7 +1528,7 @@ const ChatRealTime = () => {
                                                                             ))}
                                                                         </div>
                                                                     ) : (
-                                                                        // Nếu có 5+ ảnh, hiển thị 4 ảnh với ảnh cuối "+X"
+                                                                        // Nếu có 5+ ảnh, hiển thị 3 ảnh với ảnh thứ 4 có "+X"
                                                                         <div className="grid grid-cols-2 gap-1">
                                                                             {msg.imageGroup.urls.slice(0, 3).map((url, idx) => (
                                                                                 <div
@@ -1551,7 +1553,7 @@ const ChatRealTime = () => {
                                                                                     className="w-full h-[80px] object-cover rounded-lg brightness-50"
                                                                                 />
                                                                                 <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl">
-                                                                                    +{msg.imageGroup.urls.length - 4}
+                                                                                    +{msg.imageGroup.urls.length - 3}
                                                                                 </div>
                                                                             </div>
                                                                         </div>

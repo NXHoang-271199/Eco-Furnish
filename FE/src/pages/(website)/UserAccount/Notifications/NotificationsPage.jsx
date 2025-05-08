@@ -60,7 +60,22 @@ const NotificationsPage = () => {
           }
         );
 
-        setNotifications(processedNotifications);
+        // Lọc bỏ các thông báo trùng lặp dựa trên order_id và order_status
+        const uniqueNotifications = [];
+        const processedIds = new Set();
+
+        processedNotifications.forEach(notification => {
+          // Tạo một khóa duy nhất dựa trên order_id và order_status
+          const uniqueKey = `${notification.order_id}_${notification.order_status}`;
+
+          // Chỉ thêm vào danh sách nếu chưa có thông báo với cùng order_id và order_status
+          if (!processedIds.has(uniqueKey)) {
+            processedIds.add(uniqueKey);
+            uniqueNotifications.push(notification);
+          }
+        });
+
+        setNotifications(uniqueNotifications);
       }
     } catch (error) {
       console.error("Lỗi khi lấy thông báo:", error);

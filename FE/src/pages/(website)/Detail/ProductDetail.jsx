@@ -1229,7 +1229,7 @@ const ProductDetail = () => {
                       onClick={handleAddToCart}
                       disabled={addingToCart || getStockQuantity() === 0}
                       className={`flex-1 py-3 px-6 text-white font-medium rounded-lg flex items-center justify-center transition-colors ${addingToCart || getStockQuantity() === 0
-                        ? "bg-gray-400 cursor-not-allowed"
+                        ? "bg-gray-400 cursor-not-allowed opacity-50"
                         : "bg-amber-500 hover:bg-amber-600"
                         }`}
                     >
@@ -1239,7 +1239,9 @@ const ProductDetail = () => {
                           Đang thêm...
                         </>
                       ) : getStockQuantity() === 0 ? (
-                        "Hết hàng"
+                        <>
+                          <span className="line-through">Thêm vào giỏ hàng</span>
+                        </>
                       ) : (
                         <>
                           <IoCartOutline className="mr-2 text-xl" />
@@ -1252,7 +1254,7 @@ const ProductDetail = () => {
                       onClick={handleBuyNow}
                       disabled={addingToBuy || getStockQuantity() === 0}
                       className={`flex-1 py-3 px-6 text-white font-medium rounded-lg flex items-center justify-center transition-colors ${addingToBuy || getStockQuantity() === 0
-                        ? "bg-gray-400 cursor-not-allowed"
+                        ? "bg-gray-400 cursor-not-allowed opacity-50"
                         : "bg-green-600 hover:bg-green-700"
                         }`}
                     >
@@ -1262,7 +1264,9 @@ const ProductDetail = () => {
                           Đang xử lý...
                         </>
                       ) : getStockQuantity() === 0 ? (
-                        "Hết hàng"
+                        <>
+                          <span className="line-through">Mua ngay</span>
+                        </>
                       ) : (
                         "Mua ngay"
                       )}
@@ -1315,7 +1319,7 @@ const ProductDetail = () => {
                         dangerouslySetInnerHTML={{
                           __html: product.description,
                         }}
-                        className="prose max-w-none text-gray-700"
+                        className="prose max-w-none text-gray-700 description-content"
                       />
                     ) : (
                       <p className="text-gray-500 italic text-center py-10">

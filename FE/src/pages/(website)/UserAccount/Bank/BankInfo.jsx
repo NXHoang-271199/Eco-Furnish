@@ -142,28 +142,95 @@ const BankInfo = () => {
     }
   };
 
+  // // Handle set default
+  // const handleSetDefault = async (accountId) => {
+  //   try {
+  //     const token = localStorage.getItem("authToken");
+  //     const response = await axiosInstance.put(
+  //       `/bank-accounts/${accountId}`,
+  //       { is_default: true },
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+
+  //     setBankAccounts((prev) =>
+  //       prev.map((account) =>
+  //         account.id === accountId
+  //           ? { ...account, is_default: true }
+  //           : { ...account, is_default: false }
+  //       )
+  //     );
+  //     toast.success("Đặt tài khoản mặc định thành công!");
+  //   } catch (err) {
+  //     toast.error("Không thể đặt tài khoản mặc định");
+  //   }
+  // };
+  // Handle set default
   // Handle set default
   const handleSetDefault = async (accountId) => {
     try {
       const token = localStorage.getItem("authToken");
+
+      // Kiểm tra xem tài khoản đã được đặt làm mặc định chưa
+      const selectedAccount = bankAccounts.find(
+        (account) => account.id === accountId
+      );
+      if (selectedAccount.is_default) {
+        toast.info("Tài khoản này đã là mặc định!");
+        return;
+      }
+
+      // Chuẩn bị dữ liệu đầy đủ của tài khoản để gửi lên
+      const accountData = {
+        bank_code: selectedAccount.bank_code,
+        bank_name: selectedAccount.bank_name,
+        bank_account_number: selectedAccount.bank_account_number,
+        account_holder_name: selectedAccount.account_holder_name,
+        is_default: true, // Đặt is_default thành true
+        acq_id: selectedAccount.acq_id || "",
+        bank_logo_url: selectedAccount.bank_logo_url || "",
+      };
+
+      // Gửi yêu cầu đặt tài khoản làm mặc định với toàn bộ dữ liệu
       const response = await axiosInstance.put(
         `/bank-accounts/${accountId}`,
-        { is_default: true },
+        accountData,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      console.log("Set default response:", response.data); // Debug phản hồi từ API PUT
 
-      setBankAccounts((prev) =>
-        prev.map((account) =>
-          account.id === accountId
-            ? { ...account, is_default: true }
-            : { ...account, is_default: false }
-        )
-      );
+      // Gọi lại API để lấy danh sách tài khoản ngân hàng mới nhất
+      const accountsResponse = await axiosInstance.get("/bank-accounts", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("Updated accounts response:", accountsResponse.data); // Debug phản hồi từ API GET
+
+      // Kiểm tra xem dữ liệu trả về có đúng định dạng không
+      if (accountsResponse.data && accountsResponse.data.data) {
+        const updatedAccounts = accountsResponse.data.data;
+        console.log("Updated bank accounts:", updatedAccounts); // Debug danh sách tài khoản
+
+        // Kiểm tra trạng thái is_default trong dữ liệu trả về
+        const defaultAccount = updatedAccounts.find(
+          (account) => account.is_default
+        );
+        console.log("Default account after update:", defaultAccount);
+
+        setBankAccounts(updatedAccounts);
+      } else {
+        throw new Error("Dữ liệu tài khoản trả về không đúng định dạng");
+      }
+
       toast.success("Đặt tài khoản mặc định thành công!");
     } catch (err) {
-      toast.error("Không thể đặt tài khoản mặc định");
+      // Lấy chi tiết lỗi từ phản hồi của backend
+      const errorMessage =
+        err.response?.data?.message || "Không thể đặt tài khoản mặc định";
+      console.error("Error setting default account:", err.response || err); // Debug lỗi
+      toast.error(errorMessage);
     }
   };
 

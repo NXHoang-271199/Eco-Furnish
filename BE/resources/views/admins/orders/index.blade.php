@@ -25,6 +25,47 @@
             z-index: 9999 !important;
         }
 
+        /* Tăng cường z-index để modal luôn hiển thị đúng cách */
+        #bulkUpdateModal {
+            z-index: 9999 !important;
+        }
+        
+        /* Tùy chỉnh backdrop để làm mờ nền nhưng không cản trở tương tác với modal */
+        .custom-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9995;
+            pointer-events: none;
+        }
+        
+        /* Hoàn toàn tắt backdrop mặc định của Bootstrap */
+        .modal-backdrop {
+            display: none !important;
+        }
+        
+        /* Đảm bảo modal-dialog luôn hiển thị trên cùng và có thể tương tác */
+        #bulkUpdateModal .modal-dialog {
+            z-index: 10000 !important;
+            pointer-events: auto !important;
+            position: relative;
+        }
+        
+        /* Đảm bảo tất cả các phần tử trong modal có thể tương tác */
+        #bulkUpdateModal .modal-content,
+        #bulkUpdateModal .modal-body,
+        #bulkUpdateModal .modal-footer,
+        #bulkUpdateModal .modal-header,
+        #bulkUpdateModal button,
+        #bulkUpdateModal select,
+        #bulkUpdateModal input,
+        #bulkUpdateModal form {
+            pointer-events: auto !important;
+        }
+
         /* Đảm bảo nút cập nhật trạng thái không bị mờ khi đã chọn checkbox */
         #btnBulkUpdateStatus:not(:disabled) {
             opacity: 1 !important;
@@ -230,8 +271,8 @@
 
         <!-- Modal cập nhật trạng thái hàng loạt -->
         <div class="modal fade" id="bulkUpdateModal" tabindex="-1" aria-labelledby="bulkUpdateModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog">
+            aria-hidden="true" data-bs-backdrop="false">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="bulkUpdateModalLabel">Cập nhật trạng thái hàng loạt</h5>
@@ -270,6 +311,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- Thêm div cho backdrop tùy chỉnh -->
+        <div id="customBackdrop" class="custom-backdrop d-none"></div>
 
         <!-- Modal hiển thị kết quả cập nhật trạng thái hàng loạt -->
         <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
@@ -680,6 +724,7 @@
         // Định nghĩa biến toàn cục ở đầu file
         const BASE_URL = window.location.origin;
         let CSRF_TOKEN;
+        let bulkUpdateModalInstance = null;
 
         // Đảm bảo DOM đã sẵn sàng
         document.addEventListener('DOMContentLoaded', function() {
@@ -692,6 +737,9 @@
             console.log('BASE_URL:', BASE_URL);
 
             initOrderBulkActions();
+            
+            // Khởi tạo modal với cách tiếp cận mới
+            initModals();
         });
 
         // Đảm bảo cả trang đã tải hoàn toàn (bao gồm cả hình ảnh)
@@ -706,6 +754,83 @@
             if (anyChecked) {
                 console.log('Có checkbox đã được chọn sau khi trang tải hoàn toàn:', anyChecked);
                 updateSelectedOrders();
+            }
+        }
+
+        // Khởi tạo modal với cách tiếp cận mới, hoàn toàn kiểm soát backdrop
+        function initModals() {
+            const bulkUpdateModalEl = document.getElementById('bulkUpdateModal');
+            const customBackdrop = document.getElementById('customBackdrop');
+            
+            if (bulkUpdateModalEl && customBackdrop) {
+                // Tạo instance modal một cách thủ công
+                bulkUpdateModalInstance = new bootstrap.Modal(bulkUpdateModalEl, {
+                    backdrop: false, // Tắt backdrop mặc định
+                    keyboard: true,
+                    focus: true
+                });
+                
+                // Lắng nghe sự kiện khi modal hiển thị
+                bulkUpdateModalEl.addEventListener('show.bs.modal', function() {
+                    console.log('Modal đang hiển thị, kích hoạt backdrop tùy chỉnh');
+                    // Hiển thị backdrop tùy chỉnh
+                    customBackdrop.classList.remove('d-none');
+                    
+                    // Xóa tất cả backdrop mặc định của Bootstrap nếu có
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(backdrop => backdrop.remove());
+                    
+                    // Đặt z-index cao cho modal
+                    bulkUpdateModalEl.style.zIndex = '9999';
+                });
+                
+                // Lắng nghe sự kiện khi modal ẩn
+                bulkUpdateModalEl.addEventListener('hide.bs.modal', function() {
+                    // Ẩn backdrop tùy chỉnh
+                    customBackdrop.classList.add('d-none');
+                });
+                
+                // Lắng nghe sự kiện khi modal bị ẩn
+                bulkUpdateModalEl.addEventListener('hidden.bs.modal', function() {
+                    // Đảm bảo backdrop tùy chỉnh được ẩn
+                    customBackdrop.classList.add('d-none');
+                    
+                    // Xóa tất cả backdrop mặc định còn sót lại
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(backdrop => backdrop.remove());
+                });
+            } else {
+                console.error('Không tìm thấy các phần tử modal hoặc backdrop tùy chỉnh');
+            }
+            
+            // Xử lý nút mở modal
+            const bulkUpdateBtn = document.getElementById('btnBulkUpdateStatus');
+            if (bulkUpdateBtn) {
+                // Gỡ bỏ attribute để tránh Bootstrap tự xử lý
+                bulkUpdateBtn.removeAttribute('data-bs-toggle');
+                bulkUpdateBtn.removeAttribute('data-bs-target');
+                
+                // Thêm sự kiện click
+                bulkUpdateBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (this.disabled) {
+                        return;
+                    }
+                    
+                    console.log('Mở modal bằng JavaScript và hiển thị backdrop tùy chỉnh');
+                    // Xóa hết tất cả backdrop hiện có trước
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    
+                    // Hiển thị backdrop tùy chỉnh
+                    document.getElementById('customBackdrop').classList.remove('d-none');
+                    
+                    // Mở modal
+                    if (bulkUpdateModalInstance) {
+                        bulkUpdateModalInstance.show();
+                    }
+                });
             }
         }
 
@@ -765,6 +890,10 @@
             if (bulkUpdateBtn) {
                 bulkUpdateBtn.disabled = true;
                 bulkUpdateBtn.classList.add('disabled');
+                
+                // Bỏ data attribute để tránh Bootstrap tự động xử lý
+                bulkUpdateBtn.removeAttribute('data-bs-toggle');
+                bulkUpdateBtn.removeAttribute('data-bs-target');
             }
 
             // Sử dụng event delegation thay vì gắn sự kiện trực tiếp vào từng checkbox
@@ -905,12 +1034,22 @@
 
                 // Lấy dữ liệu từ form
                 const formData = new FormData(form);
+                
+                // Tính toán số lượng đơn hàng đã chọn để hiện thị progress
+                const selectedOrderCount = document.querySelectorAll('.order-checkbox:checked').length;
 
-                // Hiển thị loading
+                // Hiển thị loading với thông tin rõ ràng hơn
                 Swal.fire({
                     title: 'Đang xử lý...',
-                    html: 'Vui lòng đợi trong giây lát...',
+                    html: `
+                        <div class="mb-3">Đang cập nhật ${selectedOrderCount} đơn hàng</div>
+                        <div class="progress mb-2" style="height: 10px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 100%"></div>
+                        </div>
+                        <small class="text-muted">Vui lòng đợi trong giây lát...</small>
+                    `,
                     allowOutsideClick: false,
+                    showConfirmButton: false,
                     didOpen: () => {
                         Swal.showLoading();
                     }
@@ -918,14 +1057,17 @@
 
                 console.log('Gửi request đến:', form.action);
 
-                // Gửi AJAX request
+                // Tối ưu AJAX request
                 fetch(form.action, {
                         method: 'POST',
                         body: formData,
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': CSRF_TOKEN || ''
-                        }
+                            'X-CSRF-TOKEN': CSRF_TOKEN || '',
+                            'Accept': 'application/json'
+                        },
+                        // Thêm timeout để tránh chờ đợi quá lâu
+                        signal: AbortSignal.timeout(30000) // 30 giây timeout
                     })
                     .then(response => {
                         if (!response.ok) {
@@ -934,7 +1076,7 @@
                         return response.json();
                     })
                     .then(data => {
-                        // Đóng Swal
+                        // Đóng Swal ngay lập tức
                         Swal.close();
 
                         if (!data || !data.success) {
@@ -954,20 +1096,19 @@
                         try {
                             const bulkUpdateModalEl = document.getElementById('bulkUpdateModal');
                             if (bulkUpdateModalEl) {
-                                const bulkUpdateModal = bootstrap.Modal.getInstance(bulkUpdateModalEl);
-                                if (bulkUpdateModal) {
-                                    bulkUpdateModal.hide();
+                                if (bulkUpdateModalInstance) {
+                                    bulkUpdateModalInstance.hide();
                                 } else {
-                                    // Nếu không lấy được instance, thử tạo mới
-                                    new bootstrap.Modal(bulkUpdateModalEl).hide();
+                                    const bulkUpdateModal = bootstrap.Modal.getInstance(bulkUpdateModalEl);
+                                    if (bulkUpdateModal) {
+                                        bulkUpdateModal.hide();
+                                    }
                                 }
                             }
+                            // Ẩn backdrop tùy chỉnh
+                            document.getElementById('customBackdrop')?.classList.add('d-none');
                         } catch (modalError) {
                             console.error('Lỗi khi đóng modal:', modalError);
-                            // Thử dùng jQuery nếu có
-                            if (typeof $ !== 'undefined') {
-                                $('#bulkUpdateModal').modal('hide');
-                            }
                         }
 
                         // Hiển thị modal kết quả
@@ -983,15 +1124,28 @@
                                         resultModal = new bootstrap.Modal(resultModalElement);
                                     }
                                     resultModal.show();
+                                    
+                                    // Đăng ký sự kiện khi modal đóng
+                                    resultModalElement.addEventListener('hidden.bs.modal', function handler() {
+                                        console.log('Modal kết quả đã đóng, tải lại trang để cập nhật dữ liệu mới.');
+                                        // Luôn tải lại trang để hiển thị dữ liệu mới nhất
+                                        window.location.reload();
+                                        resultModalElement.removeEventListener('hidden.bs.modal', handler);
+                                    }, {
+                                        once: true
+                                    });
                                 } catch (bootstrapError) {
                                     console.error('Lỗi bootstrap khi hiển thị modal:', bootstrapError);
-                                    // Thử tạo modal theo cách khác
-                                    if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !==
-                                        'undefined') {
-                                        new bootstrap.Modal(resultModalElement).show();
-                                    } else if (typeof $ !== 'undefined') {
-                                        $('#resultModal').modal('show');
-                                    }
+                                    // Trong trường hợp lỗi, vẫn hiển thị thông báo
+                                    Swal.fire({
+                                        title: 'Thành công!',
+                                        text: `Đã cập nhật ${data.successCount} đơn hàng thành công, ${data.errorCount} đơn hàng lỗi.`,
+                                        icon: 'success',
+                                        confirmButtonText: 'Đóng'
+                                    }).then(() => {
+                                        // Khi đóng thông báo, tải lại trang
+                                        window.location.reload();
+                                    });
                                 }
                             } else {
                                 console.error('Không tìm thấy modal kết quả');
@@ -1001,6 +1155,9 @@
                                     text: `Đã cập nhật ${data.successCount} đơn hàng thành công, ${data.errorCount} đơn hàng lỗi.`,
                                     icon: 'success',
                                     confirmButtonText: 'Đóng'
+                                }).then(() => {
+                                    // Khi đóng thông báo, tải lại trang
+                                    window.location.reload();
                                 });
                             }
                         } catch (modalError) {
@@ -1011,24 +1168,14 @@
                                 text: `Đã cập nhật ${data.successCount} đơn hàng thành công, ${data.errorCount} đơn hàng lỗi.`,
                                 icon: 'success',
                                 confirmButtonText: 'Đóng'
+                            }).then(() => {
+                                // Khi đóng thông báo, tải lại trang
+                                window.location.reload();
                             });
                         }
 
-                        // Cập nhật lại trạng thái đơn hàng trên UI
+                        // Cập nhật lại trạng thái đơn hàng trên UI mà không cần tải lại trang
                         updateOrderStatusUI(data.results);
-
-                        // Lắng nghe sự kiện khi modal kết quả đóng
-                        const resultModalElement = document.getElementById('resultModal');
-                        if (resultModalElement) {
-                            resultModalElement.addEventListener('hidden.bs.modal', function handler() {
-                                console.log('Modal kết quả đã đóng, tải lại trang.');
-                                window.location.reload();
-                                // Gỡ bỏ listener sau khi chạy để tránh reload nhiều lần
-                                resultModalElement.removeEventListener('hidden.bs.modal', handler);
-                            }, {
-                                once: true
-                            }); // { once: true } đảm bảo listener chỉ chạy một lần
-                        }
                     })
                     .catch(error => {
                         console.error('Lỗi:', error);
@@ -1050,15 +1197,19 @@
             }
         });
 
-        // Hàm hiển thị kết quả cập nhật trong modal
+        // Hàm hiển thị kết quả cập nhật trong modal - cải thiện hiệu suất
         function displayResults(data) {
             try {
+                // Xử lý hiệu năng - tạo fragments để giảm repaint/reflow
+                const allResultsFragment = document.createDocumentFragment();
+                const successResultsFragment = document.createDocumentFragment();
+                const errorResultsFragment = document.createDocumentFragment();
+                
                 // Ghi log dữ liệu để debug
                 console.log('Kết quả nhận được:', data);
 
                 // Đảm bảo biến BASE_URL đã được định nghĩa
                 const baseUrl = BASE_URL || window.location.origin;
-                console.log('Base URL đang sử dụng:', baseUrl);
 
                 // Cập nhật số lượng trên các tab
                 document.getElementById('all-count').textContent = data.totalCount;
@@ -1105,36 +1256,37 @@
                 // Mảng lưu mã đơn thành công
                 const successOrderCodes = [];
 
+                // Tối ưu hóa - dùng template string thay vì tạo element
                 // Thêm dữ liệu mới
                 for (const [orderId, result] of Object.entries(data.results)) {
                     const order = result.order || {};
                     const orderCode = order.order_code || 'N/A';
                     const message = result.message;
 
-                    // Tạo HTML cho item
-                    let listItemHTML = '';
-                    if (result.success) {
-                        listItemHTML = `
-                        <li class="list-group-item list-group-item-success">
-                            <span class="fw-bold">#${orderCode}</span>
-                            <span class="message">${message}</span>
-                        </li>
+                    // Tạo HTML cho item bằng template string (hiệu quả hơn createElement)
+                    const listItemHTML = document.createElement('li');
+                    listItemHTML.className = `list-group-item list-group-item-${result.success ? 'success' : 'danger'}`;
+                    listItemHTML.innerHTML = `
+                        <span class="fw-bold">#${orderCode}</span>
+                        <span class="message${!result.success ? ' text-danger' : ''}">${message}</span>
                     `;
-                        successResults.insertAdjacentHTML('beforeend', listItemHTML);
+
+                    // Thêm vào đúng fragment
+                    if (result.success) {
+                        successResultsFragment.appendChild(listItemHTML.cloneNode(true));
                         successOrderCodes.push(orderCode);
                     } else {
-                        listItemHTML = `
-                        <li class="list-group-item list-group-item-danger">
-                            <span class="fw-bold">#${orderCode}</span>
-                            <span class="message text-danger">${message}</span>
-                        </li>
-                    `;
-                        errorResults.insertAdjacentHTML('beforeend', listItemHTML);
+                        errorResultsFragment.appendChild(listItemHTML.cloneNode(true));
                     }
-
-                    // Thêm vào tab "Tất cả"
-                    allResults.insertAdjacentHTML('beforeend', listItemHTML);
+                    
+                    // Thêm vào fragment "Tất cả"
+                    allResultsFragment.appendChild(listItemHTML);
                 }
+
+                // Gắn fragment vào DOM (chỉ 1 lần reflow)
+                allResults.appendChild(allResultsFragment);
+                successResults.appendChild(successResultsFragment);
+                errorResults.appendChild(errorResultsFragment);
 
                 // Kích hoạt/vô hiệu hóa nút footer
                 const copySuccessButton = document.getElementById('copySuccessButton');
@@ -1182,7 +1334,7 @@
             }
         }
 
-        // Hàm cập nhật trạng thái đơn hàng trên UI
+        // Hàm cập nhật trạng thái đơn hàng trên UI - cải thiện hiệu suất
         function updateOrderStatusUI(results) {
             try {
                 if (!results) {
@@ -1190,52 +1342,66 @@
                     return;
                 }
 
+                // Tạo Map để tăng tốc độ truy vấn
+                const orderCardMap = new Map();
+                const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+                
+                // Tạo Map ánh xạ từ orderId sang phần tử DOM để tránh truy vấn DOM nhiều lần
+                orderCheckboxes.forEach(checkbox => {
+                    orderCardMap.set(checkbox.value, {
+                        checkbox: checkbox,
+                        card: checkbox.closest('.order-card')
+                    });
+                });
+
+                // Xử lý kết quả hiệu quả hơn - dùng Map thay vì truy vấn DOM lặp lại
                 for (const [orderId, result] of Object.entries(results)) {
                     if (!result.success) continue;
 
-                    // Tìm các card đơn hàng có ID tương ứng và cập nhật trạng thái
-                    const orderCheckbox = document.querySelector(`.order-checkbox[value="${orderId}"]`);
-                    if (orderCheckbox) {
-                        const orderCard = orderCheckbox.closest('.order-card');
-                        if (orderCard) {
-                            // Cập nhật badge trạng thái
-                            const statusBadge = orderCard.querySelector('.badge[role="status"]');
-                            if (statusBadge) {
-                                statusBadge.outerHTML = getStatusBadgeHTML(result.order.new_status);
-                            } else {
-                                // Nếu không tìm thấy badge bằng role, thử tìm bằng cách khác
-                                const allDivs = orderCard.querySelectorAll('div');
-                                for (const div of allDivs) {
-                                    const badges = div.querySelectorAll('.badge');
-                                    if (badges.length > 0) {
-                                        // Tìm được div chứa badge
-                                        badges[0].outerHTML = getStatusBadgeHTML(result.order.new_status);
-                                        break;
-                                    }
-                                }
-                            }
+                    const orderElements = orderCardMap.get(orderId);
+                    if (!orderElements) continue;
+                    
+                    const { checkbox, card } = orderElements;
+                    if (!card) continue;
 
-                            // Cập nhật data-current-status cho checkbox
-                            orderCheckbox.dataset.currentStatus = result.order.new_status;
-
-                            // Nếu đơn hàng đã chuyển sang Đã Nhận, Hủy Đơn hoặc Hoàn Hàng, vô hiệu hóa checkbox
-                            if (['Đã Nhận', 'Hủy Đơn', 'Hoàn Hàng'].includes(result.order.new_status)) {
-                                orderCheckbox.checked = false;
-                                orderCheckbox.disabled = true;
+                    // Cập nhật badge trạng thái
+                    const statusBadge = card.querySelector('.badge[role="status"]');
+                    if (statusBadge) {
+                        statusBadge.outerHTML = getStatusBadgeHTML(result.order.new_status);
+                    } else {
+                        // Thử tìm badge theo cách khác - tối ưu truy vấn DOM
+                        const badges = card.querySelectorAll('.badge');
+                        for (let i = 0; i < badges.length; i++) {
+                            const badge = badges[i];
+                            // Kiểm tra xem badge có chứa text trạng thái hay không
+                            if (badge.textContent.includes('Chưa Xác Nhận') || 
+                                badge.textContent.includes('Đã Xác Nhận') ||
+                                badge.textContent.includes('Đang Chuẩn Bị Hàng') ||
+                                badge.textContent.includes('Đang Giao') ||
+                                badge.textContent.includes('Đã Giao') ||
+                                badge.textContent.includes('Đã Nhận') ||
+                                badge.textContent.includes('Hoàn Hàng') ||
+                                badge.textContent.includes('Hủy Đơn')) {
+                                badge.outerHTML = getStatusBadgeHTML(result.order.new_status);
+                                break;
                             }
                         }
+                    }
+
+                    // Cập nhật data-current-status cho checkbox
+                    checkbox.dataset.currentStatus = result.order.new_status;
+
+                    // Nếu đơn hàng đã chuyển sang Đã Nhận, Hủy Đơn hoặc Hoàn Hàng, vô hiệu hóa checkbox
+                    if (['Đã Nhận', 'Hủy Đơn', 'Hoàn Hàng'].includes(result.order.new_status)) {
+                        checkbox.checked = false;
+                        checkbox.disabled = true;
                     }
                 }
 
                 // Cập nhật lại trạng thái nút sau khi thay đổi checkbox
-                setTimeout(() => {
-                    try {
-                        updateSelectedOrders();
-                    } catch (e) {
-                        console.error('Lỗi khi gọi updateSelectedOrders:', e);
-                    }
-                }, 500);
-
+                requestAnimationFrame(() => {
+                    updateSelectedOrders();
+                });
             } catch (error) {
                 console.error('Lỗi khi cập nhật UI:', error);
             }

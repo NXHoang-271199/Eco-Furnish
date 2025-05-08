@@ -44,7 +44,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
         'email' => $user->email,
         'role_id' => $user->role_id,
         'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
-    ]);
+    ])->middleware('active.status');
 });
 
 // Product routes
@@ -81,7 +81,7 @@ Route::prefix('users')->group(function () {
     Route::post('/resend-verification', [UserApiController::class, 'resendVerification']);
     Route::put('/update/{id}', [UserApiController::class, 'updateProfile']);
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'active.status'])->group(function () {
         // Thêm routes cho quản lý địa chỉ
         Route::get('/{userId}/addresses', [UserAddressController::class, 'getUserAddresses']);
         Route::post('/{userId}/addresses', [UserAddressController::class, 'storeUserAddress']);
@@ -93,7 +93,9 @@ Route::prefix('users')->group(function () {
         Route::post('/level2-password/verify', [UserApiController::class, 'verifyLevel2Password']);
         Route::put('/level2-password/update', [UserApiController::class, 'updateLevel2Password']);
         Route::get('/level2-password/status', [UserApiController::class, 'checkLevel2PasswordStatus']);
-
+        Route::post('/level2-password/forgot', [UserApiController::class, 'forgotLevel2Password']);
+        Route::post('/level2-password/reset', [UserApiController::class, 'resetLevel2Password']);
+        
         Route::post('/upload-avatar/{id}', [UserApiController::class, 'uploadAvatar']);
         Route::put('/{id}/profile', [UserApiController::class, 'updateProfile']);
         Route::post('/logout', [UserApiController::class, 'apiLogout']);
@@ -130,7 +132,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/check-voucher', [VoucherApiController::class, 'checkVoucher']); // checkvoucher
 });
 // Comment routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active.status'])->group(function () {
     Route::post('/comments', [CommentController::class, 'store']);
 });
 
@@ -201,6 +203,21 @@ Route::get('/auth/check-token', function (Request $request) {
 // Route test kiểm tra xác thực
 Route::middleware('auth:sanctum')->get('/auth/check', function (Request $request) {
     $user = $request->user();
+    
+    // Kiểm tra trạng thái tài khoản
+    if (!$user->is_active) {
+        // Xóa token hiện tại
+        if ($user->currentAccessToken()) {
+            $user->currentAccessToken()->delete();
+        }
+        
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Tài khoản của bạn đã bị vô hiệu hóa.',
+            'is_active' => false
+        ], 403);
+    }
+    
     return response()->json([
         'message' => 'Bạn đã đăng nhập thành công',
         'user' => [
@@ -209,6 +226,7 @@ Route::middleware('auth:sanctum')->get('/auth/check', function (Request $request
             'phone' => $user->phone,
             'email' => $user->email,
             'role_id' => $user->role_id,
+            'is_active' => $user->is_active,
             'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null
         ]
     ]);
@@ -240,7 +258,7 @@ Route::middleware('auth:sanctum')->prefix('user/notifications')->group(function 
 
 // Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // không được động // FE ko được động tới
 // Cart Routers
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active.status'])->group(function () {
     Route::get('cart', [CartController::class, 'index']); // Lấy giỏ hàng
     Route::post('cart/add', [CartController::class, 'addToCart']); // Thêm vào giỏ hàng
     Route::put('cart/update/{id}', [CartController::class, 'updateQuantity']); // Cập nhật số lượng
@@ -249,7 +267,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Payment Method routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active.status'])->group(function () {
     Route::get('payment-methods', [PaymentMethodController::class, 'index']); // đổ danh sách thanh toán
     Route::get('payment-methods/deposit', [PaymentMethodController::class, 'getDepositMethods']); // đổ danh sách thanh toán cho nạp tiền vào ví
     Route::post('payment-method/retry/{orderId}', [PaymentMethodController::class, 'retryPayment']); // api gọi lại trang thanh toán cho đơn hàng
@@ -259,7 +277,7 @@ Route::post('/momo/ipn', [PaymentMethodController::class, 'handleMoMoIPN']); // 
 Route::get('/vnpay/ipn', [PaymentMethodController::class, 'handleVNPAYIPN']); // FE ko được động tới
 
 // Order routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active.status'])->group(function () {
     Route::get('orders', [OrderController::class, 'index']); // Danh sách đơn hàng
     Route::get('orders/{id}', [OrderController::class, 'show']); // Chi tiết đơn hàng
     Route::post('orders', [OrderController::class, 'createOrder']); // Tạo đơn hàng
@@ -274,7 +292,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->get('user/orders/unpaid', [OrderController::class, 'getUnpaidOrders']); // Lấy danh sách đơn hàng chưa thanh toán trực tuyến
 
 // review routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active.status'])->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']); // tạo đánh giá sản phẩm
     Route::get('/products/{productId}/can-review', [ReviewController::class, 'canReview']); // kiểm tra quyền đánh giá
     Route::get('/orders/{orderId}/reviews', [ReviewController::class, 'getOrderReviews']); // lấy đánh giá của một đơn hàng
@@ -282,7 +300,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('products/{productId}/reviews', [ReviewController::class, 'getProductReviews']); // đổ danh sách đánh giá sản phẩm
 
 //wallet
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active.status'])->group(function () {
     Route::get('wallet/balance', [WalletController::class, 'getBalance']); // số dư ví
     Route::post('wallet/deposit', [WalletController::class, 'deposit']); // nạp tiền
     Route::get('wallet/transactions', [WalletController::class, 'transactions']); // lịch sử giao dịch
@@ -292,7 +310,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // bank account
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active.status'])->group(function () {
     Route::get('bank-accounts', [BankAccountController::class, 'getUserBankAccounts']); // Lấy danh sách tài khoản ngân hàng của người dùng hiện tại
     Route::post('bank-accounts', [BankAccountController::class, 'storeUserBankAccount']); // Tạo mới tài khoản ngân hàng cho người dùng hiện tại
     Route::put('bank-accounts/{accountId}', [BankAccountController::class, 'updateUserBankAccount']); // Cập nhật tài khoản ngân hàng của người dùng hiện tại
