@@ -27,7 +27,7 @@ document.addEventListener('touchstart', handleUserInteraction, { once: false });
 function handleUserInteraction() {
     if (!userHasInteracted) {
         userHasInteracted = true;
-        console.log("✅ Người dùng đã tương tác với trang, có thể phát âm thanh");
+        console.log("Người dùng đã tương tác với trang, có thể phát âm thanh");
 
         // Kích hoạt audio trước
         messageAudio.play()
@@ -36,7 +36,7 @@ function handleUserInteraction() {
                 messageAudio.currentTime = 0;
                 console.log("✓ Đã kích hoạt audio");
             })
-            .catch(err => console.log("⚠️ Không thể kích hoạt audio:", err));
+            .catch(err => console.log("Không thể kích hoạt audio:", err));
     }
 }
 
@@ -51,7 +51,7 @@ const playNotificationSound = (soundPath) => {
             messageAudio.play()
                 .then(() => console.log("✓ Âm thanh thông báo được phát thành công"))
                 .catch(err => {
-                    console.log("⚠️ Không thể phát âm thanh, lỗi:", err);
+                    console.log("Không thể phát âm thanh, lỗi:", err);
 
                     // Thử lại với tương tác người dùng nếu lỗi
                     const unblockAudio = () => {
@@ -60,20 +60,20 @@ const playNotificationSound = (soundPath) => {
                                 console.log("✓ Đã phát âm thanh sau tương tác");
                                 document.removeEventListener('click', unblockAudio);
                             })
-                            .catch(e => console.log("⚠️ Vẫn không thể phát âm thanh:", e));
+                            .catch(e => console.log("Vẫn không thể phát âm thanh:", e));
                     };
 
                     document.addEventListener('click', unblockAudio, { once: true });
                 });
         } else {
-            console.log("⚠️ Người dùng chưa tương tác, đang chờ tương tác để phát âm thanh");
+            console.log("Người dùng chưa tương tác, đang chờ tương tác để phát âm thanh");
 
             // Đăng ký phát âm thanh sau tương tác đầu tiên
             const playAfterInteraction = () => {
                 userHasInteracted = true;
                 messageAudio.play()
-                    .then(() => console.log("✓ Đã phát âm thanh sau tương tác đầu tiên"))
-                    .catch(e => console.log("⚠️ Không thể phát âm thanh sau tương tác:", e));
+                    .then(() => console.log("Đã phát âm thanh sau tương tác đầu tiên"))
+                    .catch(e => console.log("Không thể phát âm thanh sau tương tác:", e));
 
                 document.removeEventListener('click', playAfterInteraction);
                 document.removeEventListener('keydown', playAfterInteraction);
@@ -85,7 +85,7 @@ const playNotificationSound = (soundPath) => {
             document.addEventListener('touchstart', playAfterInteraction, { once: true });
         }
     } catch (error) {
-        console.error("❌ Lỗi khi phát âm thanh:", error);
+        console.error("Lỗi khi phát âm thanh:", error);
     }
 };
 
@@ -131,31 +131,25 @@ const ChatRealTime = () => {
     const [socketServerUrl] = useState(import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3002");
     // Thêm state cho emoji picker
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
     // Thêm ref cho phần messages và image input
     const messagesEndRef = useRef(null);
-    const imageInputRef = useRef(null);
 
+    const imageInputRef = useRef(null);
     // Ref để theo dõi tin nhắn đã xử lý
     const processedImageIds = useRef(new Set());
-
     // Cải thiện hàm phân tích tin nhắn từ admin
     const analyzeAdminMessages = (message) => {
         // Kiểm tra nếu tin nhắn có chứa "admin" trong ID hoặc từ admin
         return message &&
-            (!message.isCurrentUser && userData && // Thêm kiểm tra userData tồn tại
+            (!message.isCurrentUser && userData && // Kiểm tra nếu userData tồn tại
                 (message.sender_id.toString() !== userData.id?.toString()));
     };
 
-    // Thêm hàm xử lý và nhóm các tin nhắn ảnh liên tiếp
+    // Hàm xử lý và nhóm các tin nhắn ảnh liên tiếp
     const processMessagesWithImageGroups = (messagesArray) => {
         if (!messagesArray || !Array.isArray(messagesArray) || messagesArray.length === 0) {
             return [];
         }
-
-        // Lưu trữ tin nhắn gốc để tham chiếu sau này
-        // originalMessages.current = messagesArray; // Tạm thời comment out nếu không dùng
-
         // Clone mảng tin nhắn để không ảnh hưởng đến mảng gốc
         const messages = [...messagesArray];
         const processedMessages = [];
@@ -184,9 +178,6 @@ const ChatRealTime = () => {
 
             // Kiểm tra xem tin nhắn hiện tại có phải là ảnh không
             if (currentMsg.image && !currentMsg.text) {
-                // Tạo ID duy nhất cho tin nhắn này nếu chưa có
-                // const msgId = currentMsg.id || `msg-${currentMsg.sender_id}-${currentMsg.sent_at}-${Math.random()}`; // Đã có ở trên
-
                 // Bắt đầu một nhóm ảnh mới
                 const imageInfo = [{ url: currentMsg.image, msg: currentMsg }]; // Lưu cả msg gốc
                 const senderID = currentMsg.sender_id;
@@ -236,9 +227,9 @@ const ChatRealTime = () => {
                         id: groupId,
                         sender_id: senderID,
                         isCurrentUser: isCurrentUser,
-                        isAdmin: isAdmin, // Thêm thuộc tính isAdmin
+                        isAdmin: isAdmin, // Xác định admin cho nhóm
                         sent_at: currentMsg.sent_at, // Giữ thời gian của tin nhắn đầu tiên
-                        is_read: isRead, // Có thể cần logic phức tạp hơn để xác định is_read cho nhóm
+                        is_read: isRead, // Xác định is_read cho nhóm
                         imageGroup: {
                             urls: imageInfo.map(info => info.url),
                             groupId: groupId
@@ -262,7 +253,7 @@ const ChatRealTime = () => {
         return processedMessages;
     };
 
-    // Refs cho cơ chế đệm ảnh từ admin (GIỮ LẠI KHAI BÁO NÀY)
+    // Refs cho cơ chế đệm ảnh từ admin
     const pendingAdminImagesRef = useRef([]);
     const imageBufferTimeoutRef = useRef(null);
 
@@ -274,8 +265,8 @@ const ChatRealTime = () => {
             setIsLoading(true);
             const token = localStorage.getItem("authToken");
 
-            console.log("🔍 Đang tải lịch sử cho user:", userId);
-            console.log("🔑 Token:", token?.substring(0, 15) + "...");
+            console.log("Đang tải lịch sử cho user:", userId);
+            console.log("Token:", token?.substring(0, 15) + "...");
 
             // Gọi API lấy lịch sử tin nhắn
             const response = await axios.get(
@@ -289,10 +280,10 @@ const ChatRealTime = () => {
                 }
             );
 
-            console.log("✅ Phản hồi API:", response.status, response.statusText);
+            console.log("Phản hồi API:", response.status, response.statusText);
 
             if (response.data && Array.isArray(response.data)) {
-                console.log("📜 Lịch sử tin nhắn:", response.data);
+                console.log("Lịch sử tin nhắn:", response.data);
 
                 // Đảm bảo tất cả tin nhắn có trạng thái is_read và isCurrentUser
                 const messagesWithStatus = response.data.map(msg => ({
@@ -319,16 +310,16 @@ const ChatRealTime = () => {
                     scrollToBottom();
                 }, 100);
             } else {
-                console.warn("⚠️ Dữ liệu không đúng định dạng:", response.data);
+                console.warn("Dữ liệu không đúng định dạng:", response.data);
             }
         } catch (error) {
-            console.error("❌ Lỗi khi tải lịch sử tin nhắn:", error.message);
+            console.error("Lỗi khi tải lịch sử tin nhắn:", error.message);
             if (error.response) {
-                console.error("📌 Chi tiết lỗi:", error.response.data);
-                console.error("📌 Status:", error.response.status);
-                console.error("📌 Headers:", error.response.headers);
+                console.error("Chi tiết lỗi:", error.response.data);
+                console.error("Status:", error.response.status);
+                console.error("Headers:", error.response.headers);
             } else if (error.request) {
-                console.error("📌 Không nhận được phản hồi:", error.request);
+                console.error("Không nhận được phản hồi:", error.request);
             }
         } finally {
             setIsLoading(false);
@@ -338,7 +329,7 @@ const ChatRealTime = () => {
     // Hàm kiểm tra và kết nối socket 
     const connectSocket = () => {
         try {
-            console.log("🔌 Đang kiểm tra kết nối socket...");
+            console.log("Đang kiểm tra kết nối socket...");
             const socketConnection = getSocket();
 
             if (socketConnection) {
@@ -346,17 +337,17 @@ const ChatRealTime = () => {
 
                 // Kiểm tra nếu socket đã kết nối
                 if (socketConnection.connected) {
-                    console.log("✅ Socket đã được kết nối sẵn:", socketConnection.id);
+                    console.log("Socket đã được kết nối sẵn:", socketConnection.id);
                     setIsConnected(true);
                     setLastError("");
                 } else {
-                    console.log("⏳ Socket đã khởi tạo nhưng đang kết nối...");
+                    console.log("Socket đã khởi tạo nhưng đang kết nối...");
                     // Không cập nhật trạng thái kết nối ở đây, để khi connect event được kích hoạt
                 }
 
                 // Thiết lập sự kiện kết nối
                 socketConnection.on("connect", () => {
-                    console.log("✅ Socket kết nối thành công:", socketConnection.id);
+                    console.log("Socket kết nối thành công:", socketConnection.id);
                     setIsConnected(true);
                     setLastError("");
 

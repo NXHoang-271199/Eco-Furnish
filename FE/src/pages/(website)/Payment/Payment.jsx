@@ -1147,15 +1147,19 @@ const Payment = () => {
 
               return (
                 <div
-                  key={`${item.product.id}-${JSON.stringify(
-                    item.product_variant?.variant_details
+                  key={`${item.product?.id || item.id}-${JSON.stringify(
+                    item.product_variant?.variant_details ||
+                      item.variant_details ||
+                      {}
                   )}`}
                   className="flex items-center space-x-4"
                 >
                   <div className="relative w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                     <img
-                      src={`http://localhost:8000/storage/${item.product.image_thumnail}`}
-                      alt={item.product.name}
+                      src={`http://localhost:8000/storage/${
+                        item.product?.image_thumnail || item.image_thumnail
+                      }`}
+                      alt={item.product?.name || item.name || "Sản phẩm"}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.src =

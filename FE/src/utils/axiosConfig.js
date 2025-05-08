@@ -138,6 +138,7 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+
     // Xử lý lỗi 403 khi tài khoản bị vô hiệu hóa
     if (error.response && error.response.status === 403) {
       // Kiểm tra nếu là lỗi tài khoản bị vô hiệu hóa
@@ -170,7 +171,6 @@ axiosInstance.interceptors.response.use(
     // Xử lý token hết hạn
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -192,9 +192,12 @@ axiosInstance.interceptors.response.use(
           throw new Error("No refresh token available");
         }
 
-        const res = await axios.post("http://localhost:8000/api/users/refresh-token", {
-          refresh_token: refreshToken,
-        });
+        const res = await axios.post(
+          "http://localhost:8000/api/users/refresh-token",
+          {
+            refresh_token: refreshToken,
+          }
+        );
 
         if (res.data.status === "success") {
           const newToken = res.data.data.access_token;
