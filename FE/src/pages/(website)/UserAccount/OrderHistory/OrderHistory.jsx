@@ -255,10 +255,11 @@ const OrderHistory = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-4 whitespace-nowrap font-medium flex items-center transition-all duration-200 relative ${activeTab === tab.id
-              ? "text-orange-500"
-              : "text-gray-600 hover:text-orange-400 hover:bg-orange-50"
-              }`}
+            className={`px-4 py-4 whitespace-nowrap font-medium flex items-center transition-all duration-200 relative ${
+              activeTab === tab.id
+                ? "text-orange-500"
+                : "text-gray-600 hover:text-orange-400 hover:bg-orange-50"
+            }`}
           >
             <span className="mr-2">{tab.icon}</span>
             {tab.name}
